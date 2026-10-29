@@ -57,4 +57,20 @@ $env:TEST_PG_ADMIN_URL = "postgresql+psycopg://postgres:PAROL@127.0.0.1:5432/pos
 | POST | `/auth/refresh`, `/auth/logout` | refresh token egasi |
 | POST | `/auth/logout-all`, `/auth/password` · GET `/auth/me` | kirgan foydalanuvchi |
 | POST | `/superadmin/businesses` · PATCH `/superadmin/businesses/{id}/status` · PUT `/superadmin/businesses/{id}/modules/{code}` · PATCH `/superadmin/users/{id}/status` | Super Admin |
-| GET/POST | `/businesses/{id}/members` · PATCH `/businesses/{id}/members/{mid}` · PUT `.../permissions/{code}` | `staff.manage` |
+| GET/POST | `/businesses/{id}/members` · PATCH `/businesses/{id}/members/{mid}` · PUT `.../permissions/{code}` · GET/PUT `.../services` | `staff.manage` |
+| GET | `/catalog/categories` · `/catalog/businesses/nearby?lat&lng&radius_m&category&q&open_now` · `/catalog/businesses/in-bounds?sw_lat&sw_lng&ne_lat&ne_lng` · `/catalog/businesses/{slug}` | hamma (kirmasdan ham) |
+| GET | `/geo/geocode?q=` · `/geo/reverse?lat&lng` (Yandex Geocoder) | kirgan foydalanuvchi |
+| GET/PATCH | `/businesses/{id}/profile` · GET/PUT `/hours` · GET/POST/DELETE `/photos` | `business.manage` |
+| GET/POST/PATCH/DELETE | `/businesses/{id}/service-categories` · `/businesses/{id}/services` | `services.manage` |
+
+### Katalog xavfsizligi
+- Katalog har doim **foydalanuvchisiz** RLS sessiyasida ishlaydi — Super Admin tokeni bilan ham yashirin/bloklangan biznes ko'rinmaydi.
+- Ustalarning ism/lavozimi `public_staff` ko'rinishidan olinadi: telefon, maosh, `user_id` chiqmaydi.
+- Qidiruv matnidagi `%`/`_` ekranlanadi; radius ≤ 50 km, xarita oynasi ≤ 1°, `limit` ≤ 100/300 — bazani to'liq yuklab olishga qarshi.
+- Rasm havolalari faqat `https://` (API va bazada CHECK) — XSS'ga qarshi. Xizmat o'chirilmaydi, yashiriladi; narx o'zgarishlari `audit_logs` da (eski → yangi).
+
+## Demo ma'lumotlar (dev)
+```powershell
+.venv\Scripts\python -m scripts.seed_demo     # Toshkentdagi 4 ta biznes, xizmatlar, ustalar
+```
+Super Admin: `+998900000001` / `SuperPass123`. Bizneslar egalari: `+99890100000{0..3}` (SMS kod dev rejimda javobda keladi).

@@ -30,6 +30,11 @@ class Settings(BaseSettings):
     cors_origins: list[str] = []
     sms_provider: Literal["console", "eskiz"] = "console"
 
+    # Yandex HTTP Geocoder (manzil ↔ koordinata). Kalit faqat serverda — mobil ilovaga berilmaydi.
+    # Xaritaning o'zi mobil ilovada Yandex MapKit (alohida, mobil kalit) bilan chiziladi.
+    yandex_geocoder_api_key: SecretStr | None = None
+    yandex_geocoder_lang: str = "ru_RU"
+
     @model_validator(mode="after")
     def _prod_checks(self):
         if self.env == "prod":

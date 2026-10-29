@@ -11,6 +11,8 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_db, require_permission
 from app.models import BusinessMember, MemberPermission
 from app.schemas import MemberCreate, MemberOut, MemberUpdate, PermissionOverride
+from app.schemas.catalog import MemberServiceIn, MemberServicesReplace
+from app.services import audit
 
 router = APIRouter(prefix="/businesses/{business_id}/members", tags=["members"])
 
@@ -48,6 +50,32 @@ def update_member(body: MemberUpdate, member_id: int = Path(ge=1),
         setattr(m, field, value)
     db.commit()
     return m
+
+
+@router.get("/{member_id}/services", response_model=list[MemberServiceIn])
+def get_member_services(member_id: int = Path(ge=1), business_id: int = Depends(_manage),
+                        db: Session = Depends(get_db)):
+    _get_member(db, business_id, member_id)
+    rows = db.execute(text("SELECT service_id, custom_price, custom_duration FROM member_services "
+                           "WHERE member_id = :m ORDER BY service_id"), {"m": member_id}).mappings()
+    return [MemberServiceIn(**r) for r in rows]
+
+
+@router.put("/{member_id}/services", response_model=list[MemberServiceIn])
+def replace_member_services(body: MemberServicesReplace, member_id: int = Path(ge=1),
+                            business_id: int = Depends(_manage), db: Session = Depends(get_db)):
+    """Usta bajaradigan xizmatlar (va unga xos narx/davomiylik). Boshqa salon xizmatini
+    biriktirib bo'lmaydi — kompozit FK (business_id, service_id) rad etadi."""
+    _get_member(db, business_id, member_id)
+    db.execute(text("DELETE FROM member_services WHERE member_id = :m AND business_id = :b"),
+               {"m": member_id, "b": business_id})
+    for s in body.services:
+        db.execute(text("INSERT INTO member_services (business_id, member_id, service_id, custom_price, custom_duration) "
+                        "VALUES (:b, :m, :s, :p, :d)"),
+                   {"b": business_id, "m": member_id, "s": s.service_id, "p": s.custom_price, "d": s.custom_duration})
+    audit.log(db, business_id, "update", "member_services", member_id, {"services": [s.model_dump() for s in body.services]})
+    db.commit()
+    return body.services
 
 
 @router.put("/{member_id}/permissions/{permission_code}", status_code=204)

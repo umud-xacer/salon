@@ -86,18 +86,20 @@ def superadmin(client) -> dict:
     return r.json()
 
 
-def create_business(client, superadmin, *, modules=("booking",)) -> dict:
-    """Biznes + egasi. Qaytaradi: business_id, owner tokenlari, owner_member_id."""
+def create_business(client, superadmin, *, modules=("booking",), lat=41.2995, lng=69.2401,
+                    category_id=1, name=None) -> dict:
+    """Biznes + egasi. Qaytaradi: id, slug, owner tokenlari, owner_member_id."""
     owner_phone = new_phone()
     slug = f"biz-{owner_phone[-7:]}"
     r = client.post("/api/v1/superadmin/businesses", headers=auth_header(superadmin), json={
-        "name": f"Salon {slug}", "slug": slug, "category_id": 1, "city": "Toshkent",
-        "lat": 41.2995, "lng": 69.2401, "owner_phone": owner_phone, "owner_full_name": "Salon Egasi",
+        "name": name or f"Salon {slug}", "slug": slug, "category_id": category_id, "city": "Toshkent",
+        "lat": lat, "lng": lng, "owner_phone": owner_phone, "owner_full_name": "Salon Egasi",
         "modules": list(modules),
     })
     assert r.status_code == 201, r.text
     biz = r.json()
-    return {"id": biz["id"], "owner_member_id": biz["owner_member_id"], "owner": otp_login(client, owner_phone)}
+    return {"id": biz["id"], "slug": slug, "owner_member_id": biz["owner_member_id"],
+            "owner": otp_login(client, owner_phone)}
 
 
 def add_member(client, business, role: str, actor: dict | None = None) -> dict:

@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import DBAPIError
 
-from app.api.v1 import auth, members, superadmin
+from app.api.v1 import auth, business_admin, catalog, geo, members, superadmin
 from app.core.config import get_settings
 from app.services.auth_service import AuthError
 
@@ -73,6 +73,9 @@ async def db_error_handler(request: Request, exc: DBAPIError):
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(superadmin.router, prefix="/api/v1")
 app.include_router(members.router, prefix="/api/v1")
+app.include_router(catalog.router, prefix="/api/v1")
+app.include_router(geo.router, prefix="/api/v1")
+app.include_router(business_admin.router, prefix="/api/v1")
 
 
 @app.get("/health", include_in_schema=False)

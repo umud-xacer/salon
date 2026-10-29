@@ -28,6 +28,16 @@ def get_auth_db() -> Iterator[Session]:
         db.close()
 
 
+def get_public_db() -> Iterator[Session]:
+    """Ochiq katalog uchun: foydalanuvchisiz sessiya. Kim so'rasa ham (hatto Super Admin)
+    RLS faqat ochiq ma'lumotni beradi — katalog orqali yopiq ma'lumot chiqib ketmaydi."""
+    db = api_session(None)
+    try:
+        yield db
+    finally:
+        db.close()
+
+
 def get_db(creds: HTTPAuthorizationCredentials | None = Depends(_bearer)) -> Iterator[Session]:
     """Tokenni tekshiradi va shu foydalanuvchi nomidan RLS ostidagi sessiya ochadi."""
     if creds is None or creds.scheme.lower() != "bearer":
