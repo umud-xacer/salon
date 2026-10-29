@@ -415,7 +415,7 @@ def mark_notification_read(
     db: Session = Depends(get_db),
 ):
     notif = db.query(models.Notification).filter(models.Notification.id == notif_id).first()
-    if notif:
+    if notif and (user.get("role") == "superadmin" or notif.salon_id == user.get("salon_id")):
         notif.is_read = True
         db.commit()
     return {"ok": True}

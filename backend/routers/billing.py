@@ -157,7 +157,7 @@ def get_transactions(
 
 
 @router.get("/my-transactions")
-def my_transactions(user=Depends(get_current_user), db: Session = Depends(get_db)):
+def my_transactions(user=Depends(require_admin), db: Session = Depends(get_db)):
     """Salon admin: o'z to'lovlari."""
     salon_id = user.get("salon_id")
     if not salon_id: return []
@@ -179,7 +179,7 @@ class PaymentRequest(BaseModel):
     provider: str = "click"   # click | payme
 
 @router.post("/create-payment")
-def create_payment(data: PaymentRequest, user=Depends(get_current_user), db: Session = Depends(get_db)):
+def create_payment(data: PaymentRequest, user=Depends(require_admin), db: Session = Depends(get_db)):
     """Salon admin to'lov boshlaydi."""
     salon_id = user.get("salon_id")
     if not salon_id: raise HTTPException(403, "Faqat salon adminlar uchun")
@@ -202,7 +202,7 @@ def create_payment(data: PaymentRequest, user=Depends(get_current_user), db: Ses
 
 
 @router.post("/confirm/{txn_id}")
-def confirm_payment(txn_id: int, user=Depends(get_current_user), db: Session = Depends(get_db)):
+def confirm_payment(txn_id: int, user=Depends(require_admin), db: Session = Depends(get_db)):
     """To'lov holatini tekshirish: faqat callback tasdiqlagan bo'lsa yakunlangan bo'ladi."""
     txn = db.query(models.Transaction).filter(models.Transaction.id == txn_id).first()
     if not txn: raise HTTPException(404, "Tranzaksiya topilmadi")
@@ -499,7 +499,7 @@ def finance_stats(user=Depends(require_superadmin), db: Session = Depends(get_db
 # 6. SALON OBUNA MA'LUMOTLARI (Admin uchun)
 # ═══════════════════════════════════════════════════════════════════════════════
 @router.get("/my-subscription")
-def my_subscription(user=Depends(get_current_user), db: Session = Depends(get_db)):
+def my_subscription(user=Depends(require_admin), db: Session = Depends(get_db)):
     """Salon admin o'z obuna holatini ko'radi."""
     salon_id = user.get("salon_id")
     if not salon_id: return {}

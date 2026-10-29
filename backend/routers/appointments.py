@@ -1,11 +1,20 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from database import get_db
-from auth import get_salon_id, get_current_user
+from auth import (get_salon_id, get_current_user, require_admin,
+                  require_reception_or_above, check_same_salon)
 from datetime import date
 import models, schemas
 
 router = APIRouter(prefix="/api/appointments", tags=["appointments"])
+
+
+def _get_appt(id: int, user: dict, db: Session):
+    obj = db.query(models.Appointment).filter(models.Appointment.id == id).first()
+    if not obj:
+        raise HTTPException(404, "Topilmadi")
+    check_same_salon(user, obj.salon_id)
+    return obj
 
 
 @router.get("/", response_model=list[schemas.AppointmentOut])
@@ -19,7 +28,7 @@ def get_all(date_filter: str = Query(None, alias="date"), salon_id=Depends(get_s
 
 
 @router.post("/", response_model=schemas.AppointmentOut)
-def create(item: schemas.AppointmentCreate, user=Depends(get_current_user), db: Session = Depends(get_db)):
+def create(item: schemas.AppointmentCreate, user=Depends(require_reception_or_above), db: Session = Depends(get_db)):
     salon_id = user.get("salon_id") or 1
     conflict = db.query(models.Appointment).filter(
         models.Appointment.salon_id == salon_id,
@@ -95,10 +104,8 @@ def create(item: schemas.AppointmentCreate, user=Depends(get_current_user), db: 
 
 
 @router.put("/{id}", response_model=schemas.AppointmentOut)
-def update(id: int, item: schemas.AppointmentCreate, db: Session = Depends(get_db)):
-    obj = db.query(models.Appointment).filter(models.Appointment.id == id).first()
-    if not obj:
-        raise HTTPException(404, "Topilmadi")
+def update(id: int, item: schemas.AppointmentCreate, user=Depends(require_reception_or_above), db: Session = Depends(get_db)):
+    obj = _get_appt(id, user, db)
     for k, v in item.model_dump().items():
         setattr(obj, k, v)
     db.commit(); db.refresh(obj)
@@ -107,9 +114,13 @@ def update(id: int, item: schemas.AppointmentCreate, db: Session = Depends(get_d
 
 @router.patch("/{id}/status")
 def update_status(id: int, status: str = Query(...), user=Depends(get_current_user), db: Session = Depends(get_db)):
-    obj = db.query(models.Appointment).filter(models.Appointment.id == id).first()
-    if not obj:
-        raise HTTPException(404, "Topilmadi")
+    obj = _get_appt(id, user, db)
+    if user.get("role") == "master":
+        # Usta faqat o'z bronini o'zgartira oladi
+        from routers.master import _get_staff
+        first = _get_staff(user, db).name.split()[0].lower()
+        if obj.staff_id != user.get("staff_id") and first not in (obj.master or "").lower():
+            raise HTTPException(403, "Bu bron sizga tegishli emas")
     old_status = obj.status
     obj.status = status
     salon_id = obj.salon_id or user.get("salon_id") or 1
@@ -168,10 +179,8 @@ def update_status(id: int, status: str = Query(...), user=Depends(get_current_us
 
 # ─── Check-in: Mijoz keldi ────────────────────────────────────────────────────
 @router.patch("/{id}/checkin")
-def checkin(id: int, user=Depends(get_current_user), db: Session = Depends(get_db)):
-    obj = db.query(models.Appointment).filter(models.Appointment.id == id).first()
-    if not obj:
-        raise HTTPException(404, "Topilmadi")
+def checkin(id: int, user=Depends(require_reception_or_above), db: Session = Depends(get_db)):
+    obj = _get_appt(id, user, db)
     from datetime import datetime
     obj.status       = "confirmed"
     obj.checked_in_at = datetime.now().strftime("%H:%M")
@@ -196,11 +205,9 @@ class PayRequest(BaseModel):
     note: str = ""
 
 @router.post("/{id}/pay")
-def pay_appointment(id: int, body: PayRequest, user=Depends(get_current_user), db: Session = Depends(get_db)):
-    salon_id = user.get("salon_id") or 1
-    obj = db.query(models.Appointment).filter(models.Appointment.id == id).first()
-    if not obj:
-        raise HTTPException(404, "Topilmadi")
+def pay_appointment(id: int, body: PayRequest, user=Depends(require_reception_or_above), db: Session = Depends(get_db)):
+    obj = _get_appt(id, user, db)
+    salon_id = obj.salon_id
     if obj.is_paid:
         raise HTTPException(400, "Bu bron allaqachon to'langan")
 
@@ -295,9 +302,9 @@ def pay_appointment(id: int, body: PayRequest, user=Depends(get_current_user), d
 
 
 @router.get("/master-stats")
-def master_stats(master_id: int = Query(...), db: Session = Depends(get_db)):
+def master_stats(master_id: int = Query(...), user=Depends(require_admin), db: Session = Depends(get_db)):
     """
-    Usta o'zining bugungi va oylik statistikasini oladi.
+    Ustaning bugungi va oylik statistikasi (admin uchun).
     GET /api/appointments/master-stats?master_id=1
     """
     from datetime import date as dt
@@ -307,12 +314,15 @@ def master_stats(master_id: int = Query(...), db: Session = Depends(get_db)):
     staff = db.query(models.Staff).filter(models.Staff.id == master_id).first()
     if not staff:
         raise HTTPException(404, "Usta topilmadi")
+    check_same_salon(user, staff.salon_id)
+    salon_id = staff.salon_id
 
     pct = staff.percent or 30
     first_name = staff.name.split()[0]
 
     # Bugungi bronlar (usta bo'yicha)
     today_appts = db.query(models.Appointment).filter(
+        models.Appointment.salon_id == salon_id,
         models.Appointment.appt_date == today,
         models.Appointment.master.ilike(f"%{first_name}%"),
     ).all()
@@ -325,6 +335,7 @@ def master_stats(master_id: int = Query(...), db: Session = Depends(get_db)):
 
     # Oylik daromad (finance jadvalidan)
     month_fin = db.query(models.Finance).filter(
+        models.Finance.salon_id == salon_id,
         models.Finance.type == "income",
         models.Finance.note.ilike(f"%[{first_name}]%"),
         models.Finance.fin_date.like(f"{month}%"),
@@ -372,31 +383,38 @@ def master_stats(master_id: int = Query(...), db: Session = Depends(get_db)):
 def complete_appointment(
     id: int,
     master_id: int = Query(...),
+    user=Depends(require_admin),
     db: Session = Depends(get_db),
 ):
     """
-    Usta "Yakunlandi" bosganida 3 ta ish:
+    Bronni yakunlash (admin) — 3 ta ish:
     1. Xizmat daromadini finance jadvaliga yozadi
     2. Master inventory dan materiallarni avtomatik ayiradi (agar biriktirilgan bo'lsa)
     3. Ustaning KPI / foiz ulushini log ga saqlaydi
     """
-    appt = db.query(models.Appointment).filter(models.Appointment.id == id).first()
-    if not appt:
-        raise HTTPException(404, "Bron topilmadi")
+    appt = _get_appt(id, user, db)
+    salon_id = appt.salon_id
     if appt.status == "completed":
         return {"ok": True, "message": "Allaqachon yakunlangan", "already_done": True}
+
+    # Ustani olish
+    staff = db.query(models.Staff).filter(
+        models.Staff.id == master_id,
+        models.Staff.salon_id == salon_id,
+    ).first()
+    if not staff:
+        raise HTTPException(404, "Usta topilmadi")
 
     # 1) Statusni yangilash
     appt.status = "completed"
 
     # 2) Xizmat narxini topish
-    svc = db.query(models.Service).filter(models.Service.name == appt.service).first()
+    svc = db.query(models.Service).filter(
+        models.Service.name == appt.service,
+        models.Service.salon_id == salon_id,
+    ).first()
     price = svc.price if svc else 0
 
-    # Ustani olish
-    staff = db.query(models.Staff).filter(models.Staff.id == master_id).first()
-    if not staff:
-        raise HTTPException(404, "Usta topilmadi")
     percent = staff.percent or 30
     usta_share = round(price * percent / 100)
     salon_share = price - usta_share
@@ -406,6 +424,7 @@ def complete_appointment(
     # 3) Finance: Daromad yozuvi
     if price > 0:
         fin = models.Finance(
+            salon_id=salon_id,
             type="income",
             category="Xizmat daromadi",
             amount=price,
@@ -425,6 +444,7 @@ def complete_appointment(
             mi.used_qty += 1
             mi.remaining_qty -= 1
             log = models.InventoryLog(
+                salon_id=salon_id,
                 master_id=master_id,
                 master_name=staff.name,
                 product_id=mi.product_id,
@@ -458,12 +478,10 @@ def complete_appointment(
 
 
 @router.delete("/{id}")
-def delete(id: int, user=Depends(get_current_user), db: Session = Depends(get_db)):
-    obj = db.query(models.Appointment).filter(models.Appointment.id == id).first()
-    if not obj:
-        raise HTTPException(404, "Topilmadi")
+def delete(id: int, user=Depends(require_admin), db: Session = Depends(get_db)):
+    obj = _get_appt(id, user, db)
     # Aktivlik logi
-    salon_id = obj.salon_id or user.get("salon_id") or 1
+    salon_id = obj.salon_id
     log = models.ActivityLog(
         salon_id=salon_id,
         user_id=user.get("user_id"),

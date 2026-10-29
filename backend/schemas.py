@@ -27,6 +27,17 @@ class StaffOut(StaffBase):
     class Config:
         from_attributes = True
 
+# Admin bo'lmaganlar uchun (maosh, foiz, KPI ko'rinmaydi)
+class StaffPublic(BaseModel):
+    id: int
+    name: str
+    phone: Optional[str] = ""
+    role: Optional[str] = ""
+    skills: Optional[str] = ""
+    rating: Optional[float] = 5.0
+    class Config:
+        from_attributes = True
+
 
 # ---- SERVICE ----
 class ServiceBase(BaseModel):

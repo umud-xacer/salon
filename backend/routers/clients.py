@@ -8,7 +8,7 @@ router = APIRouter(prefix="/api/clients", tags=["clients"])
 
 
 @router.get("/", response_model=list[schemas.ClientOut])
-def get_all(salon_id=Depends(get_salon_id), db: Session = Depends(get_db)):
+def get_all(user=Depends(require_reception_or_above), salon_id=Depends(get_salon_id), db: Session = Depends(get_db)):
     q = db.query(models.Client)
     if salon_id:
         q = q.filter(models.Client.salon_id == salon_id)

@@ -2,11 +2,16 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from database import get_db
-from auth import get_salon_id, require_admin, get_current_user
+from auth import get_salon_id, require_admin, get_current_user, check_same_salon
 from datetime import date, timedelta
 import models, schemas
 
-router = APIRouter(prefix="/api/finance", tags=["finance"])
+# Moliya faqat salon egasi (admin) va superadmin uchun
+router = APIRouter(prefix="/api/finance", tags=["finance"], dependencies=[Depends(require_admin)])
+
+
+def _by_salon(q, model, salon_id):
+    return q.filter(model.salon_id == salon_id) if salon_id else q
 
 
 # ─────────────────────────────────────────────
@@ -32,10 +37,11 @@ def create(item: schemas.FinanceCreate, user=Depends(get_current_user), db: Sess
 
 
 @router.delete("/{id}")
-def delete(id: int, db: Session = Depends(get_db)):
+def delete(id: int, user=Depends(get_current_user), db: Session = Depends(get_db)):
     obj = db.query(models.Finance).filter(models.Finance.id == id).first()
     if not obj:
         raise HTTPException(404, "Topilmadi")
+    check_same_salon(user, obj.salon_id)
     db.delete(obj); db.commit()
     return {"ok": True}
 
@@ -44,14 +50,15 @@ def delete(id: int, db: Session = Depends(get_db)):
 #  USTA EARNINGS — Ustaning shaxsiy daromad hisoboti
 # ─────────────────────────────────────────────
 @router.get("/usta-earnings")
-def usta_earnings(staff_id: int, db: Session = Depends(get_db)):
+def usta_earnings(staff_id: int, user=Depends(get_current_user), db: Session = Depends(get_db)):
     """
-    Usta o'zining daromad tarixini, bugungi va oylik ulushini ko'rishi uchun.
+    Ustaning daromad tarixi, bugungi va oylik ulushi.
     To'liq shaffoflik: har bir xizmatdan qancha foiz tushgani ko'rsatiladi.
     """
     staff = db.query(models.Staff).filter(models.Staff.id == staff_id).first()
     if not staff:
         raise HTTPException(404, "Usta topilmadi")
+    check_same_salon(user, staff.salon_id)
 
     today = str(date.today())
     month = today[:7]  # YYYY-MM
@@ -62,6 +69,7 @@ def usta_earnings(staff_id: int, db: Session = Depends(get_db)):
     all_records = (
         db.query(models.Finance)
         .filter(
+            models.Finance.salon_id == staff.salon_id,
             models.Finance.type == "income",
             models.Finance.note.ilike(f"%[{first_name}]%"),
         )
@@ -136,6 +144,7 @@ def summary(salon_id=Depends(get_salon_id), db: Session = Depends(get_db)):
 def kpi_dashboard(
     period: str = "month",   # today | week | month | all
     master_id: int = None,
+    salon_id=Depends(get_salon_id),
     db: Session = Depends(get_db),
 ):
     today = date.today()
@@ -153,13 +162,13 @@ def kpi_dashboard(
         end = str(today)
 
     # Barcha ustalar
-    staff_q = db.query(models.Staff)
+    staff_q = _by_salon(db.query(models.Staff), models.Staff, salon_id)
     if master_id:
         staff_q = staff_q.filter(models.Staff.id == master_id)
     all_staff = staff_q.all()
 
     # Master inventory - material xarajatlari
-    master_inv = db.query(models.MasterInventory).all()
+    master_inv = _by_salon(db.query(models.MasterInventory), models.MasterInventory, salon_id).all()
     mat_cost_by_master = {}
     for mi in master_inv:
         prod = db.query(models.Inventory).filter(models.Inventory.id == mi.product_id).first()
@@ -169,31 +178,18 @@ def kpi_dashboard(
         )
 
     # Har bir usta uchun tushum (appointments dan)
-    appts_q = db.query(models.Appointment).filter(
+    appts_q = _by_salon(db.query(models.Appointment), models.Appointment, salon_id).filter(
         models.Appointment.status == "completed",
         models.Appointment.appt_date >= start,
         models.Appointment.appt_date <= end,
     )
 
-    # Finance dan xizmat daromadlari
-    fin_q = db.query(models.Finance).filter(
-        models.Finance.type == "income",
-        models.Finance.fin_date >= start,
-        models.Finance.fin_date <= end,
-    )
-    total_income = sum(f.amount for f in fin_q.all())
-    total_expense = sum(
-        f.amount for f in db.query(models.Finance).filter(
-            models.Finance.type == "expense",
-            models.Finance.fin_date >= start,
-            models.Finance.fin_date <= end,
-        ).all()
-    )
+    fin_base = _by_salon(db.query(models.Finance), models.Finance, salon_id)
 
     rows = []
     for s in all_staff:
         # Usta tusha miqdori — notes ichida usta nomi bor finance yozuvlaridan
-        usta_fin = db.query(models.Finance).filter(
+        usta_fin = fin_base.filter(
             models.Finance.type == "income",
             models.Finance.note.ilike(f"%{s.name.split()[0]}%"),
             models.Finance.fin_date >= start,
@@ -229,7 +225,7 @@ def kpi_dashboard(
         })
 
     # Global xarajatlar (ijara, svet va h.k.)
-    global_expenses = db.query(models.Finance).filter(
+    global_expenses = fin_base.filter(
         models.Finance.type == "expense",
         models.Finance.category.in_(["Ijara", "Kommunal", "Boshqa"]),
         models.Finance.fin_date >= start,
@@ -261,7 +257,7 @@ def smart_stats(salon_id=Depends(get_salon_id), db: Session = Depends(get_db)):
     if salon_id:
         sq = sq.filter(models.Staff.salon_id == salon_id)
     all_staff = sq.all()
-    all_fin = db.query(models.Finance).filter(
+    all_fin = _by_salon(db.query(models.Finance), models.Finance, salon_id).filter(
         models.Finance.fin_date >= month_start
     ).all()
     month_income = sum(f.amount for f in all_fin if f.type == "income")

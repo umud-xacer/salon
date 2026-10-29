@@ -2,18 +2,27 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from database import get_db
-from auth import get_salon_id, get_current_user
+from auth import get_salon_id, require_admin, require_master, check_same_salon
 from datetime import date
 import models
 
 router = APIRouter(prefix="/api/master-inventory", tags=["master-inventory"])
 
 
+def _own_master_id(user: dict, db: Session, master_id):
+    """Usta roli bo'lsa — faqat o'z staff ID'si; admin istalgan ustani ko'radi."""
+    if user.get("role") == "master":
+        from routers.master import _get_staff
+        return _get_staff(user, db).id
+    return master_id
+
+
 # ──────────────────────────────────────────
 # Ustadagi materiallar ro'yxati
 # ──────────────────────────────────────────
 @router.get("/")
-def list_master_inventory(master_id: int = None, salon_id=Depends(get_salon_id), db: Session = Depends(get_db)):
+def list_master_inventory(master_id: int = None, user=Depends(require_master), salon_id=Depends(get_salon_id), db: Session = Depends(get_db)):
+    master_id = _own_master_id(user, db, master_id)
     q = db.query(models.MasterInventory)
     if salon_id:
         q = q.filter(models.MasterInventory.salon_id == salon_id)
@@ -23,7 +32,7 @@ def list_master_inventory(master_id: int = None, salon_id=Depends(get_salon_id),
 
 
 @router.get("/low-stock")
-def low_stock_alerts(salon_id=Depends(get_salon_id), db: Session = Depends(get_db)):
+def low_stock_alerts(user=Depends(require_admin), salon_id=Depends(get_salon_id), db: Session = Depends(get_db)):
     q = db.query(models.MasterInventory).filter(
         models.MasterInventory.remaining_qty <= models.MasterInventory.min_qty
     )
@@ -42,14 +51,16 @@ def low_stock_alerts(salon_id=Depends(get_salon_id), db: Session = Depends(get_d
 
 
 @router.get("/analytics")
-def usage_analytics(db: Session = Depends(get_db)):
+def usage_analytics(user=Depends(require_admin), salon_id=Depends(get_salon_id), db: Session = Depends(get_db)):
     """Qaysi usta eng ko'p material ishlatdi"""
+    q = db.query(
+        models.MasterInventory.master_name,
+        func.sum(models.MasterInventory.used_qty).label("total_used"),
+    )
+    if salon_id:
+        q = q.filter(models.MasterInventory.salon_id == salon_id)
     rows = (
-        db.query(
-            models.MasterInventory.master_name,
-            func.sum(models.MasterInventory.used_qty).label("total_used"),
-        )
-        .group_by(models.MasterInventory.master_name)
+        q.group_by(models.MasterInventory.master_name)
         .order_by(func.sum(models.MasterInventory.used_qty).desc())
         .all()
     )
@@ -65,17 +76,25 @@ def distribute_to_master(
     product_id: int,
     quantity: float,
     note: str = "",
+    user=Depends(require_admin),
     db: Session = Depends(get_db),
 ):
+    if quantity <= 0:
+        raise HTTPException(400, "Miqdor musbat bo'lishi kerak")
+
     # 1) Asosiy sklad tekshiruv
     product = db.query(models.Inventory).filter(models.Inventory.id == product_id).first()
     if not product:
         raise HTTPException(404, "Mahsulot topilmadi")
+    check_same_salon(user, product.salon_id)
     if product.qty < quantity:
         raise HTTPException(400, f"Asosiy sklad yetarli emas. Mavjud: {product.qty} {product.unit}")
 
-    # 2) Ustani olish
-    master = db.query(models.Staff).filter(models.Staff.id == master_id).first()
+    # 2) Ustani olish (mahsulot bilan bir salondan)
+    master = db.query(models.Staff).filter(
+        models.Staff.id == master_id,
+        models.Staff.salon_id == product.salon_id,
+    ).first()
     if not master:
         raise HTTPException(404, "Usta topilmadi")
 
@@ -108,6 +127,7 @@ def distribute_to_master(
 
     # 5) Log yozish
     log = models.InventoryLog(
+        salon_id=master.salon_id,
         master_id=master_id,
         master_name=master.name,
         product_id=product_id,
@@ -136,8 +156,12 @@ def use_material(
     product_id: int,
     quantity: float = 1,
     note: str = "",
+    user=Depends(require_master),
     db: Session = Depends(get_db),
 ):
+    if quantity <= 0:
+        raise HTTPException(400, "Miqdor musbat bo'lishi kerak")
+    master_id = _own_master_id(user, db, master_id)
     mi = db.query(models.MasterInventory).filter(
         models.MasterInventory.master_id == master_id,
         models.MasterInventory.product_id == product_id,
@@ -145,6 +169,7 @@ def use_material(
 
     if not mi:
         raise HTTPException(404, "Bu mahsulot sizga biriktirilmagan")
+    check_same_salon(user, mi.salon_id)
     if mi.remaining_qty < quantity:
         raise HTTPException(400, f"Sizda yetarli miqdor yo'q. Qolgan: {mi.remaining_qty}")
 
@@ -152,6 +177,7 @@ def use_material(
     mi.remaining_qty -= quantity
 
     log = models.InventoryLog(
+        salon_id=mi.salon_id,
         master_id=master_id,
         master_name=mi.master_name,
         product_id=product_id,
@@ -176,8 +202,11 @@ def use_material(
 # Loglar
 # ──────────────────────────────────────────
 @router.get("/logs")
-def get_logs(master_id: int = None, limit: int = 50, db: Session = Depends(get_db)):
+def get_logs(master_id: int = None, limit: int = 50, user=Depends(require_master), salon_id=Depends(get_salon_id), db: Session = Depends(get_db)):
+    master_id = _own_master_id(user, db, master_id)
     q = db.query(models.InventoryLog)
+    if salon_id:
+        q = q.filter(models.InventoryLog.salon_id == salon_id)
     if master_id:
         q = q.filter(models.InventoryLog.master_id == master_id)
-    return q.order_by(models.InventoryLog.created_at.desc()).limit(limit).all()
+    return q.order_by(models.InventoryLog.created_at.desc()).limit(min(limit, 500)).all()

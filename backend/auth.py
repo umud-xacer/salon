@@ -87,6 +87,18 @@ def require_master(user: dict = Depends(get_current_user)):
     return user
 
 
+def is_admin(user: dict) -> bool:
+    return user.get("role") in ("admin", "superadmin")
+
+
+def check_same_salon(user: dict, salon_id):
+    """Obyekt foydalanuvchining saloniga tegishli bo'lmasa — 404 (boshqa salon ma'lumoti ko'rinmasin)."""
+    if user.get("role") == "superadmin":
+        return
+    if salon_id != user.get("salon_id"):
+        raise HTTPException(status_code=404, detail="Topilmadi")
+
+
 # ─── Redirect manzillari ──────────────────────────────────────────────────────
 ROLE_REDIRECTS = {
     "superadmin": "/superadmin/",

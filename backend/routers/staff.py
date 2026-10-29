@@ -1,18 +1,19 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import get_db
-from auth import get_current_user, get_salon_id, require_admin
+from auth import get_current_user, get_salon_id, require_admin, require_reception_or_above, is_admin
 import models, schemas
 
 router = APIRouter(prefix="/api/staff", tags=["staff"])
 
 
-@router.get("/", response_model=list[schemas.StaffOut])
-def get_all(salon_id=Depends(get_salon_id), db: Session = Depends(get_db)):
+@router.get("/")
+def get_all(user=Depends(require_reception_or_above), salon_id=Depends(get_salon_id), db: Session = Depends(get_db)):
     q = db.query(models.Staff)
     if salon_id:
         q = q.filter(models.Staff.salon_id == salon_id)
-    return q.all()
+    schema = schemas.StaffOut if is_admin(user) else schemas.StaffPublic
+    return [schema.model_validate(s).model_dump() for s in q.all()]
 
 
 @router.post("/", response_model=schemas.StaffOut)
