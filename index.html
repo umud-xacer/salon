@@ -1,0 +1,1401 @@
+<!DOCTYPE html>
+<html lang="uz">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SalonPro ERP — Go'zallik Saloni Boshqaruv Tizimi</title>
+  <meta name="description"
+    content="Go'zallik saloni uchun zamonaviy ERP tizimi: bron, CRM, moliya, xodimlar va xizmatlar" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">✂</div>
+      <div>
+        <div class="logo-title">SalonPro</div>
+        <div class="logo-sub">ERP Tizimi</div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="role-switcher" style="margin-bottom:14px">
+        <button class="role-btn active" id="roleAdmin" onclick="switchRole('admin')">👑 Admin</button>
+        <button class="role-btn" id="roleUsta" onclick="switchRole('usta')">💇 Usta</button>
+      </div>
+      <div id="adminMenu">
+        <div class="nav-section-label">ASOSIY</div>
+        <a class="nav-item active" data-page="dashboard" onclick="navigate('dashboard')">
+          <span class="nav-icon">📅</span><span>Navbatlar & Bron</span>
+        </a>
+        <a class="nav-item" data-page="team" onclick="navigate('team')">
+          <span class="nav-icon">💇</span><span>Xodimlar & Ustalar</span>
+        </a>
+        <a class="nav-item" data-page="services" onclick="navigate('services')">
+          <span class="nav-icon">🧴</span><span>Xizmatlar & Mahsulot</span>
+        </a>
+        <div class="nav-section-label">MIJOZLAR</div>
+        <a class="nav-item" data-page="crm" onclick="navigate('crm')">
+          <span class="nav-icon">👤</span><span>Mijozlar Bazasi</span>
+          <span class="nav-badge">CRM</span>
+        </a>
+        <div class="nav-section-label">MOLIYA</div>
+        <a class="nav-item" data-page="finance" onclick="navigate('finance')">
+          <span class="nav-icon">💰</span><span>Moliyaviy Tahlil</span>
+        </a>
+        <div class="nav-section-label">TIZIM</div>
+        <a class="nav-item" data-page="settings" onclick="navigate('settings')">
+          <span class="nav-icon">⚙️</span><span>Sozlamalar</span>
+        </a>
+        <a class="nav-item" data-page="logs" onclick="navigate('logs')">
+          <span class="nav-icon">📋</span><span>Aktivlik Tarixi</span>
+        </a>
+      </div>
+      <div id="ustaMenu" style="display:none">
+        <div class="nav-section-label">MENING SAHIFAM</div>
+        <a class="nav-item" data-page="kabinet" onclick="navigate('kabinet')">
+          <span class="nav-icon">🏠</span><span>Mening Kabinetim</span>
+        </a>
+        <a class="nav-item" data-page="dashboard" onclick="navigate('dashboard')">
+          <span class="nav-icon">📅</span><span>Umumiy Jadval</span>
+        </a>
+        <div class="nav-section-label">SKLAD</div>
+        <a class="nav-item" data-page="services" onclick="navigate('services')">
+          <span class="nav-icon">🧴</span><span>Materiallar</span>
+        </a>
+      </div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-user" onclick="navigate('settings')" style="cursor:pointer">
+        <div class="user-avatar" id="sidebarAvatar">A</div>
+        <div style="flex:1">
+          <div class="user-name" id="sidebarName">Admin</div>
+          <div class="user-role" id="sidebarRoleLabel">Salon Boshqaruvchi</div>
+        </div>
+        <div style="font-size:12px;color:var(--text-muted)">→</div>
+      </div>
+      <div class="sidebar-actions">
+        <button class="sidebar-btn settings-btn" onclick="navigate('settings')">
+          <span>⚙️</span><span>Sozlamalar</span>
+        </button>
+        <button class="sidebar-btn logout-btn" onclick="doLogout()">
+          <span>🚪</span><span>Chiqish</span>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content" id="mainContent">
+    <!-- TOP BAR -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <h1 class="page-title" id="pageTitle">Navbatlar & Bron</h1>
+        <span class="page-date" id="pageDate"></span>
+      </div>
+      <div class="topbar-right">
+        <div class="topbar-search">
+          <span>🔍</span>
+          <input type="text" placeholder="Qidirish..." id="globalSearch" />
+        </div>
+        <!-- Notification Bell -->
+        <div style="position:relative">
+          <button class="btn-notif" id="notifBtn" onclick="toggleNotifPanel()">🔔 <span class="notif-badge" id="notifDot" style="display:none">0</span></button>
+          <div id="notifPanel" style="display:none;position:absolute;right:0;top:48px;width:360px;background:var(--card);border:1px solid var(--card-border);border-radius:16px;box-shadow:0 16px 48px rgba(0,0,0,0.5);z-index:200;overflow:hidden">
+            <div style="padding:14px 16px;border-bottom:1px solid var(--card-border);display:flex;justify-content:space-between;align-items:center">
+              <span style="font-size:14px;font-weight:700">🔔 Bildirishnomalar</span>
+              <div style="display:flex;gap:8px">
+                <button onclick="markAllNotifsRead()" style="font-size:11px;color:var(--primary-light);background:none;border:none;cursor:pointer;font-weight:600">Hammasini o'qi</button>
+                <button onclick="clearNotifs()" style="font-size:11px;color:var(--rose);background:none;border:none;cursor:pointer;font-weight:600">🗑 Tozalash</button>
+              </div>
+            </div>
+            <div id="notifList" style="max-height:360px;overflow-y:auto"></div>
+            <div style="padding:10px 16px;border-top:1px solid var(--card-border);text-align:center">
+              <button onclick="navigate('logs');closeNotifPanel()" style="font-size:12px;color:var(--primary-light);background:none;border:none;cursor:pointer;font-weight:600">Barcha loglarni ko'rish →</button>
+            </div>
+          </div>
+        </div>
+        <a href="/ustalar/" target="_blank" style="background:rgba(16,185,129,0.15);color:#10B981;border:1px solid rgba(16,185,129,0.25);border-radius:12px;padding:9px 16px;font-size:13px;font-weight:600;text-decoration:none;display:flex;align-items:center;gap:6px">💇 Usta →</a>
+        <button class="btn-primary" id="addNewBtn" onclick="openAddModal()">+ Yangi Bron</button>
+      </div>
+    </header>
+
+    <!-- PAGES -->
+    <div id="page-dashboard" class="page active">
+      <!-- Stats -->
+      <div class="stats-grid">
+        <div class="stat-card purple">
+          <div class="stat-icon">📅</div>
+          <div class="stat-info">
+            <div class="stat-value" id="stat-today">0</div>
+            <div class="stat-label">Bugungi bronlar</div>
+          </div>
+          <div class="stat-trend up">+12%</div>
+        </div>
+        <div class="stat-card rose">
+          <div class="stat-icon">💇</div>
+          <div class="stat-info">
+            <div class="stat-value" id="stat-masters">0</div>
+            <div class="stat-label">Faol ustalar</div>
+          </div>
+          <div class="stat-trend up">+2</div>
+        </div>
+        <div class="stat-card gold">
+          <div class="stat-icon">💰</div>
+          <div class="stat-info">
+            <div class="stat-value" id="stat-revenue">0</div>
+            <div class="stat-label">Bugungi daromad</div>
+          </div>
+          <div class="stat-trend up">+8%</div>
+        </div>
+        <div class="stat-card teal">
+          <div class="stat-icon">👤</div>
+          <div class="stat-info">
+            <div class="stat-value" id="stat-clients">0</div>
+            <div class="stat-label">Jami mijozlar</div>
+          </div>
+          <div class="stat-trend up">+5</div>
+        </div>
+      </div>
+
+      <!-- Calendar + Appointments -->
+      <div class="dashboard-grid">
+        <div class="card">
+          <div class="card-header">
+            <h3>📅 Bugungi Jadval</h3>
+            <div class="card-actions">
+              <button class="btn-sm" onclick="prevDay()">‹</button>
+              <span id="calDateLabel"></span>
+              <button class="btn-sm" onclick="nextDay()">›</button>
+            </div>
+          </div>
+          <div id="timelineContainer" class="timeline-container"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3>🔔 Bugungi Bronlar</h3>
+            <span class="badge-count" id="todayCount">0</span>
+          </div>
+          <div id="appointmentsList" class="appointments-list"></div>
+        </div>
+      </div>
+
+      <!-- Masters Status -->
+      <div class="card mt-16">
+        <div class="card-header">
+          <h3>💇 Ustalar Holati</h3>
+        </div>
+        <div id="mastersStatus" class="masters-status-grid"></div>
+      </div>
+    </div>
+
+    <!-- TEAM PAGE -->
+    <div id="page-team" class="page">
+      <div class="stats-grid">
+        <div class="stat-card purple">
+          <div class="stat-icon">👥</div>
+          <div class="stat-info">
+            <div class="stat-value" id="stat-totalStaff">0</div>
+            <div class="stat-label">Jami xodimlar</div>
+          </div>
+        </div>
+        <div class="stat-card rose">
+          <div class="stat-icon">⭐</div>
+          <div class="stat-info">
+            <div class="stat-value" id="stat-avgKPI">0%</div>
+            <div class="stat-label">O'rtacha KPI</div>
+          </div>
+        </div>
+        <div class="stat-card gold">
+          <div class="stat-icon">💰</div>
+          <div class="stat-info">
+            <div class="stat-value" id="stat-totalSalary">0</div>
+            <div class="stat-label">Oylik fond (so'm)</div>
+          </div>
+        </div>
+        <div class="stat-card teal">
+          <div class="stat-icon">📋</div>
+          <div class="stat-info">
+            <div class="stat-value" id="stat-todayTasks">0</div>
+            <div class="stat-label">Bugungi ishlar</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3>💇 Ustalar Ro'yxati</h3>
+          <button class="btn-primary" onclick="openStaffModal()">+ Usta Qo'shish</button>
+        </div>
+        <div id="staffGrid" class="staff-grid"></div>
+      </div>
+    </div>
+
+    <!-- SERVICES PAGE -->
+    <div id="page-services" class="page">
+      <div class="services-tabs">
+        <button class="tab-btn active" onclick="switchServiceTab('services')">Xizmatlar Narxnomasi</button>
+        <button class="tab-btn" onclick="switchServiceTab('inventory')">Mahsulot Skladi</button>
+        <button class="tab-btn" onclick="switchServiceTab('master-inv')">🚚 Ustalarga Tarqatish</button>
+      </div>
+
+      <div id="tab-services" class="tab-content active">
+        <div class="card">
+          <div class="card-header">
+            <h3>✂ Xizmatlar Narxnomasi</h3>
+            <button class="btn-primary" onclick="openServiceModal()">+ Xizmat Qo'shish</button>
+          </div>
+          <div id="servicesList" class="services-list"></div>
+        </div>
+      </div>
+
+      <div id="tab-inventory" class="tab-content">
+        <div class="card">
+          <div class="card-header">
+            <h3>🧴 Mahsulot Skladi</h3>
+            <div style="display:flex;gap:8px">
+              <button
+                style="background:rgba(16,185,129,0.15);color:var(--teal);border:1px solid rgba(16,185,129,0.3);border-radius:10px;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer"
+                onclick="switchServiceTab('master-inv')">🚚 Ustalarga Tarqatish</button>
+              <button class="btn-primary" onclick="openInventoryModal()">+ Mahsulot Qo'shish</button>
+            </div>
+          </div>
+          <div id="inventoryList" class="inventory-list"></div>
+        </div>
+      </div>
+
+      <!-- MASTER INVENTORY TAB -->
+      <div id="tab-master-inv" class="tab-content">
+
+        <!-- Alerts -->
+        <div id="lowStockAlerts"></div>
+
+        <!-- Ustalar inventar jadvali -->
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-header">
+            <h3>📦 Ustalardagi Material Qoldiqlari</h3>
+            <button class="btn-primary" onclick="openDistributeModal()">🚚 Material Berish</button>
+          </div>
+          <div id="masterInvTable"></div>
+        </div>
+
+        <!-- Analytics -->
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-header">
+            <h3>📊 Material Sarfi Tahlili</h3>
+          </div>
+          <div id="masterInvAnalytics"></div>
+        </div>
+
+        <!-- Loglar -->
+        <div class="card">
+          <div class="card-header">
+            <h3>📋 Material Harakatlari Logi</h3>
+            <button class="btn-ghost" onclick="loadInvLogs()">🔄 Yangilash</button>
+          </div>
+          <div id="invLogsTable"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- CRM PAGE -->
+    <div id="page-crm" class="page">
+      <div class="stats-grid">
+        <div class="stat-card purple">
+          <div class="stat-icon">👥</div>
+          <div class="stat-info">
+            <div class="stat-value" id="stat-totalClients">0</div>
+            <div class="stat-label">Jami mijozlar</div>
+          </div>
+        </div>
+        <div class="stat-card rose">
+          <div class="stat-icon">⭐</div>
+          <div class="stat-info">
+            <div class="stat-value" id="stat-loyalClients">0</div>
+            <div class="stat-label">Doimiy mijozlar</div>
+          </div>
+        </div>
+        <div class="stat-card gold">
+          <div class="stat-icon">🎁</div>
+          <div class="stat-info">
+            <div class="stat-value" id="stat-bonusPool">0</div>
+            <div class="stat-label">Jami bonus ball</div>
+          </div>
+        </div>
+        <div class="stat-card teal">
+          <div class="stat-icon">📱</div>
+          <div class="stat-info">
+            <div class="stat-value" id="stat-botClients">0</div>
+            <div class="stat-label">Bot orqali</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3>👤 Mijozlar Bazasi</h3>
+          <div class="card-actions">
+            <input type="text" class="search-input" placeholder="Mijoz qidirish..." id="clientSearch"
+              oninput="filterClients()" />
+            <button class="btn-primary" onclick="openClientModal()">+ Mijoz Qo'shish</button>
+          </div>
+        </div>
+        <div id="clientsTable" class="clients-table"></div>
+      </div>
+    </div>
+
+    <!-- FINANCE PAGE -->
+    <div id="page-finance" class="page">
+
+      <!-- Tabs -->
+      <div class="services-tabs">
+        <button class="tab-btn active" onclick="switchFinTab('overview')">📊 Umumiy</button>
+        <button class="tab-btn" onclick="switchFinTab('kpi')">⭐ KPI Dashboard</button>
+      </div>
+
+      <!-- ===== OVERVIEW TAB ===== -->
+      <div id="fintab-overview" class="tab-content active">
+
+        <!-- 4 asosiy stat -->
+        <div class="stats-grid">
+          <div class="stat-card purple">
+            <div class="stat-icon">📈</div>
+            <div class="stat-info">
+              <div class="stat-value" id="stat-monthRevenue">0</div>
+              <div class="stat-label">Oylik daromad</div>
+            </div>
+          </div>
+          <div class="stat-card rose">
+            <div class="stat-icon">📉</div>
+            <div class="stat-info">
+              <div class="stat-value" id="stat-monthExpense">0</div>
+              <div class="stat-label">Oylik xarajat</div>
+            </div>
+          </div>
+          <div class="stat-card gold">
+            <div class="stat-icon">💎</div>
+            <div class="stat-info">
+              <div class="stat-value" id="stat-netProfit">0</div>
+              <div class="stat-label">Sof foyda</div>
+            </div>
+          </div>
+          <div class="stat-card teal">
+            <div class="stat-icon">📊</div>
+            <div class="stat-info">
+              <div class="stat-value" id="stat-profitMargin">0%</div>
+              <div class="stat-label">Foyda foizi</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3 Aqlli vidjet -->
+        <div class="smart-widgets-row" id="smartWidgets">
+          <!-- JS tomonidan to'ldiriladi -->
+        </div>
+
+        <div class="dashboard-grid">
+          <div class="card">
+            <div class="card-header">
+              <h3>💰 Kassaga Kirim Qo'shish</h3>
+            </div>
+            <div class="finance-form">
+              <div class="form-group">
+                <label>Turi</label>
+                <select id="finType">
+                  <option value="income">📈 Daromad</option>
+                  <option value="expense">📉 Xarajat</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Kategoriya <button class="btn-ghost" onclick="openCategoryManager()" style="font-size:10px;padding:2px 6px;border-radius:8px;border:1px solid var(--card-border);margin-left:4px">⚙️ Boshqarish</button></label>
+                <select id="finCategory"></select>
+              </div>
+              <div class="form-group">
+                <label>Usta (ixtiyoriy)</label>
+                <select id="finMaster">
+                  <option value="">— Usta tanlanmagan —</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Summa (so'm)</label>
+                <input type="number" id="finAmount" placeholder="0" />
+              </div>
+              <div class="form-group">
+                <label>Izoh</label>
+                <input type="text" id="finNote" placeholder="Qisqacha izoh..." />
+              </div>
+              <button class="btn-primary w-full" onclick="addFinance()">💾 Saqlash</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h3>📊 So'nggi Tranzaksiyalar</h3>
+              <button class="btn-ghost" style="font-size:12px" onclick="renderFinance()">🔄</button>
+            </div>
+            <div id="financeList" class="finance-list"></div>
+          </div>
+        </div>
+
+        <!-- Kommunal Xarajatlar -->
+        <div class="card mt-16">
+          <div class="card-header">
+            <h3>🏠 Kommunal va Operatsion Xarajatlar</h3>
+          </div>
+          <div style="padding:16px">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px" id="expCatButtons">
+              <!-- JS tomonidan to'ldiriladi -->
+            </div>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Summa (so'm)</label>
+                <input type="number" id="expAmount" placeholder="0" />
+              </div>
+              <div class="form-group">
+                <label>Sana</label>
+                <input type="date" id="expDate" />
+              </div>
+              <div class="form-group">
+                <label>Izoh</label>
+                <input type="text" id="expNote" placeholder="May oyi tok puli" />
+              </div>
+            </div>
+            <input type="hidden" id="expCategory" value="Elektr (Tok)" />
+            <button class="btn-primary w-full" onclick="addExpense()" style="margin-top:8px">💸 Xarajatni Kiritish</button>
+            <div id="expenseAlert" style="display:none;margin-top:10px;padding:10px;border-radius:10px;background:rgba(244,63,94,0.1);border:1px solid rgba(244,63,94,0.2);font-size:12px;color:#F43F5E"></div>
+          </div>
+        </div>
+
+        <!-- Hisobotlar -->
+        <div class="card mt-16">
+          <div class="card-header">
+            <h3>📥 Hisobotlarni Yuklab Olish</h3>
+          </div>
+          <div style="padding:16px;display:flex;gap:12px;flex-wrap:wrap">
+            <button class="btn-primary" onclick="exportReport('excel','week')" style="background:rgba(16,185,129,0.15);color:#10B981;border:1px solid rgba(16,185,129,0.3)">📊 Haftalik Excel</button>
+            <button class="btn-primary" onclick="exportReport('excel','month')" style="background:rgba(59,130,246,0.15);color:#3B82F6;border:1px solid rgba(59,130,246,0.3)">📊 Oylik Excel</button>
+            <button class="btn-primary" onclick="exportReport('pdf','month')" style="background:rgba(139,92,246,0.15);color:#8B5CF6;border:1px solid rgba(139,92,246,0.3)">📄 Oylik PDF</button>
+            <button class="btn-primary" onclick="exportReport('pdf','year')" style="background:rgba(245,158,11,0.15);color:#F59E0B;border:1px solid rgba(245,158,11,0.3)">📄 Yillik PDF</button>
+          </div>
+        </div>
+
+        <div class="card mt-16">
+          <div class="card-header">
+            <h3>📈 Haftalik Ko'rsatkichlar</h3>
+            <div style="display:flex;gap:6px">
+              <button class="btn-ghost" onclick="setChartPeriod('week')" style="font-size:11px;padding:4px 10px;border-radius:16px;border:1px solid var(--card-border)" id="chartWeekBtn">Hafta</button>
+              <button class="btn-ghost" onclick="setChartPeriod('month')" style="font-size:11px;padding:4px 10px;border-radius:16px;border:1px solid var(--card-border)" id="chartMonthBtn">Oy</button>
+            </div>
+          </div>
+          <div class="chart-legend">
+            <div class="legend-item">
+              <div class="legend-dot income"></div>Daromad
+            </div>
+            <div class="legend-item">
+              <div class="legend-dot expense"></div>Xarajat
+            </div>
+          </div>
+          <div id="financeChart" class="finance-chart-placeholder">
+            <div class="chart-bars" id="chartBars"></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ===== KPI DASHBOARD TAB ===== -->
+      <div id="fintab-kpi" class="tab-content">
+
+        <!-- Filtrlar -->
+        <div class="kpi-filters">
+          <div class="kpi-filter-group">
+            <span class="kpi-filter-label">🗓 Davr:</span>
+            <button class="kpi-period-btn active" onclick="setKpiPeriod('today', this)">Bugun</button>
+            <button class="kpi-period-btn" onclick="setKpiPeriod('week', this)">Hafta</button>
+            <button class="kpi-period-btn active-default" onclick="setKpiPeriod('month', this)">Oy</button>
+            <button class="kpi-period-btn" onclick="setKpiPeriod('all', this)">Hammasi</button>
+          </div>
+          <div class="kpi-filter-group">
+            <span class="kpi-filter-label">👤 Usta:</span>
+            <select id="kpiMasterFilter" class="kpi-master-sel" onchange="loadKpiDashboard()">
+              <option value="">Barchasi</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Totals summary -->
+        <div class="kpi-summary-row" id="kpiSummary"></div>
+
+        <!-- KPI jadval -->
+        <div class="card" style="overflow-x:auto">
+          <div class="card-header">
+            <h3>💹 Ustalar Unumdorligi Jadvali</h3>
+            <span style="font-size:12px;color:var(--text-muted)" id="kpiPeriodLabel">Oylik</span>
+          </div>
+          <div id="kpiTable"></div>
+        </div>
+
+        <!-- Formula -->
+        <div class="formula-box">
+          <div class="formula-title">📐 Sof Foyda Formulasi</div>
+          <div class="formula-text">
+            Sof Foyda = Jami Tushum − Usta Ulushi − Material Xarajati − Umumiy Xarajatlar (Ijara/Svet)
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ═══════ SETTINGS PAGE ═══════ -->
+    <div id="page-settings" class="page">
+      <div class="settings-hero">
+        <div class="settings-hero-icon">⚙️</div>
+        <div>
+          <div class="settings-hero-title">Sozlamalar</div>
+          <div class="settings-hero-sub">Profil, xavfsizlik va salon ma'lumotlari</div>
+        </div>
+      </div>
+
+      <div class="settings-grid">
+        <!-- Profil -->
+        <div class="card settings-card">
+          <div class="card-header">
+            <h3>👤 Shaxsiy Ma'lumotlar</h3>
+          </div>
+          <div class="settings-form">
+            <div class="settings-avatar-row">
+              <div class="settings-avatar" id="settingsAvatar">A</div>
+              <div>
+                <div class="settings-avatar-name" id="settingsFullName">Admin</div>
+                <div class="settings-avatar-role" id="settingsRole">admin</div>
+                <div class="settings-avatar-username" id="settingsUsername">@admin</div>
+              </div>
+            </div>
+            <div class="form-group" style="margin-top:16px">
+              <label>To'liq ism</label>
+              <input type="text" id="set-fullname" placeholder="Ismingiz" />
+            </div>
+            <button class="btn-primary w-full" onclick="saveProfile()" style="margin-top:8px">💾 Ismni Yangilash</button>
+          </div>
+        </div>
+
+        <!-- Parol -->
+        <div class="card settings-card">
+          <div class="card-header">
+            <h3>🔐 Parol O'zgartirish</h3>
+          </div>
+          <div class="settings-form">
+            <div class="form-group">
+              <label>Joriy parol</label>
+              <input type="password" id="set-old-pass" placeholder="Eski parolingiz" />
+            </div>
+            <div class="form-group">
+              <label>Yangi parol</label>
+              <input type="password" id="set-new-pass" placeholder="Kamida 6 belgi" />
+            </div>
+            <div class="form-group">
+              <label>Yangi parolni tasdiqlash</label>
+              <input type="password" id="set-confirm-pass" placeholder="Qaytadan kiriting" />
+            </div>
+            <button class="btn-primary w-full" onclick="changePassword()" style="margin-top:8px">🔑 Parolni O'zgartirish</button>
+          </div>
+        </div>
+
+        <!-- Salon sozlamalari -->
+        <div class="card settings-card" style="grid-column:1/-1">
+          <div class="card-header">
+            <h3>🏢 Salon Sozlamalari</h3>
+            <span class="badge-count" id="salonPlanBadge" style="background:var(--gold)">Basic</span>
+          </div>
+          <div class="settings-form">
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Salon nomi</label>
+                <input type="text" id="set-salon-name" placeholder="Salon nomi" />
+              </div>
+              <div class="form-group">
+                <label>Telefon raqam</label>
+                <input type="tel" id="set-salon-phone" placeholder="+998 90 000 00 00" />
+              </div>
+              <div class="form-group">
+                <label>Manzil</label>
+                <input type="text" id="set-salon-address" placeholder="Toshkent, Yunusobod..." />
+              </div>
+              <div class="form-group">
+                <label>Ish vaqti</label>
+                <div style="display:flex;gap:8px;align-items:center">
+                  <input type="time" id="set-work-start" value="09:00" style="flex:1" />
+                  <span style="color:var(--text-muted)">—</span>
+                  <input type="time" id="set-work-end" value="20:00" style="flex:1" />
+                </div>
+              </div>
+            </div>
+            <button class="btn-primary w-full" onclick="saveSalonSettings()" style="margin-top:12px">💾 Sozlamalarni Saqlash</button>
+          </div>
+        </div>
+
+        <!-- Telegram Bot -->
+        <div class="card settings-card">
+          <div class="card-header">
+            <h3>🤖 Telegram Bot</h3>
+            <span class="badge-count" id="botStatusBadge" style="background:var(--text-muted)">❌ Ulanmagan</span>
+          </div>
+          <div class="settings-form">
+            <div class="form-group">
+              <label>Bot Token</label>
+              <input type="text" id="set-bot-token" placeholder="123456:ABCdefGhIjKlMnOpQrStUvWxYz" />
+            </div>
+            <div class="form-group">
+              <label>Admin Chat ID</label>
+              <input type="text" id="set-chat-id" placeholder="987654321" />
+            </div>
+            <p style="font-size:11px;color:var(--text-muted);margin-bottom:12px">📌 @BotFather dan token, @userinfobot dan Chat ID oling</p>
+            <div style="display:flex;gap:8px">
+              <button class="btn-primary" onclick="saveBotSettings()" style="flex:1">💾 Saqlash</button>
+              <button class="btn-primary" onclick="testTelegram()" style="flex:1;background:rgba(16,185,129,0.2);color:var(--emerald);border:1px solid rgba(16,185,129,0.3)">📤 Test</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Xodim parolini yangilash -->
+        <div class="card settings-card" style="grid-column:1/-1">
+          <div class="card-header">
+            <h3>🔑 Foydalanuvchilar va Parollar</h3>
+            <button class="btn-primary" onclick="toggleAddUserForm()" style="font-size:12px;padding:6px 14px">➕ Yangi User</button>
+          </div>
+          <div id="addUserForm" style="display:none;padding:16px;border-bottom:1px solid var(--card-border)">
+            <div class="form-grid">
+              <div class="form-group"><label>To'liq ism</label><input type="text" id="nu-fullname" placeholder="Ism Familiya" /></div>
+              <div class="form-group"><label>Username</label><input type="text" id="nu-username" placeholder="login_nomi" /></div>
+              <div class="form-group"><label>Parol</label><input type="password" id="nu-password" placeholder="Kamida 6 belgi" /></div>
+              <div class="form-group"><label>Rol</label>
+                <select id="nu-role">
+                  <option value="master">👩‍💼 Usta (Master)</option>
+                  <option value="reception">🛎 Qabulxona (Reception)</option>
+                </select>
+              </div>
+            </div>
+            <button class="btn-primary" onclick="createNewUser()" style="margin-top:8px">✅ Foydalanuvchi Yaratish</button>
+          </div>
+          <div class="settings-form">
+            <div id="salonUsersList" style="margin-bottom:12px">Yuklanmoqda...</div>
+            <div style="border-top:1px solid var(--card-border);padding-top:14px">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label>Xodimni tanlang</label>
+                  <select id="set-staff-user"></select>
+                </div>
+                <div class="form-group">
+                  <label>Yangi parol</label>
+                  <input type="password" id="set-staff-new-pass" placeholder="Kamida 6 belgi" />
+                </div>
+              </div>
+              <button class="btn-primary w-full" onclick="resetStaffPassword()" style="margin-top:4px">🔑 Parolni Yangilash</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tizim ma'lumotlari -->
+      <div class="card mt-16">
+        <div class="card-header">
+          <h3>📊 Tizim Ma'lumotlari</h3>
+        </div>
+        <div class="system-info-grid" id="systemInfoGrid">
+          <div class="sys-info-item">
+            <div class="sys-info-icon" style="animation:pulse 2s infinite">🔑</div>
+            <div class="sys-info-label">Login</div>
+            <div class="sys-info-val" id="sysUsername">—</div>
+          </div>
+          <div class="sys-info-item">
+            <div class="sys-info-icon" style="animation:pulse 2s infinite .3s">🎭</div>
+            <div class="sys-info-label">Rol</div>
+            <div class="sys-info-val" id="sysRole">—</div>
+          </div>
+          <div class="sys-info-item">
+            <div class="sys-info-icon" style="animation:pulse 2s infinite .6s">🏢</div>
+            <div class="sys-info-label">Salon ID</div>
+            <div class="sys-info-val" id="sysSalonId">—</div>
+          </div>
+          <div class="sys-info-item">
+            <div class="sys-info-icon" style="animation:pulse 2s infinite .9s">🕐</div>
+            <div class="sys-info-label">Token muddati</div>
+            <div class="sys-info-val" id="sysTokenExp" style="font-variant-numeric:tabular-nums">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════ ACTIVITY LOGS PAGE ═══════ -->
+    <div id="page-logs" class="page">
+      <div class="settings-hero" style="background:linear-gradient(135deg,rgba(245,158,11,0.12),rgba(244,63,94,0.06))">
+        <div class="settings-hero-icon">📋</div>
+        <div>
+          <div class="settings-hero-title">Aktivlik Tarixi</div>
+          <div class="settings-hero-sub">Kim qachon tizimga kirdi va qanday o'zgarish qildi</div>
+        </div>
+        <button class="btn-primary" onclick="loadActivityLogs()" style="margin-left:auto">🔄 Yangilash</button>
+      </div>
+
+      <!-- Filtrlar -->
+      <div class="logs-filters">
+        <div class="kpi-filter-group">
+          <span class="kpi-filter-label">🎯 Amal:</span>
+          <select id="logFilterAction" class="kpi-master-sel" onchange="filterLogs()">
+            <option value="">Barchasi</option>
+            <option value="login">🔑 Kirish</option>
+            <option value="logout">🚪 Chiqish</option>
+            <option value="create">➕ Yaratish</option>
+            <option value="update">✏️ Tahrirlash</option>
+            <option value="delete">🗑 O'chirish</option>
+          </select>
+        </div>
+        <div class="kpi-filter-group">
+          <span class="kpi-filter-label">👤 Foydalanuvchi:</span>
+          <input type="text" id="logFilterUser" class="kpi-master-sel" placeholder="Ism yoki username..." oninput="filterLogs()" style="width:160px" />
+        </div>
+        <div style="margin-left:auto;font-size:12px;color:var(--text-muted)" id="logsCount">0 ta yozuv</div>
+      </div>
+
+      <!-- Loglar jadvali -->
+      <div class="card">
+        <div id="activityLogsTable" style="overflow-x:auto"></div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- KABINET PAGE (outside main, full width) -->
+  <div id="page-kabinet" class="page" style="margin-left:var(--sidebar-w)">
+
+    <!-- Hero -->
+    <div class="kabinet-hero">
+      <div class="kabinet-avatar" style="background:#1D4ED820;color:#60A5FA" id="kabinetAvatar">D</div>
+      <div>
+        <div class="kabinet-name" id="kabinetName">Dilnoza Xasanova</div>
+        <div class="kabinet-role-badge" id="kabinetRole">Soch bo'yash ustasi</div>
+        <div class="kabinet-meta">📞 +998 90 111 11 11 &nbsp;|&nbsp; 📅 Ish staji: 2 yil 1 oy &nbsp;|&nbsp; ⭐ KPI:
+          <strong style="color:#F59E0B">88%</strong>
+        </div>
+      </div>
+      <div class="kabinet-actions">
+        <select onchange="changeKabinetMaster(this.value)" id="masterSelect"
+          style="background:var(--bg3);border:1px solid var(--card-border);border-radius:10px;padding:8px 14px;color:var(--text);font-size:13px;outline:none">
+          <option>Dilnoza Xasanova</option>
+          <option>Nasiba Mirzayeva</option>
+          <option>Kamola Ergasheva</option>
+          <option>Shahlo Tursunova</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Stats row -->
+    <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:20px">
+      <div class="stat-card purple">
+        <div class="stat-icon">📅</div>
+        <div class="stat-info">
+          <div class="stat-value" id="kb-todayCount">4</div>
+          <div class="stat-label">Bugungi mijozlar</div>
+        </div>
+      </div>
+      <div class="stat-card gold">
+        <div class="stat-icon">💰</div>
+        <div class="stat-info">
+          <div class="stat-value" id="kb-todayEarn">420 K</div>
+          <div class="stat-label">Bugungi tushum</div>
+        </div>
+      </div>
+      <div class="stat-card teal">
+        <div class="stat-icon">💸</div>
+        <div class="stat-info">
+          <div class="stat-value" id="kb-myShare">147 K</div>
+          <div class="stat-label">Mening ulushim (35%)</div>
+        </div>
+      </div>
+      <div class="stat-card rose">
+        <div class="stat-icon">⭐</div>
+        <div class="stat-info">
+          <div class="stat-value" id="kb-rating">4.8</div>
+          <div class="stat-label">Mijozlar bahosi</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="kabinet-grid">
+      <!-- Schedule -->
+      <div class="card">
+        <div class="card-header">
+          <h3>📅 Bugungi Jadval</h3>
+          <span class="badge-count" id="kb-schedCount">4</span>
+        </div>
+        <div class="schedule-grid" id="kabinetSchedule"></div>
+      </div>
+
+      <!-- Earnings -->
+      <div class="card">
+        <div class="card-header">
+          <h3>💰 Daromad & KPI</h3>
+        </div>
+        <div class="earnings-grid">
+          <div class="earning-card">
+            <div class="earning-label">Oylik tushum</div>
+            <div class="earning-value green" id="kb-monthEarn">3.2 mln</div>
+            <div class="earning-sub">Jami bajarilgan xizmatlar</div>
+            <div class="progress-ring">
+              <div class="progress-fill" style="width:88%"></div>
+            </div>
+          </div>
+          <div class="earning-card">
+            <div class="earning-label">Mening ulushim</div>
+            <div class="earning-value gold" id="kb-monthShare">1.12 mln</div>
+            <div class="earning-sub">35% stavka asosida</div>
+            <div class="progress-ring">
+              <div class="progress-fill" style="width:75%;background:linear-gradient(90deg,#F59E0B,#EF4444)"></div>
+            </div>
+          </div>
+          <div class="earning-card">
+            <div class="earning-label">Olingan avans</div>
+            <div class="earning-value" style="color:#F43F5E" id="kb-advance">500 K</div>
+            <div class="earning-sub">Oylik hisobdan ayriladi</div>
+          </div>
+          <div class="earning-card">
+            <div class="earning-label">Qolgan oylik</div>
+            <div class="earning-value green" id="kb-remaining">620 K</div>
+            <div class="earning-sub">Oylik oxirida to'lanadi</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="kabinet-grid" style="margin-top:16px">
+      <!-- Materials -->
+      <div class="card">
+        <div class="card-header">
+          <h3>🧴 Materiallar Sarfi</h3>
+          <span style="font-size:12px;color:var(--text-muted)">Bugun foydalanildi</span>
+        </div>
+        <div class="material-list" id="kabinetMaterials"></div>
+        <div class="request-form" style="border-top:1px solid var(--card-border);padding-top:12px">
+          <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:6px">📦 Admin ga so'rov
+            yuborish</div>
+          <div class="inline-form">
+            <input type="text" id="matRequest" placeholder="Qaysi material kerak?" />
+            <button class="btn-primary" style="flex-shrink:0" onclick="sendMatRequest()">Yuborish</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reviews -->
+      <div class="card">
+        <div class="card-header">
+          <h3>⭐ Mijozlar Sharhlari</h3>
+          <span class="badge-count" style="background:var(--gold)">+4.8</span>
+        </div>
+        <div class="review-list" id="kabinetReviews"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODALS -->
+  <!-- Kategoriya Boshqarish Modal -->
+  <div class="modal-overlay" id="categoryModal">
+    <div class="modal" style="max-width:560px">
+      <div class="modal-header">
+        <h3>📁 Kategoriyalarni Boshqarish</h3>
+        <button class="modal-close" onclick="closeModal('categoryModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <!-- Tab tugmalari -->
+        <div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap">
+          <button class="btn-ghost cat-tab-btn active" onclick="switchCatTab('finance_income',this)" style="font-size:12px;padding:6px 12px;border-radius:16px;border:1px solid var(--card-border)">📈 Daromad</button>
+          <button class="btn-ghost cat-tab-btn" onclick="switchCatTab('finance_expense',this)" style="font-size:12px;padding:6px 12px;border-radius:16px;border:1px solid var(--card-border)">📉 Xarajat</button>
+          <button class="btn-ghost cat-tab-btn" onclick="switchCatTab('expense_operational',this)" style="font-size:12px;padding:6px 12px;border-radius:16px;border:1px solid var(--card-border)">🏠 Kommunal</button>
+        </div>
+        <!-- Ro'yxat -->
+        <div id="catManagerList" style="margin-bottom:16px;max-height:300px;overflow-y:auto"></div>
+        <!-- Yangi qo'shish -->
+        <div style="border-top:1px solid var(--card-border);padding-top:14px">
+          <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:8px">➕ Yangi kategoriya</div>
+          <div style="display:flex;gap:8px">
+            <input type="text" id="catNewIcon" placeholder="📁" style="width:50px;text-align:center" maxlength="2" />
+            <input type="text" id="catNewName" placeholder="Kategoriya nomi..." style="flex:1" />
+            <button class="btn-primary" onclick="addNewCategory()" style="white-space:nowrap">Qo'shish</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bron Modal -->
+  <div class="modal-overlay" id="bronModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>📅 Yangi Bron</h3>
+        <button class="modal-close" onclick="closeModal('bronModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Mijoz ismi *</label>
+            <input type="text" id="bron-name" placeholder="Ismi Familiyasi" />
+          </div>
+          <div class="form-group">
+            <label>Telefon *</label>
+            <input type="tel" id="bron-phone" placeholder="+998 90 000 00 00" />
+          </div>
+          <div class="form-group">
+            <label>Xizmat *</label>
+            <select id="bron-service"></select>
+          </div>
+          <div class="form-group">
+            <label>Usta *</label>
+            <select id="bron-master"></select>
+          </div>
+          <div class="form-group">
+            <label>Sana *</label>
+            <input type="date" id="bron-date" />
+          </div>
+          <div class="form-group">
+            <label>Vaqt *</label>
+            <select id="bron-time">
+              <option>09:00</option>
+              <option>09:30</option>
+              <option>10:00</option>
+              <option>10:30</option>
+              <option>11:00</option>
+              <option>11:30</option>
+              <option>12:00</option>
+              <option>12:30</option>
+              <option>13:00</option>
+              <option>13:30</option>
+              <option>14:00</option>
+              <option>14:30</option>
+              <option>15:00</option>
+              <option>15:30</option>
+              <option>16:00</option>
+              <option>16:30</option>
+              <option>17:00</option>
+              <option>17:30</option>
+              <option>18:00</option>
+              <option>18:30</option>
+              <option>19:00</option>
+            </select>
+          </div>
+          <div class="form-group full-width">
+            <label>Izoh</label>
+            <textarea id="bron-note" placeholder="Qo'shimcha ma'lumot..." rows="2"></textarea>
+          </div>
+          <div class="form-group full-width">
+            <label class="checkbox-label">
+              <input type="checkbox" id="bron-bot-source" />
+              <span>Bot orqali keldi</span>
+            </label>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeModal('bronModal')">Bekor qilish</button>
+        <button class="btn-primary" onclick="saveBron()">✅ Bronni Saqlash</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Staff Modal -->
+  <div class="modal-overlay" id="staffModal">
+    <div class="modal" style="width:640px;max-height:90vh;overflow-y:auto">
+      <div class="modal-header">
+        <h3>💇 Usta Profili</h3>
+        <button class="modal-close" onclick="closeModal('staffModal')">✕</button>
+      </div>
+      <div class="modal-body">
+
+        <!-- Asosiy ma'lumotlar -->
+        <div class="modal-section-label">👤 Asosiy Ma'lumotlar</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Ismi *</label>
+            <input type="text" class="form-input" id="staff-name" placeholder="To'liq ismi" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Telefon *</label>
+            <input type="tel" class="form-input" id="staff-phone" placeholder="+998 90 000 00 00" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Mutaxassislik *</label>
+            <select class="form-input" id="staff-role">
+              <option>Sartarosh</option>
+              <option>Vizajist</option>
+              <option>Manikyur ustasi</option>
+              <option>Pedikyur ustasi</option>
+              <option>Kosmetolog</option>
+              <option>Soch bo'yash ustasi</option>
+              <option>Massaj ustasi</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Ish tajribasi (yil)</label>
+            <input type="number" class="form-input" id="staff-experience" placeholder="3" min="0" max="40" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Foiz stavkasi (%) *</label>
+            <input type="number" class="form-input" id="staff-percent" placeholder="30" min="0" max="100" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Oylik maosh (so'm)</label>
+            <input type="number" class="form-input" id="staff-salary" placeholder="0" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Ish boshlagan sana</label>
+            <input type="date" class="form-input" id="staff-start" />
+          </div>
+        </div>
+
+        <!-- Bio -->
+        <div class="modal-section-label" style="margin-top:16px">📝 Profil Tavsifi</div>
+        <div class="form-group">
+          <label class="form-label">Bio (usta haqida qisqacha)</label>
+          <textarea class="form-input" id="staff-bio" rows="2"
+            placeholder="Masalan: 5 yillik tajribaga ega soch bo'yash mutaxassisi..."
+            style="resize:vertical"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">⭐ Highlight (ekspert tavsifi)</label>
+          <input type="text" class="form-input" id="staff-highlights"
+            placeholder="Masalan: Kreativ balayaj bo'yicha ekspert" />
+        </div>
+
+        <!-- Skills Checkboxes -->
+        <div class="modal-section-label" style="margin-top:16px">🛠 Mahoratlar (Skills)</div>
+        <div class="skills-check-grid" id="skillsCheckGrid">
+          <label class="skill-check"><input type="checkbox" value="Soch qirqish"> Soch qirqish</label>
+          <label class="skill-check"><input type="checkbox" value="Soch bo'yash"> Soch bo'yash</label>
+          <label class="skill-check"><input type="checkbox" value="Oshirib bo'yash"> Oshirib bo'yash</label>
+          <label class="skill-check"><input type="checkbox" value="Soch to'lqinlash"> Soch to'lqinlash</label>
+          <label class="skill-check"><input type="checkbox" value="Pleyok"> Pleyok</label>
+          <label class="skill-check"><input type="checkbox" value="Manikyur"> Manikyur</label>
+          <label class="skill-check"><input type="checkbox" value="Pedikyur"> Pedikyur</label>
+          <label class="skill-check"><input type="checkbox" value="Gel-lak"> Gel-lak</label>
+          <label class="skill-check"><input type="checkbox" value="Nail-art"> Nail-art</label>
+          <label class="skill-check"><input type="checkbox" value="Yuz tozalash"> Yuz tozalash</label>
+          <label class="skill-check"><input type="checkbox" value="Teri massaji"> Teri massaji</label>
+          <label class="skill-check"><input type="checkbox" value="To'y grimi"> To'y grimi</label>
+          <label class="skill-check"><input type="checkbox" value="Foto-vizaj"> Foto-vizaj</label>
+          <label class="skill-check"><input type="checkbox" value="Kunlik vizaj"> Kunlik vizaj</label>
+          <label class="skill-check"><input type="checkbox" value="Airbrush"> Airbrush</label>
+          <label class="skill-check"><input type="checkbox" value="Qosh dizayn"> Qosh dizayn</label>
+        </div>
+
+        <!-- Login ma'lumotlari -->
+        <div class="modal-section-label" style="margin-top:16px;background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2);border-radius:10px;padding:12px 16px">
+          🔐 Tizimga Kirish Ma'lumotlari
+          <div style="font-size:11px;color:var(--text-muted);font-weight:400;margin-top:4px">Bu xodim uchun login va parol yaratiladi</div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">👤 Login (username)</label>
+            <input type="text" class="form-input" id="staff-username" placeholder="shahlo_master (bo'sh qolsa avtomatik)" />
+            <small style="color:var(--text-muted);font-size:11px">Bo'sh qolsa: ism + raqam (shahlo42)</small>
+          </div>
+          <div class="form-group">
+            <label class="form-label">🔑 Parol</label>
+            <input type="text" class="form-input" id="staff-password" placeholder="Bo'sh qolsa avtomatik generatsiya" />
+            <small style="color:var(--text-muted);font-size:11px">Min 6 belgi yoki bo'sh qoldiring</small>
+          </div>
+          <div class="form-group">
+            <label class="form-label">🎭 Rol</label>
+            <select class="form-input" id="staff-user-role">
+              <option value="master">💈 Master (Usta)</option>
+              <option value="reception">📋 Reception</option>
+            </select>
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeModal('staffModal')">Bekor qilish</button>
+        <button class="btn-primary" onclick="saveStaff()">✅ Saqlash va Login Yaratish</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Credentials Modal -->
+  <div class="modal-overlay" id="credModal">
+    <div class="modal" style="width:460px">
+      <div class="modal-header">
+        <h3>🎉 Xodim Qo'shildi!</h3>
+        <button class="modal-close" onclick="closeModal('credModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.25);border-radius:14px;padding:20px;margin-bottom:16px">
+          <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px">📋 Ushbu ma'lumotlarni xodimga yuboring:</div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="font-size:13px;color:var(--text-muted)">👤 Login:</span>
+              <span style="font-size:16px;font-weight:800;color:var(--primary-light)" id="cred-username">—</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="font-size:13px;color:var(--text-muted)">🔑 Parol:</span>
+              <span style="font-size:16px;font-weight:800;color:var(--gold)" id="cred-password">—</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="font-size:13px;color:var(--text-muted)">🎭 Rol:</span>
+              <span style="font-size:13px;font-weight:600" id="cred-role">—</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="font-size:13px;color:var(--text-muted)">🌐 Havola:</span>
+              <a href="http://localhost:8000/login/" target="_blank" style="font-size:12px;color:var(--primary-light)">localhost:8000/login/</a>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn-primary" style="flex:1" onclick="copyCreds()">📋 Nusxa Olish</button>
+          <button class="btn-ghost" style="flex:1" onclick="printCreds()">🖨 Chiqarish</button>
+        </div>
+        <div style="margin-top:12px;font-size:12px;color:var(--text-muted);text-align:center">⚠ Xodim birinchi kirishda parolini o'zgartirishi tavsiya etiladi</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Client Modal -->
+  <div class="modal-overlay" id="clientModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>👤 Mijoz Qo'shish</h3>
+        <button class="modal-close" onclick="closeModal('clientModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Ismi *</label>
+            <input type="text" id="client-name" placeholder="To'liq ismi" />
+          </div>
+          <div class="form-group">
+            <label>Telefon *</label>
+            <input type="tel" id="client-phone" placeholder="+998 90 000 00 00" />
+          </div>
+          <div class="form-group">
+            <label>Yoqadigan xizmatlar</label>
+            <input type="text" id="client-prefs" placeholder="Soch bo'yash, manikyur..." />
+          </div>
+          <div class="form-group">
+            <label>Tug'ilgan kuni</label>
+            <input type="date" id="client-birthday" />
+          </div>
+          <div class="form-group full-width">
+            <label>Izoh</label>
+            <textarea id="client-note" placeholder="Mijoz haqida eslatma..." rows="2"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeModal('clientModal')">Bekor qilish</button>
+        <button class="btn-primary" onclick="saveClient()">✅ Saqlash</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Service Modal -->
+  <div class="modal-overlay" id="serviceModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>✂ Xizmat Qo'shish</h3>
+        <button class="modal-close" onclick="closeModal('serviceModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Xizmat nomi *</label>
+            <input type="text" id="svc-name" placeholder="Soch kesish, Manikyur..." />
+          </div>
+          <div class="form-group">
+            <label>Kategoriya</label>
+            <select id="svc-cat">
+              <option>Soch</option>
+              <option>Manikyur</option>
+              <option>Pedikyur</option>
+              <option>Makiyaj</option>
+              <option>Kosmetologiya</option>
+              <option>Massaj</option>
+              <option>Boshqa</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Narx (so'm) *</label>
+            <input type="number" id="svc-price" placeholder="50000" />
+          </div>
+          <div class="form-group">
+            <label>Davomiyligi (daqiqa)</label>
+            <input type="number" id="svc-duration" placeholder="60" />
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeModal('serviceModal')">Bekor qilish</button>
+        <button class="btn-primary" onclick="saveService()">✅ Saqlash</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Inventory Modal -->
+  <div class="modal-overlay" id="inventoryModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>🧴 Mahsulot Qo'shish</h3>
+        <button class="modal-close" onclick="closeModal('inventoryModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Mahsulot nomi *</label>
+            <input type="text" id="inv-name" placeholder="Shampun, Lak..." />
+          </div>
+          <div class="form-group">
+            <label>Kategoriya</label>
+            <select id="inv-cat">
+              <option>Shampun</option>
+              <option>Soch bo'yog'i</option>
+              <option>Lak</option>
+              <option>Krem</option>
+              <option>Gel</option>
+              <option>Asbob</option>
+              <option>Boshqa</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Miqdor *</label>
+            <input type="number" id="inv-qty" placeholder="10" />
+          </div>
+          <div class="form-group">
+            <label>Birlik</label>
+            <select id="inv-unit">
+              <option>dona</option>
+              <option>ml</option>
+              <option>gr</option>
+              <option>litr</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Minimum zaxira</label>
+            <input type="number" id="inv-min" placeholder="3" />
+          </div>
+          <div class="form-group">
+            <label>Narxi (so'm)</label>
+            <input type="number" id="inv-price" placeholder="25000" />
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeModal('inventoryModal')">Bekor qilish</button>
+        <button class="btn-primary" onclick="saveInventory()">✅ Saqlash</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <!-- Usta Selector Modal -->
+  <div class="modal-overlay" id="ustaSelectorModal">
+    <div class="modal" style="width:420px">
+      <div class="modal-header">
+        <h3>💇 Qaysi usta siz?</h3>
+        <button class="modal-close" onclick="closeModal('ustaSelectorModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px">O'z kabinetingizga kirish uchun ismingizni
+          tanlang:</p>
+        <div id="ustaSelectorList" style="display:flex;flex-direction:column;gap:8px"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admin Tayinlash Modal -->
+  <div class="modal-overlay" id="assignModal">
+    <div class="modal" style="width:480px">
+      <div class="modal-header">
+        <h3>⚙️ Ustani Boshqarish</h3>
+        <button class="modal-close" onclick="closeModal('assignModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="assign-staff-id">
+        <div
+          style="display:flex;align-items:center;gap:12px;padding:14px;background:var(--bg3);border-radius:12px;margin-bottom:16px">
+          <div
+            style="width:44px;height:44px;background:rgba(59,130,246,0.2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:var(--primary-light)"
+            id="assign-avatar-icon">D</div>
+          <div>
+            <div style="font-size:16px;font-weight:700" id="assign-staff-name">Dilnoza</div>
+            <div style="font-size:12px;color:var(--text-muted)">Usta ma'lumotlarini yangilash</div>
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">📊 KPI (%)</label>
+            <input class="form-input" type="number" id="assign-kpi" min="0" max="100" placeholder="85">
+          </div>
+          <div class="form-group">
+            <label class="form-label">💰 Oylik maosh (so'm)</label>
+            <input class="form-input" type="number" id="assign-salary" placeholder="2500000">
+          </div>
+          <div class="form-group">
+            <label class="form-label">📈 Foiz stavkasi (%)</label>
+            <input class="form-input" type="number" id="assign-percent" min="0" max="100" placeholder="35">
+          </div>
+          <div class="form-group">
+            <label class="form-label">💸 Avans berish (so'm)</label>
+            <input class="form-input" type="number" id="assign-advance" placeholder="0" value="0">
+            <small style="color:var(--text-muted);font-size:11px">0 bo'lsa avans berilmaydi</small>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeModal('assignModal')">Bekor qilish</button>
+        <button class="btn-primary" onclick="saveAssign()">✅ Saqlash va Tayinla</button>
+      </div>
+    </div>
+  </div>
+  <!-- Material Berish Modal -->
+  <div class="modal-overlay" id="distributeModal">
+    <div class="modal" style="width:480px">
+      <div class="modal-header">
+        <h3>🚚 Ustaga Material Berish</h3>
+        <button class="modal-close" onclick="closeModal('distributeModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">👤 Ustani tanlang</label>
+          <select class="form-input" id="dist-master"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">🧴 Mahsulotni tanlang</label>
+          <select class="form-input" id="dist-product" onchange="showProductStock()"></select>
+          <div id="dist-stock-info" style="margin-top:6px;font-size:12px;color:var(--text-muted)"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">📦 Miqdori</label>
+          <input class="form-input" type="number" id="dist-qty" placeholder="1" min="0.5" step="0.5" value="1" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">📝 Izoh (ixtiyoriy)</label>
+          <input class="form-input" type="text" id="dist-note" placeholder="Masalan: Haftalik ta'minot" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeModal('distributeModal')">Bekor qilish</button>
+        <button class="btn-primary" onclick="saveDistribute()">✅ Berish</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+
+</html>

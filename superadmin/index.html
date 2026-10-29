@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SuperAdmin — SalonPro</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0a0a0f;--card:#13131a;--border:#1e1e2e;--purple:#8B5CF6;--pink:#EC4899;--green:#10B981;--red:#F43F5E;--yellow:#F59E0B;--blue:#3B82F6;--text:#f1f5f9;--muted:#64748b}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.header{background:var(--card);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:60px;position:sticky;top:0;z-index:100}
+.header-brand{display:flex;align-items:center;gap:12px}
+.brand-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--purple),var(--pink));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px}
+.brand-name{font-size:16px;font-weight:700}
+.brand-badge{font-size:10px;background:linear-gradient(135deg,var(--purple),var(--pink));color:#fff;padding:2px 8px;border-radius:20px;font-weight:600}
+.header-right{display:flex;align-items:center;gap:16px}
+.header-user{font-size:13px;color:var(--muted)}
+.logout-btn{padding:7px 16px;border:1px solid var(--border);border-radius:8px;background:transparent;color:var(--text);cursor:pointer;font-size:13px;font-family:'Inter',sans-serif;transition:all .2s}
+.logout-btn:hover{border-color:var(--red);color:var(--red)}
+.layout{display:flex}
+.sidebar{width:220px;min-height:calc(100vh - 60px);background:var(--card);border-right:1px solid var(--border);padding:16px 0;position:sticky;top:60px;height:calc(100vh - 60px)}
+.nav-item{display:flex;align-items:center;gap:10px;padding:11px 20px;cursor:pointer;font-size:13px;font-weight:500;color:var(--muted);transition:all .2s;border-left:3px solid transparent}
+.nav-item:hover{color:var(--text);background:rgba(255,255,255,0.03)}
+.nav-item.active{color:var(--purple);background:rgba(139,92,246,0.08);border-left-color:var(--purple)}
+.content{flex:1;padding:24px;overflow-y:auto}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px;margin-bottom:28px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;transition:transform .2s}
+.stat-card:hover{transform:translateY(-2px)}
+.stat-icon{font-size:28px;margin-bottom:10px}
+.stat-val{font-size:28px;font-weight:800}
+.stat-lbl{font-size:12px;color:var(--muted);margin-top:4px}
+.section{background:var(--card);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:20px}
+.section-head{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.section-title{font-size:15px;font-weight:700}
+.btn{padding:9px 18px;border:none;border-radius:10px;cursor:pointer;font-size:13px;font-weight:600;font-family:'Inter',sans-serif;transition:all .2s}
+.btn-primary{background:linear-gradient(135deg,var(--purple),var(--pink));color:#fff}
+.btn-primary:hover{opacity:.85}
+.btn-sm{padding:6px 12px;font-size:12px;border-radius:7px}
+.btn-green{background:rgba(16,185,129,.15);color:var(--green);border:1px solid rgba(16,185,129,.3)}
+.btn-red{background:rgba(244,63,94,.15);color:var(--red);border:1px solid rgba(244,63,94,.3)}
+.btn-blue{background:rgba(59,130,246,.15);color:var(--blue);border:1px solid rgba(59,130,246,.3)}
+.btn-yellow{background:rgba(245,158,11,.15);color:var(--yellow);border:1px solid rgba(245,158,11,.3)}
+table{width:100%;border-collapse:collapse}
+th{padding:12px 16px;text-align:left;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border)}
+td{padding:13px 16px;font-size:13px;border-bottom:1px solid rgba(255,255,255,.03)}
+tr:hover td{background:rgba(255,255,255,.02)}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.badge-green{background:rgba(16,185,129,.15);color:var(--green)}
+.badge-red{background:rgba(244,63,94,.15);color:var(--red)}
+.badge-purple{background:rgba(139,92,246,.15);color:var(--purple)}
+.badge-blue{background:rgba(59,130,246,.15);color:var(--blue)}
+.badge-yellow{background:rgba(245,158,11,.15);color:var(--yellow)}
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;align-items:center;justify-content:center}
+.modal.open{display:flex}
+.modal-box{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:32px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto}
+.modal-title{font-size:18px;font-weight:700;margin-bottom:20px}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px}
+.form-group input,.form-group select{width:100%;padding:11px 14px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'Inter',sans-serif;font-size:14px;outline:none}
+.form-group input:focus,.form-group select:focus{border-color:var(--purple)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.modal-footer{display:flex;gap:10px;margin-top:20px}
+.btn-cancel{background:rgba(255,255,255,.05);color:var(--muted);border:1px solid var(--border)}
+.toast{position:fixed;bottom:24px;right:24px;padding:14px 20px;border-radius:12px;font-size:13px;font-weight:600;z-index:999;transform:translateX(200%);transition:transform .3s}
+.toast.show{transform:translateX(0)}
+.toast.success{background:rgba(16,185,129,.2);color:var(--green);border:1px solid rgba(16,185,129,.4)}
+.toast.error{background:rgba(244,63,94,.2);color:var(--red);border:1px solid rgba(244,63,94,.4)}
+.empty{text-align:center;padding:48px;color:var(--muted)}
+select option{background:#1a1a2e}
+.tab-panel{display:none}.tab-panel.active{display:block}
+.actions-cell{display:flex;gap:6px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-brand">
+    <div class="brand-icon">💈</div>
+    <span class="brand-name">SalonPro</span>
+    <span class="brand-badge">🔱 SuperAdmin</span>
+  </div>
+  <div class="header-right">
+    <span class="header-user" id="headerUser">Yuklanmoqda...</span>
+    <button class="logout-btn" onclick="logout()">🚪 Chiqish</button>
+  </div>
+</div>
+
+<div class="layout">
+  <div class="sidebar">
+    <div class="nav-item active" onclick="showTab('dashboard')">📊 Dashboard</div>
+    <div class="nav-item" onclick="showTab('salons')">🏪 Salonlar</div>
+    <div class="nav-item" onclick="showTab('payments')">💳 To'lovlar</div>
+    <div class="nav-item" onclick="showTab('tariffs')">📋 Tariflar</div>
+    <div class="nav-item" onclick="showTab('messages')">📢 Xabarlar</div>
+    <div class="nav-item" onclick="showTab('settings')">⚙️ Sozlamalar</div>
+    <div class="nav-item" onclick="showTab('add-salon')">➕ Salon Qo'shish</div>
+  </div>
+
+  <div class="content">
+    <!-- Dashboard -->
+    <div class="tab-panel active" id="tab-dashboard">
+      <h2 style="font-size:20px;font-weight:800;margin-bottom:20px">📊 Umumiy Ko'rinish</h2>
+      <div class="stats-grid" id="statsGrid">
+        <div class="stat-card"><div class="stat-icon">🏪</div><div class="stat-val" id="st-total">—</div><div class="stat-lbl">Jami Salonlar</div></div>
+        <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-val" id="st-active">—</div><div class="stat-lbl">Faol Salonlar</div></div>
+        <div class="stat-card"><div class="stat-icon">🔴</div><div class="stat-val" id="st-blocked">—</div><div class="stat-lbl">Bloklangan</div></div>
+        <div class="stat-card"><div class="stat-icon">👩‍💼</div><div class="stat-val" id="st-masters">—</div><div class="stat-lbl">Jami Ustalar</div></div>
+        <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-val" id="st-clients">—</div><div class="stat-lbl">Jami Mijozlar</div></div>
+        <div class="stat-card"><div class="stat-icon">📅</div><div class="stat-val" id="st-appts">—</div><div class="stat-lbl">Jami Bronlar</div></div>
+      </div>
+      <!-- Moliya vidjeti -->
+      <h3 style="font-size:16px;font-weight:700;margin:24px 0 16px">💰 Moliya Ko'rsatkichlari</h3>
+      <div class="stats-grid" id="finStats">
+        <div class="stat-card" style="border-left:3px solid var(--green)"><div class="stat-icon">💵</div><div class="stat-val" id="fs-total">—</div><div class="stat-lbl">Jami Tushum</div></div>
+        <div class="stat-card" style="border-left:3px solid var(--blue)"><div class="stat-icon">📈</div><div class="stat-val" id="fs-monthly">—</div><div class="stat-lbl">Oylik Tushum</div></div>
+        <div class="stat-card" style="border-left:3px solid var(--purple)"><div class="stat-icon">🏪</div><div class="stat-val" id="fs-active">—</div><div class="stat-lbl">Aktiv Salonlar</div></div>
+        <div class="stat-card" style="border-left:3px solid var(--yellow)"><div class="stat-icon">⏳</div><div class="stat-val" id="fs-pending">—</div><div class="stat-lbl">Kutilayotgan To'lov</div></div>
+      </div>
+    </div>
+
+    <!-- Salons -->
+    <div class="tab-panel" id="tab-salons">
+      <div class="section">
+        <div class="section-head">
+          <span class="section-title">🏪 Barcha Salonlar</span>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button class="btn btn-sm btn-blue" onclick="checkSubs()">🔄 Obuna tekshirish</button>
+            <button class="btn btn-primary btn-sm" onclick="showTab('add-salon')">+ Yangi Salon</button>
+          </div>
+        </div>
+        <!-- Filtrlar -->
+        <div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <input type="text" id="fSearch" placeholder="🔍 Qidiruv..." oninput="loadSalons()" style="padding:7px 12px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;width:180px;font-family:'Inter',sans-serif">
+          <select id="fStatus" onchange="loadSalons()" style="padding:7px 10px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;font-family:'Inter',sans-serif"><option value=''>Hammasi</option><option value='active'>✅ Faol</option><option value='blocked'>🔴 Blok</option><option value='expiring'>⏳ Tugayotgan</option></select>
+          <select id="fPlan" onchange="loadSalons()" style="padding:7px 10px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;font-family:'Inter',sans-serif"><option value=''>Barcha tarif</option><option value='basic'>Basic</option><option value='pro'>Pro</option><option value='enterprise'>Enterprise</option></select>
+        </div>
+        <div id="salonsList"><div class="empty">Yuklanmoqda...</div></div>
+      </div>
+    </div>
+
+    <!-- Payments -->
+    <div class="tab-panel" id="tab-payments">
+      <div class="section">
+        <div class="section-head"><span class="section-title">💳 To'lovlar Tarixi</span></div>
+        <div id="paymentsList"><div class="empty">Yuklanmoqda...</div></div>
+      </div>
+    </div>
+
+    <!-- Tariffs -->
+    <div class="tab-panel" id="tab-tariffs">
+      <div class="section">
+        <div class="section-head"><span class="section-title">📋 Tariflar</span></div>
+        <div id="tariffsList"></div>
+        <div style="padding:20px;border-top:1px solid var(--border)">
+          <div style="font-size:13px;font-weight:600;margin-bottom:12px">➕ Yangi tarif</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <input id="tf-name" placeholder="Tarif nomi" style="padding:8px 12px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;flex:1;font-family:'Inter',sans-serif">
+            <select id="tf-plan" style="padding:8px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-family:'Inter',sans-serif"><option value='basic'>Basic</option><option value='pro' selected>Pro</option><option value='enterprise'>Enterprise</option></select>
+            <input id="tf-price" type="number" placeholder="Narx" style="padding:8px 12px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;width:120px;font-family:'Inter',sans-serif">
+            <input id="tf-days" type="number" placeholder="Kunlar" style="padding:8px 12px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;width:80px;font-family:'Inter',sans-serif">
+            <button class="btn btn-primary btn-sm" onclick="addTariff()">Qo'shish</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tizim Sozlamalari -->
+    <div class="tab-panel" id="tab-settings">
+      <div class="section" style="max-width:620px">
+        <div class="section-head"><span class="section-title">⚙️ Tizim Sozlamalari (Billing)</span></div>
+        <div style="padding:24px">
+          <div style="margin-bottom:20px;padding:14px;border-radius:12px;background:rgba(139,92,246,.08);border:1px solid rgba(139,92,246,.2);font-size:13px;color:var(--purple)">
+            💡 Bu sozlamalar barcha salonlardan to'lov qabul qiladigan <b>markaziy billing bot</b> uchun.
+          </div>
+          <h4 style="font-size:14px;font-weight:700;margin-bottom:12px">🤖 Telegram Billing Bot</h4>
+          <div class="form-group"><label>Bot Token</label><input id="ss-billing-bot-token" placeholder="123456:ABC-DEF..."></div>
+          <div class="form-group"><label>SuperAdmin Chat ID</label><input id="ss-billing-bot-chat-id" placeholder="O'zingizning Telegram Chat ID"></div>
+          <button class="btn btn-sm btn-blue" onclick="testBillingBot()" style="margin-bottom:20px">📡 Test xabar yuborish</button>
+          <div id="botTestResult" style="font-size:12px;margin-bottom:16px"></div>
+          <hr style="border-color:var(--border);margin:16px 0">
+          <h4 style="font-size:14px;font-weight:700;margin-bottom:12px">💳 Click Sozlamalari</h4>
+          <div class="form-group"><label>Merchant ID</label><input id="ss-click-merchant-id" placeholder="Click Merchant ID"></div>
+          <div class="form-group"><label>Service ID</label><input id="ss-click-service-id" placeholder="Click Service ID"></div>
+          <div class="form-group"><label>Secret Key</label><input id="ss-click-secret-key" placeholder="Click Secret Key" type="password"></div>
+          <hr style="border-color:var(--border);margin:16px 0">
+          <h4 style="font-size:14px;font-weight:700;margin-bottom:12px">💳 Payme Sozlamalari</h4>
+          <div class="form-group"><label>Merchant ID</label><input id="ss-payme-merchant-id" placeholder="Payme Merchant ID"></div>
+          <div class="form-group"><label>Secret Key</label><input id="ss-payme-secret-key" placeholder="Payme Secret Key" type="password"></div>
+          <button class="btn btn-primary" onclick="saveSystemSettings()" style="width:100%;margin-top:12px">💾 Barcha Sozlamalarni Saqlash</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Xabarlar -->
+    <div class="tab-panel" id="tab-messages">
+      <div class="section" style="max-width:620px">
+        <div class="section-head"><span class="section-title">📢 Salon Egalariga Xabar Yuborish</span></div>
+        <div style="padding:24px">
+          <div style="margin-bottom:16px;padding:14px;border-radius:12px;background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2);font-size:13px;color:var(--blue)">
+            💡 Telegram billing bot orqali salon egalariga xabar yuboriladi.
+          </div>
+          <div class="form-group">
+            <label>Kimga yuborish</label>
+            <select id="msg-target" style="width:100%;padding:10px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-family:'Inter',sans-serif">
+              <option value="all">📢 Barcha salonlarga</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Xabar matni</label>
+            <textarea id="msg-text" rows="5" placeholder="Hurmatli salon egasi..." style="width:100%;padding:12px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;resize:vertical;font-family:'Inter',sans-serif"></textarea>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-primary" onclick="sendBroadcast()" style="flex:1">📢 Barchaga yuborish</button>
+            <button class="btn btn-sm btn-blue" onclick="sendToSelected()" style="flex:1">📩 Tanlanganga yuborish</button>
+          </div>
+          <div id="msgResult" style="margin-top:12px;font-size:13px"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Salon -->
+    <div class="tab-panel" id="tab-add-salon">
+      <div class="section" style="max-width:560px">
+        <div class="section-head"><span class="section-title">➕ Yangi Salon Qo'shish</span></div>
+        <div style="padding:24px">
+          <div class="form-row">
+            <div class="form-group"><label>Salon Nomi *</label><input id="f-name" placeholder="Gulnora Beauty"></div>
+            <div class="form-group"><label>Egasi *</label><input id="f-owner" placeholder="Gulnora Karimova"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Telefon *</label><input id="f-phone" placeholder="+998901234567"></div>
+            <div class="form-group"><label>Tarif</label>
+              <select id="f-plan">
+                <option value="basic">Basic</option>
+                <option value="pro" selected>Pro</option>
+                <option value="enterprise">Enterprise</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group"><label>Manzil</label><input id="f-address" placeholder="Toshkent"></div>
+          <div class="form-group"><label>Obuna Tugash</label><input id="f-expires" type="date"></div>
+          <div style="border-top:1px solid var(--border);margin:20px 0;padding-top:20px">
+            <p style="font-size:13px;font-weight:600;margin-bottom:16px;color:var(--muted)">ADMIN LOGIN</p>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Username *</label><input id="f-uname" placeholder="gulnora_admin"></div>
+            <div class="form-group"><label>Parol *</label><input id="f-pass" type="password" placeholder="Kuchli parol"></div>
+          </div>
+          <button class="btn btn-primary" style="width:100%" onclick="createSalon()">✅ Salon Yaratish</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal" id="editModal">
+  <div class="modal-box">
+    <div class="modal-title">✏️ Salonni Tahrirlash</div>
+    <input type="hidden" id="e-id">
+    <div class="form-row">
+      <div class="form-group"><label>Nomi</label><input id="e-name"></div>
+      <div class="form-group"><label>Egasi</label><input id="e-owner"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Telefon</label><input id="e-phone"></div>
+      <div class="form-group"><label>Manzil</label><input id="e-address"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Tarif</label>
+        <select id="e-plan"><option value="basic">Basic</option><option value="pro">Pro</option><option value="enterprise">Enterprise</option></select>
+      </div>
+      <div class="form-group"><label>Ish vaqti</label><input id="e-hours" placeholder="09:00-20:00"></div>
+    </div>
+    <div class="form-group"><label>Obuna Tugash</label><input id="e-expires" type="date"></div>
+    <div style="border-top:1px solid var(--border);margin:16px 0;padding-top:16px">
+      <p style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:12px">🤖 TELEGRAM BOT</p>
+    </div>
+    <div class="form-group"><label>Bot Token</label><input id="e-bot-token" placeholder="123456:ABC..."></div>
+    <div class="form-group"><label>Admin Chat ID</label><input id="e-chat-id" placeholder="987654321"></div>
+    <div class="modal-footer">
+      <button class="btn btn-cancel" onclick="closeEditModal()">Bekor</button>
+      <button class="btn btn-primary" onclick="saveEditSalon()">💾 Saqlash</button>
+    </div>
+  </div>
+</div>
+
+<!-- Users Modal -->
+<div class="modal" id="usersModal">
+  <div class="modal-box">
+    <div class="modal-title" id="usersModalTitle">👥 Foydalanuvchilar</div>
+    <div id="usersModalBody"></div>
+    <div class="modal-footer"><button class="btn btn-cancel" onclick="closeUsersModal()">Yopish</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = window.location.origin;
+const token = localStorage.getItem('token');
+const role  = localStorage.getItem('role');
+if(!token || role !== 'superadmin') window.location.href = '/login/';
+document.getElementById('headerUser').textContent = '🔱 ' + (localStorage.getItem('full_name') || 'SuperAdmin');
+
+let _salons = [];
+
+function showTab(tab){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  const tabs=['dashboard','salons','payments','tariffs','messages','settings','add-salon'];
+  document.querySelectorAll('.nav-item')[tabs.indexOf(tab)]?.classList.add('active');
+  if(tab==='dashboard'){loadStats();loadFinStats();}
+  if(tab==='salons') loadSalons();
+  if(tab==='payments') loadPayments();
+  if(tab==='tariffs') loadTariffs();
+  if(tab==='messages') loadMsgSalons();
+  if(tab==='settings') loadSettings();
+}
+
+function authHeaders(){return{'Authorization':'Bearer '+token,'Content-Type':'application/json'}}
+
+async function loadStats(){
+  try{
+    const r=await fetch(`${API}/api/superadmin/stats`,{headers:authHeaders()});
+    if(r.status===401){logout();return;}
+    const d=await r.json();
+    document.getElementById('st-total').textContent=d.total_salons;
+    document.getElementById('st-active').textContent=d.active_salons;
+    document.getElementById('st-blocked').textContent=d.blocked_salons;
+    document.getElementById('st-masters').textContent=d.total_masters;
+    document.getElementById('st-clients').textContent=d.total_clients;
+    document.getElementById('st-appts').textContent=d.total_appointments;
+  }catch(e){showToast('Server xatosi','error')}
+}
+
+function fmtM(n){if(!n)return'0';if(n>=1e6)return(n/1e6).toFixed(1)+'M';if(n>=1e3)return(n/1e3).toFixed(0)+'K';return n;}
+async function loadFinStats(){
+  try{
+    const r=await fetch(`${API}/api/billing/finance-stats`,{headers:authHeaders()});
+    const d=await r.json();
+    document.getElementById('fs-total').textContent=fmtM(d.total_revenue)+' so\'m';
+    document.getElementById('fs-monthly').textContent=fmtM(d.monthly_revenue)+' so\'m';
+    document.getElementById('fs-active').textContent=d.active_salons;
+    document.getElementById('fs-pending').textContent=d.pending_payments;
+  }catch(e){}
+}
+
+async function loadSalons(){
+  try{
+    const search=document.getElementById('fSearch')?.value||'';
+    const status=document.getElementById('fStatus')?.value||'';
+    const plan=document.getElementById('fPlan')?.value||'';
+    let url=`${API}/api/superadmin/salons?`;
+    if(search)url+=`search=${search}&`;
+    if(status)url+=`status=${status}&`;
+    if(plan)url+=`plan=${plan}&`;
+    const r=await fetch(url,{headers:authHeaders()});
+    _salons=await r.json();
+    const el=document.getElementById('salonsList');
+    if(!_salons.length){el.innerHTML='<div class="empty">Salon topilmadi</div>';return;}
+    el.innerHTML=`<table>
+      <thead><tr><th>#</th><th>Salon</th><th>Egasi</th><th>Tarif</th><th>Obuna</th><th>Status</th><th>Amallar</th></tr></thead>
+      <tbody>${_salons.map(s=>{
+        let expBadge='';
+        if(s.days_left!==null&&s.days_left!==undefined){
+          if(s.days_left<0)expBadge='<span class="badge badge-red">⛔ Tugagan</span>';
+          else if(s.days_left<=3)expBadge=`<span class="badge badge-yellow">⚠️ ${s.days_left} kun</span>`;
+          else expBadge=`<span class="badge badge-green">${s.days_left} kun</span>`;
+        }else expBadge='<span class="badge" style="color:var(--muted)">—</span>';
+        return `<tr>
+        <td style="color:var(--muted)">${s.id}</td>
+        <td><div style="font-weight:600">${s.name}</div><div style="font-size:11px;color:var(--muted)">${s.address||'—'}</div></td>
+        <td><div>${s.owner_name}</div><div style="font-size:11px;color:var(--muted)">${s.phone}</div></td>
+        <td><span class="badge badge-purple">${s.plan}</span></td>
+        <td>${expBadge}</td>
+        <td>${s.is_active
+          ?'<span class="badge badge-green">✅ Faol</span>'
+          :`<span class="badge badge-red">🔴 ${s.block_reason||'Blok'}</span>`}</td>
+        <td><div class="actions-cell">
+          <button class="btn btn-sm btn-blue" onclick="openEditModal(${s.id})">✏️</button>
+          <button class="btn btn-sm btn-green" onclick="loginAsSalon(${s.id})">🔑</button>
+          <button class="btn btn-sm btn-yellow" onclick="showUsers(${s.id})">👥</button>
+          <button class="btn btn-sm ${s.is_active?'btn-red':'btn-green'}" onclick="toggleSalon(${s.id})">
+            ${s.is_active?'🔴':'✅'}
+          </button>
+          <button class="btn btn-sm btn-purple" style="background:rgba(139,92,246,.15);color:var(--purple);border:1px solid rgba(139,92,246,.3)" onclick="manualPay(${s.id},'${s.name}')">💳</button>
+        </div></td>
+      </tr>`}).join('')}</tbody>
+    </table>`;
+  }catch(e){showToast('Xato','error')}
+}
+
+async function toggleSalon(id){
+  const r=await fetch(`${API}/api/superadmin/salons/${id}/toggle`,{method:'PATCH',headers:authHeaders()});
+  const d=await r.json(); showToast(d.message,'success'); loadSalons();
+}
+
+async function createSalon(){
+  const name=document.getElementById('f-name').value.trim();
+  const owner=document.getElementById('f-owner').value.trim();
+  const phone=document.getElementById('f-phone').value.trim();
+  const plan=document.getElementById('f-plan').value;
+  const address=document.getElementById('f-address').value.trim();
+  const expires=document.getElementById('f-expires').value;
+  const uname=document.getElementById('f-uname').value.trim();
+  const pass=document.getElementById('f-pass').value;
+  if(!name||!owner||!phone||!uname||!pass){showToast('Barcha * to\'ldiring','error');return;}
+  const r=await fetch(`${API}/api/superadmin/salons`,{
+    method:'POST',headers:authHeaders(),
+    body:JSON.stringify({name,owner_name:owner,phone,plan,address,expires_at:expires||null,admin_username:uname,admin_password:pass})
+  });
+  const d=await r.json();
+  if(r.ok){showToast(d.message,'success');setTimeout(()=>showTab('salons'),1000);}
+  else showToast(d.detail||'Xato','error');
+}
+
+// ─── EDIT MODAL ───
+function openEditModal(id){
+  const s=_salons.find(x=>x.id===id); if(!s) return;
+  document.getElementById('e-id').value=s.id;
+  document.getElementById('e-name').value=s.name;
+  document.getElementById('e-owner').value=s.owner_name;
+  document.getElementById('e-phone').value=s.phone;
+  document.getElementById('e-address').value=s.address;
+  document.getElementById('e-plan').value=s.plan;
+  document.getElementById('e-hours').value=s.work_hours||'09:00-20:00';
+  document.getElementById('e-expires').value=s.expires_at||'';
+  document.getElementById('e-bot-token').value=s.bot_token||'';
+  document.getElementById('e-chat-id').value=s.admin_chat_id||'';
+  document.getElementById('editModal').classList.add('open');
+}
+function closeEditModal(){document.getElementById('editModal').classList.remove('open')}
+
+async function saveEditSalon(){
+  const id=document.getElementById('e-id').value;
+  const body={
+    name:document.getElementById('e-name').value,
+    owner_name:document.getElementById('e-owner').value,
+    phone:document.getElementById('e-phone').value,
+    address:document.getElementById('e-address').value,
+    plan:document.getElementById('e-plan').value,
+    work_hours:document.getElementById('e-hours').value,
+    expires_at:document.getElementById('e-expires').value||null,
+    bot_token:document.getElementById('e-bot-token').value,
+    admin_chat_id:document.getElementById('e-chat-id').value,
+  };
+  const r=await fetch(`${API}/api/superadmin/salons/${id}`,{method:'PATCH',headers:authHeaders(),body:JSON.stringify(body)});
+  const d=await r.json();
+  if(r.ok){showToast(d.message,'success');closeEditModal();loadSalons();}
+  else showToast(d.detail||'Xato','error');
+}
+
+// ─── LOGIN AS SALON ───
+async function loginAsSalon(id){
+  if(!confirm('Bu salonning admin paneliga kirasizmi?')) return;
+  const r=await fetch(`${API}/api/superadmin/login-as/${id}`,{method:'POST',headers:authHeaders()});
+  const d=await r.json();
+  if(r.ok){
+    // Yangi tabda ochish
+    const url=new URL('/',window.location.origin);
+    const params=new URLSearchParams({sa_token:d.access_token,sa_name:d.full_name,sa_role:'admin',sa_salon:d.salon_name});
+    // localStorage ga saqlash va redirect
+    localStorage.setItem('token',d.access_token);
+    localStorage.setItem('role','admin');
+    localStorage.setItem('full_name',d.full_name);
+    localStorage.setItem('salon_name',d.salon_name);
+    localStorage.setItem('superadmin_return','true');
+    window.open('/','_blank');
+    // O'z tokenini qaytarish
+    setTimeout(()=>{
+      localStorage.setItem('token',token);
+      localStorage.setItem('role','superadmin');
+      localStorage.setItem('full_name',document.getElementById('headerUser').textContent.replace('🔱 ',''));
+    },500);
+    showToast(d.message,'success');
+  } else showToast(d.detail||'Xato','error');
+}
+
+// ─── USERS MODAL ───
+async function showUsers(salonId){
+  const s=_salons.find(x=>x.id===salonId);
+  document.getElementById('usersModalTitle').textContent=`👥 ${s?s.name:''} — Foydalanuvchilar`;
+  const r=await fetch(`${API}/api/superadmin/salons/${salonId}/users`,{headers:authHeaders()});
+  const users=await r.json();
+  const body=document.getElementById('usersModalBody');
+  if(!users.length){body.innerHTML='<div class="empty">Foydalanuvchi yo\'q</div>';}
+  else{
+    body.innerHTML=users.map(u=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:12px;border-bottom:1px solid var(--border)">
+      <div>
+        <div style="font-weight:600">${u.full_name||u.username}</div>
+        <div style="font-size:11px;color:var(--muted)">@${u.username} · ${u.role}</div>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <span class="badge ${u.is_active?'badge-green':'badge-red'}">${u.is_active?'Faol':'Blok'}</span>
+        <button class="btn btn-sm btn-yellow" onclick="resetUserPass(${u.id},'${u.username}')">🔑 Parol</button>
+      </div>
+    </div>`).join('');
+  }
+  document.getElementById('usersModal').classList.add('open');
+}
+function closeUsersModal(){document.getElementById('usersModal').classList.remove('open')}
+
+async function resetUserPass(userId, username){
+  const pass=prompt(`"${username}" uchun yangi parol kiriting (min 6 belgi):`);
+  if(!pass||pass.length<6){showToast('Parol kamida 6 belgi','error');return;}
+  const r=await fetch(`${API}/api/superadmin/reset-password`,{
+    method:'POST',headers:authHeaders(),
+    body:JSON.stringify({user_id:userId,new_password:pass})
+  });
+  const d=await r.json();
+  showToast(r.ok?d.message:(d.detail||'Xato'),r.ok?'success':'error');
+}
+
+function logout(){localStorage.clear();window.location.href='/login/';}
+
+function showToast(msg,type='success'){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className=`toast ${type} show`;
+  setTimeout(()=>t.classList.remove('show'),3500);
+}
+
+loadStats();
+loadFinStats();
+
+// ─── TO'LOVLAR ───
+async function loadPayments(){
+  try{
+    const r=await fetch(`${API}/api/billing/transactions`,{headers:authHeaders()});
+    if(!r.ok){document.getElementById('paymentsList').innerHTML='<div class="empty">Yuklanmadi</div>';return;}
+    const txns=await r.json();
+    const el=document.getElementById('paymentsList');
+    if(!Array.isArray(txns)||!txns.length){el.innerHTML='<div class="empty">To\'lov yo\'q</div>';return;}
+    el.innerHTML=`<table><thead><tr><th>#</th><th>Salon</th><th>Tarif</th><th>Summa</th><th>Provider</th><th>Status</th><th>Sana</th></tr></thead>
+    <tbody>${txns.map(t=>`<tr>
+      <td style="color:var(--muted)">${t.id}</td>
+      <td style="font-weight:600">${t.salon_name}</td>
+      <td>${t.tariff_name} <span style="font-size:11px;color:var(--muted)">(${t.duration_days}k)</span></td>
+      <td style="font-weight:700;color:var(--green)">${Number(t.amount).toLocaleString()} so'm</td>
+      <td><span class="badge badge-blue">${t.provider}</span></td>
+      <td>${t.status==='completed'?'<span class="badge badge-green">✅</span>':'<span class="badge badge-yellow">⏳</span>'}</td>
+      <td style="font-size:12px;color:var(--muted)">${t.created_at}</td>
+    </tr>`).join('')}</tbody></table>`;
+  }catch(e){document.getElementById('paymentsList').innerHTML='<div class="empty">Xato</div>';}
+}
+
+// ─── TARIFLAR ───
+async function loadTariffs(){
+  try{
+    const r=await fetch(`${API}/api/billing/tariffs/all`,{headers:authHeaders()});
+    if(!r.ok){document.getElementById('tariffsList').innerHTML='<div class="empty">Yuklanmadi ('+r.status+')</div>';return;}
+    const tars=await r.json();
+    if(!Array.isArray(tars)||!tars.length){document.getElementById('tariffsList').innerHTML='<div class="empty">Tarif yo\'q</div>';return;}
+    document.getElementById('tariffsList').innerHTML=`<table><thead><tr><th>Nomi</th><th>Plan</th><th>Narx</th><th>Kunlar</th><th>Holat</th></tr></thead>
+    <tbody>${tars.map(t=>`<tr>
+      <td style="font-weight:600">${t.name}</td>
+      <td><span class="badge badge-purple">${t.plan}</span></td>
+      <td style="font-weight:700">${Number(t.price).toLocaleString()} so'm</td>
+      <td>${t.duration_days} kun</td>
+      <td>${t.is_active?'<span class="badge badge-green">Faol</span>':'<span class="badge badge-red">O\'chiq</span>'}</td>
+    </tr>`).join('')}</tbody></table>`;
+  }catch(e){document.getElementById('tariffsList').innerHTML='<div class="empty">Xato: '+e.message+'</div>';}
+}
+async function addTariff(){
+  const name=document.getElementById('tf-name').value.trim();
+  const plan=document.getElementById('tf-plan').value;
+  const price=parseFloat(document.getElementById('tf-price').value);
+  const days=parseInt(document.getElementById('tf-days').value);
+  if(!name||!price||!days){showToast('Barcha maydonlarni to\'ldiring','error');return;}
+  const r=await fetch(`${API}/api/billing/tariffs`,{method:'POST',headers:authHeaders(),body:JSON.stringify({name,plan,price,duration_days:days})});
+  const d=await r.json();
+  showToast(d.message||'Qo\'shildi','success');
+  document.getElementById('tf-name').value='';document.getElementById('tf-price').value='';document.getElementById('tf-days').value='';
+  loadTariffs();
+}
+
+// ─── MANUAL PAYMENT ───
+async function manualPay(salonId,salonName){
+  try{
+    const r=await fetch(`${API}/api/billing/tariffs`,{headers:authHeaders()});
+    const tars=await r.json();
+    const choice=prompt(`${salonName} uchun tarif ID tanlang:\n${tars.map(t=>`${t.id}: ${t.name} (${Number(t.price).toLocaleString()} so'm, ${t.duration_days} kun)`).join('\n')}`);
+    if(!choice) return;
+    const r2=await fetch(`${API}/api/billing/manual-payment`,{method:'POST',headers:authHeaders(),body:JSON.stringify({salon_id:salonId,tariff_id:parseInt(choice)})});
+    const d=await r2.json();
+    showToast(d.message||'Tayyor','success');loadSalons();
+  }catch(e){showToast('Xato','error')}
+}
+
+// ─── OBUNA TEKSHIRISH ───
+async function checkSubs(){
+  const r=await fetch(`${API}/api/billing/check-subscriptions`,{method:'POST',headers:authHeaders()});
+  const d=await r.json();
+  showToast(`Tekshirildi: ${d.blocked} bloklandi, ${d.warned} ogohlantirish`,'success');
+  loadSalons();
+}
+// ─── TIZIM SOZLAMALARI ───
+const ssFields=['billing_bot_token','billing_bot_chat_id','click_merchant_id','click_service_id','click_secret_key','payme_merchant_id','payme_secret_key'];
+async function loadSettings(){
+  try{
+    const r=await fetch(`${API}/api/billing/system-settings`,{headers:authHeaders()});
+    const d=await r.json();
+    ssFields.forEach(k=>{
+      const el=document.getElementById('ss-'+k.replace(/_/g,'-'));
+      if(el) el.value=d[k]||'';
+    });
+  }catch(e){}
+}
+async function saveSystemSettings(){
+  const body={};
+  ssFields.forEach(k=>{
+    const el=document.getElementById('ss-'+k.replace(/_/g,'-'));
+    if(el) body[k]=el.value;
+  });
+  const r=await fetch(`${API}/api/billing/system-settings`,{method:'POST',headers:authHeaders(),body:JSON.stringify(body)});
+  const d=await r.json();
+  showToast(d.message||'Saqlandi','success');
+}
+async function testBillingBot(){
+  const el=document.getElementById('botTestResult');
+  el.innerHTML='<span style="color:var(--yellow)">Yuborilmoqda...</span>';
+  try{
+    const r=await fetch(`${API}/api/billing/test-billing-bot`,{method:'POST',headers:authHeaders()});
+    const d=await r.json();
+    el.innerHTML=d.ok?`<span style="color:var(--green)">${d.message}</span>`:`<span style="color:var(--red)">${d.message}</span>`;
+  }catch(e){el.innerHTML='<span style="color:var(--red)">Xato!</span>';}
+}
+</script>
+</body>
+</html>

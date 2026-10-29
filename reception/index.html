@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Qabulxona — SalonPro</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="header">
+  <div class="header-brand"><div class="brand-icon">📋</div><span class="brand-name">Qabulxona</span><span class="brand-badge">Reception</span></div>
+  <div class="hright">
+    <span class="date-badge" id="dateLbl"></span>
+    <span class="huser" id="hUser"></span>
+    <button class="logout-btn" onclick="logout()">Chiqish</button>
+  </div>
+</div>
+
+<div class="layout">
+  <div class="sidebar">
+    <div class="nav-item active" id="nav-queue" onclick="showTab('queue')">📋 Navbat</div>
+    <div class="nav-item" id="nav-new" onclick="showTab('new')">➕ Yangi Bron</div>
+    <div class="nav-item" id="nav-masters" onclick="showTab('masters')">👩‍💼 Ustalar Grid</div>
+    <div class="nav-item" id="nav-clients" onclick="showTab('clients')">👥 Mijozlar</div>
+  </div>
+
+  <div class="content">
+    <!-- NAVBAT TAB -->
+    <div class="tab active" id="tab-queue">
+      <div class="stats-row" id="qStats"></div>
+      <div class="section">
+        <div class="sec-head">
+          <span class="sec-title">📋 Bugungi Navbat</span>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-sm btn-ghost" onclick="prevDay()">‹ Oldingi</button>
+            <button class="btn btn-sm btn-ghost" onclick="nextDay()">Keyingi ›</button>
+            <button class="btn btn-sm btn-primary" onclick="loadQueue()">🔄</button>
+          </div>
+        </div>
+        <div id="queueList" class="queue-list"></div>
+      </div>
+    </div>
+
+    <!-- YANGI BRON TAB -->
+    <div class="tab" id="tab-new">
+      <div class="section" style="max-width:540px">
+        <div class="sec-head"><span class="sec-title">➕ Yangi Bron</span></div>
+        <div class="form-body">
+          <div class="frow">
+            <div class="fg"><label>Mijoz Ismi *</label><input id="b-client" placeholder="Ism Familiya"></div>
+            <div class="fg"><label>Telefon</label><input id="b-phone" placeholder="+998..."></div>
+          </div>
+          <div class="frow">
+            <div class="fg"><label>Xizmat *</label><select id="b-svc"></select></div>
+            <div class="fg"><label>Usta *</label><select id="b-mstr"></select></div>
+          </div>
+          <div class="frow">
+            <div class="fg"><label>Sana *</label><input id="b-date" type="date"></div>
+            <div class="fg"><label>Vaqt *</label><input id="b-time" type="time"></div>
+          </div>
+          <div class="fg"><label>Izoh</label><input id="b-note" placeholder="Qo'shimcha..."></div>
+          <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="createBooking()">📅 Bron Qilish</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- USTALAR GRID TAB -->
+    <div class="tab" id="tab-masters">
+      <div class="section">
+        <div class="sec-head"><span class="sec-title">👩‍💼 Ustalar Status Grid</span><button class="btn btn-sm btn-primary" onclick="loadMasters()">🔄 Yangilash</button></div>
+        <div id="masterGrid" class="master-grid"></div>
+      </div>
+      <div class="section" style="margin-top:16px">
+        <div class="sec-head"><span class="sec-title">📅 Vaqt Jadvali</span></div>
+        <div id="timeline" class="timeline-wrap"></div>
+      </div>
+    </div>
+
+    <!-- MIJOZLAR TAB -->
+    <div class="tab" id="tab-clients">
+      <div class="section">
+        <div class="sec-head">
+          <span class="sec-title">👥 Mijozlar</span>
+          <input class="search-inp" id="cSearch" placeholder="🔍 Qidirish..." oninput="filterClients()">
+        </div>
+        <table class="dtable">
+          <thead><tr><th>Ism</th><th>Telefon</th><th>Tashrif</th><th>Bonus</th><th>Amal</th></tr></thead>
+          <tbody id="clientTbl"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PAYMENT MODAL -->
+<div class="modal" id="payModal">
+  <div class="modal-box">
+    <div class="modal-title">💳 To'lov Qabul Qilish</div>
+    <div id="payInfo" style="background:rgba(255,255,255,.04);border-radius:12px;padding:16px;margin-bottom:16px"></div>
+
+    <div class="fg"><label>To'lov Turi</label>
+      <div class="pay-methods" id="payMethods">
+        <div class="pay-method active" data-m="cash" onclick="selectMethod(this,'cash')">💵 Naqd</div>
+        <div class="pay-method" data-m="card" onclick="selectMethod(this,'card')">💳 Karta</div>
+        <div class="pay-method" data-m="click" onclick="selectMethod(this,'click')">📱 Click</div>
+        <div class="pay-method" data-m="payme" onclick="selectMethod(this,'payme')">💚 Payme</div>
+      </div>
+    </div>
+
+    <div class="fg" style="margin-top:12px"><label>Chegirma (so'm)</label>
+      <input id="payDiscount" type="number" value="0" placeholder="0" oninput="calcTotal()">
+    </div>
+
+    <div class="section" style="margin-top:12px;padding:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-size:13px;font-weight:600">🧴 Qo'shimcha mahsulot</span>
+        <button class="btn btn-sm btn-ghost" onclick="openAddProduct()">+ Qo'shish</button>
+      </div>
+      <div id="soldProducts"></div>
+    </div>
+
+    <div id="payProductPicker" style="display:none;margin-top:8px">
+      <div class="frow">
+        <div class="fg"><label>Mahsulot</label><select id="ppProduct"></select></div>
+        <div class="fg"><label>Miqdor</label><input id="ppQty" type="number" value="1" min="0.1" step="0.1"></div>
+      </div>
+      <button class="btn btn-sm btn-primary" style="width:100%;margin-top:6px" onclick="addProduct()">+ Qo'shish</button>
+    </div>
+
+    <div class="total-box" id="totalBox"></div>
+
+    <div class="fg" style="margin-top:12px"><label>Izoh</label><input id="payNote" placeholder="Qo'shimcha izoh..."></div>
+
+    <div class="modal-footer">
+      <button class="btn btn-cancel" onclick="closeModal('payModal')">Bekor</button>
+      <button class="btn btn-primary" style="flex:1" onclick="confirmPay()">✅ To'lovni Tasdiqlash</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="app.js"></script>
+</body>
+</html>
