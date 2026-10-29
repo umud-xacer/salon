@@ -29,7 +29,7 @@ mobil ilova (iOS/Android) + veb-admin panel. Hozirgi SalonPro (FastAPI) shu plat
 | Mobil | **React Native + Expo** (TypeScript) | Bitta kod → iOS + Android; EAS Build orqali Mac'siz iOS build; OTA yangilanishlar |
 | Navigatsiya | Expo Router | Fayl asosidagi marshrutlar, deep link (`/b/demo-salon`) tayyor |
 | Server ma'lumoti | TanStack Query | Kesh, qayta yuklash, offline holat |
-| Xarita | `react-native-maps` (Google/Apple) | Expo bilan ishlaydi; kerak bo'lsa keyin Yandex SDK ga almashtirsa bo'ladi |
+| Xarita | **Yandex MapKit** (foydalanuvchi qarori) | O'zbekistonda manzillar aniqroq; Expo dev build + native modul orqali |
 | Veb-admin | **React + Vite + Tailwind** | Jadval/formalarga boy panel, mobil bilan bir xil TS tipi va API client |
 | Backend | **FastAPI** (mavjud kod) | 100+ endpoint tayyor, biznes mantig'i bor — noldan yozishdan tezroq |
 | ORM / migratsiya | SQLAlchemy 2 + **Alembic** | Hozirgi qo'lda migratsiya muammosini yo'qotadi |
@@ -97,7 +97,8 @@ platforma/
 ├── packages/
 │   └── api-client/                  # OpenAPI'dan generatsiya qilingan TS tiplar + fetch client
 │
-├── docs/                            # schema.sql, ARXITEKTURA.md
+├── legacy/                          # eski SalonPro (SQLite) — ko'chirish tugaguncha
+├── docs/                            # ARXITEKTURA.md (sxema: backend/sql/)
 ├── docker-compose.yml               # postgres+postgis, redis, backend
 └── .github/workflows/               # testlar, lint
 ```
@@ -111,8 +112,9 @@ platforma/
    `require_permission("finance.view")`.
 3. **Modullar.** Tarif (`plan_modules`) + Super Admin istisnolari (`business_modules`). Modul o'chiq bo'lsa,
    tegishli endpointlar 403 qaytaradi va ilova menyusida ko'rinmaydi.
-4. **Multi-tenant:** har bir ichki jadvalda `business_id`; har bir so'rovda filtr majburiy (hozirgi 1.1 da
-   tuzatilgan xato shu sabab paydo bo'lgan edi). Keyinroq PostgreSQL Row-Level Security bilan mustahkamlash mumkin.
+4. **Multi-tenant:** har bir ichki jadvalda `business_id` + PostgreSQL **Row-Level Security** (`backend/sql/002_security.sql`).
+   Ilova `app_api` roli bilan ulanadi va har tranzaksiyada `app.user_id` ni o'rnatadi; filtr unutilsa ham baza
+   boshqa salon ma'lumotini bermaydi.
 5. **Ikki marta bron bo'lmaydi:** `appointments` dagi `EXCLUDE USING GIST` cheklovi bir ustaga ustma-ust vaqtni
    bazaning o'zida taqiqlaydi. Ikki mijoz bir vaqtda bosganda ham faqat bittasi o'tadi.
 6. **Bo'sh vaqtlar** `staff_schedules` − `staff_time_off` − faol bronlar asosida serverda hisoblanadi
