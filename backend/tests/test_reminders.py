@@ -95,7 +95,9 @@ def reminder(admin, appointment):
 def test_reminder_is_alarm_push_and_sent_once(client, visit, outbox):
     a = visit["make"](25)
     worker.run_once()
-    [m] = outbox[visit["device"]]
+    wake, m = outbox[visit["device"]]
+    assert "title" not in wake and wake["_contentAvailable"] is True and wake["priority"] == "high"
+    assert wake["data"]["title"] == m["title"] and wake["data"]["notification_id"] == m["data"]["notification_id"]
     assert m["channelId"] == "alarm" and m["sound"] == "alarm.wav" and m["priority"] == "high"
     assert m["interruptionLevel"] == "time-sensitive"
     assert m["data"]["appointment_id"] == a and m["data"]["action"] == "confirm_attendance"
@@ -104,7 +106,7 @@ def test_reminder_is_alarm_push_and_sent_once(client, visit, outbox):
     assert notes[0]["type"] == "appointment_reminder"
 
     worker.run_once()
-    assert len(outbox[visit["device"]]) == 1
+    assert len(outbox[visit["device"]]) == 2
 
 
 def test_no_sms_for_reminders(monkeypatch, visit):
@@ -192,7 +194,7 @@ def test_alert_reaches_master_as_alarm(client, admin, visit, outbox):
     worker.run_once()
     elapse(admin, a)
     worker.run_once()
-    m = [x for x in outbox[visit["master_device"]] if x["data"]["type"] == "attendance_alert"]
+    m = [x for x in outbox[visit["master_device"]] if x["data"]["type"] == "attendance_alert" and "title" in x]
     assert len(m) == 1 and m[0]["channelId"] == "alarm" and m[0]["data"]["action"] == "call_client"
     assert visit["phone"] not in str(m[0])
 
@@ -270,6 +272,12 @@ def test_booking_events_notify_the_other_side(client, biz, visit, outbox):
     assert client.post(f"{API}/{a}/cancel", headers=auth_header(biz["owner"]), json={}).status_code == 200
     worker.send_pushes()
     assert [x["data"]["type"] for x in outbox[visit["device"]]] == ["booking_cancelled"]
+
+
+def test_ios_gets_single_alarm_message():
+    row = {"id": 1, "type": "appointment_reminder", "title": "t", "body": "b", "data": {}}
+    messages = push.build_messages({"token": "ExponentPushToken[i]", "platform": "ios"}, row)
+    assert len(messages) == 1 and messages[0]["interruptionLevel"] == "time-sensitive"
 
 
 def test_device_moves_to_new_account(client, admin, visit):

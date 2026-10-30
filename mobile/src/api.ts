@@ -111,6 +111,8 @@ export type BusinessCard = {
   name: string;
   category_name: string;
   address: string | null;
+  lat: number;
+  lng: number;
   distance_m: number | null;
   rating_avg: number;
   rating_count: number;

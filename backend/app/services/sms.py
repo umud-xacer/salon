@@ -2,8 +2,10 @@
 
 Eskiz.uz: kirish tokeni ~30 kun yashaydi, xotirada saqlanadi, 401 kelsa bir marta yangilanadi.
 Matnlar Eskiz'da moderatsiyadan o'tgan shablonlarga aynan mos bo'lishi kerak (SMS_*_TEMPLATE).
+Haqiqiy hisobni tekshirish: python -m app.cli sms-check --phone +998901234567
 """
 import logging
+import re
 import threading
 
 import httpx
@@ -23,15 +25,28 @@ class SmsError(Exception):
     pass
 
 
+def _reason(r: httpx.Response) -> str:
+    """Eskiz sababi operator uchun (balans, moderatsiya). Raqamlar olib tashlanadi: matnda kod bo'lishi mumkin."""
+    try:
+        body = r.json()
+    except ValueError:
+        return ""
+    message = body.get("message") if isinstance(body, dict) else None
+    return re.sub(r"\d", "#", str(message))[:200] if message else ""
+
+
 def _login() -> str:
     s = get_settings()
-    if s.eskiz_email is None or s.eskiz_password is None:
+    if not s.eskiz_email or s.eskiz_password is None:
         raise SmsError("ESKIZ_EMAIL / ESKIZ_PASSWORD o'rnatilmagan")
     r = httpx.post(f"{ESKIZ_URL}/auth/login", timeout=TIMEOUT_SECONDS,
                    data={"email": s.eskiz_email, "password": s.eskiz_password.get_secret_value()})
     if r.status_code != 200:
-        raise SmsError(f"Eskiz login: HTTP {r.status_code}")
-    return r.json()["data"]["token"]
+        raise SmsError(f"Eskiz login rad etildi: HTTP {r.status_code} {_reason(r)}".strip())
+    try:
+        return r.json()["data"]["token"]
+    except (ValueError, KeyError, TypeError) as e:
+        raise SmsError("Eskiz login javobi tushunarsiz") from e
 
 
 def _post_sms(token: str, phone: str, message: str) -> httpx.Response:
@@ -50,13 +65,15 @@ def _send_eskiz(phone: str, message: str) -> None:
         r = _post_sms(token, phone, message)
         if r.status_code == 401:
             with _lock:
-                _token = token = _login()
+                if _token == token:                    # boshqa oqim allaqachon yangilamagan bo'lsa
+                    _token = _login()
+                token = _token
             r = _post_sms(token, phone, message)
     except httpx.HTTPError as e:
+        # Vaqt tugaganda qayta yuborilmaydi: SMS ketgan bo'lishi mumkin, foydalanuvchi o'zi qayta so'raydi
         raise SmsError(f"Eskiz bilan aloqa yo'q: {type(e).__name__}") from e
     if r.status_code != 200:
-        # Javob matni yozilmaydi: unda SMS matni, ya'ni kod bo'lishi mumkin
-        raise SmsError(f"Eskiz rad etdi: HTTP {r.status_code}")
+        raise SmsError(f"Eskiz rad etdi: HTTP {r.status_code} {_reason(r)}".strip())
 
 
 def _send(phone: str, message: str) -> None:

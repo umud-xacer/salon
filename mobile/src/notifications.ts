@@ -7,6 +7,9 @@ import { api } from './api';
 
 export const ALARM_TYPES = ['appointment_reminder', 'attendance_alert'];
 
+// Bitta budilnik ikki yo'l bilan kelishi mumkin (push va to'liq ekran havolasi): ekran bir marta ochilsin
+export const openedAlarms = new Set<string>();
+
 let pushToken: string | null = null;
 
 // Ilova ochiq bo'lsa ovozni budilnik ekrani chaladi

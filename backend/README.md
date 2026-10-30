@@ -82,6 +82,7 @@ SMS faqat ikki holatda: OTP (`/auth/otp/request`) va parolni tiklash (`/auth/pas
 `.env`: `SMS_PROVIDER=eskiz`, `ESKIZ_EMAIL`, `ESKIZ_PASSWORD`, `ESKIZ_FROM`, `SMS_OTP_TEMPLATE`, `SMS_RESET_TEMPLATE`.
 Matnlar Eskiz'da tasdiqlangan shablonlarga aynan mos bo'lishi kerak. SMS yuborilmasa javob `503 sms_unavailable`.
 Super Admin paroli SMS bilan tiklanmaydi.
+Hisobni tekshirish: `python -m app.cli sms-check` (faqat login), `--phone +998...` bilan bitta haqiqiy SMS (pullik).
 
 ### Eslatma, "Boraman", push
 Fon jarayonini API bilan birga ishga tushiring: `python -m app.worker` (`WORKER_DATABASE_URL` kerak, keyin `python -m app.cli setup-roles`).

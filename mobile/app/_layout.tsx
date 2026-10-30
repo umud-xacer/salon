@@ -4,14 +4,12 @@ import { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 
 import { AuthProvider, useAuth } from '../src/auth';
-import { ALARM_TYPES, setupChannels } from '../src/notifications';
-
-const opened = new Set<string>();     // ochiq ilovada banner bosilsa, budilnik ikkinchi marta ochilmasin
+import { ALARM_TYPES, openedAlarms, setupChannels } from '../src/notifications';
 
 function openAlarm(router: ReturnType<typeof useRouter>, data: Record<string, unknown> = {}) {
   const id = String(data.notification_id);
-  if (!ALARM_TYPES.includes(String(data.type)) || opened.has(id)) return;
-  opened.add(id);
+  if (!ALARM_TYPES.includes(String(data.type)) || openedAlarms.has(id)) return;
+  openedAlarms.add(id);
   router.push({
     pathname: '/alarm',
     params: {

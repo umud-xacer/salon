@@ -1,5 +1,8 @@
 import { useRouter } from 'expo-router';
+import { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
+
+import { SalonAlarmModule } from '../../modules/salon-alarm';
 
 import { useAuth } from '../../src/auth';
 import { Button, Card, shared } from '../../src/ui';
@@ -7,6 +10,11 @@ import { Button, Card, shared } from '../../src/ui';
 export default function Profile() {
   const { me, signOut } = useAuth();
   const router = useRouter();
+  const [fullScreen, setFullScreen] = useState(true);
+
+  useEffect(() => {
+    SalonAlarmModule?.canUseFullScreen().then(setFullScreen).catch(() => {});
+  }, []);
 
   return (
     <View style={shared.screen}>
@@ -15,6 +23,9 @@ export default function Profile() {
         <Text style={shared.muted}>{me?.user.phone}</Text>
       </Card>
       <View style={shared.gap}>
+        {!fullScreen && (
+          <Button title="To'liq ekranli budilnikka ruxsat bering" onPress={() => SalonAlarmModule?.openFullScreenSettings()} />
+        )}
         <Button
           title="Budilnikni sinash"
           kind="outline"

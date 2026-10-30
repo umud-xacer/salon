@@ -8,7 +8,12 @@
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "uz.salon.mobile"
+      "bundleIdentifier": "uz.salon.mobile",
+      "infoPlist": {
+        "UIBackgroundModes": [
+          "remote-notification"
+        ]
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -45,7 +50,8 @@
         {
           "locationWhenInUsePermission": "Yaqin atrofdagi salonlarni ko'rsatish uchun"
         }
-      ]
+      ],
+      "./plugins/with-alarm-activity.js"
     ],
     "scheme": "salon"
   }

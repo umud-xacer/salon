@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Linking, StyleSheet, Text, Vibration, View } from 'react-native';
 
 import { api, ApiError, Appointment } from '../src/api';
+import { openedAlarms } from '../src/notifications';
 import { Button, dateTimeOf, ErrorText } from '../src/ui';
 
 const PATTERN = [0, 800, 400];
@@ -21,6 +22,7 @@ export default function Alarm() {
   const isClient = type === 'appointment_reminder';
   const isTest = type === 'test';
   useKeepAwake();
+  openedAlarms.add(notificationId);
 
   useEffect(() => {
     setAudioModeAsync({ playsInSilentMode: true }).catch(() => {});
@@ -39,7 +41,8 @@ export default function Alarm() {
   const stop = useCallback(() => {
     player.pause();
     Vibration.cancel();
-    router.back();
+    if (router.canGoBack()) router.back();
+    else router.replace('/');
   }, [player, router]);
 
   const run = async (action: () => Promise<void>) => {

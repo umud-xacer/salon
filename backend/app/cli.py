@@ -3,6 +3,8 @@
     python -m app.cli setup-roles
         app_api / app_auth / app_worker rollariga LOGIN va parol beradi
         (parollar DATABASE_URL, AUTH_DATABASE_URL va WORKER_DATABASE_URL dan).
+    python -m app.cli sms-check [--phone +998901234567] [--text "..."]
+        Eskiz hisobini tekshiradi.
     python -m app.cli create-superadmin --phone +998901234567 --name "Ism Familiya"
         Super Admin yaratadi. Parol so'raladi (ekranda ko'rinmaydi).
 
@@ -56,6 +58,19 @@ def create_superadmin(phone: str, name: str, password: str | None) -> None:
     print(f"Super Admin tayyor: id={uid} {phone}")
 
 
+def sms_check(phone: str | None, text: str) -> None:
+    """Eskiz hisobini tekshiradi: login, keyin (--phone berilsa) bitta haqiqiy SMS. SMS pullik."""
+    from app.services import sms
+    try:
+        sms._login()
+        print("Eskiz login: OK")
+        if phone:
+            sms._send_eskiz(normalize_phone(phone), text)
+            print("SMS yuborildi")
+    except sms.SmsError as e:
+        sys.exit(f"Xato: {e}")
+
+
 def main(argv: list[str] | None = None) -> None:
     p = argparse.ArgumentParser(prog="app.cli")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -64,12 +79,17 @@ def main(argv: list[str] | None = None) -> None:
     sa.add_argument("--phone", required=True)
     sa.add_argument("--name", required=True)
     sa.add_argument("--password", help="faqat avtomatlashtirish uchun; odatda so'raladi")
+    sc = sub.add_parser("sms-check")
+    sc.add_argument("--phone", help="berilsa, shu raqamga bitta haqiqiy SMS ketadi")
+    sc.add_argument("--text", default="Bu Eskiz dan test", help="Eskiz'da tasdiqlangan matn")
     args = p.parse_args(argv)
 
     if args.cmd == "setup-roles":
         setup_roles()
     elif args.cmd == "create-superadmin":
         create_superadmin(args.phone, args.name, args.password)
+    elif args.cmd == "sms-check":
+        sms_check(args.phone, args.text)
 
 
 if __name__ == "__main__":

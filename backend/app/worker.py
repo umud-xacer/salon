@@ -3,7 +3,7 @@
     python -m app.worker          # har daqiqada ishlaydi
     python -m app.worker --once   # bir marta (cron yoki tekshiruv uchun)
 
-app_worker roli bilan ulanadi: jadvallarni o'qiy olmaydi, faqat sql/007_push.sql dagi funksiyalarni chaqiradi.
+app_worker roli bilan ulanadi: jadvallarni o'qiy olmaydi, faqat eslatma va push funksiyalarini chaqiradi.
 """
 import argparse
 import logging
@@ -45,12 +45,13 @@ def send_pushes() -> int:
             if row is None:
                 return count
             delivered, dead = False, []
-            if row["tokens"]:
+            messages = [m for device in row["devices"] for m in push.build_messages(device, row)]
+            if messages:
                 try:
-                    tickets = push.send([push.build_message(t, row) for t in row["tokens"]])
+                    tickets = push.send(messages)
                     delivered = any(t["status"] == "ok" for t in tickets)
-                    dead = [token for token, t in zip(row["tokens"], tickets)
-                            if t.get("details", {}).get("error") == "DeviceNotRegistered"]
+                    dead = list({m["to"] for m, t in zip(messages, tickets)
+                                 if t.get("details", {}).get("error") == "DeviceNotRegistered"})
                 except Exception:
                     log.exception("Push yuborilmadi, xabar %s", row["id"])
             db.execute(text("SELECT app.mark_pushed(:id, :d, CAST(:dead AS text[]))"),

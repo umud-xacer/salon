@@ -18,6 +18,7 @@ def eskiz(monkeypatch):
 
     def fake_post(url, data=None, headers=None, timeout=None):
         request = httpx.Request("POST", url)
+        calls["last_url"] = url
         if url.endswith("/auth/login"):
             calls["login"] += 1
             return httpx.Response(200, json={"data": {"token": f"tok{calls['login']}"}}, request=request)
@@ -53,6 +54,52 @@ def test_eskiz_failure_raises(eskiz):
     with pytest.raises(sms.SmsError) as e:
         sms.send_otp("+998901112233", "123456")
     assert "123456" not in str(e.value)
+
+
+def _login_returns(monkeypatch, response):
+    original = sms.httpx.post
+
+    def fake(url, **kwargs):
+        if url.endswith("/auth/login"):
+            return response
+        return original(url, **kwargs)
+    monkeypatch.setattr(sms.httpx, "post", fake)
+
+
+@pytest.mark.parametrize("response", [
+    httpx.Response(401, json={"message": "Invalid credentials"}),
+    httpx.Response(200, text="<html>xizmat ishlamayapti</html>"),
+    httpx.Response(200, json={"data": {}}),
+])
+def test_eskiz_bad_login_is_sms_error(eskiz, monkeypatch, response):
+    _login_returns(monkeypatch, response)
+    with pytest.raises(sms.SmsError):
+        sms.send_otp("+998901112233", "123456")
+
+
+def test_eskiz_missing_credentials(eskiz, monkeypatch):
+    monkeypatch.setattr(get_settings(), "eskiz_password", None)
+    with pytest.raises(sms.SmsError):
+        sms.send_otp("+998901112233", "123456")
+
+
+def test_eskiz_network_failure_is_not_retried(eskiz, monkeypatch):
+    calls = []
+
+    def boom(url, **kwargs):
+        calls.append(url)
+        if url.endswith("/auth/login"):
+            return httpx.Response(200, json={"data": {"token": "t"}})
+        raise httpx.ReadTimeout("vaqt tugadi")
+    monkeypatch.setattr(sms.httpx, "post", boom)
+    with pytest.raises(sms.SmsError):
+        sms.send_otp("+998901112233", "123456")
+    assert len([u for u in calls if u.endswith("/sms/send")]) == 1
+
+
+def test_eskiz_reason_hides_digits():
+    r = httpx.Response(400, json={"message": "Matn moderatsiyadan o'tmagan: kod 123456"})
+    assert "123456" not in sms._reason(r) and "moderatsiya" in sms._reason(r)
 
 
 def test_otp_api_reports_sms_failure(client, eskiz):
