@@ -62,6 +62,16 @@ $env:TEST_PG_ADMIN_URL = "postgresql+psycopg://postgres:PAROL@127.0.0.1:5432/pos
 | GET | `/geo/geocode?q=` · `/geo/reverse?lat&lng` (Yandex Geocoder) | kirgan foydalanuvchi |
 | GET/PATCH | `/businesses/{id}/profile` · GET/PUT `/hours` · GET/POST/DELETE `/photos` | `business.manage` |
 | GET/POST/PATCH/DELETE | `/businesses/{id}/service-categories` · `/businesses/{id}/services` | `services.manage` |
+| GET | `/catalog/slots?member_id&service_id&date&step` | hamma (kirmasdan ham) |
+| GET | `/businesses/{id}/slots?member_id&service_id&date&step` | `appointments.manage` |
+| GET · PUT | `/businesses/{id}/members/{mid}/schedule` | GET: `staff.manage` yoki xodimning o'zi · PUT: `staff.manage` |
+| GET/POST/DELETE | `/businesses/{id}/members/{mid}/time-off` | `staff.manage` yoki xodimning o'zi |
+
+### Bo'sh vaqtlar
+- Hisob bazadagi `app.available_slots()` da: ish jadvali (kiritilmagan bo'lsa biznes soatlari), tanaffus, faol bronlar va ta'tillar hisobga olinadi.
+- Tanaffus alohida saqlanmaydi: kun bir nechta ish oralig'i (`staff_schedules`), tanaffus ular orasidagi bo'shliq.
+- Mijoz bron va ta'til jadvallarini o'qiy olmaydi (RLS) — funksiya faqat bo'sh vaqtni qaytaradi.
+- Nomzodlar: `step` (5/10/15/20/30/60, standart 30) to'ri + band vaqt tugagan payt. Sana: bugundan 60 kungacha.
 
 ### Katalog xavfsizligi
 - Katalog har doim **foydalanuvchisiz** RLS sessiyasida ishlaydi — Super Admin tokeni bilan ham yashirin/bloklangan biznes ko'rinmaydi.

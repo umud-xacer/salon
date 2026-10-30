@@ -3,6 +3,8 @@
 Hamma so'rov foydalanuvchisiz RLS sessiyasida — baza faqat faol va ochiq bizneslarni,
 faol xizmatlarni va xodimlarning ochiq profilini (public_staff) beradi.
 """
+from datetime import date
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -10,6 +12,8 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_public_db
 from app.schemas.catalog import (BusinessCard, BusinessDetail, CategoryOut, HoursOut, NearbyOut,
                                  ServiceGroupOut, ServiceOut, StaffOut)
+from app.schemas.schedule import SlotsOut
+from app.services.slots import available_slots
 
 router = APIRouter(prefix="/catalog", tags=["catalog"])
 
@@ -111,6 +115,13 @@ def in_bounds(
          LIMIT :limit
     """), params).mappings()
     return [BusinessCard(**r) for r in rows]
+
+
+@router.get("/slots", response_model=SlotsOut)
+def slots(member_id: int = Query(ge=1), service_id: int = Query(ge=1), day: date = Query(alias="date"),
+          step: int = Query(default=30), db: Session = Depends(get_public_db)):
+    """Tanlangan usta va xizmat uchun shu kundagi bo'sh vaqtlar."""
+    return available_slots(db, member_id, service_id, day, step)
 
 
 @router.get("/businesses/{slug}", response_model=BusinessDetail)
