@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import DBAPIError
 
-from app.api.v1 import auth, business_admin, catalog, geo, members, schedule, superadmin
+from app.api.v1 import appointments, auth, business_admin, catalog, geo, members, schedule, superadmin
 from app.core.config import get_settings
 from app.services.auth_service import AuthError
 
@@ -58,6 +58,7 @@ _DB_ERRORS = {
     "22023": (422, "invalid_value", "Sana yoki vaqt qadami noto'g'ri"),     # app.available_slots
     "P0002": (404, "not_found", "Usta yoki xizmat topilmadi"),             # app.available_slots
     "P0429": (429, "rate_limited", "Juda ko'p urinish"),
+    "P0409": (409, "not_changeable", "Bu bronni endi o'zgartirib bo'lmaydi"),   # boshlangan yoki yopilgan bron
 }
 
 
@@ -79,6 +80,7 @@ app.include_router(catalog.router, prefix="/api/v1")
 app.include_router(geo.router, prefix="/api/v1")
 app.include_router(business_admin.router, prefix="/api/v1")
 app.include_router(schedule.router, prefix="/api/v1")
+app.include_router(appointments.router, prefix="/api/v1")
 
 
 @app.get("/health", include_in_schema=False)

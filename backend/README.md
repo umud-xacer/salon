@@ -66,6 +66,19 @@ $env:TEST_PG_ADMIN_URL = "postgresql+psycopg://postgres:PAROL@127.0.0.1:5432/pos
 | GET | `/businesses/{id}/slots?member_id&service_id&date&step` | `appointments.manage` |
 | GET · PUT | `/businesses/{id}/members/{mid}/schedule` | GET: `staff.manage` yoki xodimning o'zi · PUT: `staff.manage` |
 | GET/POST/DELETE | `/businesses/{id}/members/{mid}/time-off` | `staff.manage` yoki xodimning o'zi |
+| POST | `/appointments` · GET `/appointments/mine?upcoming` | kirgan foydalanuvchi (mijoz) |
+| GET | `/appointments/{id}` | bronni ko'ra oladigan har kim (RLS) |
+| POST | `/appointments/{id}/cancel` · `/appointments/{id}/reschedule` | bron mijozi yoki `appointments.manage` |
+| GET | `/businesses/{id}/appointments?date&member_id` | `view_all` / `view_own` (xodim faqat o'zinikini) |
+| PATCH | `/businesses/{id}/appointments/{aid}/status` | salon; oddiy xodim faqat o'z broni: `in_progress`, `completed`, `no_show` |
+
+### Bronlar
+- Mijozda `appointments` ga yozish huquqi yo'q: bron faqat `app.book_appointment`, `app.cancel_appointment`, `app.reschedule_appointment` orqali.
+- Mijoz, narx va davomiylik serverda aniqlanadi (tokendan va xizmatdan), so'rovdan olinmaydi.
+- Ikki marta bron: oldin `app.compute_slots` tekshiradi, bir vaqtdagi so'rovlarni `no_double_booking` (EXCLUDE) rad etadi — `409 time_conflict`.
+- Mijoz bitta salonda 5 tagacha faol bron qila oladi (`429`). Boshlangan bronni o'zgartirib bo'lmaydi (`409 not_changeable`).
+- Mijoz ko'chirsa, bron qayta `pending` bo'ladi; salon ko'chirsa, holat saqlanadi.
+- Begona bron uchun javob `404` — bron borligi ham oshkor bo'lmaydi.
 
 ### Bo'sh vaqtlar
 - Hisob bazadagi `app.available_slots()` da: ish jadvali (kiritilmagan bo'lsa biznes soatlari), tanaffus, faol bronlar va ta'tillar hisobga olinadi.
