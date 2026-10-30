@@ -74,20 +74,31 @@ $env:TEST_PG_ADMIN_URL = "postgresql+psycopg://postgres:PAROL@127.0.0.1:5432/pos
 | POST | `/appointments/{id}/attend` | bron mijozi ("Boraman") |
 | GET | `/appointments/{id}/client-contact` | bron ustasi yoki `appointments.manage`, faqat ochiq ogohlantirishda |
 | GET · POST | `/notifications?unread` · `/notifications/{id}/read` | kirgan foydalanuvchi (faqat o'ziniki) |
-| GET · POST | `/r/{token}` (`/api/v1` siz) | SMS havolasi, kirishsiz |
+| POST · DELETE | `/devices` | kirgan foydalanuvchi (Expo push token) |
+| POST | `/auth/password/forgot` · `/auth/password/reset` | hamma |
 
-### Eslatma va "Boraman"
+### SMS (Eskiz.uz)
+SMS faqat ikki holatda: OTP (`/auth/otp/request`) va parolni tiklash (`/auth/password/forgot`, `/auth/password/reset`).
+`.env`: `SMS_PROVIDER=eskiz`, `ESKIZ_EMAIL`, `ESKIZ_PASSWORD`, `ESKIZ_FROM`, `SMS_OTP_TEMPLATE`, `SMS_RESET_TEMPLATE`.
+Matnlar Eskiz'da tasdiqlangan shablonlarga aynan mos bo'lishi kerak. SMS yuborilmasa javob `503 sms_unavailable`.
+Super Admin paroli SMS bilan tiklanmaydi.
+
+### Eslatma, "Boraman", push
 Fon jarayonini API bilan birga ishga tushiring: `python -m app.worker` (`WORKER_DATABASE_URL` kerak, keyin `python -m app.cli setup-roles`).
 
-1. Bron boshlanishiga `REMINDER_LEAD_MINUTES` (30) qolganda mijozga SMS (`/r/{token}` havolasi bilan) va ilova xabari ketadi.
+1. Bron boshlanishiga `REMINDER_LEAD_MINUTES` (30) qolganda mijozga budilnik push (`alarm` kanali) ketadi.
    Shu oraliqda qilingan bronga eslatma yuborilmaydi: mijoz hozirgina yozildi.
-2. Mijoz ilovada yoki havola sahifasida "Boraman" bosadi. Havolani ochishning o'zi tasdiq emas (GET o'zgartirmaydi).
-3. `REMINDER_RESPONSE_MINUTES` (15) ichida javob bo'lmasa yoki SMS yuborilmasa (darhol), ustaga `attendance_alert` boradi.
+2. Mijoz ilovada "Boraman" bosadi (`POST /appointments/{id}/attend`).
+3. `REMINDER_RESPONSE_MINUTES` (15) ichida javob bo'lmasa, ustaga budilnik `attendance_alert` boradi.
+   Push hech bir qurilmaga ketmasa (qurilma yo'q, Expo xatosi), javob muddati kutilmaydi.
 4. Ochiq ogohlantirishda `needs_contact=true` va `client-contact` telefon va `tel:` havolasini beradi. Raqam xabarda saqlanmaydi,
    har bir ko'rish auditda, mijoz tasdiqlagach yoki bron yopilgach yopiladi. Kech tasdiq ustaga `attendance_confirmed` yuboradi.
-5. Bron vaqti o'zgarsa, jarayon boshidan boshlanadi va eski havola yaroqsiz bo'ladi.
+5. Bron vaqti o'zgarsa, jarayon boshidan boshlanadi.
 
-`app_worker` roli jadvallarni o'qiy olmaydi, faqat `sql/006_reminders.sql` dagi uchta funksiyani chaqiradi. Havola tokeni bazada faqat SHA-256 xesh ko'rinishida.
+`notifications` — chiqish navbati: worker `pushed_at` bo'sh qatorlarni Expo'ga yuboradi. Yangi, bekor qilingan va ko'chirilgan bron
+haqidagi xabarlar trigger bilan yoziladi (`default` kanal). Expo qabul qilgani telefonga yetgani emas: receipt'lar hali tekshirilmaydi.
+
+`app_worker` roli jadvallarni o'qiy olmaydi, faqat `create_due_reminders`, `next_push`, `mark_pushed`, `raise_attendance_alerts` ni chaqiradi.
 
 ### Bronlar
 - Mijozda `appointments` ga yozish huquqi yo'q: bron faqat `app.book_appointment`, `app.cancel_appointment`, `app.reschedule_appointment` orqali.

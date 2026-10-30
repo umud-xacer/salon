@@ -28,7 +28,9 @@ _SELECT = """
            coalesce(r.alerted_at IS NOT NULL AND r.confirmed_at IS NULL
                     AND a.status IN ('pending', 'confirmed') AND a.ends_at > now(), false) AS needs_contact,
            coalesce((SELECT array_agg(s.service_name ORDER BY s.id) FROM appointment_services s
-                      WHERE s.appointment_id = a.id), '{}') AS services
+                      WHERE s.appointment_id = a.id), '{}') AS services,
+           coalesce((SELECT array_agg(s.service_id ORDER BY s.id) FROM appointment_services s
+                      WHERE s.appointment_id = a.id), '{}') AS service_ids
       FROM appointments a
       LEFT JOIN businesses b       ON b.id = a.business_id
       LEFT JOIN public_staff ps    ON ps.member_id = a.member_id

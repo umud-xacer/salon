@@ -54,6 +54,7 @@ class AppointmentOut(BaseModel):
     ends_at: dt.datetime
     total_price: int
     services: list[str]
+    service_ids: list[int]
     client_note: str | None
     cancel_reason: str | None
     attendance: Literal["reminded", "confirmed", "no_response"] | None = None
