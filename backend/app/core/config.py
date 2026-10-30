@@ -31,11 +31,16 @@ class Settings(BaseSettings):
 
     cors_origins: list[str] = []
     sms_provider: Literal["console", "eskiz"] = "console"
+    eskiz_email: str | None = None
+    eskiz_password: SecretStr | None = None
+    eskiz_from: str = "4546"
+    # Eskiz'da moderatsiyadan o'tgan matnlarga aynan mos bo'lishi kerak
+    sms_otp_template: str = "Tasdiqlash kodi: {code}"
+    sms_reset_template: str = "Parolni tiklash kodi: {code}"
 
     # Bron eslatmasi: boshlanishidan necha daqiqa oldin yuboriladi va javob uchun necha daqiqa kutiladi
     reminder_lead_minutes: int = Field(default=30, ge=5, le=240)
     reminder_response_minutes: int = Field(default=15, ge=1, le=120)
-    public_base_url: str = "http://127.0.0.1:8000"     # SMS'dagi "Boraman" havolasi uchun
 
     # Yandex HTTP Geocoder (manzil ↔ koordinata). Kalit faqat serverda — mobil ilovaga berilmaydi.
     # Xaritaning o'zi mobil ilovada Yandex MapKit (alohida, mobil kalit) bilan chiziladi.
@@ -47,6 +52,8 @@ class Settings(BaseSettings):
         if self.env == "prod":
             if self.sms_provider == "console":
                 raise ValueError("prod muhitida SMS_PROVIDER=console bo'lishi mumkin emas")
+            if self.eskiz_email is None or self.eskiz_password is None:
+                raise ValueError("prod muhitida ESKIZ_EMAIL va ESKIZ_PASSWORD kerak")
             if "*" in self.cors_origins:
                 raise ValueError("prod muhitida CORS '*' taqiqlangan")
         return self

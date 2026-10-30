@@ -1,50 +1,31 @@
-"""Fon jarayoni: bron eslatmalari va ustaga ogohlantirishlar.
+"""Fon jarayoni: bron eslatmalari, ustaga ogohlantirishlar va push yuborish.
 
     python -m app.worker          # har daqiqada ishlaydi
     python -m app.worker --once   # bir marta (cron yoki tekshiruv uchun)
 
-app_worker roli bilan ulanadi: jadvallarni o'qiy olmaydi, faqat sql/006_reminders.sql dagi funksiyalarni chaqiradi.
+app_worker roli bilan ulanadi: jadvallarni o'qiy olmaydi, faqat sql/007_push.sql dagi funksiyalarni chaqiradi.
 """
 import argparse
-import hashlib
 import logging
-import secrets
 import time
 
 from sqlalchemy import text
 
 from app.core.config import get_settings
 from app.db.session import worker_session
-from app.services import sms
+from app.services import push
 
 log = logging.getLogger("worker")
 
 INTERVAL_SECONDS = 60
 
 
-def send_reminders() -> int:
-    """Har bir eslatma alohida tranzaksiyada: yarim yo'lda to'xtasa, yuborilganlari qayta ketmaydi."""
-    s = get_settings()
-    count = 0
-    while True:
-        with worker_session() as db:
-            row = db.execute(text("SELECT * FROM app.next_due_reminder(:lead)"),
-                             {"lead": s.reminder_lead_minutes}).mappings().first()
-            if row is None:
-                return count
-            token = secrets.token_urlsafe(16)
-            message = (f"{row['business_name']}: broningiz {row['slot_time']} da. Borasizmi? "
-                       f"Tasdiqlang: {s.public_base_url}/r/{token}")
-            try:
-                sms.send_sms(row["phone"], message)
-                delivered = True
-            except Exception:
-                log.exception("SMS yuborilmadi, bron %s", row["appointment_id"])
-                delivered = False
-            db.execute(text("SELECT app.record_reminder(:id, :h, :d)"),
-                       {"id": row["appointment_id"], "h": hashlib.sha256(token.encode()).hexdigest(), "d": delivered})
-            db.commit()
-            count += 1
+def create_reminders() -> int:
+    with worker_session() as db:
+        count = db.scalar(text("SELECT app.create_due_reminders(:lead)"),
+                          {"lead": get_settings().reminder_lead_minutes})
+        db.commit()
+        return count
 
 
 def raise_alerts() -> int:
@@ -55,8 +36,34 @@ def raise_alerts() -> int:
         return count
 
 
+def send_pushes() -> int:
+    """Har bir xabar alohida tranzaksiyada: yarim yo'lda to'xtasa, yuborilganlari qayta ketmaydi."""
+    count = 0
+    while True:
+        with worker_session() as db:
+            row = db.execute(text("SELECT * FROM app.next_push()")).mappings().first()
+            if row is None:
+                return count
+            delivered, dead = False, []
+            if row["tokens"]:
+                try:
+                    tickets = push.send([push.build_message(t, row) for t in row["tokens"]])
+                    delivered = any(t["status"] == "ok" for t in tickets)
+                    dead = [token for token, t in zip(row["tokens"], tickets)
+                            if t.get("details", {}).get("error") == "DeviceNotRegistered"]
+                except Exception:
+                    log.exception("Push yuborilmadi, xabar %s", row["id"])
+            db.execute(text("SELECT app.mark_pushed(:id, :d, CAST(:dead AS text[]))"),
+                       {"id": row["id"], "d": delivered, "dead": dead})
+            db.commit()
+            count += 1
+
+
 def run_once() -> dict:
-    return {"reminders": send_reminders(), "alerts": raise_alerts()}
+    reminders = create_reminders()
+    pushes = send_pushes()                 # yetkazilmagan eslatma shu aylanishda ogohlantirishga aylansin
+    alerts = raise_alerts()
+    return {"reminders": reminders, "alerts": alerts, "pushes": pushes + send_pushes()}
 
 
 def main() -> None:

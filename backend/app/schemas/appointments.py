@@ -23,6 +23,11 @@ class StatusIn(BaseModel):
     status: Literal["confirmed", "in_progress", "completed", "no_show"]
 
 
+class DeviceIn(BaseModel):
+    token: str = Field(pattern=r"^ExponentPushToken\[[A-Za-z0-9_-]+\]$", max_length=200)
+    platform: Literal["ios", "android"]
+
+
 class ClientContactOut(BaseModel):
     phone: str
     tel_url: str

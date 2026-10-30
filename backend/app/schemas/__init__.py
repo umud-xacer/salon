@@ -31,6 +31,21 @@ class OtpVerify(_Phone):
     full_name: str | None = Field(default=None, max_length=120)
 
 
+class PasswordForgot(_Phone):
+    pass
+
+
+class PasswordReset(_Phone):
+    code: str = Field(pattern=r"^\d{6}$")
+    new_password: str = Field(max_length=128)
+
+    @field_validator("new_password")
+    @classmethod
+    def _strong(cls, v: str) -> str:
+        validate_password_strength(v)
+        return v
+
+
 class PasswordLogin(_Phone):
     password: str = Field(min_length=1, max_length=128)
 

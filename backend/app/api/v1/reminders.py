@@ -1,63 +1,12 @@
-"""'Boraman' tasdig'i, ustaning qo'ng'iroq tugmasi va ilova ichidagi xabarlar.
-
-/r/{token} — SMS'dagi havola, kirishsiz ishlaydi. GET faqat sahifa ko'rsatadi, tasdiq POST bilan:
-messenjerlar havolani oldindan ochib ko'rganda bron o'z-o'zidan tasdiqlanib qolmasin.
-"""
-import hashlib
-from html import escape
-
+"""'Boraman' tasdig'i, ustaning qo'ng'iroq tugmasi, ilova xabarlari va push qurilmalari."""
 from fastapi import APIRouter, Depends, HTTPException, Path, Query
-from fastapi.responses import HTMLResponse
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db, get_public_db
-from app.schemas.appointments import ClientContactOut, NotificationOut
+from app.api.deps import get_db
+from app.schemas.appointments import ClientContactOut, DeviceIn, NotificationOut
 
 router = APIRouter(prefix="/api/v1", tags=["reminders"])
-public_router = APIRouter(include_in_schema=False)
-
-_TOKEN = Path(min_length=16, max_length=64, pattern=r"^[A-Za-z0-9_-]+$")
-
-_PAGE = """<!doctype html>
-<html lang="uz"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Bronni tasdiqlash</title>
-<style>body{{font-family:system-ui,sans-serif;max-width:420px;margin:15vh auto;padding:0 16px;text-align:center;color:#222}}
-button{{font-size:18px;padding:14px 40px;border:0;border-radius:10px;background:#16794c;color:#fff}}</style>
-</head><body>{body}</body></html>"""
-
-
-def _hash(token: str) -> str:
-    return hashlib.sha256(token.encode()).hexdigest()
-
-
-def _page(body: str, status: int = 200) -> HTMLResponse:
-    return HTMLResponse(_PAGE.format(body=body), status_code=status)
-
-
-_EXPIRED = "<h2>Havola eskirgan</h2><p>Bron bekor qilingan yoki vaqti o'tgan.</p>"
-_THANKS = "<h2>Rahmat!</h2><p>Sizni kutamiz.</p>"
-
-
-@public_router.get("/r/{token}", response_class=HTMLResponse)
-def reminder_page(token: str = _TOKEN, db: Session = Depends(get_public_db)):
-    row = db.execute(text("SELECT * FROM app.reminder_by_token(:h)"), {"h": _hash(token)}).mappings().first()
-    if row is None:
-        return _page(_EXPIRED, 404)
-    if row["confirmed"]:
-        return _page(_THANKS)
-    return _page(f"<h2>{escape(row['business_name'])}</h2><p>Broningiz soat <b>{escape(row['slot_time'])}</b> da.</p>"
-                 f'<form method="post"><button type="submit">Boraman</button></form>')
-
-
-@public_router.post("/r/{token}", response_class=HTMLResponse)
-def reminder_confirm(token: str = _TOKEN, db: Session = Depends(get_public_db)):
-    row = db.execute(text("SELECT * FROM app.reminder_by_token(:h)"), {"h": _hash(token)}).first()
-    if row is None:
-        return _page(_EXPIRED, 404)
-    db.execute(text("SELECT app.confirm_attendance_by_token(:h)"), {"h": _hash(token)})
-    db.commit()
-    return _page(_THANKS)
 
 
 @router.post("/appointments/{appointment_id}/attend", status_code=204)
@@ -73,6 +22,19 @@ def client_contact(appointment_id: int = Path(ge=1), db: Session = Depends(get_d
     phone = db.scalar(text("SELECT app.client_contact(:id)"), {"id": appointment_id})
     db.commit()
     return ClientContactOut(phone=phone, tel_url=f"tel:{phone}")
+
+
+@router.post("/devices", status_code=204)
+def register_device(body: DeviceIn, db: Session = Depends(get_db)):
+    db.execute(text("SELECT app.register_device(:t, :p)"), {"t": body.token, "p": body.platform})
+    db.commit()
+
+
+@router.delete("/devices", status_code=204)
+def remove_device(body: DeviceIn, db: Session = Depends(get_db)):
+    """Hisobdan chiqishda: bu telefonga boshqa xabar kelmasin."""
+    db.execute(text("DELETE FROM device_tokens WHERE token = :t AND user_id = app.uid()"), {"t": body.token})
+    db.commit()
 
 
 @router.get("/notifications", response_model=list[NotificationOut])

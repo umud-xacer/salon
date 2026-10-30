@@ -1,4 +1,5 @@
 """Kirish jarayoni. Faqat AuthSession (app_auth roli) bilan ishlaydi."""
+import logging
 import uuid
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
@@ -11,6 +12,8 @@ from app.core import security
 from app.core.config import get_settings
 from app.models import OtpCode, RefreshToken, User
 from app.services import sms
+
+log = logging.getLogger("auth")
 
 
 class AuthError(Exception):
@@ -29,6 +32,10 @@ class Forbidden(AuthError):
     status_code = 403
 
 
+class SmsUnavailable(AuthError):
+    status_code = 503
+
+
 @dataclass
 class TokenPair:
     access_token: str
@@ -41,7 +48,7 @@ def _now() -> datetime:
 
 
 # ─── OTP ────────────────────────────────────────────────────────────────────
-def request_otp(db: Session, phone: str, ip: str | None) -> str:
+def _create_otp(db: Session, phone: str, ip: str | None) -> str:
     s = get_settings()
     code = security.new_otp_code()
     db.add(OtpCode(
@@ -57,12 +64,25 @@ def request_otp(db: Session, phone: str, ip: str | None) -> str:
         if getattr(e.orig, "sqlstate", None) == "P0429":       # bazadagi otp_rate_limit triggeri
             raise RateLimited("otp_rate_limited", "Juda ko'p urinish. Birozdan keyin qayta urinib ko'ring")
         raise
-    sms.send_otp(phone, code)
     return code
 
 
-def verify_otp(db: Session, phone: str, code: str, full_name: str | None,
-               user_agent: str | None, ip: str | None) -> tuple[User, TokenPair, bool]:
+def _deliver(send, phone: str, code: str) -> None:
+    try:
+        send(phone, code)
+    except sms.SmsError as e:
+        log.error("SMS yuborilmadi: %s", e)
+        raise SmsUnavailable("sms_unavailable", "SMS yuborib bo'lmadi. Birozdan keyin qayta urinib ko'ring")
+
+
+def request_otp(db: Session, phone: str, ip: str | None) -> str:
+    code = _create_otp(db, phone, ip)
+    _deliver(sms.send_otp, phone, code)
+    return code
+
+
+def _consume_otp(db: Session, phone: str, code: str) -> None:
+    """Kodni tekshiradi va ishlatilgan deb belgilaydi. Commit chaqiruvchida."""
     s = get_settings()
     otp = db.scalars(
         select(OtpCode)
@@ -82,6 +102,10 @@ def verify_otp(db: Session, phone: str, code: str, full_name: str | None,
         raise invalid
     otp.used_at = _now()
 
+
+def verify_otp(db: Session, phone: str, code: str, full_name: str | None,
+               user_agent: str | None, ip: str | None) -> tuple[User, TokenPair, bool]:
+    _consume_otp(db, phone, code)
     user = db.scalars(select(User).where(User.phone == phone).with_for_update()).first()
     is_new = user is None
     if is_new:
@@ -172,6 +196,33 @@ def set_password(db: Session, user_id: int, old_password: str | None, new_passwo
     user.token_version += 1
     db.execute(update(RefreshToken)
                .where(RefreshToken.user_id == user_id, RefreshToken.revoked_at.is_(None))
+               .values(revoked_at=_now()))
+    db.commit()
+
+
+# ─── Parolni tiklash ────────────────────────────────────────────────────────
+def request_password_reset(db: Session, phone: str, ip: str | None) -> str | None:
+    """SMS faqat paroli bor foydalanuvchiga ketadi. Super Admin paroli SMS bilan tiklanmaydi (faqat CLI)."""
+    user = db.scalars(select(User).where(User.phone == phone)).first()
+    if user is None or user.password_hash is None or user.is_superadmin or user.status != "active":
+        return None
+    code = _create_otp(db, phone, ip)
+    _deliver(sms.send_password_reset, phone, code)
+    return code
+
+
+def reset_password(db: Session, phone: str, code: str, new_password: str) -> None:
+    _consume_otp(db, phone, code)
+    user = db.scalars(select(User).where(User.phone == phone).with_for_update()).first()
+    if user is None or user.password_hash is None or user.is_superadmin:
+        raise AuthError("otp_invalid", "Kod noto'g'ri yoki muddati o'tgan")
+    _ensure_can_login(user)
+    user.password_hash = security.hash_password(new_password)
+    user.failed_login_attempts = 0
+    user.locked_until = None
+    user.token_version += 1
+    db.execute(update(RefreshToken)
+               .where(RefreshToken.user_id == user.id, RefreshToken.revoked_at.is_(None))
                .values(revoked_at=_now()))
     db.commit()
 

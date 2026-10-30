@@ -82,7 +82,6 @@ app.include_router(business_admin.router, prefix="/api/v1")
 app.include_router(schedule.router, prefix="/api/v1")
 app.include_router(appointments.router, prefix="/api/v1")
 app.include_router(reminders.router)
-app.include_router(reminders.public_router)
 
 
 @app.get("/health", include_in_schema=False)

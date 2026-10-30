@@ -5,8 +5,8 @@ from sqlalchemy.orm import Session
 from app.api.deps import client_meta, current_user, get_auth_db, get_db
 from app.core.config import get_settings
 from app.models import User
-from app.schemas import (LoginOut, MembershipOut, MeOut, OtpRequest, OtpRequestOut, OtpVerify,
-                         PasswordLogin, RefreshIn, SetPasswordIn, TokenOut, UserOut)
+from app.schemas import (LoginOut, MembershipOut, MeOut, OtpRequest, OtpRequestOut, OtpVerify, PasswordForgot,
+                         PasswordLogin, PasswordReset, RefreshIn, SetPasswordIn, TokenOut, UserOut)
 from app.services import auth_service
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -62,6 +62,21 @@ def logout_all(user: User = Depends(current_user), db: Session = Depends(get_aut
 @router.post("/password", status_code=204)
 def set_password(body: SetPasswordIn, user: User = Depends(current_user), db: Session = Depends(get_auth_db)):
     auth_service.set_password(db, user.id, body.old_password, body.new_password)
+
+
+@router.post("/password/forgot", response_model=OtpRequestOut)
+def password_forgot(body: PasswordForgot, request: Request, db: Session = Depends(get_auth_db)):
+    """Tiklash kodi SMS bilan. Raqam ro'yxatda bormi-yo'qmi — javob bir xil."""
+    _, ip = client_meta(request)
+    code = auth_service.request_password_reset(db, body.phone, ip)
+    s = get_settings()
+    return OtpRequestOut(expires_in=s.otp_ttl_seconds, dev_code=code if s.expose_dev_otp else None)
+
+
+@router.post("/password/reset", status_code=204)
+def password_reset(body: PasswordReset, db: Session = Depends(get_auth_db)):
+    """Yangi parol. Barcha qurilmalardagi sessiyalar bekor qilinadi."""
+    auth_service.reset_password(db, body.phone, body.code, body.new_password)
 
 
 @router.get("/me", response_model=MeOut)
