@@ -13,7 +13,7 @@ log = logging.getLogger("app")
 settings = get_settings()
 
 app = FastAPI(
-    title="Salon Platform API",
+    title="Chronix API",
     version="0.1.0",
     docs_url=None if settings.env == "prod" else "/docs",
     redoc_url=None,

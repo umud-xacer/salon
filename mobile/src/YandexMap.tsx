@@ -5,7 +5,7 @@ import { BusinessCard } from './api';
 
 const KEY = process.env.EXPO_PUBLIC_YANDEX_MAPS_KEY ?? '';
 // Yandex kalit cheklovi Referer bo'yicha: kabinetda shu domenga ruxsat bering yoki cheklov qo'ymang
-const BASE_URL = 'https://salon-app.uz/';
+const BASE_URL = 'https://chronix.uz/';
 
 // WebView klassining turlari React 19 bilan to'g'ri ishlamaydi
 const MapView = WebView as unknown as ComponentType<WebViewProps & { ref: RefObject<WebView | null> }>;

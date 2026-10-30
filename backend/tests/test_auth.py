@@ -102,7 +102,7 @@ def test_tampered_and_foreign_tokens_rejected(client):
     assert client.get(f"{API}/me", headers={"Authorization": f"Bearer {header}.{payload}.{sig[::-1]}"}).status_code == 401
 
     # Boshqa kalit bilan imzolangan, Super Admin ID'si qo'yilgan token
-    fake = jwt.encode({"sub": "1", "ver": 0, "type": "access", "iss": "salon-platform",
+    fake = jwt.encode({"sub": "1", "ver": 0, "type": "access", "iss": "chronix",
                        "iat": 1, "exp": 9999999999}, "boshqa-kalit-" * 4, algorithm="HS256")
     assert client.get(f"{API}/me", headers={"Authorization": f"Bearer {fake}"}).status_code == 401
     # alg=none

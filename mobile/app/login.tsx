@@ -1,10 +1,10 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { Image, ScrollView, View } from 'react-native';
 
 import { api, ApiError, LoginOut } from '../src/api';
 import { useAuth } from '../src/auth';
-import { Button, ErrorText, Field, shared } from '../src/ui';
+import { Button, colors, ErrorText, Field, shared } from '../src/ui';
 
 export default function Login() {
   const { signIn } = useAuth();
@@ -44,6 +44,10 @@ export default function Login() {
 
   return (
     <ScrollView style={shared.screen} keyboardShouldPersistTaps="handled">
+      <View style={{ backgroundColor: colors.navy, borderRadius: 16, padding: 22, marginBottom: 20, alignItems: 'center' }}>
+        <Image source={require('../assets/brand/wordmark.png')} style={{ width: 190, height: 46 }} resizeMode="contain" />
+        <Image source={require('../assets/brand/tagline.png')} style={{ width: 220, height: 20, marginTop: 8 }} resizeMode="contain" />
+      </View>
       <Field label="Telefon raqam" value={phone} onChangeText={setPhone} keyboardType="phone-pad" editable={!sent} />
       {sent && (
         <>

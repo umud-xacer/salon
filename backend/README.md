@@ -1,4 +1,6 @@
-# Backend (FastAPI + PostgreSQL/PostGIS)
+# Chronix backend (FastAPI + PostgreSQL/PostGIS)
+
+*Vaqtingiz – bizning ustuvorligimiz*
 
 ## Xavfsizlik qatlamlari
 

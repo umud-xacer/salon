@@ -1,4 +1,4 @@
-package uz.salon.alarm
+package uz.chronix.alarm
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -17,7 +17,7 @@ private const val CHANNEL = "alarm_fullscreen"
 
 // Bloklangan ekranni egallaydigan bildirishnoma: expo-notifications buni qo'llamaydi.
 // Ovozsiz: signalni ochilgan budilnik ekrani chaladi, ekran ochiq bo'lsa oddiy "alarm" push chaladi.
-class SalonAlarmModule : Module() {
+class ChronixAlarmModule : Module() {
   private val context: Context
     get() = appContext.reactContext ?: throw Exceptions.ReactContextLost()
 
@@ -25,7 +25,7 @@ class SalonAlarmModule : Module() {
     get() = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
   override fun definition() = ModuleDefinition {
-    Name("SalonAlarm")
+    Name("ChronixAlarm")
 
     AsyncFunction("show") { title: String, body: String, url: String ->
       if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {

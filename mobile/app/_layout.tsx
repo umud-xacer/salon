@@ -1,10 +1,14 @@
 import * as Notifications from 'expo-notifications';
-import { Stack, useRouter, useSegments } from 'expo-router';
-import { useEffect } from 'react';
+import { Stack, usePathname, useRouter, useSegments } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
+import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 
+import { AnimatedSplash } from '../src/AnimatedSplash';
 import { AuthProvider, useAuth } from '../src/auth';
 import { ALARM_TYPES, openedAlarms, setupChannels } from '../src/notifications';
+
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 function openAlarm(router: ReturnType<typeof useRouter>, data: Record<string, unknown> = {}) {
   const id = String(data.notification_id);
@@ -71,12 +75,22 @@ function Navigator() {
 }
 
 export default function RootLayout() {
+  // Budilnik bilan ochilganda kirish animatsiyasi kerak emas: ekran darhol ko'rinsin
+  const [splash, setSplash] = useState(usePathname() !== '/alarm');
+  const hideNative = useCallback(() => {
+    SplashScreen.hideAsync().catch(() => {});
+  }, []);
+  const finish = useCallback(() => setSplash(false), []);
+
   useEffect(() => {
     setupChannels();
-  }, []);
+    if (!splash) hideNative();
+  }, [splash, hideNative]);
+
   return (
     <AuthProvider>
       <Navigator />
+      {splash && <AnimatedSplash onReady={hideNative} onDone={finish} />}
     </AuthProvider>
   );
 }

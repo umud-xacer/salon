@@ -1,14 +1,14 @@
 {
   "expo": {
-    "name": "Salon",
-    "slug": "salon-mobile",
+    "name": "Chronix",
+    "slug": "chronix",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "uz.salon.mobile",
+      "bundleIdentifier": "uz.chronix.app",
       "infoPlist": {
         "UIBackgroundModes": [
           "remote-notification"
@@ -17,13 +17,13 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#010D49",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "uz.salon.mobile",
+      "package": "uz.chronix.app",
       "permissions": [
         "android.permission.VIBRATE",
         "android.permission.ACCESS_NOTIFICATION_POLICY"
@@ -51,8 +51,16 @@
           "locationWhenInUsePermission": "Yaqin atrofdagi salonlarni ko'rsatish uchun"
         }
       ],
-      "./plugins/with-alarm-activity.js"
+      "./plugins/with-alarm-activity.js",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 190,
+          "backgroundColor": "#010D49"
+        }
+      ]
     ],
-    "scheme": "salon"
+    "scheme": "chronix"
   }
 }

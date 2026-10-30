@@ -1,4 +1,6 @@
-# Arxitektura — xizmat ko'rsatish platformasi (MVP)
+# Chronix arxitekturasi (MVP)
+
+*Vaqtingiz – bizning ustuvorligimiz*
 
 Salon, klinika, barbershop, spa va boshqa maskanlarni **topish, xaritada ko'rish va bron qilish** uchun
 mobil ilova (iOS/Android) + veb-admin panel. Hozirgi SalonPro (FastAPI) shu platformaning asosi bo'ladi.

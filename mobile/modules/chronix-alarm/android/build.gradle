@@ -3,11 +3,11 @@ plugins {
   id 'expo-module-gradle-plugin'
 }
 
-group = 'uz.salon'
+group = 'uz.chronix'
 version = '1.0.0'
 
 android {
-  namespace "uz.salon.alarm"
+  namespace "uz.chronix.alarm"
   defaultConfig {
     versionCode 1
     versionName "1.0.0"

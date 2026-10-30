@@ -2,7 +2,8 @@ import { ReactNode } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, TextInputProps, View } from 'react-native';
 
 export const colors = {
-  primary: '#16794c',
+  primary: '#1565F5',
+  navy: '#010D49',
   danger: '#b3261e',
   text: '#1c1c1e',
   muted: '#6b6b70',

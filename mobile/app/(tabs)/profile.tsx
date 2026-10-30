@@ -2,7 +2,7 @@ import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 
-import { SalonAlarmModule } from '../../modules/salon-alarm';
+import { ChronixAlarmModule } from '../../modules/chronix-alarm';
 
 import { useAuth } from '../../src/auth';
 import { Button, Card, shared } from '../../src/ui';
@@ -13,7 +13,7 @@ export default function Profile() {
   const [fullScreen, setFullScreen] = useState(true);
 
   useEffect(() => {
-    SalonAlarmModule?.canUseFullScreen().then(setFullScreen).catch(() => {});
+    ChronixAlarmModule?.canUseFullScreen().then(setFullScreen).catch(() => {});
   }, []);
 
   return (
@@ -24,7 +24,7 @@ export default function Profile() {
       </Card>
       <View style={shared.gap}>
         {!fullScreen && (
-          <Button title="To'liq ekranli budilnikka ruxsat bering" onPress={() => SalonAlarmModule?.openFullScreenSettings()} />
+          <Button title="To'liq ekranli budilnikka ruxsat bering" onPress={() => ChronixAlarmModule?.openFullScreenSettings()} />
         )}
         <Button
           title="Budilnikni sinash"
@@ -33,6 +33,7 @@ export default function Profile() {
         />
         <Button title="Chiqish" kind="danger" onPress={signOut} />
       </View>
+      <Text style={[shared.muted, { textAlign: 'center', marginTop: 24 }]}>Chronix · Vaqtingiz – bizning ustuvorligimiz</Text>
     </View>
   );
 }

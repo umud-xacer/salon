@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     worker_database_url: str | None = None    # app_worker — fon jarayoni, faqat eslatma funksiyalari
 
     jwt_secret: SecretStr = Field(min_length=32)
-    jwt_issuer: str = "salon-platform"
+    jwt_issuer: str = "chronix"
     access_token_minutes: int = Field(default=15, ge=1, le=60)
     refresh_token_days: int = Field(default=30, ge=1, le=90)
 
@@ -35,8 +35,8 @@ class Settings(BaseSettings):
     eskiz_password: SecretStr | None = None
     eskiz_from: str = "4546"
     # Eskiz'da moderatsiyadan o'tgan matnlarga aynan mos bo'lishi kerak
-    sms_otp_template: str = "Tasdiqlash kodi: {code}"
-    sms_reset_template: str = "Parolni tiklash kodi: {code}"
+    sms_otp_template: str = "Chronix mobil ilovasiga kirish uchun tasdiqlash kodi: {code}"
+    sms_reset_template: str = "Chronix mobil ilovasi parolini tiklash uchun kod: {code}"
 
     # Bron eslatmasi: boshlanishidan necha daqiqa oldin yuboriladi va javob uchun necha daqiqa kutiladi
     reminder_lead_minutes: int = Field(default=30, ge=5, le=240)
