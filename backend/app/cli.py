@@ -1,7 +1,8 @@
 """Boshqaruv buyruqlari (jadvallar egasi — MIGRATION_DATABASE_URL bilan ishlaydi).
 
     python -m app.cli setup-roles
-        app_api / app_auth rollariga LOGIN va parol beradi (parollar DATABASE_URL va AUTH_DATABASE_URL dan).
+        app_api / app_auth / app_worker rollariga LOGIN va parol beradi
+        (parollar DATABASE_URL, AUTH_DATABASE_URL va WORKER_DATABASE_URL dan).
     python -m app.cli create-superadmin --phone +998901234567 --name "Ism Familiya"
         Super Admin yaratadi. Parol so'raladi (ekranda ko'rinmaydi).
 
@@ -28,15 +29,15 @@ def _owner_engine():
 def setup_roles() -> None:
     s = get_settings()
     with _owner_engine().begin() as conn:
-        for dsn in (s.database_url, s.auth_database_url):
+        for dsn in filter(None, (s.database_url, s.auth_database_url, s.worker_database_url)):
             url = make_url(dsn)
-            if url.username not in ("app_api", "app_auth") or not url.password:
-                sys.exit(f"URL foydalanuvchisi app_api/app_auth va parolli bo'lishi kerak: {url.username}")
+            if url.username not in ("app_api", "app_auth", "app_worker") or not url.password:
+                sys.exit(f"URL foydalanuvchisi app_api/app_auth/app_worker va parolli bo'lishi kerak: {url.username}")
             # Parol identifikator emas, satr literal sifatida qo'yiladi
             pw = conn.exec_driver_sql("SELECT quote_literal(%s)", (url.password,)).scalar()
             conn.exec_driver_sql(f'ALTER ROLE "{url.username}" LOGIN PASSWORD {pw}')
             conn.exec_driver_sql(f'GRANT CONNECT ON DATABASE "{url.database}" TO "{url.username}"')
-    print("Rollar sozlandi: app_api, app_auth")
+    print("Rollar sozlandi")
 
 
 def create_superadmin(phone: str, name: str, password: str | None) -> None:

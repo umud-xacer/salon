@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     auth_database_url: str                    # app_auth — faqat kirish jadvallari
     migration_database_url: str | None = None # jadvallar egasi — faqat migratsiya va CLI
 
+    worker_database_url: str | None = None    # app_worker — fon jarayoni, faqat eslatma funksiyalari
+
     jwt_secret: SecretStr = Field(min_length=32)
     jwt_issuer: str = "salon-platform"
     access_token_minutes: int = Field(default=15, ge=1, le=60)
@@ -29,6 +31,11 @@ class Settings(BaseSettings):
 
     cors_origins: list[str] = []
     sms_provider: Literal["console", "eskiz"] = "console"
+
+    # Bron eslatmasi: boshlanishidan necha daqiqa oldin yuboriladi va javob uchun necha daqiqa kutiladi
+    reminder_lead_minutes: int = Field(default=30, ge=5, le=240)
+    reminder_response_minutes: int = Field(default=15, ge=1, le=120)
+    public_base_url: str = "http://127.0.0.1:8000"     # SMS'dagi "Boraman" havolasi uchun
 
     # Yandex HTTP Geocoder (manzil ↔ koordinata). Kalit faqat serverda — mobil ilovaga berilmaydi.
     # Xaritaning o'zi mobil ilovada Yandex MapKit (alohida, mobil kalit) bilan chiziladi.

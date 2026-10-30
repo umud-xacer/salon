@@ -23,6 +23,21 @@ class StatusIn(BaseModel):
     status: Literal["confirmed", "in_progress", "completed", "no_show"]
 
 
+class ClientContactOut(BaseModel):
+    phone: str
+    tel_url: str
+
+
+class NotificationOut(BaseModel):
+    id: int
+    type: str
+    title: str
+    body: str | None
+    data: dict | None
+    read_at: dt.datetime | None
+    created_at: dt.datetime
+
+
 class AppointmentOut(BaseModel):
     id: int
     business_id: int
@@ -36,5 +51,7 @@ class AppointmentOut(BaseModel):
     services: list[str]
     client_note: str | None
     cancel_reason: str | None
+    attendance: Literal["reminded", "confirmed", "no_response"] | None = None
+    needs_contact: bool = False                         # ochiq ogohlantirish: qo'ng'iroq tugmasi faol
     client_name: str | None = None                      # faqat 'clients.view' huquqi borlarga
     client_phone: str | None = None

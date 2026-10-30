@@ -12,7 +12,7 @@
 | 6. Ma'lumot yaxlitligi | `EXCLUDE USING GIST` (ikki marta bron), kompozit FK (boshqa salonning ustasi/mijozi), CHECK (manfiy qoldiq, narx) | `sql/001_schema.sql` |
 | 7. Kirish himoyasi | Parol: argon2id, 5 xato → 15 daq. blok. OTP: HMAC xesh, 5 urinish, bazada limit (raqamga 3/10 daq., IP ga 20/soat) | `auth_service.py`, `002_security.sql` |
 
-Baza rollari: ilova **egasi bilan ulanmaydi**. `app_auth` — faqat kirish jadvallari, `app_api` — RLS ostida.
+Baza rollari: ilova **egasi bilan ulanmaydi**. `app_auth` — faqat kirish jadvallari, `app_api` — RLS ostida, `app_worker` — fon jarayoni, faqat eslatma funksiyalari.
 
 ## Rollar
 
@@ -71,6 +71,23 @@ $env:TEST_PG_ADMIN_URL = "postgresql+psycopg://postgres:PAROL@127.0.0.1:5432/pos
 | POST | `/appointments/{id}/cancel` · `/appointments/{id}/reschedule` | bron mijozi yoki `appointments.manage` |
 | GET | `/businesses/{id}/appointments?date&member_id` | `view_all` / `view_own` (xodim faqat o'zinikini) |
 | PATCH | `/businesses/{id}/appointments/{aid}/status` | salon; oddiy xodim faqat o'z broni: `in_progress`, `completed`, `no_show` |
+| POST | `/appointments/{id}/attend` | bron mijozi ("Boraman") |
+| GET | `/appointments/{id}/client-contact` | bron ustasi yoki `appointments.manage`, faqat ochiq ogohlantirishda |
+| GET · POST | `/notifications?unread` · `/notifications/{id}/read` | kirgan foydalanuvchi (faqat o'ziniki) |
+| GET · POST | `/r/{token}` (`/api/v1` siz) | SMS havolasi, kirishsiz |
+
+### Eslatma va "Boraman"
+Fon jarayonini API bilan birga ishga tushiring: `python -m app.worker` (`WORKER_DATABASE_URL` kerak, keyin `python -m app.cli setup-roles`).
+
+1. Bron boshlanishiga `REMINDER_LEAD_MINUTES` (30) qolganda mijozga SMS (`/r/{token}` havolasi bilan) va ilova xabari ketadi.
+   Shu oraliqda qilingan bronga eslatma yuborilmaydi: mijoz hozirgina yozildi.
+2. Mijoz ilovada yoki havola sahifasida "Boraman" bosadi. Havolani ochishning o'zi tasdiq emas (GET o'zgartirmaydi).
+3. `REMINDER_RESPONSE_MINUTES` (15) ichida javob bo'lmasa yoki SMS yuborilmasa (darhol), ustaga `attendance_alert` boradi.
+4. Ochiq ogohlantirishda `needs_contact=true` va `client-contact` telefon va `tel:` havolasini beradi. Raqam xabarda saqlanmaydi,
+   har bir ko'rish auditda, mijoz tasdiqlagach yoki bron yopilgach yopiladi. Kech tasdiq ustaga `attendance_confirmed` yuboradi.
+5. Bron vaqti o'zgarsa, jarayon boshidan boshlanadi va eski havola yaroqsiz bo'ladi.
+
+`app_worker` roli jadvallarni o'qiy olmaydi, faqat `sql/006_reminders.sql` dagi uchta funksiyani chaqiradi. Havola tokeni bazada faqat SHA-256 xesh ko'rinishida.
 
 ### Bronlar
 - Mijozda `appointments` ga yozish huquqi yo'q: bron faqat `app.book_appointment`, `app.cancel_appointment`, `app.reschedule_appointment` orqali.

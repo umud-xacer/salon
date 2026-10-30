@@ -22,12 +22,18 @@ _SELECT = """
     SELECT a.id, a.business_id, b.name AS business_name, a.member_id, ps.full_name AS member_name,
            a.status::text AS status, a.starts_at, a.ends_at, a.total_price, a.client_note, a.cancel_reason,
            c.full_name AS client_name, c.phone AS client_phone,
+           CASE WHEN r.confirmed_at IS NOT NULL THEN 'confirmed'
+                WHEN r.alerted_at IS NOT NULL THEN 'no_response'
+                WHEN r.sent_at IS NOT NULL THEN 'reminded' END AS attendance,
+           coalesce(r.alerted_at IS NOT NULL AND r.confirmed_at IS NULL
+                    AND a.status IN ('pending', 'confirmed') AND a.ends_at > now(), false) AS needs_contact,
            coalesce((SELECT array_agg(s.service_name ORDER BY s.id) FROM appointment_services s
                       WHERE s.appointment_id = a.id), '{}') AS services
       FROM appointments a
       LEFT JOIN businesses b       ON b.id = a.business_id
       LEFT JOIN public_staff ps    ON ps.member_id = a.member_id
       LEFT JOIN business_clients c ON c.id = a.client_id
+      LEFT JOIN appointment_reminders r ON r.appointment_id = a.id
 """
 
 

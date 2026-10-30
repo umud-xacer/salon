@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import DBAPIError
 
-from app.api.v1 import appointments, auth, business_admin, catalog, geo, members, schedule, superadmin
+from app.api.v1 import appointments, auth, business_admin, catalog, geo, members, reminders, schedule, superadmin
 from app.core.config import get_settings
 from app.services.auth_service import AuthError
 
@@ -81,6 +81,8 @@ app.include_router(geo.router, prefix="/api/v1")
 app.include_router(business_admin.router, prefix="/api/v1")
 app.include_router(schedule.router, prefix="/api/v1")
 app.include_router(appointments.router, prefix="/api/v1")
+app.include_router(reminders.router)
+app.include_router(reminders.public_router)
 
 
 @app.get("/health", include_in_schema=False)

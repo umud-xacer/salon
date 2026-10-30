@@ -22,8 +22,17 @@ def _auth_engine():
     return create_engine(get_settings().auth_database_url, pool_pre_ping=True)
 
 
+@lru_cache
+def _worker_engine():
+    url = get_settings().worker_database_url
+    if not url:
+        raise RuntimeError("WORKER_DATABASE_URL o'rnatilmagan")
+    return create_engine(url, pool_pre_ping=True)
+
+
 ApiSession = sessionmaker(expire_on_commit=False)
 AuthSession = sessionmaker(expire_on_commit=False)
+WorkerSession = sessionmaker(expire_on_commit=False)
 
 
 @event.listens_for(ApiSession, "after_begin")
@@ -39,6 +48,10 @@ def _set_rls_user(session: Session, transaction, connection):
 
 def api_session(user_id: int | None) -> Session:
     return ApiSession(bind=_api_engine(), info={"user_id": user_id})
+
+
+def worker_session() -> Session:
+    return WorkerSession(bind=_worker_engine())
 
 
 def auth_session() -> Session:

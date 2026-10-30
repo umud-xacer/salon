@@ -21,6 +21,7 @@ os.environ.update({
     "ENV": "test",
     "DATABASE_URL": f"postgresql+psycopg://app_api:test_api_Pw_123@{_host}/{DB_NAME}",
     "AUTH_DATABASE_URL": f"postgresql+psycopg://app_auth:test_auth_Pw_123@{_host}/{DB_NAME}",
+    "WORKER_DATABASE_URL": f"postgresql+psycopg://app_worker:test_worker_Pw_123@{_host}/{DB_NAME}",
     "MIGRATION_DATABASE_URL": _admin.set(database=DB_NAME).render_as_string(hide_password=False),
     "JWT_SECRET": "test-secret-0123456789-abcdefghijklmnop",
     "SMS_PROVIDER": "console",
