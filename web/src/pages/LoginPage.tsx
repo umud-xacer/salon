@@ -2,15 +2,10 @@ import { useState, type FormEvent } from "react";
 
 import { loginWithPassword, requestOtp, verifyOtp } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
+import { normalizePhone } from "../components/format";
 import { Button, ErrorNote } from "../components/ui";
 
 const input = "w-full rounded-lg border border-line px-3 py-2 outline-none focus:border-primary";
-
-// "90 123 45 67" ham, "+998901234567" ham qabul qilinadi
-function normalizePhone(value: string) {
-  const digits = value.replace(/\D/g, "");
-  return digits.length === 9 ? `+998${digits}` : `+${digits}`;
-}
 
 export function LoginPage() {
   const { signIn } = useAuth();

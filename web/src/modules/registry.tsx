@@ -2,6 +2,7 @@
 // menyu ham, yo'l ham, huquq tekshiruvi ham shundan quriladi.
 import {
   CalendarDays,
+  CalendarRange,
   Clock3,
   LayoutDashboard,
   Package,
@@ -15,6 +16,7 @@ import {
 import type { ComponentType } from "react";
 
 import type { Membership, Panel } from "../api/types";
+import { CalendarPage } from "./calendar/CalendarPage";
 import { DashboardPage } from "./dashboard/DashboardPage";
 import { CashPage, ExpensesPage } from "./finance/FinancePages";
 import { InventoryPage } from "./inventory/InventoryPage";
@@ -34,6 +36,10 @@ export interface Section {
 
 export const SECTIONS: Section[] = [
   { path: "dashboard", label: "Bosh sahifa", icon: LayoutDashboard, panel: "admin", page: DashboardPage },
+  {
+    path: "calendar", label: "Kalendar", icon: CalendarRange, panel: "admin", module: "booking",
+    anyPermission: ["appointments.view_all"], page: CalendarPage,
+  },
   {
     path: "cash", label: "Kassa", icon: Wallet, panel: "admin", module: "finance",
     anyPermission: ["finance.view", "payments.accept"], page: CashPage,

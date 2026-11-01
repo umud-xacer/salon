@@ -50,6 +50,39 @@ export interface Appointment {
   client_phone: string | null;
 }
 
+export interface CalendarStaff {
+  id: number;
+  full_name: string;
+  title: string | null;
+}
+
+export interface CalendarData {
+  start: string;
+  days: number;
+  hour_from: number;
+  hour_to: number;
+  staff: CalendarStaff[];
+  appointments: Appointment[];
+}
+
+export interface ReceptionOptions {
+  services: { id: number; name: string; duration_min: number; price: number }[];
+  staff: (CalendarStaff & { service_ids: number[] })[];
+}
+
+export interface Slot {
+  starts_at: string;
+  ends_at: string;
+  time: string;
+  free_staff?: number;
+}
+
+export interface Client {
+  id: number;
+  full_name: string;
+  phone: string;
+}
+
 export interface ScheduleDay {
   weekday: number;
   start_time: string;
