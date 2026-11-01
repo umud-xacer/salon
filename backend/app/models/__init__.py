@@ -76,6 +76,8 @@ class Business(Base):
     address: Mapped[str | None] = mapped_column(Text)
     status: Mapped[str] = mapped_column(BusinessStatus, server_default="pending")
     is_listed: Mapped[bool] = mapped_column(Boolean, server_default="true")
+    is_active: Mapped[bool] = mapped_column(Boolean, server_default="true")
+    subscription_ends_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_by: Mapped[int | None] = mapped_column(BigInteger)
 
 

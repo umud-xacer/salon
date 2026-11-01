@@ -75,9 +75,9 @@ def test_privilege_escalation_blocked_by_database(client, superadmin):
     assert r.status_code == 403
     r = client.patch(f"{base}/{staff['member']['id']}", headers=rec_h, json={"role": "manager"})
     assert r.status_code == 403
-    r = client.put(f"{base}/{rec['member']['id']}/permissions/finance.view", headers=rec_h, json={"granted": True})
+    r = client.put(f"{base}/{rec['member']['id']}/permissions/payroll.manage", headers=rec_h, json={"granted": True})
     assert r.status_code == 403
-    r = client.put(f"{base}/{staff['member']['id']}/permissions/finance.view", headers=rec_h, json={"granted": True})
+    r = client.put(f"{base}/{staff['member']['id']}/permissions/payroll.manage", headers=rec_h, json={"granted": True})
     assert r.status_code == 403
     r = client.put(f"{base}/{biz['owner_member_id']}/permissions/staff.manage", headers=rec_h, json={"granted": False})
     assert r.status_code == 403

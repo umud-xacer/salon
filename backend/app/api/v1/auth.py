@@ -85,7 +85,11 @@ def me(db: Session = Depends(get_db)):
     user: User = db.info["user"]
     rows = db.execute(text("""
         SELECT m.id AS member_id, b.id AS business_id, b.name AS business_name,
-               b.status::text AS business_status, m.role::text AS role, m.title,
+               b.status::text AS business_status, b.is_active AS business_active, b.subscription_ends_at,
+               app.business_operational(b.id) AS operational, m.role::text AS role,
+               CASE WHEN m.role = 'staff' THEN 'staff' ELSE 'admin' END AS panel, m.title,
+               coalesce((SELECT array_agg(x.code ORDER BY x.code) FROM modules x
+                          WHERE app.module_enabled(b.id, x.code)), '{}') AS modules,
                coalesce((SELECT array_agg(p.code ORDER BY p.code) FROM permissions p
                           WHERE app.has_perm(b.id, p.code)), '{}') AS permissions
           FROM business_members m

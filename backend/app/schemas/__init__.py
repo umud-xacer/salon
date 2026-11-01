@@ -92,9 +92,14 @@ class MembershipOut(BaseModel):
     business_id: int
     business_name: str
     business_status: str
+    business_active: bool                                 # obuna bayrog'i
+    subscription_ends_at: datetime | None                 # None = muddatsiz
+    operational: bool                                     # False: salon to'xtatilgan, ma'lumot saqlanadi
     role: str
+    panel: Literal["admin", "staff"]                      # egasi/menejer/kassir yoki usta
     title: str | None
     permissions: list[str]
+    modules: list[str]
 
 
 class MeOut(BaseModel):
@@ -116,6 +121,7 @@ class BusinessCreate(BaseModel):
     owner_phone: str
     owner_full_name: str = Field(min_length=2, max_length=120)
     modules: list[str] = ["booking"]
+    subscription_days: int | None = Field(default=None, ge=1, le=3660)    # None = muddatsiz
 
     @field_validator("owner_phone")
     @classmethod
@@ -142,6 +148,35 @@ class BusinessStatusIn(BaseModel):
 class ModuleToggle(BaseModel):
     enabled: bool
     expires_at: datetime | None = None
+
+
+class ModuleOut(BaseModel):
+    code: str
+    name: str
+
+
+class BusinessAdminOut(BaseModel):
+    id: int
+    name: str
+    slug: str
+    city: str | None
+    status: str
+    is_active: bool
+    subscription_ends_at: datetime | None
+    operational: bool
+    owner_name: str | None
+    owner_phone: str | None
+    staff_count: int
+    modules: list[str]
+
+
+class SubscriptionRenew(BaseModel):
+    days: int = Field(ge=1, le=3660)
+
+
+class SubscriptionUpdate(BaseModel):
+    is_active: bool | None = None
+    subscription_ends_at: datetime | None = None          # maydon yuborilib null bo'lsa: muddatsiz
 
 
 # ─── Xodimlar ───────────────────────────────────────────────────────────────

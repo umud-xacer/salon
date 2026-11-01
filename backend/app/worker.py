@@ -20,6 +20,13 @@ log = logging.getLogger("worker")
 INTERVAL_SECONDS = 60
 
 
+def expire_subscriptions() -> int:
+    with worker_session() as db:
+        count = db.scalar(text("SELECT app.expire_subscriptions()"))
+        db.commit()
+        return count
+
+
 def create_reminders() -> int:
     with worker_session() as db:
         count = db.scalar(text("SELECT app.create_due_reminders(:lead)"),
@@ -61,10 +68,11 @@ def send_pushes() -> int:
 
 
 def run_once() -> dict:
+    expired = expire_subscriptions()
     reminders = create_reminders()
     pushes = send_pushes()                 # yetkazilmagan eslatma shu aylanishda ogohlantirishga aylansin
     alerts = raise_alerts()
-    return {"reminders": reminders, "alerts": alerts, "pushes": pushes + send_pushes()}
+    return {"expired": expired, "reminders": reminders, "alerts": alerts, "pushes": pushes + send_pushes()}
 
 
 def main() -> None:
