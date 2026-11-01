@@ -33,7 +33,10 @@
         "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION"
-      ]
+      ],
+      "runtimeVersion": {
+        "policy": "appVersion"
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -91,6 +94,9 @@
         "projectId": "07e34599-2029-4df0-aae4-5ee4c533c40e"
       }
     },
-    "owner": "umud-xacer"
+    "owner": "umud-xacer",
+    "updates": {
+      "url": "https://u.expo.dev/07e34599-2029-4df0-aae4-5ee4c533c40e"
+    }
   }
 }

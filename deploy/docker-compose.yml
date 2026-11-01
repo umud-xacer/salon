@@ -1,0 +1,68 @@
+# Prod: baza, API, eslatma xizmati va HTTPS. Faqat Caddy (80/443) tashqariga ochiq.
+services:
+  db:
+    image: postgis/postgis:18-3.6
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+      POSTGRES_DB: chronix
+    volumes:
+      # PostgreSQL 18 tasvirida ma'lumot shu papka ostida
+      - db_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d chronix"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # Har ishga tushishda: yangi migratsiyalar va baza rollari
+  migrate:
+    build: ../backend
+    env_file: .env
+    command: sh -c "alembic upgrade head && python -m app.cli setup-roles"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  api:
+    build: ../backend
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://127.0.0.1:8000/health', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 4
+
+  worker:
+    build: ../backend
+    restart: unless-stopped
+    env_file: .env
+    command: python -m app.worker
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      API_DOMAIN: ${API_DOMAIN:?}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api
+
+volumes:
+  db_data:
+  caddy_data:
+  caddy_config:
