@@ -39,6 +39,11 @@ ring.resize((800, 800), Image.LANCZOS).save("assets/brand/ring.png")
 cut((285, 705, 970, 870), 70, 160).save("assets/brand/wordmark.png")
 cut((295, 885, 960, 945), 45, 130).save("assets/brand/tagline.png")
 
+# Animatsiya oxiridagi to'liq rasm: manba fonining burchaklari qoraroq, ekranda dog' bo'lib ko'rinmasin,
+# shuning uchun fondan yorqin piksellar (logotip va nuri) qoladi, qolgani ilova foni bilan bir xil
+bg = Image.new("RGB", src.size, BG)
+ImageChops.lighter(src, bg).save("assets/brand/full.jpg", quality=92, subsampling=0)
+
 # Ilova ikonkasi: belgi fon rangida (yozuv ikonkada o'qilmaydi)
 icon = Image.new("RGBA", (1024, 1024), BG + (255,))
 icon.alpha_composite(mark.resize((700, 700), Image.LANCZOS), (162, 162))

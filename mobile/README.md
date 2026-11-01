@@ -30,7 +30,7 @@ npx eas build --profile development --platform android
 ## Brend
 
 Logotip manbasi `assets/brand/source.jpg`. Ikonka, splash va animatsiya qismlari undan yaratiladi: `python scripts/make_brand_assets.py`.
-Kirish animatsiyasi `src/AnimatedSplash.tsx` da: C belgisi paydo bo'ladi, strelkalar aylanadi, keyin yozuv va shior chiqadi.
+Kirish animatsiyasi `src/AnimatedSplash.tsx` da: tizim splash'idagi belgidan uzilmasdan strelkalar aylanadi, belgi tepaga ko'tariladi, yozuv va shior chiqadi, oxirgi kadr `assets/brand/full.jpg` (logotip rasmi).
 Budilnik bilan ochilganda animatsiya o'tkazib yuboriladi.
 
 ## Yandex xarita
