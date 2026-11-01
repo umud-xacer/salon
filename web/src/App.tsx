@@ -1,13 +1,18 @@
 import { Building2 } from "lucide-react";
+import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 
 import { useAuth } from "./auth/AuthProvider";
 import { Spinner } from "./components/ui";
 import { AppShell } from "./layouts/AppShell";
-import { BusinessesPage } from "./modules/superadmin/BusinessesPage";
 import { BusinessPanel } from "./pages/BusinessPanel";
 import { LoginPage } from "./pages/LoginPage";
 import { ClientOnlyPage } from "./pages/Notices";
+
+// Xarita kutubxonasi og'ir: faqat Super Admin yuklaydi
+const BusinessesPage = lazy(() =>
+  import("./modules/superadmin/BusinessesPage").then((m) => ({ default: m.BusinessesPage })),
+);
 
 function Home() {
   const { me } = useAuth();
@@ -29,8 +34,10 @@ export function App() {
         path="/superadmin"
         element={
           me.workspace === "superadmin" ? (
-            <AppShell title="Super Admin" nav={[{ to: "/superadmin", label: "Bizneslar", icon: Building2 }]}>
-              <BusinessesPage />
+            <AppShell title="Super Admin" nav={[{ to: "/superadmin", label: "Salonlar", icon: Building2 }]}>
+              <Suspense fallback={<Spinner />}>
+                <BusinessesPage />
+              </Suspense>
             </AppShell>
           ) : (
             <Navigate to="/" replace />

@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.core.security import normalize_phone, validate_password_strength
 
@@ -155,11 +155,30 @@ class ModuleOut(BaseModel):
     name: str
 
 
+class BusinessUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=2, max_length=120)
+    category_id: int | None = Field(default=None, ge=1)
+    city: str | None = Field(default=None, max_length=80)
+    address: str | None = Field(default=None, max_length=300)
+    lat: float | None = Field(default=None, ge=-90, le=90)
+    lng: float | None = Field(default=None, ge=-180, le=180)
+
+    @model_validator(mode="after")
+    def _pair(self):
+        if ("lat" in self.model_fields_set) != ("lng" in self.model_fields_set) or (self.lat is None) != (self.lng is None):
+            raise ValueError("Lokatsiya uchun kenglik va uzunlik birga beriladi")
+        return self
+
+
 class BusinessAdminOut(BaseModel):
     id: int
     name: str
     slug: str
+    category_id: int
     city: str | None
+    address: str | None
+    lat: float | None
+    lng: float | None
     status: str
     is_active: bool
     subscription_ends_at: datetime | None
@@ -194,14 +213,35 @@ class MemberUpdate(BaseModel):
 
 
 class MemberOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
     id: int
     user_id: int
     role: str
+    full_name: str
+    phone: str
     title: str | None
     is_active: bool
     is_bookable: bool
+    password_block: str | None                            # None: joriy foydalanuvchi parolni o'rnata oladi
+
+
+class MemberPasswordIn(BaseModel):
+    new_password: str = Field(max_length=128)
+
+    @field_validator("new_password")
+    @classmethod
+    def _strong(cls, v: str) -> str:
+        validate_password_strength(v)
+        return v
+
+
+class MemberPermissionOut(BaseModel):
+    code: str
+    description: str | None
+    module_code: str | None
+    module_enabled: bool
+    role_default: bool                                    # rol bo'yicha beriladimi
+    override: bool | None                                 # None: shaxsiy istisno yo'q
+    effective: bool                                       # hozir amalda bormi
 
 
 class PermissionOverride(BaseModel):

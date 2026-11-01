@@ -7,14 +7,16 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, require_superadmin
 from app.models import Business, BusinessMember, BusinessModule, User
-from app.schemas import (BusinessAdminOut, BusinessCreate, BusinessOut, BusinessStatusIn, ModuleOut, ModuleToggle,
-                         StatusIn, SubscriptionRenew, SubscriptionUpdate)
+from app.schemas import (BusinessAdminOut, BusinessCreate, BusinessOut, BusinessStatusIn, BusinessUpdate, ModuleOut,
+                         ModuleToggle, StatusIn, SubscriptionRenew, SubscriptionUpdate)
 from app.services import audit
 
 router = APIRouter(prefix="/superadmin", tags=["superadmin"], dependencies=[Depends(require_superadmin)])
 
 _BUSINESS_SELECT = """
-    SELECT b.id, b.name, b.slug, b.city, b.status::text AS status, b.is_active, b.subscription_ends_at,
+    SELECT b.id, b.name, b.slug, b.category_id, b.city, b.address, b.status::text AS status,
+           ST_Y(b.location::geometry) AS lat, ST_X(b.location::geometry) AS lng,
+           b.is_active, b.subscription_ends_at,
            app.business_operational(b.id) AS operational,
            u.full_name AS owner_name, u.phone AS owner_phone,
            (SELECT count(*) FROM business_members m WHERE m.business_id = b.id AND m.is_active) AS staff_count,
@@ -69,6 +71,24 @@ def create_business(body: BusinessCreate, db: Session = Depends(get_db)):
         db.add(BusinessModule(business_id=biz.id, module_code=code, enabled=True))
     db.commit()
     return BusinessOut(id=biz.id, name=biz.name, slug=biz.slug, status=biz.status, owner_member_id=owner.id)
+
+
+@router.patch("/businesses/{business_id}", response_model=BusinessAdminOut)
+def update_business(body: BusinessUpdate, business_id: int = Path(ge=1), db: Session = Depends(get_db)):
+    """Asosiy ma'lumot va xaritadagi lokatsiya. lat/lng null bo'lsa, lokatsiya olib tashlanadi."""
+    biz = _business_or_404(db, business_id)
+    data = body.model_dump(exclude_unset=True)
+    lat, lng = data.pop("lat", ...), data.pop("lng", ...)
+    for field, value in data.items():
+        setattr(biz, field, value.strip() if isinstance(value, str) else value)
+    db.flush()
+    if lat is not ...:
+        db.execute(text("""UPDATE businesses SET location = CASE WHEN CAST(:lat AS float8) IS NULL THEN NULL
+                           ELSE ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography END WHERE id = :id"""),
+                   {"lat": lat, "lng": lng, "id": business_id})
+    audit.log(db, business_id, "update", "business", business_id, body.model_dump(exclude_unset=True))
+    db.commit()
+    return _read_business(db, business_id)
 
 
 @router.patch("/businesses/{business_id}/status", status_code=204)

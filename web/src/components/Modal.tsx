@@ -13,7 +13,7 @@ export function Modal({ title, onClose, children }: { title: string; onClose: ()
     <dialog
       ref={ref}
       onClose={onClose}
-      className="m-auto max-h-[90vh] w-[calc(100%-2rem)] max-w-lg rounded-2xl p-0 text-ink backdrop:bg-navy/60"
+      className="m-auto max-h-[90vh] w-[calc(100%-2rem)] max-w-2xl rounded-2xl p-0 text-ink backdrop:bg-navy/60"
     >
       <div className="flex items-center justify-between border-b border-line px-5 py-3">
         <h2 className="font-semibold text-navy">{title}</h2>

@@ -44,12 +44,6 @@ class AnySlot(BaseModel):
     free_staff: int
 
 
-class ClientOut(BaseModel):
-    id: int
-    full_name: str
-    phone: str
-
-
 class ReceptionBooking(BaseModel):
     member_id: int | None = Field(default=None, ge=1)     # None = istalgan usta
     service_id: int = Field(ge=1)

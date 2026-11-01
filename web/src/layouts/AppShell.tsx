@@ -1,8 +1,9 @@
-import { LogOut, Menu, X, type LucideIcon } from "lucide-react";
+import { KeyRound, LogOut, Menu, X, type LucideIcon } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { NavLink } from "react-router-dom";
 
 import { useAuth } from "../auth/AuthProvider";
+import { ChangePasswordDialog } from "../components/ChangePasswordDialog";
 import { Logo } from "../components/ui";
 
 export interface NavItem {
@@ -19,6 +20,7 @@ export function AppShell({ nav, title, header, children }: {
 }) {
   const { me, signOut } = useAuth();
   const [open, setOpen] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
 
   return (
     <div className="min-h-screen md:flex">
@@ -48,6 +50,13 @@ export function AppShell({ nav, title, header, children }: {
         <div className="border-t border-white/10 p-3">
           <p className="truncate px-3 pb-2 text-sm text-white/70">{me?.user.full_name || me?.user.phone}</p>
           <button
+            onClick={() => setChangingPassword(true)}
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-white/80 hover:bg-white/10"
+          >
+            <KeyRound size={18} aria-hidden />
+            Parolni o'zgartirish
+          </button>
+          <button
             onClick={() => void signOut()}
             className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-white/80 hover:bg-white/10"
           >
@@ -66,6 +75,7 @@ export function AppShell({ nav, title, header, children }: {
         </div>
         <main className="mx-auto max-w-5xl p-4 md:p-6">{children}</main>
       </div>
+      {changingPassword && <ChangePasswordDialog onClose={() => setChangingPassword(false)} />}
     </div>
   );
 }

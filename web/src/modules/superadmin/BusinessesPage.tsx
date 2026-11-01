@@ -1,130 +1,103 @@
-// Super Admin: obuna va modullar. Salonni to'xtatish ma'lumotni o'chirmaydi, shuning uchun bu amal qaytariladi.
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+// Super Admin: barcha salonlar ro'yxat va xaritada, direktorlari bilan.
+import { useQuery } from "@tanstack/react-query";
+import { Plus, Search } from "lucide-react";
+import { useMemo, useState } from "react";
 
-import { api, json } from "../../api/client";
+import { api } from "../../api/client";
 import type { BusinessAdmin, ModuleInfo } from "../../api/types";
 import { formatDate } from "../../components/format";
-import { Badge, Button, Card, Empty, ErrorNote, PageTitle, Spinner } from "../../components/ui";
+import { Button, Card, Empty, ErrorNote, PageTitle, Spinner, Tabs } from "../../components/ui";
+import { BUSINESSES_KEY, BusinessDialog, CreateBusinessDialog, StatusBadge } from "./BusinessDialogs";
+import { BusinessesMap } from "./Maps";
 
-const KEY = ["superadmin", "businesses"];
-
-function StatusBadge({ b }: { b: BusinessAdmin }) {
-  if (b.status === "blocked") return <Badge tone="red">Bloklangan</Badge>;
-  if (!b.operational) return <Badge tone="amber">To'xtatilgan</Badge>;
-  return <Badge tone="green">Faol</Badge>;
-}
-
-function BusinessCard({ business: b, modules }: { business: BusinessAdmin; modules: ModuleInfo[] }) {
-  const queryClient = useQueryClient();
-  const [confirming, setConfirming] = useState(false);
-  const refresh = () => queryClient.invalidateQueries({ queryKey: KEY });
-  const base = `/superadmin/businesses/${b.id}`;
-
-  const renew = useMutation({
-    mutationFn: (days: number) => api(`${base}/subscription/renew`, json("POST", { days })),
-    onSettled: refresh,
-  });
-  const setActive = useMutation({
-    mutationFn: (is_active: boolean) => api(`${base}/subscription`, json("PATCH", { is_active })),
-    onSettled: () => {
-      setConfirming(false);
-      return refresh();
-    },
-  });
-  const toggle = useMutation({
-    mutationFn: ({ code, enabled }: { code: string; enabled: boolean }) =>
-      api(`${base}/modules/${code}`, json("PUT", { enabled })),
-    onSettled: refresh,
-  });
-  const error = renew.error ?? setActive.error ?? toggle.error;
-  const busy = renew.isPending || setActive.isPending;
-
-  return (
-    <Card>
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h2 className="font-medium">
-            {b.name} <StatusBadge b={b} />
-          </h2>
-          <p className="mt-1 text-sm text-muted">
-            {b.owner_name ?? "Egasi yo'q"}
-            {b.owner_phone ? ` · ${b.owner_phone}` : ""} · {b.staff_count} xodim
-          </p>
-          <p className="mt-1 text-sm">
-            Obuna: {b.subscription_ends_at ? `${formatDate(b.subscription_ends_at)} gacha` : "muddatsiz"}
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button disabled={busy} onClick={() => renew.mutate(30)}>
-            +30 kun
-          </Button>
-          {b.is_active ? (
-            confirming ? (
-              <>
-                <Button variant="danger" disabled={busy} onClick={() => setActive.mutate(false)}>
-                  Ha, to'xtatish
-                </Button>
-                <Button variant="secondary" onClick={() => setConfirming(false)}>
-                  Yo'q
-                </Button>
-              </>
-            ) : (
-              <Button variant="danger" onClick={() => setConfirming(true)}>
-                To'xtatish
-              </Button>
-            )
-          ) : (
-            <Button variant="secondary" disabled={busy} onClick={() => setActive.mutate(true)}>
-              Yoqish
-            </Button>
-          )}
-        </div>
-      </div>
-
-      <fieldset className="mt-4 border-t border-line pt-3">
-        <legend className="sr-only">Modullar</legend>
-        <div className="flex flex-wrap gap-x-5 gap-y-2">
-          {modules.map((m) => (
-            <label key={m.code} className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={b.modules.includes(m.code)}
-                disabled={toggle.isPending}
-                onChange={(e) => toggle.mutate({ code: m.code, enabled: e.target.checked })}
-                className="size-4 accent-primary"
-              />
-              {m.name}
-            </label>
-          ))}
-        </div>
-      </fieldset>
-      {error && (
-        <div className="mt-3">
-          <ErrorNote error={error} />
-        </div>
-      )}
-    </Card>
-  );
-}
+type View = "list" | "map";
 
 export function BusinessesPage() {
-  const businesses = useQuery({ queryKey: KEY, queryFn: () => api<BusinessAdmin[]>("/superadmin/businesses") });
-  const modules = useQuery({
-    queryKey: ["superadmin", "modules"],
-    queryFn: () => api<ModuleInfo[]>("/superadmin/modules"),
-  });
+  const businesses = useQuery({ queryKey: BUSINESSES_KEY, queryFn: () => api<BusinessAdmin[]>("/superadmin/businesses") });
+  const modules = useQuery({ queryKey: ["superadmin", "modules"], queryFn: () => api<ModuleInfo[]>("/superadmin/modules") });
+  const [view, setView] = useState<View>("list");
+  const [text, setText] = useState("");
+  const [openedId, setOpenedId] = useState<number | null>(null);
+  const [creating, setCreating] = useState(false);
+
+  const filtered = useMemo(() => {
+    const q = text.trim().toLowerCase();
+    return (businesses.data ?? []).filter(
+      (b) => !q || [b.name, b.city, b.owner_name, b.owner_phone].some((v) => v?.toLowerCase().includes(q)),
+    );
+  }, [businesses.data, text]);
+
+  const opened = businesses.data?.find((b) => b.id === openedId);
+  const noLocation = filtered.filter((b) => b.lat === null).length;
 
   return (
     <>
-      <PageTitle title="Bizneslar" hint="To'xtatilgan salon ma'lumotlari saqlanadi, uzaytirilsa shu joyidan davom etadi" />
+      <PageTitle
+        title="Salonlar"
+        hint={businesses.data ? `Jami ${businesses.data.length} ta` : undefined}
+        action={
+          <Button className="flex items-center gap-1" disabled={!modules.data} onClick={() => setCreating(true)}>
+            <Plus size={16} aria-hidden /> Yangi salon
+          </Button>
+        }
+      />
+      <Tabs tabs={[{ id: "list", label: "Ro'yxat" }, { id: "map", label: "Xarita" }]} value={view} onChange={setView} />
+      <label className="relative mb-3 block">
+        <span className="sr-only">Qidirish</span>
+        <Search size={16} className="absolute top-2.5 left-3 text-muted" aria-hidden />
+        <input
+          className="w-full rounded-lg border border-line bg-white py-2 pr-3 pl-9 text-sm outline-none focus:border-primary"
+          placeholder="Salon, shahar yoki direktor"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+        />
+      </label>
+
       {(businesses.isPending || modules.isPending) && <Spinner />}
       {(businesses.error || modules.error) && <ErrorNote error={businesses.error ?? modules.error} />}
-      {businesses.data?.length === 0 && <Empty>Hali biznes yo'q</Empty>}
-      <div className="space-y-3">
-        {modules.data &&
-          businesses.data?.map((b) => <BusinessCard key={b.id} business={b} modules={modules.data} />)}
-      </div>
+
+      {view === "map" && businesses.data && (
+        <>
+          <BusinessesMap businesses={filtered} onSelect={(b) => setOpenedId(b.id)} />
+          <p className="mt-2 text-xs text-muted">
+            Yashil: faol. Sariq: to'xtatilgan. Qizil: bloklangan.
+            {noLocation > 0 && ` Lokatsiyasi yo'q: ${noLocation} ta.`}
+          </p>
+        </>
+      )}
+
+      {view === "list" && businesses.data && (
+        filtered.length === 0 ? (
+          <Card><Empty>Topilmadi</Empty></Card>
+        ) : (
+          <ul className="divide-y divide-line rounded-xl border border-line bg-white">
+            {filtered.map((b) => (
+              <li key={b.id}>
+                <button
+                  onClick={() => setOpenedId(b.id)}
+                  className="flex w-full flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 text-left text-sm hover:bg-page"
+                >
+                  <span className="min-w-48 flex-1">
+                    <span className="block font-medium">{b.name} <StatusBadge b={b} /></span>
+                    <span className="block text-muted">
+                      {b.owner_name ?? "Direktor yo'q"}{b.owner_phone ? ` · ${b.owner_phone}` : ""}
+                    </span>
+                  </span>
+                  <span className="text-muted">{b.staff_count} xodim</span>
+                  <span className="w-36 text-right">
+                    {b.subscription_ends_at ? `${formatDate(b.subscription_ends_at)} gacha` : "Muddatsiz"}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )
+      )}
+
+      {opened && modules.data && (
+        <BusinessDialog key={opened.id} business={opened} modules={modules.data} onClose={() => setOpenedId(null)} />
+      )}
+      {creating && modules.data && <CreateBusinessDialog modules={modules.data} onClose={() => setCreating(false)} />}
     </>
   );
 }

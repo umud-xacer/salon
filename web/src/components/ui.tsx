@@ -25,6 +25,34 @@ export function Button({
   );
 }
 
+export const inputClass =
+  "mt-1 w-full rounded-lg border border-line bg-white px-3 py-2 text-sm outline-none focus:border-primary disabled:bg-page";
+
+export function Tabs<T extends string>({ tabs, value, onChange }: {
+  tabs: { id: T; label: string }[];
+  value: T;
+  onChange: (id: T) => void;
+}) {
+  return (
+    <div role="tablist" className="mb-4 flex gap-1 overflow-x-auto overflow-y-hidden border-b border-line">
+      {tabs.map((t) => (
+        <button
+          key={t.id}
+          type="button"
+          role="tab"
+          aria-selected={value === t.id}
+          onClick={() => onChange(t.id)}
+          className={`border-b-2 px-3 py-2 text-sm whitespace-nowrap ${
+            value === t.id ? "border-primary font-medium text-primary" : "border-transparent text-muted"
+          }`}
+        >
+          {t.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
   return <section className={`rounded-xl border border-line bg-white p-4 ${className}`}>{children}</section>;
 }

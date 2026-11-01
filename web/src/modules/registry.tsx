@@ -3,7 +3,9 @@
 import {
   CalendarDays,
   CalendarRange,
+  CalendarClock,
   Clock3,
+  Contact,
   LayoutDashboard,
   Package,
   Receipt,
@@ -17,12 +19,15 @@ import type { ComponentType } from "react";
 
 import type { Membership, Panel } from "../api/types";
 import { CalendarPage } from "./calendar/CalendarPage";
+import { ClientsPage } from "./clients/ClientsPage";
 import { DashboardPage } from "./dashboard/DashboardPage";
 import { CashPage, ExpensesPage } from "./finance/FinancePages";
 import { InventoryPage } from "./inventory/InventoryPage";
 import { PayrollPage } from "./payroll/PayrollPage";
 import { MyBookingsPage, MySchedulePage } from "./schedule/StaffPages";
-import { ServicesPage, StaffPage } from "./staff/ManagementPages";
+import { ServicesPage } from "./services/ServicesPage";
+import { StaffPage } from "./staff/StaffPage";
+import { WorkSchedulePage } from "./staff/WorkSchedulePage";
 
 export interface Section {
   path: string;
@@ -56,7 +61,15 @@ export const SECTIONS: Section[] = [
     path: "payroll", label: "Oylik", icon: WalletCards, panel: "admin", module: "payroll",
     anyPermission: ["payroll.manage"], page: PayrollPage,
   },
+  {
+    path: "clients", label: "Mijozlar", icon: Contact, panel: "admin", module: "booking",
+    anyPermission: ["clients.view"], page: ClientsPage,
+  },
   { path: "staff", label: "Xodimlar", icon: Users, panel: "admin", anyPermission: ["staff.manage"], page: StaffPage },
+  {
+    path: "work-schedule", label: "Ish jadvali", icon: CalendarClock, panel: "admin",
+    anyPermission: ["staff.manage"], page: WorkSchedulePage,
+  },
   {
     path: "services", label: "Xizmatlar", icon: Scissors, panel: "admin",
     anyPermission: ["services.manage"], page: ServicesPage,

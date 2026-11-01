@@ -6,7 +6,7 @@ import { api, ApiError, json } from "../../api/client";
 import type { Appointment, Client, Membership, ReceptionOptions, Slot } from "../../api/types";
 import { formatMoney, normalizePhone, todayIso } from "../../components/format";
 import { Button, Empty, ErrorNote, Spinner } from "../../components/ui";
-import { Modal } from "./Modal";
+import { Modal } from "../../components/Modal";
 
 export interface BookingPreset {
   day: string;

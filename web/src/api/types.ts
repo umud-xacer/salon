@@ -90,6 +90,65 @@ export interface ScheduleDay {
   breaks: { start: string; end: string }[];
 }
 
+export interface Member {
+  id: number;
+  user_id: number;
+  role: Membership["role"];
+  full_name: string;
+  phone: string;
+  title: string | null;
+  is_active: boolean;
+  is_bookable: boolean;
+  password_block: string | null;
+}
+
+export interface MemberPermission {
+  code: string;
+  description: string | null;
+  module_code: string | null;
+  module_enabled: boolean;
+  role_default: boolean;
+  override: boolean | null;
+  effective: boolean;
+}
+
+export interface MemberService {
+  service_id: number;
+  custom_price: number | null;
+  custom_duration: number | null;
+}
+
+export interface Service {
+  id: number;
+  name: string;
+  description: string | null;
+  category_id: number | null;
+  duration_min: number;
+  price: number;
+  is_active: boolean;
+}
+
+export interface ServiceCategory {
+  id: number;
+  name: string;
+  sort_order: number;
+}
+
+export interface TimeOff {
+  id: number;
+  starts_at: string;
+  ends_at: string;
+  reason: string | null;
+}
+
+export interface ClientRecord extends Client {
+  notes: string | null;
+  has_account: boolean;
+  visits: number;
+  total_spent: number;
+  last_visit: string | null;
+}
+
 export interface ModuleInfo {
   code: string;
   name: string;
@@ -99,7 +158,11 @@ export interface BusinessAdmin {
   id: number;
   name: string;
   slug: string;
+  category_id: number;
   city: string | null;
+  address: string | null;
+  lat: number | null;
+  lng: number | null;
   status: "pending" | "active" | "blocked";
   is_active: boolean;
   subscription_ends_at: string | null;

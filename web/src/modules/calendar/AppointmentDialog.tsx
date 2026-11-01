@@ -5,7 +5,7 @@ import { api, json } from "../../api/client";
 import type { Appointment, Membership } from "../../api/types";
 import { formatDate, formatMoney, formatTime, STATUS_LABELS } from "../../components/format";
 import { Button, ErrorNote } from "../../components/ui";
-import { Modal } from "./Modal";
+import { Modal } from "../../components/Modal";
 
 const OPEN = ["pending", "confirmed"];
 

@@ -54,6 +54,10 @@ async function parseError(res: Response): Promise<ApiError> {
   if (detail && typeof detail === "object" && "message" in detail) {
     return new ApiError(res.status, detail.code ?? "error", detail.message);
   }
+  // Maydon tekshiruvi xatosi (422): birinchi sababni ko'rsatamiz
+  if (Array.isArray(detail) && typeof detail[0]?.msg === "string") {
+    return new ApiError(res.status, "validation", detail[0].msg.replace(/^Value error, /, ""));
+  }
   return new ApiError(res.status, "error", "So'rov bajarilmadi. Qayta urinib ko'ring.");
 }
 

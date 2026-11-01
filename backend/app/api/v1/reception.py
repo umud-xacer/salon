@@ -1,4 +1,4 @@
-"""Kalendar va qabulxona: mijoz nomidan bron, "istalgan usta", mijoz qidirish."""
+"""Kalendar va qabulxona: mijoz nomidan bron, "istalgan usta"."""
 from datetime import date, timedelta
 
 from fastapi import APIRouter, Depends, Query
@@ -8,14 +8,13 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_db, require_permission
 from app.api.v1.appointments import _SELECT, _get
 from app.schemas.appointments import AppointmentOut
-from app.schemas.reception import (AnySlot, CalendarOut, CalendarStaff, ClientOut, OptionService, OptionStaff,
-                                   ReceptionBooking, ReceptionOptions)
+from app.schemas.reception import (AnySlot, CalendarOut, CalendarStaff, OptionService, OptionStaff, ReceptionBooking,
+                                   ReceptionOptions)
 
 router = APIRouter(prefix="/businesses/{business_id}", tags=["reception"])
 
 _view_all = require_permission("appointments.view_all")
 _booking = require_permission("appointments.manage")
-_clients = require_permission("clients.view")
 
 DEFAULT_HOURS = (9, 20)
 
@@ -103,16 +102,3 @@ def book_for_client(body: ReceptionBooking, business_id: int = Depends(_booking)
            "name": body.client_name, "phone": body.client_phone, "note": body.note})
     db.commit()
     return _get(db, appointment_id)
-
-
-@router.get("/clients", response_model=list[ClientOut])
-def search_clients(q: str = Query(min_length=2, max_length=60), business_id: int = Depends(_clients),
-                   db: Session = Depends(get_db)):
-    """Telefon yoki ism bo'yicha qidirish. % va _ oddiy belgi sifatida ishlanadi."""
-    pattern = "%" + q.strip().replace("\\", "\\\\").replace("%", r"\%").replace("_", r"\_") + "%"
-    rows = db.execute(text(r"""
-        SELECT id, full_name, phone FROM business_clients
-         WHERE business_id = :b AND (phone LIKE :p ESCAPE '\' OR full_name ILIKE :p ESCAPE '\')
-         ORDER BY full_name LIMIT 8
-    """), {"b": business_id, "p": pattern}).mappings()
-    return [ClientOut(**r) for r in rows]
