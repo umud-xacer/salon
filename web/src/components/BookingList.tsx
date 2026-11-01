@@ -40,7 +40,7 @@ export function BookingList({ businessId, showMaster }: { businessId: number; sh
             <span className="w-24 font-medium tabular-nums">
               {formatTime(a.starts_at)}–{formatTime(a.ends_at)}
             </span>
-            <span className="min-w-40 flex-1">
+            <span className="min-w-0 basis-full sm:basis-auto sm:flex-1">
               {a.services.join(", ") || "Xizmat"}
               <span className="block text-muted">
                 {a.client_name ?? "Mijoz"}

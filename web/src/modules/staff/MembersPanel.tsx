@@ -6,9 +6,9 @@ import { useState, type FormEvent } from "react";
 import { api, json } from "../../api/client";
 import type { Member, MemberPermission, MemberService, Service } from "../../api/types";
 import { useAuth } from "../../auth/AuthProvider";
-import { formatMoney, normalizePhone, ROLE_LABELS } from "../../components/format";
+import { formatDate, formatMoney, normalizePhone, ROLE_LABELS } from "../../components/format";
 import { Modal } from "../../components/Modal";
-import { Badge, Button, Empty, ErrorNote, inputClass, Spinner, Tabs } from "../../components/ui";
+import { Badge, Button, Empty, ErrorNote, inputClass, PasswordBadge, Spinner, Tabs } from "../../components/ui";
 import { ScheduleEditor } from "./ScheduleEditor";
 
 const membersKey = (b: number) => ["members", b];
@@ -44,11 +44,12 @@ export function MembersPanel({ businessId, canManageManagers }: { businessId: nu
               onClick={() => setOpenedId(m.id)}
               className="flex w-full flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3 text-left text-sm hover:bg-page"
             >
-              <span className="min-w-40 flex-1">
-                <span className="block font-medium">{m.full_name || m.phone}</span>
+              <span className="min-w-0 basis-full sm:basis-auto sm:flex-1">
+                <span className="block font-medium break-words">{m.full_name || m.phone}</span>
                 <span className="block text-muted tabular-nums">{m.phone}{m.title ? ` · ${m.title}` : ""}</span>
               </span>
               <Badge tone={m.role === "owner" ? "green" : "gray"}>{ROLE_LABELS[m.role]}</Badge>
+              <PasswordBadge status={m.password_status} />
               {!m.is_active && <Badge tone="red">Faol emas</Badge>}
             </button>
           </li>
@@ -250,12 +251,12 @@ function PermissionsTab({ businessId, memberId }: { businessId: number; memberId
       {set.error && <div className="mb-2"><ErrorNote error={set.error} /></div>}
       <ul className="divide-y divide-line">
         {query.data.map((p) => (
-          <li key={p.code} className="flex items-center justify-between gap-3 py-2 text-sm">
-            <span className="min-w-0">
+          <li key={p.code} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 py-2 text-sm">
+            <span className="min-w-0 basis-full [overflow-wrap:anywhere] sm:basis-auto sm:flex-1">
               <span className="block">{p.description ?? p.code}</span>
               {!p.module_enabled && <span className="block text-xs text-warning">Modul o'chiq</span>}
             </span>
-            <span className="flex shrink-0 items-center gap-2">
+            <span className="ml-auto flex shrink-0 items-center gap-2">
               <Badge tone={p.effective ? "green" : "gray"}>{p.effective ? "Bor" : "Yo'q"}</Badge>
               <select
                 aria-label={p.description ?? p.code}
@@ -316,7 +317,7 @@ function ServicesTab({ businessId, memberId }: { businessId: number; memberId: n
                 checked={assigned.data.some((a) => a.service_id === s.id)}
                 onChange={(e) => toggle(s.id, e.target.checked)} />
               <span className="flex-1">{s.name}</span>
-              <span className="text-muted tabular-nums">{s.duration_min} daq · {formatMoney(s.price)}</span>
+              <span className="text-right text-muted tabular-nums">{s.duration_min} daq · {formatMoney(s.price)}</span>
             </label>
           </li>
         ))}
@@ -358,12 +359,16 @@ function PasswordTab({ businessId, member: m }: { businessId: number; member: Me
   return (
     <form onSubmit={submit} className="space-y-3">
       <p className="text-sm text-muted">
-        Yangi parol o'rnatilgach, xodimning barcha qurilmalardagi kirishi yopiladi. Parolni xodimga shaxsan bering,
-        kirgach o'zi almashtirsin.
+        Yangi parol vaqtinchalik bo'ladi: xodimning barcha kirishlari yopiladi, birinchi kirishda o'z parolini qo'yadi.
+        Parolni shaxsan bering. Saqlangach, parolni hech kim ko'ra olmaydi.
+      </p>
+      <p className="flex flex-wrap items-center gap-2 text-sm">
+        Hozirgi holat: <PasswordBadge status={m.password_status} />
+        {m.password_changed_at && <span className="text-muted">{formatDate(m.password_changed_at)}</span>}
       </p>
       <label className="block text-sm">Yangi parol
         <span className="mt-1 flex gap-2">
-          <input className={`${inputClass} mt-0 font-mono`} required minLength={8} maxLength={128} autoComplete="off"
+          <input className={`${inputClass} mt-0 min-w-0 font-mono`} required minLength={8} maxLength={128} autoComplete="off"
             value={password}
             onChange={(e) => { setPassword(e.target.value); save.reset(); }} />
           <Button type="button" variant="secondary" onClick={() => { setPassword(generatePassword()); save.reset(); }}>
@@ -374,7 +379,7 @@ function PasswordTab({ businessId, member: m }: { businessId: number; member: Me
       {save.error && <ErrorNote error={save.error} />}
       <div className="flex items-center gap-3">
         <Button type="submit" disabled={save.isPending}>Parolni o'rnatish</Button>
-        {save.isSuccess && <span className="text-sm text-success">O'rnatildi, xodim endi shu parol bilan kiradi</span>}
+        {save.isSuccess && <span className="text-sm text-success">O'rnatildi</span>}
       </div>
     </form>
   );

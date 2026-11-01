@@ -64,13 +64,13 @@ export function ClientsPage({ membership }: { membership: Membership }) {
                 onClick={() => setEditing(c)}
                 className="flex w-full flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 text-left text-sm hover:bg-page"
               >
-                <span className="min-w-40 flex-1">
-                  <span className="block font-medium">{c.full_name}</span>
+                <span className="min-w-0 basis-full sm:basis-auto sm:flex-1">
+                  <span className="block font-medium break-words">{c.full_name}</span>
                   <span className="block text-muted tabular-nums">{c.phone}</span>
                 </span>
                 {c.has_account && <Badge tone="green">Ilovada</Badge>}
                 <span className="text-muted">{c.visits} tashrif</span>
-                <span className="w-28 text-right tabular-nums">{formatMoney(c.total_spent)}</span>
+                <span className="tabular-nums sm:w-28 sm:text-right">{formatMoney(c.total_spent)}</span>
               </button>
             </li>
           ))}

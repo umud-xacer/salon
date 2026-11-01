@@ -7,7 +7,10 @@ export interface User {
   full_name: string;
   language: string;
   is_superadmin: boolean;
+  must_change_password: boolean;
 }
+
+export type PasswordStatus = "none" | "temporary" | "own";
 
 export interface Membership {
   member_id: number;
@@ -100,6 +103,8 @@ export interface Member {
   is_active: boolean;
   is_bookable: boolean;
   password_block: string | null;
+  password_status: PasswordStatus;
+  password_changed_at: string | null;
 }
 
 export interface MemberPermission {
@@ -169,6 +174,8 @@ export interface BusinessAdmin {
   operational: boolean;
   owner_name: string | null;
   owner_phone: string | null;
+  owner_password_status: PasswordStatus | null;
+  owner_password_changed_at: string | null;
   staff_count: number;
   modules: string[];
 }

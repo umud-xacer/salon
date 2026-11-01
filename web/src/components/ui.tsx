@@ -2,6 +2,7 @@ import { Loader2 } from "lucide-react";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 
 import { ApiError } from "../api/client";
+import type { PasswordStatus } from "../api/types";
 
 export function Logo({ size = 40 }: { size?: number }) {
   return <img src="/logo.jpg" alt="Chronix" width={size} height={size} className="rounded-lg object-cover" />;
@@ -34,7 +35,7 @@ export function Tabs<T extends string>({ tabs, value, onChange }: {
   onChange: (id: T) => void;
 }) {
   return (
-    <div role="tablist" className="mb-4 flex gap-1 overflow-x-auto overflow-y-hidden border-b border-line">
+    <div role="tablist" className="mb-4 flex flex-wrap gap-x-1 border-b border-line">
       {tabs.map((t) => (
         <button
           key={t.id}
@@ -77,6 +78,13 @@ export function Badge({ tone, children }: { tone: "green" | "red" | "amber" | "g
     gray: "bg-line text-muted",
   }[tone];
   return <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${style}`}>{children}</span>;
+}
+
+/** Parolning o'zi hech kimga ko'rinmaydi, faqat holati */
+export function PasswordBadge({ status }: { status: PasswordStatus | null }) {
+  if (status === "temporary") return <Badge tone="amber">Vaqtinchalik parol</Badge>;
+  if (status === "own") return <Badge tone="green">O'z paroli</Badge>;
+  return <Badge tone="gray">Parol yo'q</Badge>;
 }
 
 export function Spinner() {

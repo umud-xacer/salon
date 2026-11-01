@@ -113,6 +113,10 @@ def verify_otp(db: Session, phone: str, code: str, full_name: str | None,
         db.add(user)
         db.flush()
     _ensure_can_login(user)
+    # Telefon egasi kirdi: boshqa odam bilgan vaqtinchalik parol endi yaroqsiz
+    if user.must_change_password:
+        user.password_hash = None
+        user.must_change_password = False
     user.last_login_at = _now()
     tokens = _issue_tokens(db, user, user_agent=user_agent, ip=ip)
     db.commit()
@@ -192,6 +196,8 @@ def set_password(db: Session, user_id: int, old_password: str | None, new_passwo
     if user.password_hash is not None and not security.verify_password(old_password or "", user.password_hash):
         raise AuthError("invalid_credentials", "Joriy parol noto'g'ri")
     user.password_hash = security.hash_password(new_password)
+    user.must_change_password = False
+    user.password_changed_at = _now()
     # Parol o'zgardi — boshqa qurilmalardagi sessiyalar bekor
     user.token_version += 1
     db.execute(update(RefreshToken)
@@ -218,6 +224,8 @@ def reset_password(db: Session, phone: str, code: str, new_password: str) -> Non
         raise AuthError("otp_invalid", "Kod noto'g'ri yoki muddati o'tgan")
     _ensure_can_login(user)
     user.password_hash = security.hash_password(new_password)
+    user.must_change_password = False
+    user.password_changed_at = _now()
     user.failed_login_attempts = 0
     user.locked_until = None
     user.token_version += 1

@@ -31,7 +31,9 @@ def _get_member(db: Session, business_id: int, member_id: int) -> BusinessMember
 
 _MEMBER_SELECT = """
     SELECT m.id, m.user_id, m.role::text AS role, u.full_name, u.phone, m.title, m.is_active, m.is_bookable,
-           app.password_block_reason(m.business_id, m.id) AS password_block
+           app.password_block_reason(m.business_id, m.id) AS password_block,
+           CASE WHEN u.password_hash IS NULL THEN 'none' WHEN u.must_change_password THEN 'temporary' ELSE 'own' END AS password_status,
+           u.password_changed_at
       FROM business_members m JOIN users u ON u.id = m.user_id
 """
 

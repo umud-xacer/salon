@@ -7,7 +7,7 @@ import { Spinner } from "./components/ui";
 import { AppShell } from "./layouts/AppShell";
 import { BusinessPanel } from "./pages/BusinessPanel";
 import { LoginPage } from "./pages/LoginPage";
-import { ClientOnlyPage } from "./pages/Notices";
+import { ClientOnlyPage, ForcePasswordPage } from "./pages/Notices";
 
 // Xarita kutubxonasi og'ir: faqat Super Admin yuklaydi
 const BusinessesPage = lazy(() =>
@@ -26,6 +26,7 @@ export function App() {
 
   if (loading) return <Spinner />;
   if (!me) return <LoginPage />;
+  if (me.user.must_change_password) return <ForcePasswordPage />;
 
   return (
     <Routes>

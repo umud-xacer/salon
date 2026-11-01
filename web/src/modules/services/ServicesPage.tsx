@@ -50,10 +50,10 @@ export function ServicesPage({ membership }: { membership: Membership }) {
                     onClick={() => setEditing(s)}
                     className="flex w-full flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3 text-left text-sm hover:bg-page"
                   >
-                    <span className="min-w-40 flex-1 font-medium">{s.name}</span>
+                    <span className="min-w-0 basis-full font-medium break-words sm:basis-auto sm:flex-1">{s.name}</span>
                     {!s.is_active && <Badge tone="gray">Yashirilgan</Badge>}
                     <span className="text-muted tabular-nums">{s.duration_min} daqiqa</span>
-                    <span className="w-28 text-right tabular-nums">{formatMoney(s.price)}</span>
+                    <span className="tabular-nums sm:w-28 sm:text-right">{formatMoney(s.price)}</span>
                   </button>
                 </li>
               ))}

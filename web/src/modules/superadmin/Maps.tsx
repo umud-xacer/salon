@@ -57,7 +57,7 @@ export function BusinessesMap({ businesses, onSelect }: {
     else if (points.length === 1) map.current.setView(points[0], 14);
   }, [businesses]);
 
-  return <div ref={el} aria-label="Salonlar xaritasi" className="z-0 h-[60vh] min-h-80 rounded-xl border border-line" />;
+  return <div ref={el} aria-label="Salonlar xaritasi" className="z-0 h-[60dvh] min-h-64 rounded-xl border border-line" />;
 }
 
 export function LocationPicker({ lat, lng, onChange }: {

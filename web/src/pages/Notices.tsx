@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 
 import type { Membership } from "../api/types";
 import { useAuth } from "../auth/AuthProvider";
+import { ChangePasswordForm } from "../components/ChangePasswordDialog";
 import { formatDate } from "../components/format";
 import { Button } from "../components/ui";
 
@@ -39,6 +40,17 @@ export function SuspendedPage({ membership: m }: { membership: Membership }) {
         {expired ? ` obunasi ${formatDate(m.subscription_ends_at!)} kuni tugagan.` : " obunasi to'xtatilgan."}
       </p>
       <p>Barcha ma'lumotlaringiz saqlangan. To'lovdan keyin ish shu joyidan davom etadi.</p>
+    </Notice>
+  );
+}
+
+export function ForcePasswordPage() {
+  return (
+    <Notice title="Parolni almashtiring">
+      <p>Sizga vaqtinchalik parol berilgan. Davom etish uchun o'zingiz bilgan yangi parol qo'ying.</p>
+      <div className="mt-4">
+        <ChangePasswordForm forced />
+      </div>
     </Notice>
   );
 }

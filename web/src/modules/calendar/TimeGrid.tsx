@@ -57,9 +57,9 @@ export function TimeGrid({ columns, hourFrom, hourTo, onEmptyClick, onOpen, labe
     <div className="overflow-x-auto rounded-xl border border-line bg-white">
       <div className="min-w-fit">
         <div className="sticky top-0 z-20 flex border-b border-line bg-white">
-          <div className="w-14 shrink-0" />
+          <div className="sticky left-0 z-30 w-12 shrink-0 bg-white sm:w-14" />
           {columns.map((c) => (
-            <div key={c.key} className="min-w-28 flex-1 border-l border-line px-2 py-2 text-center">
+            <div key={c.key} className="min-w-24 flex-1 border-l sm:min-w-28 border-line px-2 py-2 text-center">
               <p className="truncate text-sm font-medium">{c.title}</p>
               {c.subtitle && <p className="truncate text-xs text-muted">{c.subtitle}</p>}
             </div>
@@ -67,9 +67,9 @@ export function TimeGrid({ columns, hourFrom, hourTo, onEmptyClick, onOpen, labe
         </div>
 
         <div className="flex">
-          <div className="w-14 shrink-0" style={{ height }}>
+          <div className="sticky left-0 z-10 w-12 shrink-0 bg-white sm:w-14" style={{ height }}>
             {hours.map((h) => (
-              <div key={h} className="pr-2 text-right text-xs text-muted tabular-nums" style={{ height: HOUR_PX }}>
+              <div key={h} className="pr-1.5 text-right text-xs text-muted tabular-nums sm:pr-2" style={{ height: HOUR_PX }}>
                 {clock(h * 60)}
               </div>
             ))}
@@ -82,7 +82,7 @@ export function TimeGrid({ columns, hourFrom, hourTo, onEmptyClick, onOpen, labe
                 key={c.key}
                 data-column={c.key}
                 onClick={clickColumn(c.key)}
-                className={`relative min-w-28 flex-1 border-l border-line ${onEmptyClick ? "cursor-pointer" : ""}`}
+                className={`relative min-w-24 flex-1 border-l sm:min-w-28 border-line ${onEmptyClick ? "cursor-pointer" : ""}`}
                 style={{
                   height,
                   backgroundImage: "linear-gradient(to bottom, var(--color-line) 1px, transparent 1px)",

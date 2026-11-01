@@ -6,7 +6,7 @@ import { useMemo, useState } from "react";
 import { api } from "../../api/client";
 import type { BusinessAdmin, ModuleInfo } from "../../api/types";
 import { formatDate } from "../../components/format";
-import { Button, Card, Empty, ErrorNote, PageTitle, Spinner, Tabs } from "../../components/ui";
+import { Button, Card, Empty, ErrorNote, PageTitle, PasswordBadge, Spinner, Tabs } from "../../components/ui";
 import { BUSINESSES_KEY, BusinessDialog, CreateBusinessDialog, StatusBadge } from "./BusinessDialogs";
 import { BusinessesMap } from "./Maps";
 
@@ -77,14 +77,15 @@ export function BusinessesPage() {
                   onClick={() => setOpenedId(b.id)}
                   className="flex w-full flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 text-left text-sm hover:bg-page"
                 >
-                  <span className="min-w-48 flex-1">
+                  <span className="min-w-0 basis-full sm:basis-auto sm:flex-1">
                     <span className="block font-medium">{b.name} <StatusBadge b={b} /></span>
                     <span className="block text-muted">
                       {b.owner_name ?? "Direktor yo'q"}{b.owner_phone ? ` · ${b.owner_phone}` : ""}
                     </span>
                   </span>
+                  <PasswordBadge status={b.owner_password_status} />
                   <span className="text-muted">{b.staff_count} xodim</span>
-                  <span className="w-36 text-right">
+                  <span className="sm:w-32 sm:text-right">
                     {b.subscription_ends_at ? `${formatDate(b.subscription_ends_at)} gacha` : "Muddatsiz"}
                   </span>
                 </button>

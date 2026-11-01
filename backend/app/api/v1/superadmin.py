@@ -19,6 +19,10 @@ _BUSINESS_SELECT = """
            b.is_active, b.subscription_ends_at,
            app.business_operational(b.id) AS operational,
            u.full_name AS owner_name, u.phone AS owner_phone,
+           CASE WHEN u.id IS NULL THEN NULL
+                WHEN u.password_hash IS NULL THEN 'none' WHEN u.must_change_password THEN 'temporary'
+                ELSE 'own' END AS owner_password_status,
+           u.password_changed_at AS owner_password_changed_at,
            (SELECT count(*) FROM business_members m WHERE m.business_id = b.id AND m.is_active) AS staff_count,
            coalesce((SELECT array_agg(x.code ORDER BY x.code) FROM modules x
                       WHERE app.module_enabled(b.id, x.code)), '{}') AS modules

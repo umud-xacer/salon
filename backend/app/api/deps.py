@@ -38,7 +38,11 @@ def get_public_db() -> Iterator[Session]:
         db.close()
 
 
-def get_db(creds: HTTPAuthorizationCredentials | None = Depends(_bearer)) -> Iterator[Session]:
+# Vaqtinchalik parol bilan kirgan odam faqat shularni ishlata oladi
+_PASSWORD_CHANGE_PATHS = ("/api/v1/auth/me", "/api/v1/auth/password", "/api/v1/auth/logout-all")
+
+
+def get_db(request: Request, creds: HTTPAuthorizationCredentials | None = Depends(_bearer)) -> Iterator[Session]:
     """Tokenni tekshiradi va shu foydalanuvchi nomidan RLS ostidagi sessiya ochadi."""
     if creds is None or creds.scheme.lower() != "bearer":
         raise _UNAUTHORIZED
@@ -53,6 +57,9 @@ def get_db(creds: HTTPAuthorizationCredentials | None = Depends(_bearer)) -> Ite
         # Bloklangan, o'chirilgan yoki "hamma joydan chiqish" qilgan foydalanuvchi tokeni darhol yaroqsiz
         if user is None or user.status != "active" or user.token_version != claims.token_version:
             raise _UNAUTHORIZED
+        if user.must_change_password and request.url.path not in _PASSWORD_CHANGE_PATHS:
+            raise HTTPException(403, detail={"code": "password_change_required",
+                                             "message": "Avval vaqtinchalik parolni almashtiring"})
         db.info["user"] = user
         yield db
     finally:

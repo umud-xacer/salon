@@ -24,6 +24,8 @@ class User(Base):
     phone: Mapped[str] = mapped_column(String(13))
     email: Mapped[str | None] = mapped_column(String)
     password_hash: Mapped[str | None] = mapped_column(Text)
+    must_change_password: Mapped[bool] = mapped_column(Boolean, server_default="false")
+    password_changed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     full_name: Mapped[str] = mapped_column(String(120), server_default="")
     avatar_url: Mapped[str | None] = mapped_column(Text)
     language: Mapped[str] = mapped_column(String(5), server_default="uz")

@@ -5,7 +5,7 @@ import { api, json } from "../../api/client";
 import type { BusinessAdmin, ModuleInfo } from "../../api/types";
 import { dayOf, formatDate, normalizePhone, todayIso } from "../../components/format";
 import { Modal } from "../../components/Modal";
-import { Badge, Button, ErrorNote, inputClass, Tabs } from "../../components/ui";
+import { Badge, Button, ErrorNote, inputClass, PasswordBadge, Tabs } from "../../components/ui";
 import { MembersPanel } from "../staff/MembersPanel";
 import { LocationPicker } from "./Maps";
 
@@ -155,8 +155,11 @@ export function BusinessDialog({ business: b, modules, onClose }: {
   const [tab, setTab] = useState<Tab>("info");
   return (
     <Modal title={b.name} onClose={onClose}>
-      <p className="mb-3 text-sm text-muted">
-        Direktor: {b.owner_name ?? "yo'q"}{b.owner_phone ? ` · ${b.owner_phone}` : ""} <StatusBadge b={b} />
+      <p className="mb-3 flex flex-wrap items-center gap-2 text-sm text-muted">
+        <span>Direktor: {b.owner_name ?? "yo'q"}{b.owner_phone ? ` · ${b.owner_phone}` : ""}</span>
+        <StatusBadge b={b} />
+        <PasswordBadge status={b.owner_password_status} />
+        {b.owner_password_changed_at && <span>{formatDate(b.owner_password_changed_at)}</span>}
       </p>
       <Tabs tabs={TABS} value={tab} onChange={setTab} />
       {tab === "info" && <InfoTab business={b} />}

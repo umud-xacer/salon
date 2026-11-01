@@ -80,6 +80,7 @@ class UserOut(BaseModel):
     full_name: str
     language: str
     is_superadmin: bool
+    must_change_password: bool
 
 
 class LoginOut(TokenOut):
@@ -185,6 +186,8 @@ class BusinessAdminOut(BaseModel):
     operational: bool
     owner_name: str | None
     owner_phone: str | None
+    owner_password_status: Literal["none", "temporary", "own"] | None
+    owner_password_changed_at: datetime | None
     staff_count: int
     modules: list[str]
 
@@ -222,6 +225,8 @@ class MemberOut(BaseModel):
     is_active: bool
     is_bookable: bool
     password_block: str | None                            # None: joriy foydalanuvchi parolni o'rnata oladi
+    password_status: Literal["none", "temporary", "own"]  # parolning o'zi hech kimga ko'rinmaydi
+    password_changed_at: datetime | None
 
 
 class MemberPasswordIn(BaseModel):

@@ -30,6 +30,7 @@ class Settings(BaseSettings):
     login_lock_minutes: int = 15
 
     cors_origins: list[str] = []
+    dev_otp_in_response: bool = True                      # ochiq havolada sinash uchun false qilinadi
     sms_provider: Literal["console", "eskiz"] = "console"
     eskiz_email: str | None = None
     eskiz_password: SecretStr | None = None
@@ -61,7 +62,7 @@ class Settings(BaseSettings):
     @property
     def expose_dev_otp(self) -> bool:
         """Dev/test da OTP kodi javobda qaytariladi (SMS yuborilmaydi)."""
-        return self.env != "prod" and self.sms_provider == "console"
+        return self.env != "prod" and self.sms_provider == "console" and self.dev_otp_in_response
 
 
 @lru_cache
