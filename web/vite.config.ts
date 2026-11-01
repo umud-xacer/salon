@@ -12,6 +12,7 @@ export default defineConfig({
   // Boshqa qurilmadan sinash uchun: yig'ilgan panel + API proksi (`npm run build && npm run preview`)
   preview: {
     port: 4174,
+    allowedHosts: [".trycloudflare.com"],
     proxy: { "/api": process.env.VITE_API_PROXY ?? "http://127.0.0.1:8001" },
   },
 });
