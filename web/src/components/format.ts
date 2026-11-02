@@ -49,6 +49,18 @@ export const STATUS_LABELS: Record<string, string> = {
   no_show: "Kelmadi",
 };
 
+export const formatQty = (value: number) =>
+  value.toLocaleString("ru-RU", { maximumFractionDigits: 3 }).replaceAll(",", ".");
+
+export const MOVE_LABELS: Record<string, string> = {
+  purchase: "Kirim",
+  sale: "Sotuv",
+  usage: "Ishlatildi",
+  to_staff: "Ustaga berildi",
+  adjustment: "Sanoq",
+  write_off: "Hisobdan chiqarildi",
+};
+
 export const METHOD_LABELS: Record<string, string> = {
   cash: "Naqd",
   card: "Karta",

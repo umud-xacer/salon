@@ -221,7 +221,7 @@ def test_stock_cannot_go_negative_or_be_edited_directly(world):
         with pytest.raises(DBAPIError) as e:                          # mavjuddan ko'p ishlatish
             db.execute(text("INSERT INTO stock_movements (business_id, product_id, type, qty, member_id) "
                             "VALUES (:b, :p, 'usage', -1000, :m)"), {"b": a["id"], "p": pid, "m": usta["member"]["id"]})
-        assert sqlstate(e) == "23514"
+        assert sqlstate(e) == "P0414"
         db.rollback()
         with pytest.raises(DBAPIError) as e:                          # o'ziga kirim qilish
             db.execute(text("INSERT INTO stock_movements (business_id, product_id, type, qty, member_id) "

@@ -5,8 +5,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import DBAPIError
 
-from app.api.v1 import (appointments, auth, business_admin, catalog, clients, finance, geo, members, reception,
-                        reminders, schedule, superadmin)
+from app.api.v1 import (appointments, auth, business_admin, catalog, clients, finance, geo, inventory, members,
+                        reception, reminders, schedule, superadmin)
 from app.core.config import get_settings
 from app.services.auth_service import AuthError
 
@@ -66,6 +66,8 @@ _DB_ERRORS = {
     "P0411": (409, "overpaid", "Summa qolgan qarzdan oshib ketdi"),
     "P0412": (409, "not_payable", "To'lov mijoz kelgandan keyin qabul qilinadi"),
     "P0413": (409, "already_refunded", "Bu to'lov allaqachon qaytarilgan"),
+    "P0414": (409, "insufficient_stock", "Omborda yetarli qoldiq yo'q"),
+    "P0415": (409, "product_inactive", "Mahsulot yashirilgan, avval uni faollashtiring"),
 }
 
 
@@ -91,6 +93,7 @@ app.include_router(appointments.router, prefix="/api/v1")
 app.include_router(reception.router, prefix="/api/v1")
 app.include_router(clients.router, prefix="/api/v1")
 app.include_router(finance.router, prefix="/api/v1")
+app.include_router(inventory.router, prefix="/api/v1")
 app.include_router(reminders.router)
 
 

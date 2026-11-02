@@ -225,6 +225,39 @@ export interface CashDay {
   payments: Payment[];
 }
 
+export interface Product {
+  id: number;
+  name: string;
+  sku: string | null;
+  unit: string;
+  cost_price: number;
+  sale_price: number;
+  min_qty: number;
+  current_qty: number;
+  is_active: boolean;
+  is_low: boolean;
+}
+
+export interface InventorySummary {
+  products: number;
+  low_count: number;
+  stock_value: number;
+  low: Product[];
+}
+
+export interface StockMovement {
+  id: number;
+  product_id: number;
+  product_name: string;
+  unit: string;
+  type: string;
+  qty: number;
+  unit_cost: number | null;
+  note: string | null;
+  created_by_name: string | null;
+  created_at: string;
+}
+
 export interface ExpenseCategory {
   id: number;
   name: string;
