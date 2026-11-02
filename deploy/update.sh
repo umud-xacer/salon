@@ -2,7 +2,7 @@
 # GitHub'dagi oxirgi kodni serverga qo'yadi. Migratsiyalar avtomatik bajariladi.
 set -eu
 cd "$(dirname "$0")"
-sh ./backup.sh
+sudo sh ./backup.sh
 git pull --ff-only
 sudo docker compose up -d --build
 # Disk kichik: eski image va build keshi yig'ilib qolmasin. Volume va baza tegilmaydi
