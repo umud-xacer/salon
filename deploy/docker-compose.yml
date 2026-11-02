@@ -54,11 +54,13 @@ services:
       API_DOMAIN: ${API_DOMAIN:?}
       # Domen almashganda eski manzil ham ishlab tursin (ixtiyoriy)
       API_ALIAS: ${API_ALIAS:-}
+      WEB_DOMAIN: ${WEB_DOMAIN:?}
     ports:
       - "80:80"
       - "443:443"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./web-dist:/srv/web:ro
       - caddy_data:/data
       - caddy_config:/config
     depends_on:

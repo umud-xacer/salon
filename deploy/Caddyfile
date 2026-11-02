@@ -2,3 +2,30 @@
 	encode gzip
 	reverse_proxy api:8000
 }
+
+# Veb-panel: API shu domen ostida, shuning uchun CORS kerak emas
+{$WEB_DOMAIN} www.{$WEB_DOMAIN} {
+	encode gzip
+
+	header {
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy no-referrer
+		Strict-Transport-Security "max-age=63072000"
+	}
+
+	handle /api/* {
+		reverse_proxy api:8000
+	}
+
+	handle {
+		root * /srv/web
+		# Nomi xeshlangan fayllar uzoq keshlanadi, index.html esa yo'q: yangi versiya darhol ko'rinsin
+		@assets path /assets/*
+		header @assets Cache-Control "public, max-age=31536000, immutable"
+		@pages not path /assets/*
+		header @pages Cache-Control "no-cache"
+		try_files {path} /index.html
+		file_server
+	}
+}

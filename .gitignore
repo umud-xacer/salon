@@ -31,3 +31,6 @@ logs/
 Thumbs.db
 desktop.ini
 *.db.bak
+deploy/web-dist/
+deploy/web-dist.new/
+deploy/.env.bak
