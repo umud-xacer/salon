@@ -106,6 +106,18 @@ class BusinessDetail(BaseModel):
     staff: list[StaffOut]
 
 
+class RegionOut(BaseModel):
+    name: str
+    districts: list[str]
+
+
+class ReverseAddressOut(BaseModel):
+    address: str
+    region: str | None
+    district: str | None
+    display: str
+
+
 class PlaceOut(BaseModel):
     address: str
     name: str

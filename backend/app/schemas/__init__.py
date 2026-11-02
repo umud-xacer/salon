@@ -4,6 +4,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.core.security import normalize_phone, validate_password_strength
+from app.services.uz_regions import REGION_NAMES
 
 
 class _Phone(BaseModel):
@@ -111,10 +112,17 @@ class MeOut(BaseModel):
 
 
 # ─── Super Admin ────────────────────────────────────────────────────────────
+def _known_region(value: str | None) -> str | None:
+    if value is not None and value not in REGION_NAMES:
+        raise ValueError("Viloyat ro'yxatda yo'q")
+    return value
+
+
 class BusinessCreate(BaseModel):
     name: str = Field(min_length=2, max_length=120)
     slug: str = Field(pattern=r"^[a-z0-9]+(-[a-z0-9]+)*$", max_length=140)
     category_id: int = Field(ge=1)
+    region: str | None = Field(default=None, max_length=80)
     city: str | None = Field(default=None, max_length=80)
     address: str | None = Field(default=None, max_length=300)
     lat: float | None = Field(default=None, ge=-90, le=90)
@@ -128,6 +136,11 @@ class BusinessCreate(BaseModel):
     @classmethod
     def _norm(cls, v: str) -> str:
         return normalize_phone(v)
+
+    @field_validator("region")
+    @classmethod
+    def _region(cls, v: str | None) -> str | None:
+        return _known_region(v)
 
 
 class BusinessOut(BaseModel):
@@ -159,10 +172,16 @@ class ModuleOut(BaseModel):
 class BusinessUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=2, max_length=120)
     category_id: int | None = Field(default=None, ge=1)
+    region: str | None = Field(default=None, max_length=80)
     city: str | None = Field(default=None, max_length=80)
     address: str | None = Field(default=None, max_length=300)
     lat: float | None = Field(default=None, ge=-90, le=90)
     lng: float | None = Field(default=None, ge=-180, le=180)
+
+    @field_validator("region")
+    @classmethod
+    def _region(cls, v: str | None) -> str | None:
+        return _known_region(v)
 
     @model_validator(mode="after")
     def _pair(self):
@@ -176,6 +195,7 @@ class BusinessAdminOut(BaseModel):
     name: str
     slug: str
     category_id: int
+    region: str | None
     city: str | None
     address: str | None
     lat: float | None

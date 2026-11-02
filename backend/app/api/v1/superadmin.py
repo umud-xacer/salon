@@ -14,7 +14,7 @@ from app.services import audit
 router = APIRouter(prefix="/superadmin", tags=["superadmin"], dependencies=[Depends(require_superadmin)])
 
 _BUSINESS_SELECT = """
-    SELECT b.id, b.name, b.slug, b.category_id, b.city, b.address, b.status::text AS status,
+    SELECT b.id, b.name, b.slug, b.category_id, b.region, b.city, b.address, b.status::text AS status,
            ST_Y(b.location::geometry) AS lat, ST_X(b.location::geometry) AS lng,
            b.is_active, b.subscription_ends_at,
            app.business_operational(b.id) AS operational,
@@ -59,7 +59,7 @@ def list_businesses(db: Session = Depends(get_db)):
 def create_business(body: BusinessCreate, db: Session = Depends(get_db)):
     user: User = db.info["user"]
     biz = Business(name=body.name.strip(), slug=body.slug, category_id=body.category_id,
-                   city=body.city, address=body.address, status="active", created_by=user.id)
+                   region=body.region, city=body.city, address=body.address, status="active", created_by=user.id)
     if body.subscription_days is not None:
         biz.subscription_ends_at = datetime.now(timezone.utc) + timedelta(days=body.subscription_days)
     db.add(biz)

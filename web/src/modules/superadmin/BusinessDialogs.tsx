@@ -7,7 +7,7 @@ import { dayOf, formatDate, normalizePhone, todayIso } from "../../components/fo
 import { Modal } from "../../components/Modal";
 import { Badge, Button, ErrorNote, inputClass, PasswordBadge, Tabs } from "../../components/ui";
 import { MembersPanel } from "../staff/MembersPanel";
-import { LocationPicker } from "./Maps";
+import { AddressFields, type AddressValue } from "./AddressFields";
 
 export const BUSINESSES_KEY = ["superadmin", "businesses"];
 
@@ -41,13 +41,11 @@ export function CreateBusinessDialog({ modules, onClose }: { modules: ModuleInfo
   const [slug, setSlug] = useState("");
   const [slugEdited, setSlugEdited] = useState(false);
   const [category, setCategory] = useState("");
-  const [city, setCity] = useState("Toshkent");
-  const [address, setAddress] = useState("");
+  const [place, setPlace] = useState<AddressValue>({ region: "", city: "", address: "", lat: null, lng: null });
   const [ownerName, setOwnerName] = useState("");
   const [ownerPhone, setOwnerPhone] = useState("");
   const [days, setDays] = useState("30");
   const [picked, setPicked] = useState<string[]>(["booking"]);
-  const [point, setPoint] = useState<{ lat: number; lng: number } | null>(null);
 
   const create = useMutation({
     mutationFn: () =>
@@ -55,10 +53,11 @@ export function CreateBusinessDialog({ modules, onClose }: { modules: ModuleInfo
         name: name.trim(),
         slug,
         category_id: Number(category || categories.data?.[0]?.id),
-        city: city.trim() || null,
-        address: address.trim() || null,
-        lat: point?.lat ?? null,
-        lng: point?.lng ?? null,
+        region: place.region || null,
+        city: place.city.trim() || null,
+        address: place.address.trim() || null,
+        lat: place.lat,
+        lng: place.lng,
         owner_full_name: ownerName.trim(),
         owner_phone: normalizePhone(ownerPhone),
         modules: picked,
@@ -89,23 +88,12 @@ export function CreateBusinessDialog({ modules, onClose }: { modules: ModuleInfo
           <input className={inputClass} required pattern="[a-z0-9]+(-[a-z0-9]+)*" maxLength={140} value={slug}
             onChange={(e) => { setSlug(e.target.value); setSlugEdited(true); }} />
         </label>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <label className="block text-sm">Turi
-            <select className={inputClass} value={category} onChange={(e) => setCategory(e.target.value)}>
-              {categories.data?.map((c) => <option key={c.id} value={c.id}>{c.name_uz}</option>)}
-            </select>
-          </label>
-          <label className="block text-sm">Shahar
-            <input className={inputClass} maxLength={80} value={city} onChange={(e) => setCity(e.target.value)} />
-          </label>
-        </div>
-        <label className="block text-sm">Manzil
-          <input className={inputClass} maxLength={300} value={address} onChange={(e) => setAddress(e.target.value)} />
+        <label className="block text-sm">Turi
+          <select className={inputClass} value={category} onChange={(e) => setCategory(e.target.value)}>
+            {categories.data?.map((c) => <option key={c.id} value={c.id}>{c.name_uz}</option>)}
+          </select>
         </label>
-        <div className="text-sm">
-          <p className="mb-1">Lokatsiya</p>
-          <LocationPicker lat={point?.lat ?? null} lng={point?.lng ?? null} onChange={(lat, lng) => setPoint({ lat, lng })} />
-        </div>
+        <AddressFields value={place} onChange={setPlace} />
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="block text-sm">Direktor ismi
             <input className={inputClass} required minLength={2} maxLength={120} value={ownerName}
@@ -180,20 +168,20 @@ function InfoTab({ business: b }: { business: BusinessAdmin }) {
   const categories = useCategories();
   const [name, setName] = useState(b.name);
   const [category, setCategory] = useState(String(b.category_id));
-  const [city, setCity] = useState(b.city ?? "");
-  const [address, setAddress] = useState(b.address ?? "");
-  const [lat, setLat] = useState(b.lat);
-  const [lng, setLng] = useState(b.lng);
+  const [place, setPlace] = useState<AddressValue>({
+    region: b.region ?? "", city: b.city ?? "", address: b.address ?? "", lat: b.lat, lng: b.lng,
+  });
 
   const save = useMutation({
     mutationFn: () =>
       api(`/superadmin/businesses/${b.id}`, json("PATCH", {
         name: name.trim(),
         category_id: Number(category),
-        city: city.trim() || null,
-        address: address.trim() || null,
-        lat,
-        lng,
+        region: place.region || null,
+        city: place.city.trim() || null,
+        address: place.address.trim() || null,
+        lat: place.lat,
+        lng: place.lng,
       })),
     onSuccess: refresh,
   });
@@ -208,23 +196,12 @@ function InfoTab({ business: b }: { business: BusinessAdmin }) {
       <label className="block text-sm">Nomi
         <input className={inputClass} required minLength={2} maxLength={120} value={name} onChange={(e) => setName(e.target.value)} />
       </label>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <label className="block text-sm">Turi
-          <select className={inputClass} value={category} onChange={(e) => setCategory(e.target.value)}>
-            {categories.data?.map((c) => <option key={c.id} value={c.id}>{c.name_uz}</option>)}
-          </select>
-        </label>
-        <label className="block text-sm">Shahar
-          <input className={inputClass} maxLength={80} value={city} onChange={(e) => setCity(e.target.value)} />
-        </label>
-      </div>
-      <label className="block text-sm">Manzil
-        <input className={inputClass} maxLength={300} value={address} onChange={(e) => setAddress(e.target.value)} />
+      <label className="block text-sm">Turi
+        <select className={inputClass} value={category} onChange={(e) => setCategory(e.target.value)}>
+          {categories.data?.map((c) => <option key={c.id} value={c.id}>{c.name_uz}</option>)}
+        </select>
       </label>
-      <div className="text-sm">
-        <p className="mb-1">Lokatsiya</p>
-        <LocationPicker lat={lat} lng={lng} onChange={(a, o) => { setLat(a); setLng(o); }} />
-      </div>
+      <AddressFields value={place} onChange={setPlace} />
       {save.error && <ErrorNote error={save.error} />}
       <div className="flex items-center gap-3">
         <Button type="submit" disabled={save.isPending}>Saqlash</Button>

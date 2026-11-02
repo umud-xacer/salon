@@ -23,7 +23,7 @@ export function BusinessesPage() {
   const filtered = useMemo(() => {
     const q = text.trim().toLowerCase();
     return (businesses.data ?? []).filter(
-      (b) => !q || [b.name, b.city, b.owner_name, b.owner_phone].some((v) => v?.toLowerCase().includes(q)),
+      (b) => !q || [b.name, b.region, b.city, b.owner_name, b.owner_phone].some((v) => v?.toLowerCase().includes(q)),
     );
   }, [businesses.data, text]);
 

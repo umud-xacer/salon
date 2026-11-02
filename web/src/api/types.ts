@@ -154,6 +154,18 @@ export interface ClientRecord extends Client {
   last_visit: string | null;
 }
 
+export interface Region {
+  name: string;
+  districts: string[];
+}
+
+export interface ReverseAddress {
+  address: string;
+  region: string | null;
+  district: string | null;
+  display: string;
+}
+
 export interface ModuleInfo {
   code: string;
   name: string;
@@ -164,6 +176,7 @@ export interface BusinessAdmin {
   name: string;
   slug: string;
   category_id: number;
+  region: string | null;
   city: string | null;
   address: string | null;
   lat: number | null;

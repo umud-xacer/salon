@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { type QueryClient, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createContext, useContext, useEffect, useMemo, type ReactNode } from "react";
 
 import { api, hasSession, logout as apiLogout, setSessionLostHandler, storeSession } from "../api/client";
@@ -14,6 +14,13 @@ interface AuthValue {
 const AuthContext = createContext<AuthValue | null>(null);
 const ME_KEY = ["me"];
 
+// clear() kirish holatini kuzatayotgan so'rovni ham uzadi va ekran eski holatda qolib ketadi.
+// Avval holat bo'shatiladi, keyin faqat boshqa ma'lumotlar o'chiriladi.
+function resetSession(queryClient: QueryClient) {
+  queryClient.setQueryData(ME_KEY, null);
+  queryClient.removeQueries({ predicate: (q) => q.queryKey[0] !== ME_KEY[0] });
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
 
@@ -28,10 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
   useEffect(() => {
-    setSessionLostHandler(() => {
-      queryClient.clear();
-      queryClient.setQueryData(ME_KEY, null);
-    });
+    setSessionLostHandler(() => resetSession(queryClient));
   }, [queryClient]);
 
   const value = useMemo<AuthValue>(
@@ -45,8 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       signOut: async () => {
         await apiLogout();
-        queryClient.clear();
-        queryClient.setQueryData(ME_KEY, null);
+        resetSession(queryClient);
       },
     }),
     [query.data, query.isPending, queryClient],

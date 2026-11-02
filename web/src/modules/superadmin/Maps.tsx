@@ -94,6 +94,8 @@ export function LocationPicker({ lat, lng, onChange }: {
     }
     if (marker.current) {
       marker.current.setLatLng([lat, lng]);
+      // "Mening joyim" xaritadan tashqaridagi nuqtani berishi mumkin
+      if (!map.current.getBounds().contains([lat, lng])) map.current.setView([lat, lng], 15);
     } else {
       marker.current = L.circleMarker([lat, lng], { radius: 9, color: "#fff", weight: 2, fillColor: "#1565f5", fillOpacity: 1 }).addTo(map.current);
       map.current.setView([lat, lng], 15);

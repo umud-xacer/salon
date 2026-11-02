@@ -74,6 +74,7 @@ class Business(Base):
     name: Mapped[str] = mapped_column(String(120))
     slug: Mapped[str] = mapped_column(String(140))
     phone: Mapped[str | None] = mapped_column(String(13))
+    region: Mapped[str | None] = mapped_column(String(80))
     city: Mapped[str | None] = mapped_column(String(80))
     address: Mapped[str | None] = mapped_column(Text)
     status: Mapped[str] = mapped_column(BusinessStatus, server_default="pending")
