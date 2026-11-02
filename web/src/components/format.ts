@@ -49,6 +49,14 @@ export const STATUS_LABELS: Record<string, string> = {
   no_show: "Kelmadi",
 };
 
+export const METHOD_LABELS: Record<string, string> = {
+  cash: "Naqd",
+  card: "Karta",
+  click: "Click",
+  payme: "Payme",
+  uzum: "Uzum",
+};
+
 export const ROLE_LABELS: Record<string, string> = {
   owner: "Direktor",
   manager: "Menejer",

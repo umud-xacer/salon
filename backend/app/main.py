@@ -5,8 +5,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import DBAPIError
 
-from app.api.v1 import (appointments, auth, business_admin, catalog, clients, geo, members, reception, reminders,
-                        schedule, superadmin)
+from app.api.v1 import (appointments, auth, business_admin, catalog, clients, finance, geo, members, reception,
+                        reminders, schedule, superadmin)
 from app.core.config import get_settings
 from app.services.auth_service import AuthError
 
@@ -62,6 +62,10 @@ _DB_ERRORS = {
     "P0410": (409, "shared_account", "Bu odam boshqa salon yoki mijoz hisobiga ham bog'langan. "
                                      "Parolni o'zi yoki Super Admin o'zgartiradi"),
     "P0409": (409, "not_changeable", "Bu bronni endi o'zgartirib bo'lmaydi"),   # boshlangan yoki yopilgan bron
+    "P0404": (404, "not_found", "Yozuv topilmadi"),
+    "P0411": (409, "overpaid", "Summa qolgan qarzdan oshib ketdi"),
+    "P0412": (409, "not_payable", "To'lov mijoz kelgandan keyin qabul qilinadi"),
+    "P0413": (409, "already_refunded", "Bu to'lov allaqachon qaytarilgan"),
 }
 
 
@@ -86,6 +90,7 @@ app.include_router(schedule.router, prefix="/api/v1")
 app.include_router(appointments.router, prefix="/api/v1")
 app.include_router(reception.router, prefix="/api/v1")
 app.include_router(clients.router, prefix="/api/v1")
+app.include_router(finance.router, prefix="/api/v1")
 app.include_router(reminders.router)
 
 

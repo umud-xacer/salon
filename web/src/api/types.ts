@@ -179,3 +179,68 @@ export interface BusinessAdmin {
   staff_count: number;
   modules: string[];
 }
+
+export interface Payment {
+  id: number;
+  appointment_id: number | null;
+  amount: number;
+  method: string;
+  status: "paid" | "refunded" | "pending" | "failed";
+  paid_at: string;
+  note: string | null;
+  received_by_name: string | null;
+  client_name: string | null;
+  refunded_at: string | null;
+  refund_reason: string | null;
+  refunded_by_name: string | null;
+}
+
+export interface AppointmentPayments {
+  appointment_id: number;
+  payable: boolean;
+  total: number;
+  paid: number;
+  due: number;
+  payments: Payment[];
+}
+
+export interface UnpaidAppointment {
+  id: number;
+  starts_at: string;
+  status: string;
+  client_name: string | null;
+  member_name: string | null;
+  services: string[];
+  due: number;
+}
+
+export interface CashDay {
+  date: string;
+  income: number;
+  refunds: number;
+  expenses: number | null;
+  net: number | null;
+  methods: { method: string; income: number; refunds: number }[];
+  unpaid: UnpaidAppointment[];
+  payments: Payment[];
+}
+
+export interface ExpenseCategory {
+  id: number;
+  name: string;
+}
+
+export interface Expense {
+  id: number;
+  category_id: number | null;
+  category_name: string | null;
+  amount: number;
+  spent_at: string;
+  note: string | null;
+  created_by_name: string | null;
+}
+
+export interface ExpenseList {
+  total: number;
+  items: Expense[];
+}

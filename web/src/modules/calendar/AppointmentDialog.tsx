@@ -6,6 +6,7 @@ import type { Appointment, Membership } from "../../api/types";
 import { formatDate, formatMoney, formatTime, STATUS_LABELS } from "../../components/format";
 import { Button, ErrorNote } from "../../components/ui";
 import { Modal } from "../../components/Modal";
+import { PaymentPanel } from "../finance/PaymentPanel";
 
 const OPEN = ["pending", "confirmed"];
 
@@ -19,6 +20,9 @@ export function AppointmentDialog({ membership, appointment: a, masterName, onCl
   const queryClient = useQueryClient();
   const [confirmCancel, setConfirmCancel] = useState(false);
   const canManage = membership.permissions.includes("appointments.manage");
+  const showPayments = membership.modules.includes("finance")
+    && (membership.permissions.includes("payments.accept") || membership.permissions.includes("finance.view"))
+    && (a.status === "in_progress" || a.status === "completed");
 
   const done = async () => {
     await queryClient.invalidateQueries({ queryKey: ["calendar", b] });
@@ -62,6 +66,8 @@ export function AppointmentDialog({ membership, appointment: a, masterName, onCl
         <dt className="text-muted">Holat</dt>
         <dd>{STATUS_LABELS[a.status] ?? a.status}</dd>
       </dl>
+
+      {showPayments && <PaymentPanel membership={membership} appointmentId={a.id} />}
 
       {(setStatus.error || cancel.error) && (
         <div className="mt-3">

@@ -6,7 +6,11 @@ export function Modal({ title, onClose, children }: { title: string; onClose: ()
 
   useEffect(() => {
     const dialog = ref.current;
-    if (dialog && !dialog.open) dialog.showModal();
+    if (dialog && !dialog.open) {
+      dialog.showModal();
+      // showModal fokusni birinchi tugmaga beradi, React autoFocus bu yerda ishlamaydi
+      dialog.querySelector<HTMLElement>("[data-autofocus]")?.focus();
+    }
   }, []);
 
   return (
