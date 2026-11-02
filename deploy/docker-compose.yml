@@ -52,6 +52,8 @@ services:
     restart: unless-stopped
     environment:
       API_DOMAIN: ${API_DOMAIN:?}
+      # Domen almashganda eski manzil ham ishlab tursin (ixtiyoriy)
+      API_ALIAS: ${API_ALIAS:-}
     ports:
       - "80:80"
       - "443:443"

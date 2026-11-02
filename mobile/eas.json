@@ -14,14 +14,14 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://51.20.138.196.sslip.io"
+        "EXPO_PUBLIC_API_URL": "https://api.ariqalqon.uz"
       },
       "channel": "preview"
     },
     "production": {
       "channel": "production",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://51.20.138.196.sslip.io"
+        "EXPO_PUBLIC_API_URL": "https://api.ariqalqon.uz"
       }
     }
   }
