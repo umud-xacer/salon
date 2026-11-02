@@ -10,7 +10,8 @@
 	header {
 		X-Content-Type-Options nosniff
 		X-Frame-Options DENY
-		Referrer-Policy no-referrer
+		# OpenStreetMap xarita rasmlari Referer'siz bloklanadi; tashqariga faqat domen ketadi
+		Referrer-Policy strict-origin-when-cross-origin
 		Strict-Transport-Security "max-age=63072000"
 	}
 
