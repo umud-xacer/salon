@@ -104,12 +104,16 @@ def _consume_otp(db: Session, phone: str, code: str) -> None:
 
 
 def verify_otp(db: Session, phone: str, code: str, full_name: str | None,
-               user_agent: str | None, ip: str | None) -> tuple[User, TokenPair, bool]:
+               user_agent: str | None, ip: str | None, *, birth_date=None, gender: str | None = None,
+               password: str | None = None) -> tuple[User, TokenPair, bool]:
     _consume_otp(db, phone, code)
     user = db.scalars(select(User).where(User.phone == phone).with_for_update()).first()
     is_new = user is None
     if is_new:
-        user = User(phone=phone, full_name=(full_name or "").strip()[:120])
+        user = User(phone=phone, full_name=(full_name or "").strip()[:120], birth_date=birth_date, gender=gender)
+        if password is not None:
+            user.password_hash = security.hash_password(password)
+            user.password_changed_at = _now()
         db.add(user)
         db.flush()
     _ensure_can_login(user)

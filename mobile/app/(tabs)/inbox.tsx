@@ -1,12 +1,34 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { FlatList, RefreshControl, Text, View } from 'react-native';
+import { FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { api, Notification } from '../../src/api';
-import { Card, colors, dateTimeOf, Empty, shared } from '../../src/ui';
+import { Chip, colors, dateTimeOf, EmptyState, Icon, IconName, radius, shadow, shared, type } from '../../src/ui';
+
+type Group = 'all' | 'booking' | 'promo' | 'system';
+
+const GROUPS: { id: Group; label: string }[] = [
+  { id: 'all', label: 'Hammasi' },
+  { id: 'booking', label: 'Bron eslatmalari' },
+  { id: 'promo', label: 'Aksiyalar' },
+  { id: 'system', label: 'Tizim xabarlari' },
+];
+
+const groupOf = (type: string): Group => {
+  if (type.startsWith('booking') || type.startsWith('appointment') || type.startsWith('attendance')) return 'booking';
+  if (type.startsWith('promo')) return 'promo';
+  return 'system';
+};
+
+const ICONS: Record<Exclude<Group, 'all'>, IconName> = {
+  booking: 'calendar-outline',
+  promo: 'pricetag-outline',
+  system: 'information-circle-outline',
+};
 
 export default function Inbox() {
   const [items, setItems] = useState<Notification[]>([]);
+  const [group, setGroup] = useState<Group>('all');
   const [loading, setLoading] = useState(false);
 
   const load = useCallback(async () => {
@@ -26,27 +48,56 @@ export default function Inbox() {
 
   const read = async (n: Notification) => {
     if (n.read_at) return;
+    setItems((list) => list.map((x) => (x.id === n.id ? { ...x, read_at: new Date().toISOString() } : x)));
     await api(`/notifications/${n.id}/read`, { method: 'POST' }).catch(() => {});
-    load();
   };
+
+  const shown = items.filter((n) => group === 'all' || groupOf(n.type) === group);
 
   return (
     <View style={shared.screen}>
+      <View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          {GROUPS.map((g) => <Chip key={g.id} label={g.label} active={group === g.id} onPress={() => setGroup(g.id)} />)}
+        </ScrollView>
+      </View>
       <FlatList
-        data={items}
+        data={shown}
         keyExtractor={(n) => String(n.id)}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}
-        ListEmptyComponent={loading ? undefined : <Empty text="Xabarlar yo'q" />}
-        renderItem={({ item: n }) => (
-          <Card onPress={() => read(n)}>
-            <View style={shared.row}>
-              <Text style={[shared.name, { color: n.read_at ? colors.muted : colors.text }]}>{n.title}</Text>
-              <Text style={shared.muted}>{dateTimeOf(n.created_at)}</Text>
-            </View>
-            {n.body && <Text style={shared.muted}>{n.body}</Text>}
-          </Card>
+        ListEmptyComponent={loading ? undefined : (
+          <EmptyState icon="notifications-off-outline" title="Xabarlar yo'q" text="Yangi xabarlar shu yerda ko'rinadi" />
         )}
+        renderItem={({ item: n }) => {
+          const kind = groupOf(n.type) as Exclude<Group, 'all'>;
+          return (
+            <Pressable onPress={() => read(n)} style={styles.item}>
+              <View style={[styles.icon, !n.read_at && styles.iconNew]}>
+                <Icon name={ICONS[kind]} size={20} color={n.read_at ? colors.muted : colors.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <View style={shared.row}>
+                  <Text style={[type.h3, { flex: 1, paddingRight: 8, fontSize: 15 }, !!n.read_at && { fontWeight: '500' }]} numberOfLines={1}>
+                    {n.title}
+                  </Text>
+                  {!n.read_at && <View style={styles.dot} accessibilityLabel="O'qilmagan" />}
+                </View>
+                {n.body && <Text style={[type.small, { marginTop: 2 }]}>{n.body}</Text>}
+                <Text style={[type.small, { marginTop: 4, fontSize: 12 }]}>{dateTimeOf(n.created_at)}</Text>
+              </View>
+            </Pressable>
+          );
+        }}
       />
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  item: {
+    flexDirection: 'row', gap: 12, backgroundColor: colors.card, borderRadius: radius.lg, padding: 13, marginBottom: 10, ...shadow,
+  },
+  icon: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' },
+  iconNew: { backgroundColor: colors.primarySoft },
+  dot: { width: 9, height: 9, borderRadius: 5, backgroundColor: colors.primary },
+});

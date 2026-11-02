@@ -2,11 +2,13 @@ import * as Notifications from 'expo-notifications';
 import { Stack, usePathname, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, Platform, View } from 'react-native';
 
 import { AnimatedSplash } from '../src/AnimatedSplash';
 import { AuthProvider, useAuth } from '../src/auth';
+import { FavoritesProvider } from '../src/favorites';
 import { ALARM_TYPES, openedAlarms, setupChannels } from '../src/notifications';
+import { colors } from '../src/ui';
 import { useOtaUpdates } from '../src/useOtaUpdates';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -33,13 +35,13 @@ function Navigator() {
 
   useEffect(() => {
     if (!ready) return;
-    const onLogin = segments[0] === 'login' || segments[0] === 'password';
+    const onLogin = segments[0] === 'login' || segments[0] === 'password' || segments[0] === 'register';
     if (!me && !onLogin) router.replace('/login');
     if (me && onLogin) router.replace('/');
   }, [me, ready, segments, router]);
 
   useEffect(() => {
-    if (!me) return;
+    if (!me || Platform.OS === 'web') return;
     // Ilova ochiq paytda keldi
     const received = Notifications.addNotificationReceivedListener((n) =>
       openAlarm(router, n.request.content.data));
@@ -65,10 +67,19 @@ function Navigator() {
     );
   }
   return (
-    <Stack>
+    <Stack screenOptions={{
+      headerStyle: { backgroundColor: colors.background },
+      headerShadowVisible: false,
+      headerTitleStyle: { fontWeight: '700', color: colors.text },
+      headerTintColor: colors.primary,
+    }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="login" options={{ title: 'Kirish' }} />
       <Stack.Screen name="password" options={{ title: 'Parol bilan kirish' }} />
+      <Stack.Screen name="register" options={{ title: 'Ro\'yxatdan o\'tish' }} />
+      <Stack.Screen name="profile-edit" options={{ title: 'Shaxsiy ma\'lumotlar' }} />
+      <Stack.Screen name="favorites" options={{ title: 'Sevimli salonlar' }} />
+      <Stack.Screen name="settings" options={{ title: 'Sozlamalar' }} />
       <Stack.Screen name="business/[slug]" options={{ title: 'Salon' }} />
       <Stack.Screen name="book" options={{ title: 'Vaqt tanlash' }} />
       <Stack.Screen name="alarm" options={{ headerShown: false, presentation: 'fullScreenModal', gestureEnabled: false }} />
@@ -91,7 +102,9 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
-      <Navigator />
+      <FavoritesProvider>
+        <Navigator />
+      </FavoritesProvider>
       {splash && <AnimatedSplash onReady={hideNative} onDone={finish} />}
     </AuthProvider>
   );

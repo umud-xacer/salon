@@ -1,20 +1,60 @@
 import * as Location from 'expo-location';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { FlatList, RefreshControl, Text, View } from 'react-native';
+import {
+  Dimensions, FlatList, Image, Pressable, RefreshControl, ScrollView, StatusBar, StyleSheet, Text, TextInput, View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { api, ApiError, BusinessCard } from '../../src/api';
-import { Button, Card, Chip, colors, Empty, ErrorText, Field, money, shared } from '../../src/ui';
+import { api, ApiError, BusinessCard, Category, Notification } from '../../src/api';
+import { useFavorites } from '../../src/favorites';
+import { distanceText, SalonCard } from '../../src/SalonCard';
+import {
+  BottomSheet, Button, Card, Chip, colors, Empty, EmptyState, ErrorText, Icon, IconName, money, radius, shadow, shared, type,
+} from '../../src/ui';
 import { Bounds, hasMapKey, YandexMap } from '../../src/YandexMap';
 
 const TASHKENT = { latitude: 41.3111, longitude: 69.2797 };
 const MAX_BOUNDS_DEG = 1;          // backend chegarasi: bundan keng oynada so'rov rad etiladi
+const BANNER_WIDTH = Dimensions.get('window').width - 48;
+
+const CATEGORY_ICONS: [RegExp, IconName][] = [
+  [/barber/i, 'cut-outline'],
+  [/clinic|klinika|stomat|dent/i, 'medkit-outline'],
+  [/spa|massaj|massage/i, 'leaf-outline'],
+  [/kosmet|cosmet/i, 'sparkles-outline'],
+  [/nail|tirnoq|manik/i, 'hand-left-outline'],
+  [/fitness|sport/i, 'barbell-outline'],
+  [/salon|beauty|go'zal/i, 'color-wand-outline'],
+];
+const categoryIcon = (c: Category): IconName =>
+  CATEGORY_ICONS.find(([re]) => re.test(c.slug) || re.test(c.name_uz))?.[1] ?? 'grid-outline';
+
+type Sort = 'distance' | 'rating' | 'price';
+type Filters = { sort: Sort; openNow: boolean; maxPrice: number | null };
+const DEFAULT_FILTERS: Filters = { sort: 'distance', openNow: false, maxPrice: null };
+const SORTS: { id: Sort; label: string; icon: IconName }[] = [
+  { id: 'distance', label: 'Yaqin', icon: 'navigate-outline' },
+  { id: 'rating', label: 'Reyting', icon: 'star-outline' },
+  { id: 'price', label: 'Arzon', icon: 'pricetag-outline' },
+];
+const PRICES = [50_000, 100_000, 200_000, 500_000];
 
 export default function Businesses() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const favorites = useFavorites();
   const [items, setItems] = useState<BusinessCard[]>([]);
+  const [top, setTop] = useState<BusinessCard[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [category, setCategory] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [coords, setCoords] = useState(TASHKENT);
+  const [place, setPlace] = useState('Toshkent');
+  const [filters, setFilters] = useState(DEFAULT_FILTERS);
+  const [draft, setDraft] = useState(DEFAULT_FILTERS);
+  const [sheet, setSheet] = useState(false);
+  const [unread, setUnread] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mapMode, setMapMode] = useState(false);
@@ -24,33 +64,47 @@ export default function Businesses() {
   const boundsTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
+    api<Category[]>('/catalog/categories').then(setCategories).catch(() => {});
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status === 'granted') {
-        const { coords: c } = await Location.getCurrentPositionAsync({});
-        setCoords({ latitude: c.latitude, longitude: c.longitude });
-      }
+      if (status !== 'granted') return;
+      const { coords: c } = await Location.getCurrentPositionAsync({});
+      setCoords({ latitude: c.latitude, longitude: c.longitude });
+      const found = await api<{ address: string; district: string | null; region: string | null }>(
+        `/geo/address?lat=${c.latitude}&lng=${c.longitude}`).catch(() => null);
+      setPlace(found?.district ?? found?.region ?? 'Joylashuvingiz');
     })().catch(() => {});                       // joylashuv yo'q bo'lsa Toshkent markazidan qidiriladi
   }, []);
+
+  useFocusEffect(useCallback(() => {
+    api<Notification[]>('/notifications?unread=true&limit=50')
+      .then((list) => setUnread(list.length)).catch(() => {});
+  }, []));
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const params = new URLSearchParams({
-        lat: String(coords.latitude),
-        lng: String(coords.longitude),
-        radius_m: '50000',
+        lat: String(coords.latitude), lng: String(coords.longitude), radius_m: '50000', sort: filters.sort,
       });
-      if (query.trim()) params.set('q', query.trim());
+      if (query.trim().length >= 2) params.set('q', query.trim());
+      if (category) params.set('category', category);
+      if (filters.openNow) params.set('open_now', 'true');
+      if (filters.maxPrice) params.set('max_price', String(filters.maxPrice));
       const r = await api<{ items: BusinessCard[] }>(`/catalog/businesses/nearby?${params}`);
       setItems(r.items);
+      const best = new URLSearchParams({
+        lat: String(coords.latitude), lng: String(coords.longitude), radius_m: '50000', sort: 'rating', limit: '5',
+      });
+      const b = await api<{ items: BusinessCard[] }>(`/catalog/businesses/nearby?${best}`);
+      setTop(b.items.filter((x) => x.rating_count > 0));
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'Xatolik yuz berdi');
     } finally {
       setLoading(false);
     }
-  }, [coords, query]);
+  }, [coords, query, category, filters]);
 
   useEffect(() => {
     const timer = setTimeout(load, 300);
@@ -78,75 +132,208 @@ export default function Businesses() {
   }, []);
 
   const openBusiness = (slug: string) => router.push({ pathname: '/business/[slug]', params: { slug } });
+  const activeFilters = (filters.sort !== 'distance' ? 1 : 0) + (filters.openNow ? 1 : 0) + (filters.maxPrice ? 1 : 0);
 
-  const modes = (
-    <View style={{ flexDirection: 'row' }}>
-      <Chip label="Ro'yxat" active={!mapMode} onPress={() => setMapMode(false)} />
-      <Chip label="Xarita" active={mapMode} onPress={() => setMapMode(true)} />
+  const header = (
+    <View style={{ paddingTop: insets.top + 8, paddingHorizontal: 16, backgroundColor: colors.background }}>
+      <View style={shared.row}>
+        <View style={{ flex: 1 }}>
+          <Text style={type.small}>Sizning joylashuvingiz</Text>
+          <View style={styles.place}>
+            <Icon name="location" size={16} color={colors.primary} />
+            <Text style={type.h3} numberOfLines={1}>{place}</Text>
+          </View>
+        </View>
+        <Pressable onPress={() => setMapMode(!mapMode)} style={styles.round}
+          accessibilityLabel={mapMode ? 'Ro\'yxat' : 'Xarita'}>
+          <Icon name={mapMode ? 'list-outline' : 'map-outline'} size={21} />
+        </Pressable>
+        <Pressable onPress={() => router.push('/inbox')} style={[styles.round, { marginLeft: 8 }]} accessibilityLabel="Bildirishnomalar">
+          <Icon name="notifications-outline" size={21} />
+          {unread > 0 && (
+            <View style={styles.unread}><Text style={styles.unreadText}>{unread > 9 ? '9+' : unread}</Text></View>
+          )}
+        </Pressable>
+      </View>
+      <View style={styles.searchRow}>
+        <View style={styles.search}>
+          <Icon name="search-outline" size={19} color={colors.muted} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Salon yoki xizmat"
+            placeholderTextColor={colors.muted}
+            value={query}
+            onChangeText={setQuery}
+            maxLength={60}
+          />
+        </View>
+        <Pressable onPress={() => { setDraft(filters); setSheet(true); }} style={styles.filter} accessibilityLabel="Filtrlar">
+          <Icon name="options-outline" size={21} color="#fff" />
+          {activeFilters > 0 && (
+            <View style={styles.unread}><Text style={styles.unreadText}>{activeFilters}</Text></View>
+          )}
+        </Pressable>
+      </View>
     </View>
+  );
+
+  const sheetView = (
+    <BottomSheet visible={sheet} title="Filtrlar" onClose={() => setSheet(false)}>
+      <Text style={styles.sheetLabel}>Saralash</Text>
+      <View style={styles.wrap}>
+        {SORTS.map((s) => (
+          <Chip key={s.id} label={s.label} icon={s.icon} active={draft.sort === s.id}
+            onPress={() => setDraft({ ...draft, sort: s.id })} />
+        ))}
+      </View>
+      <Text style={styles.sheetLabel}>Ish vaqti</Text>
+      <View style={styles.wrap}>
+        <Chip label="Hozir ochiq" icon="time-outline" active={draft.openNow}
+          onPress={() => setDraft({ ...draft, openNow: !draft.openNow })} />
+      </View>
+      <Text style={styles.sheetLabel}>Xizmat narxi</Text>
+      <View style={styles.wrap}>
+        {PRICES.map((p) => (
+          <Chip key={p} label={`${money(p)}gacha`} active={draft.maxPrice === p}
+            onPress={() => setDraft({ ...draft, maxPrice: draft.maxPrice === p ? null : p })} />
+        ))}
+      </View>
+      <View style={[shared.gap, { marginTop: 10 }]}>
+        <Button title="Qo'llash" onPress={() => { setFilters(draft); setSheet(false); }} />
+        <Button title="Tozalash" kind="outline" onPress={() => { setFilters(DEFAULT_FILTERS); setSheet(false); }} />
+      </View>
+    </BottomSheet>
   );
 
   if (mapMode) {
     return (
-      <View style={shared.screen}>
-        {modes}
-        {!hasMapKey ? (
-          <Empty text="Xarita kaliti sozlanmagan (EXPO_PUBLIC_YANDEX_MAPS_KEY)" />
-        ) : (
-          <View style={{ flex: 1, borderRadius: 12, overflow: 'hidden' }}>
-            <YandexMap
-              center={coords}
-              businesses={mapItems}
-              onBounds={onBounds}
-              onSelect={(id) => setSelected(mapItems.find((b) => b.id === id) ?? null)}
-              onError={() => setMapHint('Xaritani yuklab bo\'lmadi')}
-            />
-          </View>
-        )}
-        <ErrorText text={mapHint} />
-        {selected && (
-          <View style={{ marginTop: 10 }}>
-            <Card>
-              <Text style={shared.name}>{selected.name}</Text>
-              <Text style={[shared.muted, { marginBottom: 10 }]}>
-                {selected.category_name} · {selected.is_open_now ? 'Ochiq' : 'Yopiq'}
-              </Text>
-              <Button title="Ochish" onPress={() => openBusiness(selected.slug)} />
-            </Card>
-          </View>
-        )}
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
+        <StatusBar barStyle="dark-content" />
+        {header}
+        <View style={{ flex: 1, padding: 16, paddingTop: 0 }}>
+          {!hasMapKey ? (
+            <EmptyState icon="map-outline" title="Xarita hali ulanmagan" text="Salonlarni ro'yxatdan ko'rishingiz mumkin"
+              action="Ro'yxatga qaytish" onAction={() => setMapMode(false)} />
+          ) : (
+            <View style={{ flex: 1, borderRadius: radius.lg, overflow: 'hidden' }}>
+              <YandexMap
+                center={coords}
+                businesses={mapItems}
+                onBounds={onBounds}
+                onSelect={(id) => setSelected(mapItems.find((b) => b.id === id) ?? null)}
+                onError={() => setMapHint('Xaritani yuklab bo\'lmadi')}
+              />
+            </View>
+          )}
+          <ErrorText text={mapHint} />
+          {selected && (
+            <View style={{ marginTop: 10 }}>
+              <Card>
+                <Text style={shared.name}>{selected.name}</Text>
+                <Text style={[shared.muted, { marginBottom: 10 }]}>
+                  {selected.category_name} · {selected.is_open_now ? 'Ochiq' : 'Yopiq'}
+                </Text>
+                <Button title="Ochish" onPress={() => openBusiness(selected.slug)} />
+              </Card>
+            </View>
+          )}
+        </View>
+        {sheetView}
       </View>
     );
   }
 
+  const listHeader = (
+    <View>
+      {top.length > 0 && !query && (
+        <>
+          <Text style={[type.h2, styles.section]}>Top salonlar</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} snapToInterval={BANNER_WIDTH + 12} decelerationRate="fast"
+            contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}>
+            {top.map((b) => (
+              <Pressable key={b.id} onPress={() => openBusiness(b.slug)} style={styles.banner}>
+                {b.photos?.[0] && <Image source={{ uri: b.photos[0] }} style={StyleSheet.absoluteFill} resizeMode="cover" />}
+                <View style={styles.bannerShade} />
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <Icon name="star" size={15} color={colors.star} />
+                  <Text style={styles.bannerSmall}>{b.rating_avg.toFixed(1)} ({b.rating_count} sharh)</Text>
+                </View>
+                <Text style={styles.bannerTitle} numberOfLines={1}>{b.name}</Text>
+                <Text style={styles.bannerSmall} numberOfLines={1}>
+                  {[b.category_name, distanceText(b.distance_m)].filter(Boolean).join(' · ')}
+                </Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+        </>
+      )}
+      {categories.length > 0 && (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 14 }}>
+          <Chip label="Hammasi" icon="apps-outline" active={category === null} onPress={() => setCategory(null)} />
+          {categories.map((c) => (
+            <Chip key={c.id} label={c.name_uz} icon={categoryIcon(c)} active={category === c.slug}
+              onPress={() => setCategory(category === c.slug ? null : c.slug)} />
+          ))}
+        </ScrollView>
+      )}
+      <View style={{ paddingHorizontal: 16, marginTop: 6 }}><ErrorText text={error} /></View>
+    </View>
+  );
+
   return (
-    <View style={shared.screen}>
-      {modes}
-      <Field label="Qidirish" value={query} onChangeText={setQuery} placeholder="Salon yoki klinika nomi" />
-      <ErrorText text={error} />
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <StatusBar barStyle="dark-content" />
+      {header}
       <FlatList
         data={items}
         keyExtractor={(b) => String(b.id)}
+        ListHeaderComponent={listHeader}
+        contentContainerStyle={{ paddingBottom: 20 }}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}
-        ListEmptyComponent={loading ? undefined : <Empty text="Yaqin atrofda hech narsa topilmadi" />}
-        renderItem={({ item: b }) => (
-          <Card onPress={() => openBusiness(b.slug)}>
-            <View style={shared.row}>
-              <Text style={shared.name}>{b.name}</Text>
-              <Text style={{ color: b.is_open_now ? colors.primary : colors.muted }}>
-                {b.is_open_now ? 'Ochiq' : 'Yopiq'}
-              </Text>
-            </View>
-            <Text style={shared.muted}>
-              {b.category_name}
-              {b.distance_m !== null ? ` · ${(b.distance_m / 1000).toFixed(1)} km` : ''}
-              {b.rating_count > 0 ? ` · ★ ${b.rating_avg.toFixed(1)}` : ''}
-            </Text>
-            {b.address && <Text style={shared.muted}>{b.address}</Text>}
-            {b.min_price !== null && <Text style={shared.muted}>{money(b.min_price)} dan</Text>}
-          </Card>
+        ListEmptyComponent={loading ? undefined : (
+          activeFilters > 0 || category || query
+            ? <Empty text="Bu shartlarga mos salon topilmadi" />
+            : <EmptyState icon="storefront-outline" title="Yaqin atrofda salon yo'q" text="Hududingizdagi salonlar tez orada qo'shiladi" />
+        )}
+        renderItem={({ item }) => (
+          <View style={{ paddingHorizontal: 16, marginTop: 4 }}>
+            <SalonCard item={item} favorite={favorites.has(item.id)} onToggleFavorite={() => favorites.toggle(item.id)}
+              onOpen={() => openBusiness(item.slug)} />
+          </View>
         )}
       />
+      {sheetView}
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  place: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 1 },
+  round: {
+    width: 42, height: 42, borderRadius: 21, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center', ...shadow,
+  },
+  unread: {
+    position: 'absolute', top: -2, right: -2, minWidth: 18, height: 18, paddingHorizontal: 4, borderRadius: 9,
+    backgroundColor: colors.danger, alignItems: 'center', justifyContent: 'center',
+  },
+  unreadText: { color: '#fff', fontSize: 11, fontWeight: '700' },
+  searchRow: { flexDirection: 'row', gap: 10, marginTop: 14, marginBottom: 10 },
+  search: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.card, borderRadius: radius.md,
+    paddingHorizontal: 12, ...shadow,
+  },
+  searchInput: { flex: 1, paddingVertical: 11, fontSize: 15, color: colors.text },
+  filter: {
+    width: 46, height: 46, borderRadius: radius.md, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center',
+  },
+  section: { paddingHorizontal: 16, marginTop: 8, marginBottom: 10 },
+  banner: {
+    width: BANNER_WIDTH, height: 136, borderRadius: radius.lg, padding: 16, justifyContent: 'flex-end', overflow: 'hidden',
+    backgroundColor: colors.navy,
+  },
+  bannerShade: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(1,13,73,0.45)' },
+  bannerTitle: { color: '#fff', fontSize: 20, fontWeight: '800', marginTop: 2 },
+  bannerSmall: { color: 'rgba(255,255,255,0.9)', fontSize: 13 },
+  sheetLabel: { fontWeight: '700', color: colors.text, marginBottom: 8, marginTop: 4 },
+  wrap: { flexDirection: 'row', flexWrap: 'wrap' },
+});

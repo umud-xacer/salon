@@ -47,6 +47,10 @@ class AppointmentOut(BaseModel):
     id: int
     business_id: int
     business_name: str | None
+    business_slug: str | None = None
+    business_address: str | None = None
+    business_lat: float | None = None
+    business_lng: float | None = None
     member_id: int
     member_name: str | None
     status: str

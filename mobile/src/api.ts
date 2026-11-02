@@ -1,4 +1,4 @@
-import * as SecureStore from 'expo-secure-store';
+import * as SecureStore from './secure';
 
 export const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://10.0.2.2:8001';
 const BASE = `${API_URL}/api/v1`;
@@ -101,7 +101,13 @@ export async function api<T = void>(path: string, { method = 'GET', body }: Opti
 }
 
 // ─── Javob turlari ──────────────────────────────────────────────────────────
-export type User = { id: number; phone: string; full_name: string };
+export type User = {
+  id: number;
+  phone: string;
+  full_name: string;
+  birth_date: string | null;
+  gender: 'male' | 'female' | null;
+};
 export type LoginOut = Tokens & { user: User; is_new: boolean };
 export type Me = { user: User; workspace: 'client' | 'business' | 'superadmin' };
 
@@ -110,6 +116,7 @@ export type BusinessCard = {
   slug: string;
   name: string;
   category_name: string;
+  city: string | null;
   address: string | null;
   lat: number;
   lng: number;
@@ -117,8 +124,12 @@ export type BusinessCard = {
   rating_avg: number;
   rating_count: number;
   min_price: number | null;
+  top_service: string | null;
+  photos: string[];
   is_open_now: boolean;
 };
+
+export type Category = { id: number; slug: string; name_uz: string };
 
 export type Service = { id: number; name: string; description: string | null; duration_min: number; price: number };
 export type Staff = { member_id: number; full_name: string; title: string | null; rating_avg: number; service_ids: number[] };
@@ -129,6 +140,7 @@ export type BusinessDetail = {
   description: string | null;
   address: string | null;
   phone: string | null;
+  photos: string[];
   category_name: string;
   rating_avg: number;
   rating_count: number;
@@ -142,6 +154,10 @@ export type Slot = { starts_at: string; ends_at: string; time: string };
 export type Appointment = {
   id: number;
   business_name: string | null;
+  business_slug: string | null;
+  business_address: string | null;
+  business_lat: number | null;
+  business_lng: number | null;
   member_id: number;
   member_name: string | null;
   status: 'pending' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled' | 'no_show';

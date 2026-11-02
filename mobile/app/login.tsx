@@ -1,16 +1,15 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Image, ScrollView, View } from 'react-native';
+import { Image, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { api, ApiError, LoginOut } from '../src/api';
 import { useAuth } from '../src/auth';
-import { Button, colors, ErrorText, Field, shared } from '../src/ui';
+import { Button, colors, ErrorText, Field, radius, shared, type } from '../src/ui';
 
 export default function Login() {
   const { signIn } = useAuth();
   const router = useRouter();
   const [phone, setPhone] = useState('+998');
-  const [name, setName] = useState('');
   const [code, setCode] = useState('');
   const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -35,26 +34,19 @@ export default function Login() {
   });
 
   const verify = () => run(async () => {
-    const login = await api<LoginOut>('/auth/otp/verify', {
-      method: 'POST',
-      body: { phone, code, full_name: name.trim() || undefined },
-    });
-    await signIn(login);
+    await signIn(await api<LoginOut>('/auth/otp/verify', { method: 'POST', body: { phone, code } }));
   });
 
   return (
-    <ScrollView style={shared.screen} keyboardShouldPersistTaps="handled">
-      <View style={{ backgroundColor: colors.navy, borderRadius: 16, padding: 22, marginBottom: 20, alignItems: 'center' }}>
+    <ScrollView style={shared.screen} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 32 }}>
+      <View style={{ backgroundColor: colors.navy, borderRadius: radius.xl, padding: 26, marginBottom: 24, alignItems: 'center' }}>
         <Image source={require('../assets/brand/wordmark.png')} style={{ width: 190, height: 46 }} resizeMode="contain" />
         <Image source={require('../assets/brand/tagline.png')} style={{ width: 220, height: 20, marginTop: 8 }} resizeMode="contain" />
       </View>
+      <Text style={[type.h1, { marginBottom: 4 }]}>Xush kelibsiz</Text>
+      <Text style={[type.small, { marginBottom: 18 }]}>Hisobingizga kiring yoki ro'yxatdan o'ting</Text>
       <Field label="Telefon raqam" value={phone} onChangeText={setPhone} keyboardType="phone-pad" editable={!sent} />
-      {sent && (
-        <>
-          <Field label="Ismingiz (yangi foydalanuvchi uchun)" value={name} onChangeText={setName} />
-          <Field label="SMS kod" value={code} onChangeText={setCode} keyboardType="number-pad" maxLength={6} />
-        </>
-      )}
+      {sent && <Field label="SMS kod" value={code} onChangeText={setCode} keyboardType="number-pad" maxLength={6} />}
       <ErrorText text={error} />
       <View style={shared.gap}>
         {sent ? (
@@ -63,10 +55,17 @@ export default function Login() {
             <Button title="Raqamni o'zgartirish" kind="outline" onPress={() => setSent(false)} />
           </>
         ) : (
-          <Button title="SMS kod olish" onPress={request} busy={busy} />
+          <>
+            <Button title="Parol bilan kirish" onPress={() => router.push('/password')} />
+            <Button title="SMS kod bilan kirish" kind="outline" onPress={request} busy={busy} />
+          </>
         )}
-        <Button title="Parol bilan kirish" kind="outline" onPress={() => router.push('/password')} />
       </View>
+      <Pressable onPress={() => router.push('/register')} style={{ paddingVertical: 20, alignItems: 'center' }}>
+        <Text style={type.body}>
+          Hisobingiz yo'qmi? <Text style={{ color: colors.primary, fontWeight: '700' }}>Ro'yxatdan o'ting</Text>
+        </Text>
+      </Pressable>
     </ScrollView>
   );
 }

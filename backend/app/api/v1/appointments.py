@@ -19,7 +19,9 @@ _NOT_FOUND = HTTPException(404, detail={"code": "not_found", "message": "Bron to
 
 # LEFT JOIN: mijoz va xodimlar har xil jadvallarni ko'radi (RLS), ko'rinmagani NULL bo'lib qoladi
 _SELECT = """
-    SELECT a.id, a.business_id, b.name AS business_name, a.member_id, ps.full_name AS member_name,
+    SELECT a.id, a.business_id, b.name AS business_name, b.slug AS business_slug, b.address AS business_address,
+           ST_Y(b.location::geometry) AS business_lat, ST_X(b.location::geometry) AS business_lng,
+           a.member_id, ps.full_name AS member_name,
            a.status::text AS status, a.starts_at, a.ends_at, a.total_price, a.client_note, a.cancel_reason,
            c.full_name AS client_name, c.phone AS client_phone,
            CASE WHEN r.confirmed_at IS NOT NULL THEN 'confirmed'

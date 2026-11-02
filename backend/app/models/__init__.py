@@ -1,9 +1,9 @@
 """SQLAlchemy modellari. Sxemaning manbai — sql/*.sql; bu yerda faqat kod ishlatadigan ustunlar.
 Standart qiymatlar va cheklovlar bazada (server_default), shuning uchun ular bu yerda takrorlanmaydi."""
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 
-from sqlalchemy import BigInteger, Boolean, DateTime, Enum, ForeignKey, Integer, SmallInteger, String, Text
+from sqlalchemy import BigInteger, Boolean, Date, DateTime, Enum, ForeignKey, Integer, SmallInteger, String, Text
 from sqlalchemy.dialects.postgresql import INET, UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -28,6 +28,8 @@ class User(Base):
     password_changed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     full_name: Mapped[str] = mapped_column(String(120), server_default="")
     avatar_url: Mapped[str | None] = mapped_column(Text)
+    birth_date: Mapped[date | None] = mapped_column(Date)
+    gender: Mapped[str | None] = mapped_column(String(10))
     language: Mapped[str] = mapped_column(String(5), server_default="uz")
     is_superadmin: Mapped[bool] = mapped_column(Boolean, server_default="false")
     status: Mapped[str] = mapped_column(UserStatus, server_default="active")

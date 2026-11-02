@@ -1,13 +1,15 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, Text } from 'react-native';
+import { ActivityIndicator, Dimensions, Image, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { api, ApiError, BusinessDetail, Service } from '../../src/api';
-import { Button, Card, Chip, ErrorText, money, shared } from '../../src/ui';
+import { useFavorites } from '../../src/favorites';
+import { Button, Card, Chip, colors, ErrorText, Icon, money, radius, shared, type } from '../../src/ui';
 
 export default function Business() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const router = useRouter();
+  const favorites = useFavorites();
   const [business, setBusiness] = useState<BusinessDetail | null>(null);
   const [service, setService] = useState<Service | null>(null);
   const [memberId, setMemberId] = useState<number | null>(null);
@@ -26,9 +28,25 @@ export default function Business() {
 
   return (
     <ScrollView style={shared.screen} contentContainerStyle={{ paddingBottom: 32 }}>
-      <Text style={shared.title}>{business.name}</Text>
+      {business.photos.length > 0 && (
+        <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}
+          style={{ borderRadius: radius.lg, marginBottom: 14 }}>
+          {business.photos.map((url) => (
+            <Image key={url} source={{ uri: url }} resizeMode="cover"
+              style={{ width: Dimensions.get('window').width - 32, height: 200 }} />
+          ))}
+        </ScrollView>
+      )}
+      <View style={shared.row}>
+        <Text style={[type.h1, { flex: 1, paddingRight: 8 }]}>{business.name}</Text>
+        <Pressable onPress={() => favorites.toggle(business.id)} hitSlop={10}
+          accessibilityLabel={favorites.has(business.id) ? 'Sevimlilardan olib tashlash' : 'Sevimlilarga qo\'shish'}>
+          <Icon name={favorites.has(business.id) ? 'heart' : 'heart-outline'} size={26}
+            color={favorites.has(business.id) ? colors.danger : colors.text} />
+        </Pressable>
+      </View>
       <Text style={shared.muted}>
-        {business.category_name}{business.rating_count > 0 ? ` · ★ ${business.rating_avg.toFixed(1)}` : ''}
+        {business.category_name}{business.rating_count > 0 ? ` · ★ ${business.rating_avg.toFixed(1)} (${business.rating_count})` : ''}
       </Text>
       {business.address && <Text style={shared.muted}>{business.address}</Text>}
       {business.description && <Text style={[shared.muted, { marginTop: 8 }]}>{business.description}</Text>}

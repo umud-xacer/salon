@@ -4,6 +4,7 @@ Hamma so'rov foydalanuvchisiz RLS sessiyasida — baza faqat faol va ochiq bizne
 faol xizmatlarni va xodimlarning ochiq profilini (public_staff) beradi.
 """
 from datetime import date
+from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import text
@@ -34,8 +35,18 @@ _CARD_COLUMNS = f"""
     ST_Y(b.location::geometry) AS lat, ST_X(b.location::geometry) AS lng,
     b.rating_avg::float AS rating_avg, b.rating_count, b.logo_url,
     (SELECT min(s.price) FROM services s WHERE s.business_id = b.id AND s.is_active) AS min_price,
+    (SELECT s.name FROM services s WHERE s.business_id = b.id AND s.is_active ORDER BY s.price, s.id LIMIT 1)
+        AS top_service,
+    coalesce((SELECT array_agg(x.url) FROM (SELECT p.url FROM business_photos p WHERE p.business_id = b.id
+                                             ORDER BY p.sort_order, p.id LIMIT 5) x), '{{}}') AS photos,
     {_IS_OPEN} AS is_open_now
 """
+
+_SORTS = {
+    "distance": "b.location <-> p.pt",
+    "rating": "b.rating_avg DESC, b.rating_count DESC, b.location <-> p.pt",
+    "price": "min_price ASC NULLS LAST, b.location <-> p.pt",
+}
 
 _PUBLIC_WHERE = "b.status = 'active' AND b.is_listed AND b.location IS NOT NULL"
 
@@ -67,12 +78,16 @@ def nearby(
     category: str | None = Query(None, max_length=40),
     q: str | None = Query(None, min_length=2, max_length=60),
     open_now: bool = False,
+    sort: Literal["distance", "rating", "price"] = "distance",
+    max_price: int | None = Query(None, ge=1),
     limit: int = Query(30, ge=1, le=100),
     offset: int = Query(0, ge=0, le=1000),
     db: Session = Depends(get_public_db),
 ):
-    """Joriy joylashuvga yaqin bizneslar, masofa bo'yicha tartiblangan (PostGIS, GIST indeks)."""
-    params = {"lat": lat, "lng": lng, "r": radius_m, "limit": limit, "offset": offset}
+    """Joriy joylashuvga yaqin bizneslar. Standart tartib masofa bo'yicha (PostGIS, GIST indeks)."""
+    params = {"lat": lat, "lng": lng, "r": radius_m, "limit": limit, "offset": offset, "max_price": max_price}
+    price = """AND EXISTS (SELECT 1 FROM services s WHERE s.business_id = b.id AND s.is_active
+                            AND s.price <= :max_price)""" if max_price else ""
     where = f"""
         FROM businesses b
         JOIN business_categories c ON c.id = b.category_id
@@ -80,12 +95,13 @@ def nearby(
         WHERE {_PUBLIC_WHERE} AND ST_DWithin(b.location, p.pt, :r)
         {_filters(category, q, params)}
         {"AND " + _IS_OPEN if open_now else ""}
+        {price}
     """
     total = db.scalar(text(f"SELECT count(*) {where}"), params)
     rows = db.execute(text(f"""
         SELECT {_CARD_COLUMNS}, round(ST_Distance(b.location, p.pt))::int AS distance_m
         {where}
-        ORDER BY b.location <-> p.pt
+        ORDER BY {_SORTS[sort]}
         LIMIT :limit OFFSET :offset
     """), params).mappings()
     return NearbyOut(items=[BusinessCard(**r) for r in rows], total=total, radius_m=radius_m)

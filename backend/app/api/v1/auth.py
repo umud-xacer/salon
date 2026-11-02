@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -6,7 +6,7 @@ from app.api.deps import client_meta, current_user, get_auth_db, get_db
 from app.core.config import get_settings
 from app.models import User
 from app.schemas import (LoginOut, MembershipOut, MeOut, OtpRequest, OtpRequestOut, OtpVerify, PasswordForgot,
-                         PasswordLogin, PasswordReset, RefreshIn, SetPasswordIn, TokenOut, UserOut)
+                         PasswordLogin, PasswordReset, ProfileUpdate, RefreshIn, SetPasswordIn, TokenOut, UserOut)
 from app.services import auth_service
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -30,7 +30,9 @@ def otp_request(body: OtpRequest, request: Request, db: Session = Depends(get_au
 def otp_verify(body: OtpVerify, request: Request, db: Session = Depends(get_auth_db)):
     """Kodni tekshirish. Yangi raqam bo'lsa — mijoz sifatida ro'yxatdan o'tkaziladi."""
     ua, ip = client_meta(request)
-    user, tokens, is_new = auth_service.verify_otp(db, body.phone, body.code, body.full_name, ua, ip)
+    user, tokens, is_new = auth_service.verify_otp(db, body.phone, body.code, body.full_name, ua, ip,
+                                                   birth_date=body.birth_date, gender=body.gender,
+                                                   password=body.password)
     return _login_out(user, tokens, is_new)
 
 
@@ -77,6 +79,23 @@ def password_forgot(body: PasswordForgot, request: Request, db: Session = Depend
 def password_reset(body: PasswordReset, db: Session = Depends(get_auth_db)):
     """Yangi parol. Barcha qurilmalardagi sessiyalar bekor qilinadi."""
     auth_service.reset_password(db, body.phone, body.code, body.new_password)
+
+
+@router.patch("/me", response_model=UserOut)
+def update_me(body: ProfileUpdate, db: Session = Depends(get_db)):
+    """O'z profilini tahrirlash. Telefon bu yerda o'zgarmaydi: u kirish uchun tasdiqlangan."""
+    user: User = db.info["user"]
+    for field, value in body.model_dump(exclude_unset=True).items():
+        if field == "full_name":
+            value = (value or "").strip()
+            if len(value) < 2:
+                raise HTTPException(422, detail={"code": "invalid_name", "message": "Ismni kiriting"})
+        if field == "language" and value is None:
+            continue
+        setattr(user, field, value)
+    db.commit()
+    db.refresh(user)
+    return UserOut.model_validate(user)
 
 
 @router.get("/me", response_model=MeOut)

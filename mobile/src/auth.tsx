@@ -8,6 +8,7 @@ type Auth = {
   ready: boolean;
   signIn: (login: LoginOut) => Promise<void>;
   signOut: () => Promise<void>;
+  refresh: () => Promise<void>;
 };
 
 const AuthContext = createContext<Auth>(null as unknown as Auth);
@@ -39,6 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value = useMemo<Auth>(() => ({
     me,
     ready,
+    refresh: async () => setMe(await api<Me>('/auth/me')),
     signIn: async (login) => {
       await saveTokens(login);
       await load();

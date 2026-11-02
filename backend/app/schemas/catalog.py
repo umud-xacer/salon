@@ -41,6 +41,8 @@ class BusinessCard(BaseModel):
     rating_count: int
     logo_url: str | None
     min_price: int | None
+    top_service: str | None = None
+    photos: list[str] = []
     is_open_now: bool
 
 

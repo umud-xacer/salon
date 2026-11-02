@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -27,9 +27,46 @@ class OtpRequestOut(BaseModel):
     dev_code: str | None = None            # faqat dev/test muhitida
 
 
+Gender = Literal["male", "female"]
+
+
+def _past_date(value: date | None) -> date | None:
+    if value is not None and not date(1900, 1, 1) <= value <= date.today():
+        raise ValueError("Tug'ilgan sana noto'g'ri")
+    return value
+
+
 class OtpVerify(_Phone):
+    """Yangi foydalanuvchi uchun qolgan maydonlar saqlanadi, mavjud hisob o'zgarmaydi."""
     code: str = Field(pattern=r"^\d{6}$")
     full_name: str | None = Field(default=None, max_length=120)
+    birth_date: date | None = None
+    gender: Gender | None = None
+    password: str | None = Field(default=None, max_length=128)
+
+    @field_validator("birth_date")
+    @classmethod
+    def _birth(cls, v: date | None) -> date | None:
+        return _past_date(v)
+
+    @field_validator("password")
+    @classmethod
+    def _password(cls, v: str | None) -> str | None:
+        if v is not None:
+            validate_password_strength(v)
+        return v
+
+
+class ProfileUpdate(BaseModel):
+    full_name: str | None = Field(default=None, min_length=2, max_length=120)
+    birth_date: date | None = None
+    gender: Gender | None = None
+    language: Literal["uz", "ru", "en"] | None = None
+
+    @field_validator("birth_date")
+    @classmethod
+    def _birth(cls, v: date | None) -> date | None:
+        return _past_date(v)
 
 
 class PasswordForgot(_Phone):
@@ -79,6 +116,8 @@ class UserOut(BaseModel):
     id: int
     phone: str
     full_name: str
+    birth_date: date | None = None
+    gender: str | None = None
     language: str
     is_superadmin: bool
     must_change_password: bool
