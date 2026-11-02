@@ -7,6 +7,7 @@ import { ActivityIndicator, View } from 'react-native';
 import { AnimatedSplash } from '../src/AnimatedSplash';
 import { AuthProvider, useAuth } from '../src/auth';
 import { ALARM_TYPES, openedAlarms, setupChannels } from '../src/notifications';
+import { useOtaUpdates } from '../src/useOtaUpdates';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -28,6 +29,7 @@ function Navigator() {
   const { me, ready } = useAuth();
   const router = useRouter();
   const segments = useSegments();
+  useOtaUpdates();
 
   useEffect(() => {
     if (!ready) return;

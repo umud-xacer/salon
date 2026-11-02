@@ -14,12 +14,15 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "http://192.168.100.178:8001"
+        "EXPO_PUBLIC_API_URL": "https://51.20.138.196.sslip.io"
       },
       "channel": "preview"
     },
     "production": {
-      "channel": "production"
+      "channel": "production",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://51.20.138.196.sslip.io"
+      }
     }
   }
 }
