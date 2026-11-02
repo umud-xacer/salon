@@ -1,10 +1,11 @@
 #!/bin/sh
-# Yangi Ubuntu serverda bir marta:  API_DOMAIN=... ESKIZ_EMAIL=... ESKIZ_PASSWORD=... sh deploy/setup.sh
+# Yangi Ubuntu serverda bir marta:  API_DOMAIN=... WEB_DOMAIN=... ESKIZ_EMAIL=... ESKIZ_PASSWORD=... sh deploy/setup.sh
 # Keyingi yangilanishlar:           sh deploy/update.sh
 set -eu
 cd "$(dirname "$0")"
 
 : "${API_DOMAIN:?API_DOMAIN kerak}"
+: "${WEB_DOMAIN:?WEB_DOMAIN kerak}"
 : "${ESKIZ_EMAIL:?ESKIZ_EMAIL kerak}"
 : "${ESKIZ_PASSWORD:?ESKIZ_PASSWORD kerak}"
 
@@ -16,6 +17,7 @@ fi
 if [ ! -f .env ]; then
   gen() { openssl rand -hex 32; }
   sed -e "s|^API_DOMAIN=.*|API_DOMAIN=$API_DOMAIN|" \
+      -e "s|^WEB_DOMAIN=.*|WEB_DOMAIN=$WEB_DOMAIN|" \
       -e "s|__API_DOMAIN__|$API_DOMAIN|g" \
       -e "s|__POSTGRES__|$(gen)|g" \
       -e "s|__API__|$(gen)|g" \
