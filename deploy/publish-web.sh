@@ -5,7 +5,7 @@
 set -eu
 cd "$(dirname "$0")/.."
 
-SERVER="${SERVER:-ubuntu@51.20.138.196}"
+SERVER="${SERVER:-ubuntu@13.51.135.5}"
 KEY="${KEY:-$HOME/.chronix/asqar.pem}"
 KNOWN="${KNOWN:-$HOME/.chronix/known_hosts}"
 SSH="ssh -i $KEY -o UserKnownHostsFile=$KNOWN -o BatchMode=yes"
