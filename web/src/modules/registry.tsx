@@ -23,7 +23,7 @@ import { ClientsPage } from "./clients/ClientsPage";
 import { DashboardPage } from "./dashboard/DashboardPage";
 import { CashPage, ExpensesPage } from "./finance/FinancePages";
 import { InventoryPage } from "./inventory/InventoryPage";
-import { PayrollPage } from "./payroll/PayrollPage";
+import { MyPayrollPage, PayrollPage } from "./payroll/PayrollPage";
 import { MyBookingsPage, MySchedulePage } from "./schedule/StaffPages";
 import { ServicesPage } from "./services/ServicesPage";
 import { StaffPage } from "./staff/StaffPage";
@@ -76,6 +76,7 @@ export const SECTIONS: Section[] = [
   },
   { path: "bookings", label: "Mening bronlarim", icon: CalendarDays, panel: "staff", page: MyBookingsPage },
   { path: "schedule", label: "Ish jadvalim", icon: Clock3, panel: "staff", page: MySchedulePage },
+  { path: "my-payroll", label: "Oyliklarim", icon: WalletCards, panel: "staff", module: "payroll", page: MyPayrollPage },
 ];
 
 export function sectionsFor(m: Membership): Section[] {

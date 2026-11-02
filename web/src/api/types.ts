@@ -258,6 +258,42 @@ export interface StockMovement {
   created_at: string;
 }
 
+export interface Compensation {
+  member_id: number;
+  full_name: string;
+  role: string;
+  title: string | null;
+  base_salary: number;
+  commission_percent: number;
+}
+
+export interface Payroll {
+  id: number;
+  member_id: number;
+  full_name: string;
+  title: string | null;
+  period_start: string;
+  period_end: string;
+  base_salary: number;
+  revenue: number;
+  commission_percent: number;
+  commission: number;
+  bonus: number;
+  deductions: number;
+  total: number;
+  status: "draft" | "approved" | "paid";
+  note: string | null;
+  approved_at: string | null;
+  paid_at: string | null;
+}
+
+export interface PayrollList {
+  month: string;
+  total: number;
+  paid: number;
+  items: Payroll[];
+}
+
 export interface ExpenseCategory {
   id: number;
   name: string;
