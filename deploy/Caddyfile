@@ -30,3 +30,6 @@
 		file_server
 	}
 }
+
+# Shu serverdagi boshqa loyihalar (git'da yo'q): deploy/sites/*.caddy
+import /etc/caddy/sites/*.caddy

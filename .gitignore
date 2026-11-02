@@ -34,3 +34,4 @@ desktop.ini
 deploy/web-dist/
 deploy/web-dist.new/
 deploy/.env.bak
+deploy/sites/
