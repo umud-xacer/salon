@@ -48,7 +48,7 @@ export function BusinessesPage() {
         hint={businesses.data ? `Jami ${businesses.data.length} ta` : undefined}
         action={
           <Button className="flex items-center gap-1" disabled={!modules.data} onClick={() => setCreating(true)}>
-            <Plus size={16} aria-hidden /> Yangi salon
+            <Plus size={16} aria-hidden /> Yangi muassasa
           </Button>
         }
       />

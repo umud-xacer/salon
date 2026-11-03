@@ -9,6 +9,7 @@ import { Badge, Button, ErrorNote, inputClass, PasswordBadge, Tabs } from "../..
 import { MembersPanel } from "../staff/MembersPanel";
 import { AddressFields, type AddressValue } from "./AddressFields";
 import { useBusinessTypes } from "./BusinessTypesPage";
+import { slugFor, wordingFor } from "./typeWording";
 
 export const BUSINESSES_KEY = ["superadmin", "businesses"];
 
@@ -16,9 +17,6 @@ export const BUSINESSES_KEY = ["superadmin", "businesses"];
 const useCategories = useBusinessTypes;
 const typeLabel = (c: BusinessType) => (c.is_active ? c.name_uz : `${c.name_uz} (o'chirilgan)`);
 
-function slugify(name: string) {
-  return name.toLowerCase().replace(/[''`]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
-}
 
 export function StatusBadge({ b }: { b: BusinessAdmin }) {
   if (b.status === "blocked") return <Badge tone="red">Bloklangan</Badge>;
@@ -44,7 +42,7 @@ export function CreateBusinessDialog({ modules, onClose }: { modules: ModuleInfo
       api("/superadmin/businesses", json("POST", {
         name: name.trim(),
         slug,
-        category_id: Number(category || categories.data?.find((c) => c.is_active)?.id),
+        category_id: Number(category),
         region: place.region || null,
         city: place.city.trim() || null,
         address: place.address.trim() || null,
@@ -66,24 +64,56 @@ export function CreateBusinessDialog({ modules, onClose }: { modules: ModuleInfo
     create.mutate();
   };
 
+  // 1-qadam — turi. Nom yozuvi, misol va havola shu turga moslashadi
+  const active = categories.data?.filter((c) => c.is_active) ?? [];
+  const type = active.find((c) => String(c.id) === category);
+  const w = wordingFor(type);
+  const chooseType = (id: string) => {
+    setCategory(id);
+    if (!slugEdited) setSlug(slugFor(name, active.find((c) => String(c.id) === id)));
+  };
+
   return (
-    <Modal title="Yangi salon" onClose={onClose}>
+    <Modal title={type ? `Yangi ${w.noun.toLowerCase()}` : "Yangi muassasa"} onClose={onClose}>
       <form onSubmit={submit} className="space-y-3">
-        <label className="block text-sm">Salon nomi
-          <input className={inputClass} required minLength={2} maxLength={120} value={name}
+        <fieldset>
+          <legend className="text-sm">1. Muassasa turi</legend>
+          {categories.isPending && <p className="mt-1 text-sm text-muted">Yuklanmoqda...</p>}
+          {categories.error && <ErrorNote error={categories.error} />}
+          <div className="mt-1 flex flex-wrap gap-2">
+            {active.map((c) => {
+              const on = String(c.id) === category;
+              return (
+                <label key={c.id}
+                  className={`cursor-pointer rounded-full border px-3 py-1.5 text-sm transition has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary/40 ${
+                    on ? "border-primary bg-primary text-white" : "border-line bg-white hover:border-primary/60"}`}>
+                  <input type="radio" name="business-type" value={c.id} checked={on} required className="sr-only"
+                    onChange={() => chooseType(String(c.id))} />
+                  {c.name_uz}
+                </label>
+              );
+            })}
+          </div>
+        </fieldset>
+        <fieldset disabled={!type} className="space-y-3 disabled:opacity-50">
+        <label className="block text-sm">2. {w.noun} nomi
+          <input className={inputClass} required minLength={2} maxLength={120} value={name} placeholder={w.example}
             onChange={(e) => {
               setName(e.target.value);
-              if (!slugEdited) setSlug(slugify(e.target.value));
+              if (!slugEdited) setSlug(slugFor(e.target.value, type));
             }} />
         </label>
         <label className="block text-sm">Havola nomi (lotin harflari)
           <input className={inputClass} required pattern="[a-z0-9]+(-[a-z0-9]+)*" maxLength={140} value={slug}
+            placeholder={slugFor("nomi", type)}
             onChange={(e) => { setSlug(e.target.value); setSlugEdited(true); }} />
-        </label>
-        <label className="block text-sm">Turi
-          <select className={inputClass} value={category} onChange={(e) => setCategory(e.target.value)}>
-            {categories.data?.filter((c) => c.is_active).map((c) => <option key={c.id} value={c.id}>{c.name_uz}</option>)}
-          </select>
+          <span className="mt-1 block text-xs text-muted">
+            Avtomatik yasaladi, tur so'zi qo'shiladi. Kerak bo'lsa o'zgartiring.
+            {slugEdited && name && (
+              <button type="button" className="ml-2 text-primary underline"
+                onClick={() => { setSlugEdited(false); setSlug(slugFor(name, type)); }}>Nomdan qayta yasash</button>
+            )}
+          </span>
         </label>
         <AddressFields value={place} onChange={setPlace} />
         <div className="grid gap-3 sm:grid-cols-2">
@@ -111,13 +141,16 @@ export function CreateBusinessDialog({ modules, onClose }: { modules: ModuleInfo
             ))}
           </div>
         </fieldset>
-        {place.lat === null && (
+        {type && place.lat === null && (
           <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
-            Xaritada salon joyini belgilang — lokatsiyasiz salon ochib bo'lmaydi (mijoz ilovasida ko'rinmaydi).
+            Xaritada {w.noun.toLowerCase()} joyini belgilang — lokatsiyasiz ochib bo'lmaydi (mijoz ilovasida ko'rinmaydi).
           </p>
         )}
         {create.error && <ErrorNote error={create.error} />}
-        <Button type="submit" disabled={create.isPending || place.lat === null} className="w-full">Salonni yaratish</Button>
+        <Button type="submit" disabled={create.isPending || !type || place.lat === null} className="w-full">
+          {type ? `${w.noun}ni yaratish` : "Avval turini tanlang"}
+        </Button>
+        </fieldset>
       </form>
     </Modal>
   );
