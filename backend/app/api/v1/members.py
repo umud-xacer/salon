@@ -10,9 +10,10 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, require_permission
 from app.models import BusinessMember, MemberPermission
+from app.core import secretbox
 from app.core.security import hash_password
-from app.schemas import (MemberCreate, MemberOut, MemberPasswordIn, MemberPermissionOut, MemberUpdate,
-                         PermissionOverride)
+from app.schemas import (IssuedPasswordOut, MemberCreate, MemberOut, MemberPasswordIn, MemberPermissionOut,
+                         MemberUpdate, PermissionOverride)
 from app.schemas.catalog import MemberServiceIn, MemberServicesReplace
 from app.services import audit
 
@@ -58,8 +59,18 @@ def add_member(body: MemberCreate, business_id: int = Depends(_manage), db: Sess
     db.add(m)
     db.flush()
     audit.log(db, business_id, "create", "member", m.id, {"role": body.role})
+    if body.password:
+        # Huquq va "umumiy hisob" tekshiruvi bazada: mumkin bo'lmasa, xodim ham qo'shilmaydi
+        assign_password(db, business_id, m.id, body.password)
     db.commit()
     return _member_out(db, m.id)
+
+
+def assign_password(db: Session, business_id: int, member_id: int, password: str) -> None:
+    """Vaqtinchalik parol: xesh + rahbar keyin ko'rishi uchun shifrlangan nusxa."""
+    db.execute(text("SELECT app.set_member_password(:b, :m, :h, :e)"),
+               {"b": business_id, "m": member_id, "h": hash_password(password),
+                "e": secretbox.seal(password, member_id)})
 
 
 @router.patch("/{member_id}", response_model=MemberOut)
@@ -78,9 +89,18 @@ def update_member(body: MemberUpdate, member_id: int = Path(ge=1),
 def set_member_password(body: MemberPasswordIn, business_id: int = Path(ge=1), member_id: int = Path(ge=1),
                         db: Session = Depends(get_db)):
     """Direktor o'z xodimiga, Super Admin istalgan direktor va xodimga. Kim kimga mumkinligini baza hal qiladi."""
-    db.execute(text("SELECT app.set_member_password(:b, :m, :h)"),
-               {"b": business_id, "m": member_id, "h": hash_password(body.new_password)})
+    assign_password(db, business_id, member_id, body.new_password)
     db.commit()
+
+
+@router.get("/{member_id}/password", response_model=IssuedPasswordOut)
+def issued_password(business_id: int = Path(ge=1), member_id: int = Path(ge=1), db: Session = Depends(get_db)):
+    """Rahbar bergan parol (odam o'z parolini qo'ymaguncha). Huquq — parol berish bilan bir xil, ko'rish jurnalga yoziladi."""
+    enc = db.scalar(text("SELECT app.issued_password(:b, :m)"), {"b": business_id, "m": member_id})
+    m = _member_out(db, member_id)
+    db.commit()
+    return IssuedPasswordOut(password=secretbox.open_sealed(enc, member_id) if enc else None,
+                             status=m.password_status, changed_at=m.password_changed_at)
 
 
 @router.get("/{member_id}/services", response_model=list[MemberServiceIn])

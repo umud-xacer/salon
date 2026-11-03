@@ -169,6 +169,7 @@ class BusinessCreate(BaseModel):
     lng: float = Field(ge=-180, le=180)
     owner_phone: str
     owner_full_name: str = Field(min_length=2, max_length=120)
+    owner_password: str | None = Field(default=None, max_length=128)   # direktorning boshlang'ich paroli
     modules: list[str] = ["booking"]
     subscription_days: int | None = Field(default=None, ge=1, le=3660)    # None = muddatsiz
 
@@ -176,6 +177,13 @@ class BusinessCreate(BaseModel):
     @classmethod
     def _norm(cls, v: str) -> str:
         return normalize_phone(v)
+
+    @field_validator("owner_password")
+    @classmethod
+    def _strong(cls, v: str | None) -> str | None:
+        if v:
+            validate_password_strength(v)
+        return v or None
 
     @field_validator("region")
     @classmethod
@@ -246,6 +254,7 @@ class BusinessAdminOut(BaseModel):
     operational: bool
     owner_name: str | None
     owner_phone: str | None
+    owner_member_id: int | None = None
     owner_password_status: Literal["none", "temporary", "own"] | None
     owner_password_changed_at: datetime | None
     staff_count: int
@@ -269,6 +278,14 @@ class MemberCreate(_Phone):
     full_name: str = Field(min_length=2, max_length=120)
     role: Literal["manager", "receptionist", "staff"]     # 'owner' ni faqat Super Admin beradi
     title: str | None = Field(default=None, max_length=80)
+    password: str | None = Field(default=None, max_length=128)    # boshlang'ich (vaqtinchalik) parol
+
+    @field_validator("password")
+    @classmethod
+    def _strong(cls, v: str | None) -> str | None:
+        if v:
+            validate_password_strength(v)
+        return v or None
 
 
 class MemberUpdate(BaseModel):
@@ -290,6 +307,13 @@ class MemberOut(BaseModel):
     password_block: str | None                            # None: joriy foydalanuvchi parolni o'rnata oladi
     password_status: Literal["none", "temporary", "own"]  # parolning o'zi hech kimga ko'rinmaydi
     password_changed_at: datetime | None
+
+
+class IssuedPasswordOut(BaseModel):
+    """Rahbar bergan parol: odam o'z parolini qo'ymaguncha ko'rinadi, keyin None."""
+    password: str | None
+    status: Literal["none", "temporary", "own"]
+    changed_at: datetime | None
 
 
 class MemberPasswordIn(BaseModel):

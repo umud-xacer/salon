@@ -9,6 +9,7 @@ import { useAuth } from "../../auth/AuthProvider";
 import { formatDate, formatMoney, normalizePhone, ROLE_LABELS } from "../../components/format";
 import { Modal } from "../../components/Modal";
 import { Badge, Button, Empty, ErrorNote, inputClass, PasswordBadge, Spinner, Tabs } from "../../components/ui";
+import { generatePassword, PasswordInput, PasswordReveal } from "../../components/PasswordReveal";
 import { ScheduleEditor } from "./ScheduleEditor";
 
 const membersKey = (b: number) => ["members", b];
@@ -39,10 +40,10 @@ export function MembersPanel({ businessId, canManageManagers }: { businessId: nu
       {members.data?.length === 0 && <Empty>Hali xodim yo'q</Empty>}
       <ul className="divide-y divide-line rounded-xl border border-line bg-white">
         {members.data?.map((m) => (
-          <li key={m.id}>
+          <li key={m.id} className="flex items-center hover:bg-page">
             <button
               onClick={() => setOpenedId(m.id)}
-              className="flex w-full flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3 text-left text-sm hover:bg-page"
+              className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1 py-3 pl-4 text-left text-sm"
             >
               <span className="min-w-0 basis-full sm:basis-auto sm:flex-1">
                 <span className="block font-medium break-words">{m.full_name || m.phone}</span>
@@ -52,6 +53,11 @@ export function MembersPanel({ businessId, canManageManagers }: { businessId: nu
               <PasswordBadge status={m.password_status} />
               {!m.is_active && <Badge tone="red">Faol emas</Badge>}
             </button>
+            <span className="shrink-0 pr-3">
+              {m.password_block === null && (
+                <PasswordReveal businessId={businessId} memberId={m.id} status={m.password_status} />
+              )}
+            </span>
           </li>
         ))}
       </ul>
@@ -87,6 +93,7 @@ function AddMember({ businessId, canManageManagers, onClose }: {
   const [name, setName] = useState("");
   const [role, setRole] = useState("staff");
   const [title, setTitle] = useState("");
+  const [password, setPassword] = useState("");
 
   const add = useMutation({
     mutationFn: () =>
@@ -95,6 +102,7 @@ function AddMember({ businessId, canManageManagers, onClose }: {
         full_name: name.trim(),
         role,
         title: title.trim() || null,
+        password: password.trim() || null,
       })),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: membersKey(businessId) });
@@ -110,7 +118,7 @@ function AddMember({ businessId, canManageManagers, onClose }: {
   return (
     <Modal title="Yangi xodim" onClose={onClose}>
       <form onSubmit={submit} className="space-y-3">
-        <label className="block text-sm">Telefon
+        <label className="block text-sm">Telefon (login)
           <input className={inputClass} type="tel" required placeholder="90 123 45 67" value={phone}
             onChange={(e) => setPhone(e.target.value)} />
         </label>
@@ -127,6 +135,7 @@ function AddMember({ businessId, canManageManagers, onClose }: {
           <input className={inputClass} maxLength={80} placeholder="Barber, kosmetolog" value={title}
             onChange={(e) => setTitle(e.target.value)} />
         </label>
+        <PasswordInput label="Boshlang'ich parol" value={password} onChange={setPassword} />
         {add.error && <ErrorNote error={add.error} />}
         <Button type="submit" disabled={add.isPending} className="w-full">Qo'shish</Button>
       </form>
@@ -326,20 +335,13 @@ function ServicesTab({ businessId, memberId }: { businessId: number; memberId: n
   );
 }
 
-// Tasodifiy vaqtinchalik parol: crypto, chalkashtiradigan belgilarsiz
-function generatePassword() {
-  const letters = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ";
-  const digits = "23456789";
-  const pick = (chars: string, n: number) =>
-    Array.from(crypto.getRandomValues(new Uint32Array(n)), (x) => chars[x % chars.length]).join("");
-  return pick(letters, 8) + pick(digits, 4);
-}
-
 function PasswordTab({ businessId, member: m }: { businessId: number; member: Member }) {
+  const queryClient = useQueryClient();
   const [password, setPassword] = useState("");
   const save = useMutation({
     mutationFn: () =>
       api(`/businesses/${businessId}/members/${m.id}/password`, json("POST", { new_password: password })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: membersKey(businessId) }),
   });
 
   if (m.password_block === "shared_account") {
@@ -360,11 +362,13 @@ function PasswordTab({ businessId, member: m }: { businessId: number; member: Me
     <form onSubmit={submit} className="space-y-3">
       <p className="text-sm text-muted">
         Yangi parol vaqtinchalik bo'ladi: xodimning barcha kirishlari yopiladi, birinchi kirishda o'z parolini qo'yadi.
-        Parolni shaxsan bering. Saqlangach, parolni hech kim ko'ra olmaydi.
+        Parolni shaxsan bering. U xodim o'z parolini qo'ymaguncha shu yerda ko'z tugmasi bilan ko'rinadi.
+        Xodimning o'zi qo'ygan paroli hech kimga ko'rinmaydi — unutsa, yangisini bering.
       </p>
       <p className="flex flex-wrap items-center gap-2 text-sm">
         Hozirgi holat: <PasswordBadge status={m.password_status} />
         {m.password_changed_at && <span className="text-muted">{formatDate(m.password_changed_at)}</span>}
+        <PasswordReveal businessId={businessId} memberId={m.id} status={m.password_status} />
       </p>
       <label className="block text-sm">Yangi parol
         <span className="mt-1 flex gap-2">

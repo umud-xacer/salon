@@ -6,6 +6,7 @@ import type { BusinessAdmin, BusinessType, ModuleInfo } from "../../api/types";
 import { dayOf, formatDate, normalizePhone, todayIso } from "../../components/format";
 import { Modal } from "../../components/Modal";
 import { Badge, Button, ErrorNote, inputClass, PasswordBadge, Tabs } from "../../components/ui";
+import { PasswordInput, PasswordReveal } from "../../components/PasswordReveal";
 import { MembersPanel } from "../staff/MembersPanel";
 import { AddressFields, type AddressValue } from "./AddressFields";
 import { useBusinessTypes } from "./BusinessTypesPage";
@@ -34,6 +35,7 @@ export function CreateBusinessDialog({ modules, onClose }: { modules: ModuleInfo
   const [place, setPlace] = useState<AddressValue>({ region: "", city: "", address: "", lat: null, lng: null });
   const [ownerName, setOwnerName] = useState("");
   const [ownerPhone, setOwnerPhone] = useState("");
+  const [ownerPassword, setOwnerPassword] = useState("");
   const [days, setDays] = useState("30");
   const [picked, setPicked] = useState<string[]>(["booking"]);
 
@@ -50,6 +52,7 @@ export function CreateBusinessDialog({ modules, onClose }: { modules: ModuleInfo
         lng: place.lng,
         owner_full_name: ownerName.trim(),
         owner_phone: normalizePhone(ownerPhone),
+        owner_password: ownerPassword.trim() || null,
         modules: picked,
         subscription_days: days ? Number(days) : null,
       })),
@@ -121,11 +124,12 @@ export function CreateBusinessDialog({ modules, onClose }: { modules: ModuleInfo
             <input className={inputClass} required minLength={2} maxLength={120} value={ownerName}
               onChange={(e) => setOwnerName(e.target.value)} />
           </label>
-          <label className="block text-sm">Direktor telefoni
+          <label className="block text-sm">Direktor telefoni (login)
             <input className={inputClass} type="tel" required placeholder="90 123 45 67" value={ownerPhone}
               onChange={(e) => setOwnerPhone(e.target.value)} />
           </label>
         </div>
+        <PasswordInput label="Direktorning boshlang'ich paroli" value={ownerPassword} onChange={setOwnerPassword} />
         <label className="block text-sm">Obuna (kun, bo'sh qolsa muddatsiz)
           <input className={inputClass} type="number" min={1} max={3660} value={days} onChange={(e) => setDays(e.target.value)} />
         </label>
@@ -177,6 +181,7 @@ export function BusinessDialog({ business: b, modules, onClose }: {
         <span>Direktor: {b.owner_name ?? "yo'q"}{b.owner_phone ? ` · ${b.owner_phone}` : ""}</span>
         <StatusBadge b={b} />
         <PasswordBadge status={b.owner_password_status} />
+        <PasswordReveal businessId={b.id} memberId={b.owner_member_id} status={b.owner_password_status} />
         {b.owner_password_changed_at && <span>{formatDate(b.owner_password_changed_at)}</span>}
       </p>
       <Tabs tabs={TABS} value={tab} onChange={setTab} />

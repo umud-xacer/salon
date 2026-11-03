@@ -15,6 +15,7 @@ from app.models import Business, BusinessMember, BusinessModule, User
 from app.schemas import (BusinessAdminOut, BusinessCreate, BusinessOut, BusinessStatusIn, BusinessUpdate, ModuleOut,
                          ModuleToggle, StatusIn, SubscriptionRenew, SubscriptionUpdate)
 from app.schemas.catalog import BusinessTypeCreate, BusinessTypeIn, BusinessTypeOut, BusinessTypeUpdate
+from app.api.v1.members import assign_password
 from app.services import audit
 
 router = APIRouter(prefix="/superadmin", tags=["superadmin"], dependencies=[Depends(require_superadmin)])
@@ -24,7 +25,7 @@ _BUSINESS_SELECT = """
            ST_Y(b.location::geometry) AS lat, ST_X(b.location::geometry) AS lng,
            b.is_active, b.subscription_ends_at,
            app.business_operational(b.id) AS operational,
-           u.full_name AS owner_name, u.phone AS owner_phone,
+           u.full_name AS owner_name, u.phone AS owner_phone, o.id AS owner_member_id,
            CASE WHEN u.id IS NULL THEN NULL
                 WHEN u.password_hash IS NULL THEN 'none' WHEN u.must_change_password THEN 'temporary'
                 ELSE 'own' END AS owner_password_status,
@@ -84,6 +85,15 @@ def create_business(body: BusinessCreate, db: Session = Depends(get_db)):
     owner_id = db.scalar(text("SELECT app.ensure_user(:p, :n)"), {"p": body.owner_phone, "n": body.owner_full_name})
     owner = BusinessMember(business_id=biz.id, user_id=owner_id, role="owner", is_bookable=False)
     db.add(owner)
+    if body.owner_password:
+        # Odamning o'z paroli bo'lsa, ustidan yozilmaydi (u boshqa salon yoki mijoz hisobi bo'lishi mumkin)
+        own = db.scalar(text("SELECT password_hash IS NOT NULL AND NOT must_change_password FROM users WHERE id = :u"),
+                        {"u": owner_id})
+        if own:
+            raise HTTPException(409, detail={"code": "has_own_password",
+                                             "message": "Bu raqam egasining o'z paroli bor. Parol maydonini bo'sh qoldiring"})
+        db.flush()
+        assign_password(db, biz.id, owner.id, body.owner_password)
     for code in set(body.modules):
         db.add(BusinessModule(business_id=biz.id, module_code=code, enabled=True))
     db.commit()

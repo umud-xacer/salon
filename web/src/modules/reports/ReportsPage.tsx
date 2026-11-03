@@ -113,7 +113,7 @@ function Stat({ label, value, sub }: { label: string; value: string; sub?: React
   return (
     <Card className="min-w-0">
       <p className="text-xs text-muted">{label}</p>
-      <p className="mt-1 truncate text-xl font-semibold tabular-nums text-navy">{value}</p>
+      <p className="mt-1 text-base font-semibold tabular-nums text-navy [overflow-wrap:anywhere] sm:text-xl">{value}</p>
       {sub && <div className="mt-1">{sub}</div>}
     </Card>
   );
@@ -206,7 +206,21 @@ function Row({ label, value }: { label: string; value: number }) {
 function Table({ head, rows, empty }: { head: string[]; rows: (string | number)[][]; empty: string }) {
   if (rows.length === 0) return <Empty>{empty}</Empty>;
   return (
-    <div className="-mx-4 overflow-x-auto px-4">
+    <>
+    {/* Telefon: har bir qator — kartochka, ustunlar "nomi: qiymat" bo'lib */}
+    <ul className="divide-y divide-line sm:hidden">
+      {rows.map((r, k) => (
+        <li key={k} className="py-2 text-sm">
+          <p className="font-medium break-words">{r[0]}</p>
+          <p className="mt-0.5 flex flex-wrap gap-x-3 text-xs text-muted">
+            {r.slice(1).map((c, i) => (
+              <span key={i}>{head[i + 1]}: <span className="text-ink tabular-nums">{c}</span></span>
+            ))}
+          </p>
+        </li>
+      ))}
+    </ul>
+    <div className="-mx-4 hidden overflow-x-auto px-4 sm:block">
       <table className="w-full min-w-[28rem] text-sm">
         <thead>
           <tr className="border-b border-line text-left text-xs text-muted">
@@ -224,6 +238,7 @@ function Table({ head, rows, empty }: { head: string[]; rows: (string | number)[
         </tbody>
       </table>
     </div>
+    </>
   );
 }
 

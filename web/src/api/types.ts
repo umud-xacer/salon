@@ -265,6 +265,7 @@ export interface BusinessAdmin {
   owner_phone: string | null;
   owner_password_status: PasswordStatus | null;
   owner_password_changed_at: string | null;
+  owner_member_id: number | null;
   staff_count: number;
   service_count: number;
   hours_count: number;

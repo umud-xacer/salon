@@ -7,6 +7,7 @@ import { api } from "../../api/client";
 import type { BusinessAdmin, ModuleInfo } from "../../api/types";
 import { formatDate } from "../../components/format";
 import { Badge, Button, Card, Empty, ErrorNote, PageTitle, PasswordBadge, Spinner, Tabs } from "../../components/ui";
+import { PasswordReveal } from "../../components/PasswordReveal";
 import { BUSINESSES_KEY, BusinessDialog, CreateBusinessDialog, StatusBadge } from "./BusinessDialogs";
 import { useBusinessTypes } from "./BusinessTypesPage";
 import { BusinessesMap } from "./Maps";
@@ -93,10 +94,10 @@ export function BusinessesPage() {
         ) : (
           <ul className="divide-y divide-line rounded-xl border border-line bg-white">
             {filtered.map((b) => (
-              <li key={b.id}>
+              <li key={b.id} className="flex items-center hover:bg-page">
                 <button
                   onClick={() => setOpenedId(b.id)}
-                  className="flex w-full flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 text-left text-sm hover:bg-page"
+                  className="flex min-w-0 flex-1 flex-wrap items-center gap-x-4 gap-y-1 py-3 pl-4 text-left text-sm"
                 >
                   <span className="min-w-0 basis-full sm:basis-auto sm:flex-1">
                     <span className="block font-medium">{b.name} <StatusBadge b={b} /></span>
@@ -115,6 +116,9 @@ export function BusinessesPage() {
                     {b.subscription_ends_at ? `${formatDate(b.subscription_ends_at)} gacha` : "Muddatsiz"}
                   </span>
                 </button>
+                <span className="shrink-0 pr-3">
+                  <PasswordReveal businessId={b.id} memberId={b.owner_member_id} status={b.owner_password_status} />
+                </span>
               </li>
             ))}
           </ul>
