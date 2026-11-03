@@ -49,7 +49,12 @@ _SORTS = {
     "price": "min_price ASC NULLS LAST, b.location <-> p.pt",
 }
 
-_PUBLIC_WHERE = "b.status = 'active' AND b.is_listed AND b.location IS NOT NULL"
+# Ilovada faqat lokatsiyasi va kamida bitta faol xizmati bor, turi yoqilgan salonlar
+_PUBLIC_WHERE = (
+    "b.status = 'active' AND b.is_listed AND b.location IS NOT NULL"
+    " AND EXISTS (SELECT 1 FROM services s0 WHERE s0.business_id = b.id AND s0.is_active)"
+    " AND EXISTS (SELECT 1 FROM business_categories c0 WHERE c0.id = b.category_id AND c0.is_active)"
+)
 
 
 def _filters(category: str | None, q: str | None, params: dict) -> str:
@@ -74,7 +79,8 @@ def app_info():
 
 @router.get("/categories", response_model=list[CategoryOut])
 def categories(db: Session = Depends(get_public_db)):
-    rows = db.execute(text("SELECT id, slug, name_uz, name_ru, icon FROM business_categories ORDER BY sort_order"))
+    rows = db.execute(text("SELECT id, slug, name_uz, name_ru, icon FROM business_categories WHERE is_active "
+                           "ORDER BY sort_order, id"))
     return [CategoryOut(**r) for r in rows.mappings()]
 
 
@@ -157,7 +163,7 @@ def business_detail(slug: str, db: Session = Depends(get_public_db)):
                ST_Y(b.location::geometry) AS lat, ST_X(b.location::geometry) AS lng,
                b.rating_avg::float AS rating_avg, b.rating_count, {_IS_OPEN} AS is_open_now
           FROM businesses b JOIN business_categories c ON c.id = b.category_id
-         WHERE b.slug = :slug AND b.status = 'active' AND b.is_listed
+         WHERE b.slug = :slug AND {_PUBLIC_WHERE}
     """), {"slug": slug}).mappings().first()
     if b is None:
         raise HTTPException(404, detail={"code": "not_found", "message": "Biznes topilmadi"})

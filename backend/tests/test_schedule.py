@@ -205,6 +205,7 @@ def test_day_off_has_no_slots(client, biz):
     s = new_service(client, biz)
     m = new_master(client, biz, s, schedule=[])
     # Bo'sh jadval = jadval kiritilmagan; biznes soatlari ham yo'q bo'lsa — bo'sh vaqt yo'q
+    client.put(url(biz, "hours"), headers=auth_header(biz["owner"]), json={"days": []})
     assert slots(client, m, s, day_from_today(biz, 1)) == []
 
 

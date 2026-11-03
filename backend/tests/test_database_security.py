@@ -229,3 +229,17 @@ def test_stock_cannot_go_negative_or_be_edited_directly(world):
         assert sqlstate(e) == "42501"
     with api_session(uid(a["owner"])) as db:
         assert db.execute(text("SELECT current_qty FROM products WHERE id = :id"), {"id": pid}).scalar() == 400
+
+
+def test_only_superadmin_writes_business_types(world, superadmin):
+    """Muassasa turlari (tavsiya xizmatlar, ish vaqti) — direktor ham, mijoz ham o'zgartira olmaydi."""
+    for tokens in (world["a"]["owner"], world["customer"]):
+        with api_session(uid(tokens)) as db:
+            assert db.execute(text("UPDATE business_categories SET name_uz = 'Buzildi'")).rowcount == 0
+            assert db.execute(text("DELETE FROM business_categories")).rowcount == 0
+            with pytest.raises(DBAPIError):
+                db.execute(text("INSERT INTO business_categories (slug, name_uz, name_ru) VALUES ('hack', 'X', 'X')"))
+            db.rollback()
+    with api_session(uid(superadmin)) as db:
+        assert db.execute(text("UPDATE business_categories SET sort_order = sort_order WHERE slug = 'pharmacy'")).rowcount == 1
+        db.rollback()

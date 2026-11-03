@@ -60,6 +60,8 @@ def test_upload_resizes_and_strips_metadata(client, biz):
 
 def test_photo_visible_in_catalog(client, biz):
     upload(client, biz, png())
+    client.post(f"/api/v1/businesses/{biz['id']}/services", headers=auth_header(biz["owner"]),
+                json={"name": "Soch olish", "duration_min": 30, "price": 50000})
     card = client.get(f"/api/v1/catalog/businesses/{biz['slug']}").json()
     assert len(card["photos"]) == 1
 

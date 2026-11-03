@@ -1,4 +1,4 @@
-import { Building2 } from "lucide-react";
+import { Building2, Layers } from "lucide-react";
 import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 
@@ -13,6 +13,13 @@ import { ClientOnlyPage, ForcePasswordPage } from "./pages/Notices";
 const BusinessesPage = lazy(() =>
   import("./modules/superadmin/BusinessesPage").then((m) => ({ default: m.BusinessesPage })),
 );
+const BusinessTypesPage = lazy(() =>
+  import("./modules/superadmin/BusinessTypesPage").then((m) => ({ default: m.BusinessTypesPage })),
+);
+const SUPERADMIN_NAV = [
+  { to: "/superadmin", label: "Salonlar", icon: Building2, end: true },
+  { to: "/superadmin/types", label: "Muassasa turlari", icon: Layers },
+];
 
 function Home() {
   const { me } = useAuth();
@@ -32,12 +39,16 @@ export function App() {
     <Routes>
       <Route path="/" element={<Home />} />
       <Route
-        path="/superadmin"
+        path="/superadmin/*"
         element={
           me.workspace === "superadmin" ? (
-            <AppShell title="Super Admin" nav={[{ to: "/superadmin", label: "Salonlar", icon: Building2 }]}>
+            <AppShell title="Super Admin" nav={SUPERADMIN_NAV}>
               <Suspense fallback={<Spinner />}>
-                <BusinessesPage />
+                <Routes>
+                  <Route index element={<BusinessesPage />} />
+                  <Route path="types" element={<BusinessTypesPage />} />
+                  <Route path="*" element={<Navigate to="/superadmin" replace />} />
+                </Routes>
               </Suspense>
             </AppShell>
           ) : (

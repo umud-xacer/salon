@@ -79,7 +79,11 @@ def test_profile_cannot_change_phone_or_role(client):
 
 @pytest.fixture()
 def biz(client, superadmin):
-    return create_business(client, superadmin)
+    b = create_business(client, superadmin)
+    # Xizmatsiz salon ilovada (va sevimlilar ro'yxatida) ko'rinmaydi
+    client.post(f"/api/v1/businesses/{b['id']}/services", headers=auth_header(b["owner"]),
+                json={"name": "Soch olish", "duration_min": 30, "price": 50000})
+    return b
 
 
 def test_favorites_flow_and_isolation(client, biz):

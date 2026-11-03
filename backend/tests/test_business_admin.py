@@ -29,7 +29,9 @@ def test_owner_edits_profile(client, two):
     assert p["name"] == "Go'zallik Markazi" and p["phone"] == "+998901234567"
     assert abs(p["lat"] - 41.31) < 1e-9 and p["status"] == "active"
 
-    # Katalogda darhol yangilangan
+    # Katalogda darhol yangilangan (ilovada ko'rinishi uchun kamida bitta xizmat kerak)
+    client.post(url(a, "services"), headers=auth_header(a["owner"]),
+                json={"name": "Profil xizmati", "duration_min": 30, "price": 10000})
     detail = client.get(f"/api/v1/catalog/businesses/{a['slug']}").json()
     assert detail["name"] == "Go'zallik Markazi" and detail["logo_url"] == "https://cdn.example.uz/logo.png"
 

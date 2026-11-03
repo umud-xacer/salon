@@ -10,6 +10,7 @@ export interface NavItem {
   to: string;
   label: string;
   icon: LucideIcon;
+  end?: boolean;                 // faqat aynan shu manzilda faol
 }
 
 const footerButton = "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-white/80 hover:bg-white/10";
@@ -49,10 +50,11 @@ export function AppShell({ nav, title, header, children }: {
         </div>
         {header && <div className="px-3 pb-2">{header}</div>}
         <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3 py-2">
-          {nav.map(({ to, label, icon: Icon }) => (
+          {nav.map(({ to, label, icon: Icon, end }) => (
             <NavLink
               key={to}
               to={to}
+              end={end}
               onClick={() => setOpen(false)}
               className={({ isActive }) =>
                 `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm md:py-2 ${isActive ? "bg-primary" : "text-white/80 hover:bg-white/10"}`

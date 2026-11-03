@@ -20,6 +20,7 @@ const BANNER_WIDTH = Dimensions.get('window').width - 48;
 
 const CATEGORY_ICONS: [RegExp, IconName][] = [
   [/barber/i, 'cut-outline'],
+  [/pharm|dorixona|apteka/i, 'medical-outline'],
   [/clinic|klinika|stomat|dent/i, 'medkit-outline'],
   [/spa|massaj|massage/i, 'leaf-outline'],
   [/kosmet|cosmet/i, 'sparkles-outline'],

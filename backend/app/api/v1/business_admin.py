@@ -9,9 +9,9 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, require_permission
-from app.schemas.catalog import (HoursOut, HoursReplace, PhotoIn, PhotoOut, ProfileOut, ProfileUpdate,
-                                 ServiceAdminOut, ServiceCategoryIn, ServiceCategoryOut, ServiceCreate,
-                                 ServiceUpdate)
+from app.schemas.catalog import (HoursOut, HoursReplace, PhotoIn, PhotoOut, PresetOut, PresetsApply, PresetsOut,
+                                 ProfileOut, ProfileUpdate, ServiceAdminOut, ServiceCategoryIn,
+                                 ServiceCategoryOut, ServiceCreate, ServiceUpdate)
 from app.services import audit, media
 
 router = APIRouter(prefix="/businesses/{business_id}", tags=["business-admin"])
@@ -25,9 +25,12 @@ _NOT_FOUND = HTTPException(404, detail={"code": "not_found", "message": "Topilma
 # ─── Profil ─────────────────────────────────────────────────────────────────
 def _profile(db: Session, business_id: int) -> ProfileOut:
     row = db.execute(text("""
-        SELECT id, slug, name, description, category_id, status::text AS status, phone, city, address,
-               ST_Y(location::geometry) AS lat, ST_X(location::geometry) AS lng, is_listed, logo_url, cover_url
-          FROM businesses WHERE id = :b
+        SELECT b.id, b.slug, b.name, b.description, b.category_id, b.status::text AS status, b.phone, b.city,
+               b.address, ST_Y(b.location::geometry) AS lat, ST_X(b.location::geometry) AS lng, b.is_listed,
+               b.logo_url, b.cover_url, c.name_uz AS category_name,
+               c.opens_at AS default_opens_at, c.closes_at AS default_closes_at
+          FROM businesses b JOIN business_categories c ON c.id = b.category_id
+         WHERE b.id = :b
     """), {"b": business_id}).mappings().first()
     if row is None:
         raise _NOT_FOUND
@@ -194,6 +197,43 @@ def create_service(body: ServiceCreate, business_id: int = Depends(_services), d
     audit.log(db, business_id, "create", "service", row["id"], body.model_dump())
     db.commit()
     return ServiceAdminOut(**row)
+
+
+def _presets(db: Session, business_id: int) -> PresetsOut:
+    row = db.execute(text("""
+        SELECT c.name_uz, c.service_presets FROM businesses b JOIN business_categories c ON c.id = b.category_id
+         WHERE b.id = :b"""), {"b": business_id}).mappings().first()
+    if row is None:
+        raise _NOT_FOUND
+    have = {n.lower() for n in db.scalars(text("SELECT lower(name) FROM services WHERE business_id = :b"),
+                                          {"b": business_id})}
+    return PresetsOut(category_name=row["name_uz"],
+                      presets=[PresetOut(**p, exists=p["name"].lower() in have) for p in row["service_presets"]])
+
+
+@router.get("/service-presets", response_model=PresetsOut)
+def list_presets(business_id: int = Depends(_services), db: Session = Depends(get_db)):
+    """Muassasa turiga mos tavsiya xizmatlar (Super Admin belgilaydi)."""
+    return _presets(db, business_id)
+
+
+@router.post("/service-presets", response_model=list[ServiceAdminOut], status_code=201)
+def apply_presets(body: PresetsApply, business_id: int = Depends(_services), db: Session = Depends(get_db)):
+    """Tanlangan tavsiya xizmatlarni qo'shadi. Salonda bor nomlar va ro'yxatda yo'q nomlar o'tkazib yuboriladi."""
+    wanted = {n.strip().lower() for n in body.names}
+    created = []
+    for p in _presets(db, business_id).presets:
+        if p.exists or p.name.lower() not in wanted:
+            continue
+        row = db.execute(text(f"""
+            INSERT INTO services (business_id, name, duration_min, price) VALUES (:b, :name, :d, :price)
+            RETURNING {_SERVICE_COLS}"""), {"b": business_id, "name": p.name, "d": p.duration_min, "price": p.price}
+        ).mappings().one()
+        created.append(ServiceAdminOut(**row))
+    if created:
+        audit.log(db, business_id, "create", "service", None, {"presets": [s.name for s in created]})
+    db.commit()
+    return created
 
 
 @router.patch("/services/{service_id}", response_model=ServiceAdminOut)

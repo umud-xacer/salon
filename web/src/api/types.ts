@@ -177,6 +177,34 @@ export interface BusinessProfile {
   lat: number | null;
   lng: number | null;
   is_listed: boolean;
+  category_name: string;
+  default_opens_at: string;
+  default_closes_at: string;
+}
+
+export interface ServicePreset {
+  name: string;
+  duration_min: number;
+  price: number;
+}
+
+export interface BusinessType {
+  id: number;
+  slug: string;
+  name_uz: string;
+  name_ru: string;
+  icon: string | null;
+  sort_order: number;
+  is_active: boolean;
+  opens_at: string;
+  closes_at: string;
+  service_presets: ServicePreset[];
+  business_count: number;
+}
+
+export interface ServicePresets {
+  category_name: string;
+  presets: (ServicePreset & { exists: boolean })[];
 }
 
 export interface BusinessHours {

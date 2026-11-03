@@ -173,6 +173,9 @@ class ProfileOut(BaseModel):
     is_listed: bool
     logo_url: str | None
     cover_url: str | None
+    category_name: str
+    default_opens_at: time           # muassasa turining standart ish vaqti
+    default_closes_at: time
 
 
 class HoursIn(BaseModel):
@@ -246,6 +249,72 @@ class ServiceUpdate(BaseModel):
 class ServiceAdminOut(ServiceOut):
     category_id: int | None
     is_active: bool
+
+
+# ─── Muassasa turlari (Super Admin) ─────────────────────────────────────────
+class ServicePreset(BaseModel):
+    name: str = Field(min_length=2, max_length=120)
+    duration_min: int = Field(ge=5, le=720)
+    price: int = Field(ge=0, le=100_000_000)
+
+    @field_validator("name")
+    @classmethod
+    def _strip(cls, v: str) -> str:
+        return v.strip()
+
+
+class BusinessTypeIn(BaseModel):
+    name_uz: str = Field(min_length=2, max_length=80)
+    name_ru: str = Field(min_length=2, max_length=80)
+    icon: str | None = Field(default=None, max_length=40, pattern=r"^[a-z0-9-]+$")
+    sort_order: int = Field(default=0, ge=0, le=1000)
+    is_active: bool = True
+    opens_at: time = time(9)
+    closes_at: time = time(20)
+    service_presets: list[ServicePreset] = Field(default_factory=list, max_length=50)
+
+    @model_validator(mode="after")
+    def _check(self):
+        if self.closes_at <= self.opens_at:
+            raise ValueError("Yopilish vaqti ochilishdan keyin bo'lishi kerak")
+        names = [p.name.lower() for p in self.service_presets]
+        if len(set(names)) != len(names):
+            raise ValueError("Tavsiya xizmatlar nomi takrorlanmasin")
+        return self
+
+
+class BusinessTypeCreate(BusinessTypeIn):
+    slug: str = Field(pattern=r"^[a-z0-9]+(_[a-z0-9]+)*$", max_length=40)
+
+
+class BusinessTypeUpdate(BaseModel):
+    name_uz: str | None = Field(default=None, min_length=2, max_length=80)
+    name_ru: str | None = Field(default=None, min_length=2, max_length=80)
+    icon: str | None = Field(default=None, max_length=40, pattern=r"^[a-z0-9-]+$")
+    sort_order: int | None = Field(default=None, ge=0, le=1000)
+    is_active: bool | None = None
+    opens_at: time | None = None
+    closes_at: time | None = None
+    service_presets: list[ServicePreset] | None = Field(default=None, max_length=50)
+
+
+class BusinessTypeOut(BusinessTypeCreate):
+    id: int
+    business_count: int
+
+
+# ─── Salon egasi: tavsiya xizmatlar ─────────────────────────────────────────
+class PresetOut(ServicePreset):
+    exists: bool                                    # salonda shu nomli xizmat bor
+
+
+class PresetsOut(BaseModel):
+    category_name: str
+    presets: list[PresetOut]
+
+
+class PresetsApply(BaseModel):
+    names: list[str] = Field(min_length=1, max_length=50)
 
 
 class MemberServiceIn(BaseModel):

@@ -1,6 +1,6 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Alert, FlatList, Linking, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { Alert, FlatList, Linking, Platform, RefreshControl, StyleSheet, Text, View } from 'react-native';
 
 import { api, ApiError, Appointment } from '../../src/api';
 import {
@@ -72,9 +72,15 @@ export default function Bookings() {
   const openMap = (a: Appointment, route: boolean) => {
     if (a.business_lat == null || a.business_lng == null) return;
     const point = `${a.business_lat},${a.business_lng}`;
-    Linking.openURL(route
-      ? `https://yandex.uz/maps/?rtext=~${point}&rtt=auto`
-      : `https://yandex.uz/maps/?pt=${a.business_lng},${a.business_lat}&z=16&l=map`).catch(() => {});
+    const label = encodeURIComponent(a.business_name ?? 'Salon');
+    // Telefonda o'rnatilgan xarita ilovasi ochiladi (Google, Yandex, 2GIS...). Bo'lmasa — brauzerda OSM
+    const web = `https://www.openstreetmap.org/?mlat=${a.business_lat}&mlon=${a.business_lng}#map=17/${point.replace(',', '/')}`;
+    const app = Platform.OS === 'ios'
+      ? `https://maps.apple.com/?${route ? 'daddr' : 'q'}=${point}`
+      : route ? `google.navigation:q=${point}` : `geo:${point}?q=${point}(${label})`;
+    Linking.openURL(app).catch(() => (route
+      ? Linking.openURL(`geo:${point}?q=${point}(${label})`).catch(() => Linking.openURL(web))
+      : Linking.openURL(web)).catch(() => {}));
   };
 
   const shown = items.filter((a) => inTab(a, tab));

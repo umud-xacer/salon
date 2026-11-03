@@ -1,14 +1,20 @@
 """Super Admin: bizneslarni qo'shish, egasini tayinlash, modullar va bloklash."""
 from datetime import datetime, timedelta, timezone
 
+import json
+
 from fastapi import APIRouter, Depends, HTTPException, Path
+from fastapi.exceptions import RequestValidationError
+from pydantic import ValidationError
 from sqlalchemy import text
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, require_superadmin
 from app.models import Business, BusinessMember, BusinessModule, User
 from app.schemas import (BusinessAdminOut, BusinessCreate, BusinessOut, BusinessStatusIn, BusinessUpdate, ModuleOut,
                          ModuleToggle, StatusIn, SubscriptionRenew, SubscriptionUpdate)
+from app.schemas.catalog import BusinessTypeCreate, BusinessTypeIn, BusinessTypeOut, BusinessTypeUpdate
 from app.services import audit
 
 router = APIRouter(prefix="/superadmin", tags=["superadmin"], dependencies=[Depends(require_superadmin)])
@@ -67,9 +73,13 @@ def create_business(body: BusinessCreate, db: Session = Depends(get_db)):
         biz.subscription_ends_at = datetime.now(timezone.utc) + timedelta(days=body.subscription_days)
     db.add(biz)
     db.flush()
-    if body.lat is not None and body.lng is not None:
-        db.execute(text("UPDATE businesses SET location = ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography "
-                        "WHERE id = :id"), {"lng": body.lng, "lat": body.lat, "id": biz.id})
+    db.execute(text("UPDATE businesses SET location = ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography "
+                    "WHERE id = :id"), {"lng": body.lng, "lat": body.lat, "id": biz.id})
+    # Turning standart ish vaqti: dushanba-shanba. Direktor keyin o'zgartiradi
+    db.execute(text("""
+        INSERT INTO business_hours (business_id, weekday, opens_at, closes_at)
+        SELECT :id, d, c.opens_at, c.closes_at FROM business_categories c, generate_series(1, 6) d
+         WHERE c.id = :c"""), {"id": biz.id, "c": body.category_id})
 
     owner_id = db.scalar(text("SELECT app.ensure_user(:p, :n)"), {"p": body.owner_phone, "n": body.owner_full_name})
     owner = BusinessMember(business_id=biz.id, user_id=owner_id, role="owner", is_bookable=False)
@@ -142,6 +152,63 @@ def toggle_module(body: ModuleToggle, business_id: int = Path(ge=1), module_code
         row.enabled, row.expires_at = body.enabled, body.expires_at
     audit.log(db, business_id, "toggle", "module", None, {"module": module_code, "enabled": body.enabled})
     db.commit()
+
+
+# ─── Muassasa turlari ───────────────────────────────────────────────────────
+_TYPE_SELECT = """
+    SELECT c.id, c.slug, c.name_uz, c.name_ru, c.icon, c.sort_order, c.is_active, c.opens_at, c.closes_at,
+           c.service_presets, (SELECT count(*) FROM businesses b WHERE b.category_id = c.id) AS business_count
+      FROM business_categories c
+"""
+_TYPE_NOT_FOUND = HTTPException(404, detail={"code": "not_found", "message": "Muassasa turi topilmadi"})
+
+
+def _read_type(db: Session, type_id: int) -> BusinessTypeOut:
+    row = db.execute(text(f"{_TYPE_SELECT} WHERE c.id = :id"), {"id": type_id}).mappings().first()
+    if row is None:
+        raise _TYPE_NOT_FOUND
+    return BusinessTypeOut(**row)
+
+
+def _save_type(db: Session, type_id: int, body: BusinessTypeIn) -> None:
+    data = body.model_dump(exclude={"slug"})
+    data["service_presets"] = json.dumps(data["service_presets"], ensure_ascii=False)
+    db.execute(text("""
+        UPDATE business_categories SET name_uz = :name_uz, name_ru = :name_ru, icon = :icon,
+               sort_order = :sort_order, is_active = :is_active, opens_at = :opens_at, closes_at = :closes_at,
+               service_presets = CAST(:service_presets AS jsonb)
+         WHERE id = :id"""), {**data, "id": type_id})
+
+
+@router.get("/business-types", response_model=list[BusinessTypeOut])
+def list_types(db: Session = Depends(get_db)):
+    return [BusinessTypeOut(**r) for r in db.execute(text(f"{_TYPE_SELECT} ORDER BY c.sort_order, c.id")).mappings()]
+
+
+@router.post("/business-types", response_model=BusinessTypeOut, status_code=201)
+def create_type(body: BusinessTypeCreate, db: Session = Depends(get_db)):
+    try:
+        type_id = db.scalar(text("INSERT INTO business_categories (slug, name_uz, name_ru) "
+                                 "VALUES (:s, :u, :r) RETURNING id"), {"s": body.slug, "u": body.name_uz, "r": body.name_ru})
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(409, detail={"code": "slug_taken", "message": "Bu kod bilan tur allaqachon bor"})
+    _save_type(db, type_id, body)
+    db.commit()
+    return _read_type(db, type_id)
+
+
+@router.patch("/business-types/{type_id}", response_model=BusinessTypeOut)
+def update_type(body: BusinessTypeUpdate, type_id: int = Path(ge=1), db: Session = Depends(get_db)):
+    """Qisman yangilash. Natija to'liq qayta tekshiriladi (masalan, ish vaqti tartibi)."""
+    current = _read_type(db, type_id).model_dump(exclude={"id", "business_count", "slug"})
+    try:
+        merged = BusinessTypeIn(**{**current, **body.model_dump(exclude_unset=True)})
+    except ValidationError as e:
+        raise RequestValidationError(e.errors(include_url=False, include_context=False))
+    _save_type(db, type_id, merged)
+    db.commit()
+    return _read_type(db, type_id)
 
 
 @router.patch("/users/{user_id}/status", status_code=204)

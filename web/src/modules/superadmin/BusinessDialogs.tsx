@@ -1,28 +1,20 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
 
 import { api, json } from "../../api/client";
-import type { BusinessAdmin, ModuleInfo } from "../../api/types";
+import type { BusinessAdmin, BusinessType, ModuleInfo } from "../../api/types";
 import { dayOf, formatDate, normalizePhone, todayIso } from "../../components/format";
 import { Modal } from "../../components/Modal";
 import { Badge, Button, ErrorNote, inputClass, PasswordBadge, Tabs } from "../../components/ui";
 import { MembersPanel } from "../staff/MembersPanel";
 import { AddressFields, type AddressValue } from "./AddressFields";
+import { useBusinessTypes } from "./BusinessTypesPage";
 
 export const BUSINESSES_KEY = ["superadmin", "businesses"];
 
-interface Category {
-  id: number;
-  name_uz: string;
-}
-
-function useCategories() {
-  return useQuery({
-    queryKey: ["categories"],
-    queryFn: () => api<Category[]>("/catalog/categories"),
-    staleTime: Infinity,
-  });
-}
+// Super Admin o'chirilgan turlarni ham ko'radi (eski salonni tahrirlash uchun)
+const useCategories = useBusinessTypes;
+const typeLabel = (c: BusinessType) => (c.is_active ? c.name_uz : `${c.name_uz} (o'chirilgan)`);
 
 function slugify(name: string) {
   return name.toLowerCase().replace(/[''`]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
@@ -52,7 +44,7 @@ export function CreateBusinessDialog({ modules, onClose }: { modules: ModuleInfo
       api("/superadmin/businesses", json("POST", {
         name: name.trim(),
         slug,
-        category_id: Number(category || categories.data?.[0]?.id),
+        category_id: Number(category || categories.data?.find((c) => c.is_active)?.id),
         region: place.region || null,
         city: place.city.trim() || null,
         address: place.address.trim() || null,
@@ -90,7 +82,7 @@ export function CreateBusinessDialog({ modules, onClose }: { modules: ModuleInfo
         </label>
         <label className="block text-sm">Turi
           <select className={inputClass} value={category} onChange={(e) => setCategory(e.target.value)}>
-            {categories.data?.map((c) => <option key={c.id} value={c.id}>{c.name_uz}</option>)}
+            {categories.data?.filter((c) => c.is_active).map((c) => <option key={c.id} value={c.id}>{c.name_uz}</option>)}
           </select>
         </label>
         <AddressFields value={place} onChange={setPlace} />
@@ -121,11 +113,11 @@ export function CreateBusinessDialog({ modules, onClose }: { modules: ModuleInfo
         </fieldset>
         {place.lat === null && (
           <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
-            Xaritada joy belgilanmagan — salon mijoz ilovasida ko'rinmaydi. Keyin tahrirlashda qo'shish mumkin.
+            Xaritada salon joyini belgilang — lokatsiyasiz salon ochib bo'lmaydi (mijoz ilovasida ko'rinmaydi).
           </p>
         )}
         {create.error && <ErrorNote error={create.error} />}
-        <Button type="submit" disabled={create.isPending} className="w-full">Salonni yaratish</Button>
+        <Button type="submit" disabled={create.isPending || place.lat === null} className="w-full">Salonni yaratish</Button>
       </form>
     </Modal>
   );
@@ -203,7 +195,7 @@ function InfoTab({ business: b }: { business: BusinessAdmin }) {
       </label>
       <label className="block text-sm">Turi
         <select className={inputClass} value={category} onChange={(e) => setCategory(e.target.value)}>
-          {categories.data?.map((c) => <option key={c.id} value={c.id}>{c.name_uz}</option>)}
+          {categories.data?.map((c) => <option key={c.id} value={c.id}>{typeLabel(c)}</option>)}
         </select>
       </label>
       <AddressFields value={place} onChange={setPlace} />

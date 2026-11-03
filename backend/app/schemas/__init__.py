@@ -164,8 +164,9 @@ class BusinessCreate(BaseModel):
     region: str | None = Field(default=None, max_length=80)
     city: str | None = Field(default=None, max_length=80)
     address: str | None = Field(default=None, max_length=300)
-    lat: float | None = Field(default=None, ge=-90, le=90)
-    lng: float | None = Field(default=None, ge=-180, le=180)
+    # Lokatsiyasiz salon mijoz ilovasida ko'rinmaydi, shuning uchun yaratishda majburiy
+    lat: float = Field(ge=-90, le=90)
+    lng: float = Field(ge=-180, le=180)
     owner_phone: str
     owner_full_name: str = Field(min_length=2, max_length=120)
     modules: list[str] = ["booking"]

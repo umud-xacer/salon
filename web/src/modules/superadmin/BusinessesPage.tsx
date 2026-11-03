@@ -8,6 +8,7 @@ import type { BusinessAdmin, ModuleInfo } from "../../api/types";
 import { formatDate } from "../../components/format";
 import { Badge, Button, Card, Empty, ErrorNote, PageTitle, PasswordBadge, Spinner, Tabs } from "../../components/ui";
 import { BUSINESSES_KEY, BusinessDialog, CreateBusinessDialog, StatusBadge } from "./BusinessDialogs";
+import { useBusinessTypes } from "./BusinessTypesPage";
 import { BusinessesMap } from "./Maps";
 
 type View = "list" | "map";
@@ -24,15 +25,18 @@ export function BusinessesPage() {
   const modules = useQuery({ queryKey: ["superadmin", "modules"], queryFn: () => api<ModuleInfo[]>("/superadmin/modules") });
   const [view, setView] = useState<View>("list");
   const [text, setText] = useState("");
+  const types = useBusinessTypes();
+  const [typeId, setTypeId] = useState("");
   const [openedId, setOpenedId] = useState<number | null>(null);
   const [creating, setCreating] = useState(false);
 
   const filtered = useMemo(() => {
     const q = text.trim().toLowerCase();
     return (businesses.data ?? []).filter(
-      (b) => !q || [b.name, b.region, b.city, b.owner_name, b.owner_phone].some((v) => v?.toLowerCase().includes(q)),
+      (b) => (!typeId || b.category_id === Number(typeId))
+        && (!q || [b.name, b.region, b.city, b.owner_name, b.owner_phone].some((v) => v?.toLowerCase().includes(q))),
     );
-  }, [businesses.data, text]);
+  }, [businesses.data, text, typeId]);
 
   const opened = businesses.data?.find((b) => b.id === openedId);
   const noLocation = filtered.filter((b) => b.lat === null).length;
@@ -49,7 +53,8 @@ export function BusinessesPage() {
         }
       />
       <Tabs tabs={[{ id: "list", label: "Ro'yxat" }, { id: "map", label: "Xarita" }]} value={view} onChange={setView} />
-      <label className="relative mb-3 block">
+      <div className="mb-3 flex flex-col gap-2 sm:flex-row">
+      <label className="relative block flex-1">
         <span className="sr-only">Qidirish</span>
         <Search size={16} className="absolute top-2.5 left-3 text-muted" aria-hidden />
         <input
@@ -59,6 +64,15 @@ export function BusinessesPage() {
           onChange={(e) => setText(e.target.value)}
         />
       </label>
+      <label className="block sm:w-56">
+        <span className="sr-only">Muassasa turi</span>
+        <select className="w-full rounded-lg border border-line bg-white px-3 py-2 text-sm outline-none focus:border-primary"
+          value={typeId} onChange={(e) => setTypeId(e.target.value)}>
+          <option value="">Barcha turlar</option>
+          {types.data?.map((t) => <option key={t.id} value={t.id}>{t.name_uz}</option>)}
+        </select>
+      </label>
+      </div>
 
       {(businesses.isPending || modules.isPending) && <Spinner />}
       {(businesses.error || modules.error) && <ErrorNote error={businesses.error ?? modules.error} />}

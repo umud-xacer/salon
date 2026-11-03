@@ -38,6 +38,13 @@ def city(client, superadmin):
     client.patch(f"/api/v1/businesses/{near['id']}/members/{reception['member']['id']}", headers=h,
                  json={"is_bookable": False})
 
+    # Qolganlari: bitta xizmat (aks holda ilovada ko'rinmaydi), ish vaqti yo'q — "hozir ochiq" emas
+    for b in (mid, far, hidden, blocked):
+        hb = auth_header(b["owner"])
+        client.post(f"/api/v1/businesses/{b['id']}/services", headers=hb,
+                    json={"name": "Asosiy xizmat", "duration_min": 30, "price": 100000})
+        client.put(f"/api/v1/businesses/{b['id']}/hours", headers=hb, json={"days": []})
+
     client.patch(f"/api/v1/businesses/{hidden['id']}/profile", headers=auth_header(hidden["owner"]), json={"is_listed": False})
     client.patch(f"/api/v1/superadmin/businesses/{blocked['id']}/status", headers=auth_header(superadmin),
                  json={"status": "blocked"})

@@ -1,9 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Sparkles, Trash2 } from "lucide-react";
 import { useState, type FormEvent } from "react";
 
 import { api, json } from "../../api/client";
-import type { Membership, Service, ServiceCategory } from "../../api/types";
+import type { Membership, Service, ServiceCategory, ServicePresets } from "../../api/types";
 import { formatMoney } from "../../components/format";
 import { Modal } from "../../components/Modal";
 import { Badge, Button, Card, Empty, ErrorNote, inputClass, PageTitle, Spinner } from "../../components/ui";
@@ -39,6 +39,7 @@ export function ServicesPage({ membership }: { membership: Membership }) {
       {services.isPending && <Spinner />}
       {services.error && <ErrorNote error={services.error} />}
       {services.data?.length === 0 && <Card><Empty>Hali xizmat yo'q</Empty></Card>}
+      {services.data && <PresetsCard businessId={b} />}
       <div className="space-y-4">
         {groups.map((g) => (
           <section key={g.id ?? "other"}>
@@ -209,6 +210,60 @@ function Categories({ businessId, categories }: { businessId: number; categories
         <Button type="submit" variant="secondary" disabled={add.isPending}>Qo'shish</Button>
       </form>
       {(add.error || remove.error) && <div className="mt-2"><ErrorNote error={add.error ?? remove.error} /></div>}
+    </Card>
+  );
+}
+
+// Muassasa turiga mos tayyor xizmatlar (Super Admin belgilaydi): bir bosishda qo'shiladi
+function PresetsCard({ businessId }: { businessId: number }) {
+  const queryClient = useQueryClient();
+  const presets = useQuery({
+    queryKey: ["service-presets", businessId],
+    queryFn: () => api<ServicePresets>(`/businesses/${businessId}/service-presets`),
+  });
+  const [picked, setPicked] = useState<string[]>([]);
+  const apply = useMutation({
+    mutationFn: () => api(`/businesses/${businessId}/service-presets`, json("POST", { names: picked })),
+    onSuccess: async () => {
+      setPicked([]);
+      await queryClient.invalidateQueries({ queryKey: ["services", businessId] });
+      await queryClient.invalidateQueries({ queryKey: ["service-presets", businessId] });
+    },
+  });
+
+  const available = presets.data?.presets.filter((p) => !p.exists) ?? [];
+  if (!presets.data || available.length === 0) return null;
+  const toggle = (name: string, on: boolean) => setPicked(on ? [...picked, name] : picked.filter((x) => x !== name));
+
+  return (
+    <Card className="mb-4">
+      <h2 className="flex items-center gap-2 text-sm font-medium">
+        <Sparkles size={16} className="text-primary" aria-hidden />
+        {presets.data.category_name} uchun tavsiya xizmatlar
+      </h2>
+      <p className="mb-3 text-xs text-muted">Belgilab qo'shing. Narx va vaqtni keyin xizmatni bosib o'zgartirasiz.</p>
+      <ul className="grid gap-1 sm:grid-cols-2">
+        {available.map((p) => (
+          <li key={p.name}>
+            <label className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-page">
+              <input type="checkbox" className="size-4 accent-primary" checked={picked.includes(p.name)}
+                onChange={(e) => toggle(p.name, e.target.checked)} />
+              <span className="min-w-0 flex-1 break-words">{p.name}</span>
+              <span className="text-xs text-muted tabular-nums">{p.duration_min} daq · {formatMoney(p.price)}</span>
+            </label>
+          </li>
+        ))}
+      </ul>
+      {apply.error && <div className="mt-2"><ErrorNote error={apply.error} /></div>}
+      <div className="mt-3 flex flex-wrap gap-2">
+        <Button disabled={picked.length === 0 || apply.isPending} onClick={() => apply.mutate()}>
+          {picked.length ? `${picked.length} ta xizmatni qo'shish` : "Xizmatlarni belgilang"}
+        </Button>
+        <Button variant="secondary" disabled={apply.isPending}
+          onClick={() => setPicked(picked.length === available.length ? [] : available.map((p) => p.name))}>
+          {picked.length === available.length ? "Belgini olib tashlash" : "Hammasini belgilash"}
+        </Button>
+      </div>
     </Card>
   );
 }

@@ -33,7 +33,7 @@ export function BusinessPage({ membership }: { membership: Membership }) {
 
   return (
     <>
-      <PageTitle title="Salon" hint="Mijozlar ilovada ko'radigan ma'lumotlar" />
+      <PageTitle title="Salon" hint={`${profile.data.category_name} · mijozlar ilovada ko'radigan ma'lumotlar`} />
       <div className="space-y-4">
         <Card>
           <h2 className="mb-2 flex items-center gap-2 text-sm font-medium">
@@ -52,7 +52,8 @@ export function BusinessPage({ membership }: { membership: Membership }) {
           </ul>
         </Card>
         <ProfileCard businessId={b} profile={profile.data} />
-        <HoursCard businessId={b} hours={hours.data ?? []} />
+        <HoursCard businessId={b} hours={hours.data ?? []}
+          defaults={[profile.data.default_opens_at.slice(0, 5), profile.data.default_closes_at.slice(0, 5)]} />
         <PhotosCard businessId={b} photos={photos.data ?? []} />
       </div>
     </>
@@ -103,12 +104,14 @@ function ProfileCard({ businessId, profile }: { businessId: number; profile: Bus
 
 type Day = { open: boolean; from: string; to: string };
 
-function HoursCard({ businessId, hours }: { businessId: number; hours: BusinessHours[] }) {
+function HoursCard({ businessId, hours, defaults }: {
+  businessId: number; hours: BusinessHours[]; defaults: [string, string];
+}) {
   const queryClient = useQueryClient();
   const [days, setDays] = useState<Day[]>(() => Array.from({ length: 7 }, (_, i) => {
     const h = hours.find((x) => x.weekday === i + 1);
     return h ? { open: true, from: h.opens_at.slice(0, 5), to: h.closes_at.slice(0, 5) }
-      : { open: hours.length === 0 && i < 6, from: "09:00", to: "20:00" };
+      : { open: hours.length === 0 && i < 6, from: defaults[0], to: defaults[1] };
   }));
   const set = (i: number, patch: Partial<Day>) => setDays(days.map((d, k) => (k === i ? { ...d, ...patch } : d)));
   const invalid = days.some((d) => d.open && d.to <= d.from);
