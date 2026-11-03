@@ -78,6 +78,20 @@ export default function Businesses() {
     })().catch(() => {});                       // joylashuv yo'q bo'lsa Toshkent markazidan qidiriladi
   }, []);
 
+  // Xaritadagi "Mening joyim" tugmasi: har bosilganda joylashuv yangidan olinadi
+  const locate = async () => {
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== 'granted') {
+      setMapHint("Joylashuvga ruxsat berilmagan. Telefon sozlamalaridan yoqing");
+      return null;
+    }
+    const { coords: c } = await Location.getCurrentPositionAsync({});
+    const p = { latitude: c.latitude, longitude: c.longitude };
+    setMyPoint(p);
+    setMapHint(null);
+    return p;
+  };
+
   useFocusEffect(useCallback(() => {
     api<Notification[]>('/notifications?unread=true&limit=50')
       .then((list) => setUnread(list.length)).catch(() => {});
@@ -217,6 +231,7 @@ export default function Businesses() {
             <OsmMap
               center={coords}
               me={myPoint}
+              onLocate={locate}
               businesses={mapItems}
               onBounds={onBounds}
               onSelect={(id) => setSelected(mapItems.find((b) => b.id === id) ?? null)}

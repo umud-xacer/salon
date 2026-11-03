@@ -22,6 +22,8 @@ type Props = {
   onBounds: (bounds: Bounds) => void;
   onSelect: (id: number) => void;
   onError: () => void;
+  /** "Mening joyim" tugmasi: joylashuvni topib qaytaradi (ruxsat yo'q bo'lsa null) */
+  onLocate?: () => Promise<Point | null>;
 };
 
 const html = (lat: number, lng: number) => `<!doctype html>
@@ -36,6 +38,8 @@ const html = (lat: number, lng: number) => `<!doctype html>
   .pin.open{background:#1565F5}.pin.closed{background:#8a8fa0}
   .me{width:16px;height:16px;border-radius:50%;background:#1565F5;border:3px solid #fff;box-shadow:0 0 0 6px rgba(21,101,245,.25)}
   .leaflet-tooltip{font:600 12px system-ui,sans-serif}
+  .locate a{display:flex!important;align-items:center;justify-content:center;color:#1565F5}
+  .locate a.busy{opacity:.5}
 </style>
 <script>const post = (m) => window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify(m));</script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
@@ -45,6 +49,19 @@ const html = (lat: number, lng: number) => `<!doctype html>
   if (!window.L) post({ type: 'error' });
   const map = L.map('map', { zoomControl: false }).setView([${lat}, ${lng}], 13);
   L.control.zoom({ position: 'bottomright' }).addTo(map);
+  // Joylashuv tugmasi: +/- ustida, xuddi shu ko'rinishda
+  const Locate = L.Control.extend({ options: { position: 'bottomright' }, onAdd() {
+    const box = L.DomUtil.create('div', 'leaflet-bar leaflet-control locate');
+    const a = L.DomUtil.create('a', '', box);
+    a.href = '#'; a.title = 'Mening joyim'; a.setAttribute('role', 'button'); a.setAttribute('aria-label', 'Mening joyim');
+    a.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" '
+      + 'stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>';
+    L.DomEvent.disableClickPropagation(box);
+    L.DomEvent.on(a, 'click', (e) => { L.DomEvent.preventDefault(e); a.classList.add('busy'); post({ type: 'locate' }); });
+    window.locateDone = () => a.classList.remove('busy');
+    return box;
+  } });
+  new Locate().addTo(map);
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19, attribution: '&copy; OpenStreetMap'
   }).on('tileerror', () => post({ type: 'tileerror' })).addTo(map);
@@ -78,7 +95,7 @@ const html = (lat: number, lng: number) => `<!doctype html>
   post({ type: 'ready' });
 </script></body></html>`;
 
-export function OsmMap({ center, me, businesses, onBounds, onSelect, onError }: Props) {
+export function OsmMap({ center, me, businesses, onBounds, onSelect, onError, onLocate }: Props) {
   const web = useRef<WebView | null>(null);
   const ready = useRef(false);
   const latest = useRef({ businesses, me });
@@ -107,6 +124,16 @@ export function OsmMap({ center, me, businesses, onBounds, onSelect, onError }: 
     } else if (m.type === 'bounds') onBounds({ sw: m.sw, ne: m.ne });
     else if (m.type === 'select') onSelect(m.id);
     else if (m.type === 'error') onError();
+    else if (m.type === 'locate') {
+      (onLocate ? onLocate() : Promise.resolve(latest.current.me ?? null))
+        .then((p) => {
+          if (!p) return;
+          run(`window.setMe && window.setMe(${JSON.stringify({ lat: p.latitude, lng: p.longitude })})`);
+          run(flyToScript(p));
+        })
+        .catch(() => {})
+        .finally(() => run('window.locateDone && window.locateDone()'));
+    }
   };
 
   return (
