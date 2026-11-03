@@ -1,6 +1,7 @@
 // Panel bo'limlari ro'yxati. Yangi bo'lim qo'shish uchun shu yerga bitta yozuv kifoya:
 // menyu ham, yo'l ham, huquq tekshiruvi ham shundan quriladi.
 import {
+  BarChart3,
   CalendarDays,
   CalendarRange,
   CalendarClock,
@@ -26,6 +27,7 @@ import { DashboardPage } from "./dashboard/DashboardPage";
 import { CashPage, ExpensesPage } from "./finance/FinancePages";
 import { InventoryPage } from "./inventory/InventoryPage";
 import { MyPayrollPage, PayrollPage } from "./payroll/PayrollPage";
+import { ReportsPage } from "./reports/ReportsPage";
 import { MyBookingsPage, MySchedulePage } from "./schedule/StaffPages";
 import { ServicesPage } from "./services/ServicesPage";
 import { StaffPage } from "./staff/StaffPage";
@@ -54,6 +56,10 @@ export const SECTIONS: Section[] = [
   {
     path: "expenses", label: "Xarajatlar", icon: Receipt, panel: "admin", module: "finance",
     anyPermission: ["finance.view"], page: ExpensesPage,
+  },
+  {
+    path: "reports", label: "Hisobotlar", icon: BarChart3, panel: "admin", module: "finance",
+    anyPermission: ["finance.view"], page: ReportsPage,
   },
   {
     path: "inventory", label: "Ombor", icon: Package, panel: "admin", module: "inventory",

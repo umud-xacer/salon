@@ -182,6 +182,29 @@ export interface BusinessProfile {
   default_closes_at: string;
 }
 
+export interface ReportDay {
+  date: string;
+  income: number;
+  refunds: number;
+  expenses: number;
+  bookings: number;
+}
+
+export interface Report {
+  date_from: string;
+  date_to: string;
+  money: { income: number; refunds: number; net_income: number; expenses: number; profit: number;
+           prev_net_income: number; prev_profit: number };
+  methods: { method: string; income: number; refunds: number }[];
+  expenses_by_category: { name: string; amount: number }[];
+  bookings: { total: number; by_status: Record<string, number>; by_source: Record<string, number>;
+              completed: number; completed_revenue: number; avg_check: number; cancel_rate: number };
+  services: { name: string; count: number; revenue: number }[];
+  staff: { member_id: number; name: string; bookings: number; completed: number; no_show: number; revenue: number }[];
+  clients: { total: number; new: number; returning: number };
+  daily: ReportDay[];
+}
+
 export interface ServicePreset {
   name: string;
   duration_min: number;

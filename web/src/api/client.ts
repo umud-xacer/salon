@@ -95,7 +95,7 @@ async function send(path: string, init: RequestInit): Promise<Response> {
   return fetch(BASE + path, { ...init, headers });
 }
 
-export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
+async function authed(path: string, init: RequestInit): Promise<Response> {
   if (!accessToken && readRefresh()) await refreshOnce();
   let res = await send(path, init);
   if (res.status === 401 && (await refreshOnce())) res = await send(path, init);
@@ -104,8 +104,26 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
     onSessionLost();
   }
   if (!res.ok) throw await parseError(res);
+  return res;
+}
+
+export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const res = await authed(path, init);
   if (res.status === 204) return undefined as T;
   return res.json();
+}
+
+/** Fayl (masalan, Excel hisobot) — token bilan olib, brauzerda saqlash oynasini ochadi. */
+export async function downloadFile(path: string, filename: string): Promise<void> {
+  const blob = await (await authed(path, {})).blob();
+  const href = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = href;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(href), 1000);
 }
 
 export const json = (method: string, body: unknown): RequestInit => ({ method, body: JSON.stringify(body) });
