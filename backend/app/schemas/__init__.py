@@ -203,6 +203,10 @@ class StatusIn(BaseModel):
     status: Literal["active", "blocked"]
 
 
+class BusinessDeleteIn(BaseModel):
+    confirm_name: str = Field(max_length=120)       # tasodifan o'chirmaslik uchun nomini qayta yozadi
+
+
 class BusinessStatusIn(BaseModel):
     status: Literal["pending", "active", "blocked"]
 

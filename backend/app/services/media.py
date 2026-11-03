@@ -54,6 +54,15 @@ def save_business_photo(business_id: int, data: bytes) -> str:
     return f"{get_settings().media_base_url.rstrip('/')}/business/{business_id}/{name}"
 
 
+def delete_business_folder(business_id: int) -> None:
+    """Muassasa o'chirilganda uning barcha rasmlari."""
+    import shutil
+
+    folder = (_root() / "business" / str(int(business_id))).resolve()
+    if folder.parent == (_root() / "business").resolve() and folder.is_dir():
+        shutil.rmtree(folder, ignore_errors=True)
+
+
 def delete_by_url(url: str) -> None:
     """Faqat o'zimiz saqlagan fayl o'chiriladi, yo'l papkadan tashqariga chiqa olmaydi."""
     base = get_settings().media_base_url.rstrip("/") + "/"

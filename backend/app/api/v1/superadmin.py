@@ -12,11 +12,11 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, require_superadmin
 from app.models import Business, BusinessMember, BusinessModule, User
-from app.schemas import (BusinessAdminOut, BusinessCreate, BusinessOut, BusinessStatusIn, BusinessUpdate, ModuleOut,
+from app.schemas import (BusinessAdminOut, BusinessCreate, BusinessDeleteIn, BusinessOut, BusinessStatusIn, BusinessUpdate, ModuleOut,
                          ModuleToggle, StatusIn, SubscriptionRenew, SubscriptionUpdate)
 from app.schemas.catalog import BusinessTypeCreate, BusinessTypeIn, BusinessTypeOut, BusinessTypeUpdate
 from app.api.v1.members import assign_password
-from app.services import audit
+from app.services import audit, media
 
 router = APIRouter(prefix="/superadmin", tags=["superadmin"], dependencies=[Depends(require_superadmin)])
 
@@ -116,6 +116,24 @@ def update_business(body: BusinessUpdate, business_id: int = Path(ge=1), db: Ses
     audit.log(db, business_id, "update", "business", business_id, body.model_dump(exclude_unset=True))
     db.commit()
     return _read_business(db, business_id)
+
+
+@router.delete("/businesses/{business_id}", status_code=204)
+def delete_business(body: BusinessDeleteIn, business_id: int = Path(ge=1), db: Session = Depends(get_db)):
+    """Muassasani butunlay o'chiradi: bronlar, to'lovlar, xodim a'zoliklari, ombor, rasmlar.
+
+    Odamlarning hisoblari (direktor, xodim, mijoz) o'chmaydi — ular boshqa joyda ham bo'lishi mumkin.
+    Ortga qaytarib bo'lmaydi (faqat server zaxira nusxasidan).
+    """
+    biz = _business_or_404(db, business_id)
+    if body.confirm_name.strip() != biz.name.strip():
+        raise HTTPException(422, detail={"code": "confirm_mismatch", "message": "Nom mos kelmadi — o'chirilmadi"})
+    info = {"name": biz.name, "slug": biz.slug, "category_id": biz.category_id}
+    db.execute(text("SELECT app.delete_business(:id)"), {"id": business_id})
+    # Jurnal biznesga bog'lanmaydi (u yo'q), Super Admin yozuvi sifatida qoladi
+    audit.log(db, None, "delete", "business", business_id, info)
+    db.commit()
+    media.delete_business_folder(business_id)
 
 
 @router.patch("/businesses/{business_id}/status", status_code=204)

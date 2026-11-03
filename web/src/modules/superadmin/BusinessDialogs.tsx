@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Trash2 } from "lucide-react";
 import { useState, type FormEvent } from "react";
 
 import { api, json } from "../../api/client";
@@ -250,6 +251,7 @@ function SubscriptionTab({ business: b }: { business: BusinessAdmin }) {
   const refresh = useRefresh();
   const [date, setDate] = useState(b.subscription_ends_at ? dayOf(b.subscription_ends_at) : "");
   const [confirming, setConfirming] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const base = `/superadmin/businesses/${b.id}`;
 
   const renew = useMutation({
@@ -314,9 +316,49 @@ function SubscriptionTab({ business: b }: { business: BusinessAdmin }) {
         ) : (
           <Button variant="danger" onClick={() => block.mutate("blocked")}>Bloklash</Button>
         )}
+        <Button variant="danger" className="flex items-center gap-1" onClick={() => setDeleting(true)}>
+          <Trash2 size={15} aria-hidden /> O'chirish
+        </Button>
       </div>
       <p className="text-xs text-muted">To'xtatish yoki bloklash ma'lumotni o'chirmaydi. Blokni to'lov ochmaydi.</p>
+      {deleting && <DeleteBox business={b} onCancel={() => setDeleting(false)} />}
       {error && <ErrorNote error={error} />}
+    </div>
+  );
+}
+
+// O'chirish: ortga qaytarib bo'lmaydi, shuning uchun nomini qayta yozib tasdiqlash
+function DeleteBox({ business: b, onCancel }: { business: BusinessAdmin; onCancel: () => void }) {
+  const refresh = useRefresh();
+  const [typed, setTyped] = useState("");
+  const remove = useMutation({
+    mutationFn: () => api(`/superadmin/businesses/${b.id}`, json("DELETE", { confirm_name: typed })),
+    onSuccess: refresh,                 // ro'yxatdan yo'qoladi va oyna o'zi yopiladi
+  });
+  const match = typed.trim() === b.name.trim();
+
+  return (
+    <div role="alertdialog" aria-labelledby="delete-title"
+      className="space-y-3 rounded-xl border border-danger/40 bg-danger/5 p-4">
+      <p id="delete-title" className="font-medium text-danger">
+        Haqiqatan ham ushbu muassasani o'chirmoqchimisiz? Bu amalni ortga qaytarib bo'lmaydi.
+      </p>
+      <p className="text-muted">
+        Butunlay o'chadi: bronlar, to'lovlar, kassa va xarajatlar, ombor, oyliklar, xizmatlar, rasmlar, xodimlarning
+        shu salondagi a'zoligi ({b.staff_count} ta). Direktor va xodimlarning shaxsiy hisoblari qoladi.
+        Hisobot kerak bo'lsa, avval direktor panelidan Excel'ga yuklab oling.
+      </p>
+      <label className="block">Tasdiqlash uchun nomini yozing: <b className="select-all">{b.name}</b>
+        <input className={inputClass} value={typed} autoComplete="off" data-autofocus
+          onChange={(e) => { setTyped(e.target.value); remove.reset(); }} />
+      </label>
+      {remove.error && <ErrorNote error={remove.error} />}
+      <div className="flex flex-wrap gap-2">
+        <Button variant="danger" disabled={!match || remove.isPending} onClick={() => remove.mutate()}>
+          {remove.isPending ? "O'chirilmoqda..." : "Ha, butunlay o'chirish"}
+        </Button>
+        <Button variant="secondary" disabled={remove.isPending} onClick={onCancel}>Bekor qilish</Button>
+      </div>
     </div>
   );
 }
