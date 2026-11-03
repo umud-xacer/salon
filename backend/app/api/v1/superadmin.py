@@ -24,6 +24,9 @@ _BUSINESS_SELECT = """
                 ELSE 'own' END AS owner_password_status,
            u.password_changed_at AS owner_password_changed_at,
            (SELECT count(*) FROM business_members m WHERE m.business_id = b.id AND m.is_active) AS staff_count,
+           (SELECT count(*) FROM services s WHERE s.business_id = b.id AND s.is_active) AS service_count,
+           (SELECT count(*) FROM business_hours h WHERE h.business_id = b.id) AS hours_count,
+           (SELECT count(*) FROM business_photos p WHERE p.business_id = b.id) AS photo_count,
            coalesce((SELECT array_agg(x.code ORDER BY x.code) FROM modules x
                       WHERE app.module_enabled(b.id, x.code)), '{}') AS modules
       FROM businesses b

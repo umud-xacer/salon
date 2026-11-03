@@ -4,7 +4,7 @@ Huquqlar: profil/soat/rasm — 'business.manage'; xizmatlar — 'services.manage
 Bazada ham xuddi shu qoida (RLS); status/reyting/egasi kabi maydonlarni triggerlar himoya qiladi.
 Har bir o'zgarish audit_logs ga yoziladi.
 """
-from fastapi import APIRouter, Depends, HTTPException, Path
+from fastapi import APIRouter, Depends, File, HTTPException, Path, UploadFile
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -12,7 +12,7 @@ from app.api.deps import get_db, require_permission
 from app.schemas.catalog import (HoursOut, HoursReplace, PhotoIn, PhotoOut, ProfileOut, ProfileUpdate,
                                  ServiceAdminOut, ServiceCategoryIn, ServiceCategoryOut, ServiceCreate,
                                  ServiceUpdate)
-from app.services import audit
+from app.services import audit, media
 
 router = APIRouter(prefix="/businesses/{business_id}", tags=["business-admin"])
 
@@ -93,14 +93,39 @@ def add_photo(body: PhotoIn, business_id: int = Depends(_business), db: Session 
     return PhotoOut(**row)
 
 
+@router.post("/photos/upload", response_model=PhotoOut, status_code=201)
+async def upload_photo(file: UploadFile = File(...), business_id: int = Depends(_business),
+                       db: Session = Depends(get_db)):
+    """Telefondan yoki kompyuterdan rasm. 8 MB gacha, JPG, PNG yoki WEBP. Server qayta siqib saqlaydi."""
+    data = await file.read(media.MAX_BYTES + 1)
+    try:
+        url = media.save_business_photo(business_id, data)
+    except media.BadImage as e:
+        raise HTTPException(422, detail={"code": "bad_image", "message": str(e)})
+    try:
+        order = db.scalar(text("SELECT coalesce(max(sort_order), -1) + 1 FROM business_photos WHERE business_id = :b"),
+                          {"b": business_id})
+        row = db.execute(text("INSERT INTO business_photos (business_id, url, sort_order) VALUES (:b, :u, :s) "
+                              "RETURNING id, url, sort_order"), {"b": business_id, "u": url, "s": min(order, 100)}
+                         ).mappings().one()
+        audit.log(db, business_id, "upload", "business_photo", row["id"], {"url": url})
+        db.commit()
+    except Exception:
+        db.rollback()
+        media.delete_by_url(url)               # bazaga yozilmagan fayl diskda qolmasin
+        raise
+    return PhotoOut(**row)
+
+
 @router.delete("/photos/{photo_id}", status_code=204)
 def delete_photo(photo_id: int = Path(ge=1), business_id: int = Depends(_business), db: Session = Depends(get_db)):
-    deleted = db.execute(text("DELETE FROM business_photos WHERE id = :id AND business_id = :b"),
-                         {"id": photo_id, "b": business_id}).rowcount
-    if not deleted:
+    url = db.scalar(text("DELETE FROM business_photos WHERE id = :id AND business_id = :b RETURNING url"),
+                    {"id": photo_id, "b": business_id})
+    if url is None:
         raise _NOT_FOUND
     audit.log(db, business_id, "delete", "business_photo", photo_id)
     db.commit()
+    media.delete_by_url(url)
 
 
 # ─── Xizmat kategoriyalari ──────────────────────────────────────────────────

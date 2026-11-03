@@ -12,7 +12,7 @@ COPY migrations ./migrations
 COPY sql ./sql
 
 # Ilova root sifatida ishlamaydi
-RUN useradd --system --no-create-home chronix
+RUN useradd --system --no-create-home chronix && mkdir -p /media && chown chronix /media
 USER chronix
 
 EXPOSE 8000

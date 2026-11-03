@@ -119,6 +119,11 @@ export function CreateBusinessDialog({ modules, onClose }: { modules: ModuleInfo
             ))}
           </div>
         </fieldset>
+        {place.lat === null && (
+          <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
+            Xaritada joy belgilanmagan — salon mijoz ilovasida ko'rinmaydi. Keyin tahrirlashda qo'shish mumkin.
+          </p>
+        )}
         {create.error && <ErrorNote error={create.error} />}
         <Button type="submit" disabled={create.isPending} className="w-full">Salonni yaratish</Button>
       </form>

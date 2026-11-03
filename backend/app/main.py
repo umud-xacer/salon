@@ -98,6 +98,14 @@ app.include_router(finance.router, prefix="/api/v1")
 app.include_router(inventory.router, prefix="/api/v1")
 app.include_router(payroll.router, prefix="/api/v1")
 app.include_router(me.router, prefix="/api/v1")
+
+# Prod'da rasmlarni Caddy beradi. Dev'da shu yerdan
+if settings.env != "prod":
+    from pathlib import Path
+
+    from fastapi.staticfiles import StaticFiles
+    Path(settings.media_dir).mkdir(parents=True, exist_ok=True)
+    app.mount("/media", StaticFiles(directory=settings.media_dir), name="media")
 app.include_router(reminders.router)
 
 

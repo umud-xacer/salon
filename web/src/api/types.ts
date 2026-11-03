@@ -166,6 +166,31 @@ export interface ReverseAddress {
   display: string;
 }
 
+export interface BusinessProfile {
+  id: number;
+  slug: string;
+  name: string;
+  description: string | null;
+  phone: string | null;
+  city: string | null;
+  address: string | null;
+  lat: number | null;
+  lng: number | null;
+  is_listed: boolean;
+}
+
+export interface BusinessHours {
+  weekday: number;
+  opens_at: string;
+  closes_at: string;
+}
+
+export interface BusinessPhoto {
+  id: number;
+  url: string;
+  sort_order: number;
+}
+
 export interface ModuleInfo {
   code: string;
   name: string;
@@ -190,6 +215,9 @@ export interface BusinessAdmin {
   owner_password_status: PasswordStatus | null;
   owner_password_changed_at: string | null;
   staff_count: number;
+  service_count: number;
+  hours_count: number;
+  photo_count: number;
   modules: string[];
 }
 

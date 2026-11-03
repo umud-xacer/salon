@@ -25,6 +25,8 @@ os.environ.update({
     "MIGRATION_DATABASE_URL": _admin.set(database=DB_NAME).render_as_string(hide_password=False),
     "JWT_SECRET": "test-secret-0123456789-abcdefghijklmnop",
     "SMS_PROVIDER": "console",
+    "MEDIA_DIR": str(BACKEND / ".pytest_media"),
+    "MEDIA_BASE_URL": "https://test.chronix.local/media",
 })
 
 

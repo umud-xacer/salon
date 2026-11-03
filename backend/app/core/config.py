@@ -30,6 +30,14 @@ class Settings(BaseSettings):
     login_lock_minutes: int = 15
 
     cors_origins: list[str] = []
+
+    # Yuklangan rasmlar: papka va ochiq manzil (prod'da Caddy /media ni beradi, https bo'lishi shart)
+    media_dir: str = "media"
+    media_base_url: str = "https://127.0.0.1:8002/media"
+
+    # Ilovadagi Qo'llab-quvvatlash bo'limi. Bo'sh bo'lsa, ilova kontaktni ko'rsatmaydi
+    support_phone: str | None = None
+    support_telegram: str | None = None
     dev_otp_in_response: bool = True                      # ochiq havolada sinash uchun false qilinadi
     sms_provider: Literal["console", "eskiz"] = "console"
     eskiz_email: str | None = None

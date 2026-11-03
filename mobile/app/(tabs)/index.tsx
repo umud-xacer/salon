@@ -12,7 +12,7 @@ import { distanceText, SalonCard } from '../../src/SalonCard';
 import {
   BottomSheet, Button, Card, Chip, colors, Empty, EmptyState, ErrorText, Icon, IconName, money, radius, shadow, shared, type,
 } from '../../src/ui';
-import { Bounds, hasMapKey, YandexMap } from '../../src/YandexMap';
+import { Bounds, OsmMap } from '../../src/OsmMap';
 
 const TASHKENT = { latitude: 41.3111, longitude: 69.2797 };
 const MAX_BOUNDS_DEG = 1;          // backend chegarasi: bundan keng oynada so'rov rad etiladi
@@ -50,6 +50,7 @@ export default function Businesses() {
   const [category, setCategory] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [coords, setCoords] = useState(TASHKENT);
+  const [myPoint, setMyPoint] = useState<{ latitude: number; longitude: number } | null>(null);
   const [place, setPlace] = useState('Toshkent');
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [draft, setDraft] = useState(DEFAULT_FILTERS);
@@ -70,6 +71,7 @@ export default function Businesses() {
       if (status !== 'granted') return;
       const { coords: c } = await Location.getCurrentPositionAsync({});
       setCoords({ latitude: c.latitude, longitude: c.longitude });
+      setMyPoint({ latitude: c.latitude, longitude: c.longitude });
       const found = await api<{ address: string; district: string | null; region: string | null }>(
         `/geo/address?lat=${c.latitude}&lng=${c.longitude}`).catch(() => null);
       setPlace(found?.district ?? found?.region ?? 'Joylashuvingiz');
@@ -211,20 +213,16 @@ export default function Businesses() {
         <StatusBar barStyle="dark-content" />
         {header}
         <View style={{ flex: 1, padding: 16, paddingTop: 0 }}>
-          {!hasMapKey ? (
-            <EmptyState icon="map-outline" title="Xarita hali ulanmagan" text="Salonlarni ro'yxatdan ko'rishingiz mumkin"
-              action="Ro'yxatga qaytish" onAction={() => setMapMode(false)} />
-          ) : (
-            <View style={{ flex: 1, borderRadius: radius.lg, overflow: 'hidden' }}>
-              <YandexMap
-                center={coords}
-                businesses={mapItems}
-                onBounds={onBounds}
-                onSelect={(id) => setSelected(mapItems.find((b) => b.id === id) ?? null)}
-                onError={() => setMapHint('Xaritani yuklab bo\'lmadi')}
-              />
-            </View>
-          )}
+          <View style={{ flex: 1, borderRadius: radius.lg, overflow: 'hidden' }}>
+            <OsmMap
+              center={coords}
+              me={myPoint}
+              businesses={mapItems}
+              onBounds={onBounds}
+              onSelect={(id) => setSelected(mapItems.find((b) => b.id === id) ?? null)}
+              onError={() => setMapHint("Xaritani yuklab bo'lmadi. Internetni tekshiring")}
+            />
+          </View>
           <ErrorText text={mapHint} />
           {selected && (
             <View style={{ marginTop: 10 }}>

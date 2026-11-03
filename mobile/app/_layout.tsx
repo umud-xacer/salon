@@ -80,6 +80,7 @@ function Navigator() {
       <Stack.Screen name="profile-edit" options={{ title: 'Shaxsiy ma\'lumotlar' }} />
       <Stack.Screen name="favorites" options={{ title: 'Sevimli salonlar' }} />
       <Stack.Screen name="settings" options={{ title: 'Sozlamalar' }} />
+      <Stack.Screen name="change-password" options={{ title: 'Parolni almashtirish' }} />
       <Stack.Screen name="business/[slug]" options={{ title: 'Salon' }} />
       <Stack.Screen name="book" options={{ title: 'Vaqt tanlash' }} />
       <Stack.Screen name="alarm" options={{ headerShown: false, presentation: 'fullScreenModal', gestureEnabled: false }} />

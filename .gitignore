@@ -35,3 +35,5 @@ deploy/web-dist/
 deploy/web-dist.new/
 deploy/.env.bak
 deploy/sites/
+backend/media/
+backend/.pytest_media/

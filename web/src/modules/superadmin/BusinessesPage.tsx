@@ -6,11 +6,18 @@ import { useMemo, useState } from "react";
 import { api } from "../../api/client";
 import type { BusinessAdmin, ModuleInfo } from "../../api/types";
 import { formatDate } from "../../components/format";
-import { Button, Card, Empty, ErrorNote, PageTitle, PasswordBadge, Spinner, Tabs } from "../../components/ui";
+import { Badge, Button, Card, Empty, ErrorNote, PageTitle, PasswordBadge, Spinner, Tabs } from "../../components/ui";
 import { BUSINESSES_KEY, BusinessDialog, CreateBusinessDialog, StatusBadge } from "./BusinessDialogs";
 import { BusinessesMap } from "./Maps";
 
 type View = "list" | "map";
+
+// Mijoz ilovasida ko'rinishi va bron qabul qilishi uchun yetishmayotganlar
+const missingFor = (b: BusinessAdmin) => [
+  b.lat === null ? "lokatsiya" : null,
+  b.service_count === 0 ? "xizmat" : null,
+  b.hours_count === 0 ? "ish vaqti" : null,
+].filter((x): x is string => x !== null);
 
 export function BusinessesPage() {
   const businesses = useQuery({ queryKey: BUSINESSES_KEY, queryFn: () => api<BusinessAdmin[]>("/superadmin/businesses") });
@@ -83,6 +90,11 @@ export function BusinessesPage() {
                       {b.owner_name ?? "Direktor yo'q"}{b.owner_phone ? ` · ${b.owner_phone}` : ""}
                     </span>
                   </span>
+                  {missingFor(b).length > 0 && (
+                    <span title={`Ilovada ko'rinishi uchun: ${missingFor(b).join(", ")}`}>
+                      <Badge tone="amber">Tayyor emas: {missingFor(b).join(", ")}</Badge>
+                    </span>
+                  )}
                   <PasswordBadge status={b.owner_password_status} />
                   <span className="text-muted">{b.staff_count} xodim</span>
                   <span className="sm:w-32 sm:text-right">

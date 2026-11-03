@@ -1,6 +1,19 @@
 {$API_DOMAIN} {$API_ALIAS:} {
 	encode gzip
-	reverse_proxy api:8000
+
+	# Yuklangan rasmlar: faqat fayl beriladi, katalog ro'yxati yo'q
+	handle_path /media/* {
+		root * /srv/media
+		header {
+			X-Content-Type-Options nosniff
+			Cache-Control "public, max-age=31536000, immutable"
+		}
+		file_server
+	}
+
+	handle {
+		reverse_proxy api:8000
+	}
 }
 
 # Veb-panel: API shu domen ostida, shuning uchun CORS kerak emas

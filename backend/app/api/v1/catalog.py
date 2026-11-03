@@ -11,6 +11,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_public_db
+from app.core.config import get_settings
 from app.schemas.catalog import (BusinessCard, BusinessDetail, CategoryOut, HoursOut, NearbyOut,
                                  ServiceGroupOut, ServiceOut, StaffOut)
 from app.schemas.schedule import SlotsOut
@@ -62,6 +63,13 @@ def _filters(category: str | None, q: str | None, params: dict) -> str:
         sql += " AND (b.name ILIKE :q OR EXISTS (SELECT 1 FROM services s WHERE s.business_id = b.id"
         sql += " AND s.is_active AND s.name ILIKE :q))"
     return sql
+
+
+@router.get("/app-info")
+def app_info():
+    """Ilova uchun ochiq sozlamalar: qo'llab-quvvatlash kontakti."""
+    s = get_settings()
+    return {"support_phone": s.support_phone, "support_telegram": s.support_telegram}
 
 
 @router.get("/categories", response_model=list[CategoryOut])

@@ -89,7 +89,8 @@ function refreshOnce(): Promise<boolean> {
 
 async function send(path: string, init: RequestInit): Promise<Response> {
   const headers = new Headers(init.headers);
-  if (init.body) headers.set("Content-Type", "application/json");
+  // FormData chegarasini brauzer o'zi qo'yadi
+  if (typeof init.body === "string") headers.set("Content-Type", "application/json");
   if (accessToken) headers.set("Authorization", `Bearer ${accessToken}`);
   return fetch(BASE + path, { ...init, headers });
 }
@@ -108,6 +109,12 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
 }
 
 export const json = (method: string, body: unknown): RequestInit => ({ method, body: JSON.stringify(body) });
+
+export function uploadFile<T>(path: string, file: File): Promise<T> {
+  const form = new FormData();
+  form.append("file", file);
+  return api<T>(path, { method: "POST", body: form });
+}
 
 async function publicPost<T>(path: string, body: unknown): Promise<T> {
   const res = await fetch(BASE + path, {

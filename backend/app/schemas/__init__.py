@@ -248,6 +248,9 @@ class BusinessAdminOut(BaseModel):
     owner_password_status: Literal["none", "temporary", "own"] | None
     owner_password_changed_at: datetime | None
     staff_count: int
+    service_count: int = 0
+    hours_count: int = 0
+    photo_count: int = 0
     modules: list[str]
 
 

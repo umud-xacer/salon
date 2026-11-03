@@ -10,6 +10,7 @@ import {
   Package,
   Receipt,
   Scissors,
+  Store,
   Users,
   Wallet,
   WalletCards,
@@ -18,6 +19,7 @@ import {
 import type { ComponentType } from "react";
 
 import type { Membership, Panel } from "../api/types";
+import { BusinessPage } from "./business/BusinessPage";
 import { CalendarPage } from "./calendar/CalendarPage";
 import { ClientsPage } from "./clients/ClientsPage";
 import { DashboardPage } from "./dashboard/DashboardPage";
@@ -74,6 +76,7 @@ export const SECTIONS: Section[] = [
     path: "services", label: "Xizmatlar", icon: Scissors, panel: "admin",
     anyPermission: ["services.manage"], page: ServicesPage,
   },
+  { path: "business", label: "Salon", icon: Store, panel: "admin", anyPermission: ["business.manage"], page: BusinessPage },
   { path: "bookings", label: "Mening bronlarim", icon: CalendarDays, panel: "staff", page: MyBookingsPage },
   { path: "schedule", label: "Ish jadvalim", icon: Clock3, panel: "staff", page: MySchedulePage },
   { path: "my-payroll", label: "Oyliklarim", icon: WalletCards, panel: "staff", module: "payroll", page: MyPayrollPage },
