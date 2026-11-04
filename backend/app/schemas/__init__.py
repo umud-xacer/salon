@@ -259,7 +259,7 @@ class BusinessAdminOut(BaseModel):
     owner_name: str | None
     owner_phone: str | None
     owner_member_id: int | None = None
-    owner_password_status: Literal["none", "temporary", "own"] | None
+    owner_password_status: Literal["none", "issued", "temporary", "own"] | None
     owner_password_changed_at: datetime | None
     staff_count: int
     service_count: int = 0
@@ -309,14 +309,14 @@ class MemberOut(BaseModel):
     is_active: bool
     is_bookable: bool
     password_block: str | None                            # None: joriy foydalanuvchi parolni o'rnata oladi
-    password_status: Literal["none", "temporary", "own"]  # parolning o'zi hech kimga ko'rinmaydi
+    password_status: Literal["none", "issued", "temporary", "own"]  # parolning o'zi hech kimga ko'rinmaydi
     password_changed_at: datetime | None
 
 
 class IssuedPasswordOut(BaseModel):
     """Rahbar bergan parol: odam o'z parolini qo'ymaguncha ko'rinadi, keyin None."""
     password: str | None
-    status: Literal["none", "temporary", "own"]
+    status: Literal["none", "issued", "temporary", "own"]
     changed_at: datetime | None
 
 

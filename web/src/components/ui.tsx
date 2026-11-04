@@ -82,6 +82,7 @@ export function Badge({ tone, children }: { tone: "green" | "red" | "amber" | "g
 
 /** Parolning o'zi hech kimga ko'rinmaydi, faqat holati */
 export function PasswordBadge({ status }: { status: PasswordStatus | null }) {
+  if (status === "issued") return <Badge tone="green">Parol berilgan</Badge>;
   if (status === "temporary") return <Badge tone="amber">Vaqtinchalik parol</Badge>;
   if (status === "own") return <Badge tone="green">O'z paroli</Badge>;
   return <Badge tone="gray">Parol yo'q</Badge>;

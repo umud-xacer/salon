@@ -5,7 +5,7 @@ from sqlalchemy.exc import DBAPIError
 
 from app.core import secretbox
 from app.db.session import api_session
-from tests.conftest import add_member, auth_header, create_business, new_phone
+from tests.conftest import add_member, auth_header, create_business, new_phone, otp_login
 
 SA_CREATE = "/api/v1/superadmin/businesses"
 
@@ -30,28 +30,26 @@ def create_with_owner_password(client, superadmin, password="Boshlang1ch2026"):
 def test_superadmin_sets_owner_password_on_create_and_sees_it(client, superadmin):
     biz, phone = create_with_owner_password(client, superadmin)
     sa = auth_header(superadmin)
-    r = client.get(members_url(biz["id"], f"/{biz['owner_member_id']}/password"), headers=sa)
+    view = members_url(biz["id"], f"/{biz['owner_member_id']}/password")
+    r = client.get(view, headers=sa)
     assert r.status_code == 200, r.text
-    assert r.json()["password"] == "Boshlang1ch2026" and r.json()["status"] == "temporary"
+    assert r.json()["password"] == "Boshlang1ch2026" and r.json()["status"] == "issued"
 
-    # Direktor shu parol bilan kiradi va o'z parolini qo'yadi
-    r = login(client, phone, "Boshlang1ch2026")
-    assert r.status_code == 200, r.text
-    owner = r.json()
-    assert owner["user"]["must_change_password"] is True
+    owner = login(client, phone, "Boshlang1ch2026").json()
+    assert owner["user"]["must_change_password"] is False
+    # Direktor o'zi almashtira olmaydi — faqat Super Admin
     r = client.post("/api/v1/auth/password", headers=auth_header(owner),
                     json={"old_password": "Boshlang1ch2026", "new_password": "OzimningParolim77"})
-    assert r.status_code == 204, r.text
+    assert r.status_code == 403
+    assert client.post(view, headers=sa, json={"new_password": "YangiDirektor88"}).status_code == 204
+    assert client.get(view, headers=sa).json()["password"] == "YangiDirektor88"
+    assert login(client, phone, "YangiDirektor88").status_code == 200
 
-    r = client.get(members_url(biz["id"], f"/{biz['owner_member_id']}/password"), headers=sa).json()
-    assert r["password"] is None and r["status"] == "own"          # o'z paroli hech kimga ko'rinmaydi
 
-
-def test_create_does_not_overwrite_existing_own_password(client, superadmin):
-    _, phone = create_with_owner_password(client, superadmin)
-    owner = login(client, phone, "Boshlang1ch2026").json()
-    client.post("/api/v1/auth/password", headers=auth_header(owner),
-                json={"old_password": "Boshlang1ch2026", "new_password": "OzimningParolim77"})
+def test_create_does_not_overwrite_customer_own_password(client, superadmin):
+    phone = new_phone()
+    customer = otp_login(client, phone)
+    client.post("/api/v1/auth/password", headers=auth_header(customer), json={"new_password": "OzimningParolim77"})
     r = client.post(SA_CREATE, headers=auth_header(superadmin), json={
         "name": "Ikkinchi", "slug": f"ikki-{phone[-7:]}", "category_id": 1, "lat": 41.3, "lng": 69.2,
         "owner_phone": phone, "owner_full_name": "Direktor Bir", "owner_password": "Boshqa2026parol"})
@@ -79,20 +77,15 @@ def test_director_adds_staff_with_password_and_resets(client, biz):
         "phone": phone, "full_name": "Usta Bir", "role": "staff", "password": "UstaParol2026"})
     assert r.status_code == 201, r.text
     member = r.json()
-    assert member["password_status"] == "temporary"
+    assert member["password_status"] == "issued"
     view = members_url(biz["id"], f"/{member['id']}/password")
     assert client.get(view, headers=h).json()["password"] == "UstaParol2026"
+    assert login(client, phone, "UstaParol2026").status_code == 200
 
-    staff = login(client, phone, "UstaParol2026").json()
-    client.post("/api/v1/auth/password", headers=auth_header(staff),
-                json={"old_password": "UstaParol2026", "new_password": "UstaningOzi99"})
-    assert client.get(view, headers=h).json() == {"password": None, "status": "own",
-                                                  "changed_at": client.get(view, headers=h).json()["changed_at"]}
-
-    # Rahbar yangi parol beradi — yana ko'rinadi, eski parol ishlamaydi
+    # Rahbar yangi parol beradi — darhol ko'rinadi, eski parol ishlamaydi
     assert client.post(view, headers=h, json={"new_password": "YangiBerilgan55"}).status_code == 204
     assert client.get(view, headers=h).json()["password"] == "YangiBerilgan55"
-    assert login(client, phone, "UstaningOzi99").status_code == 401
+    assert login(client, phone, "UstaParol2026").status_code == 401
 
 
 def test_who_can_view(client, superadmin, biz):

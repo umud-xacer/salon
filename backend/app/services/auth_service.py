@@ -4,7 +4,7 @@ import uuid
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import select, update
+from sqlalchemy import select, text, update
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import Session
 
@@ -194,8 +194,18 @@ def logout_all(db: Session, user_id: int) -> None:
     db.commit()
 
 
+_MANAGED = "Parolni faqat rahbaringiz o'zgartira oladi. Unga murojaat qiling"
+
+
+def _managed(db: Session, user_id: int) -> bool:
+    """Salon xodimi yoki direktori: paroli rahbar tomonidan beriladi (sql/022_managed_passwords.sql)."""
+    return bool(db.scalar(text("SELECT app.password_managed(:u)"), {"u": user_id}))
+
+
 def set_password(db: Session, user_id: int, old_password: str | None, new_password: str) -> None:
     security.validate_password_strength(new_password)
+    if _managed(db, user_id):
+        raise Forbidden("password_managed", _MANAGED)
     user = db.get(User, user_id, with_for_update=True)
     if user.password_hash is not None and not security.verify_password(old_password or "", user.password_hash):
         raise AuthError("invalid_credentials", "Joriy parol noto'g'ri")
@@ -216,6 +226,8 @@ def request_password_reset(db: Session, phone: str, ip: str | None) -> str | Non
     user = db.scalars(select(User).where(User.phone == phone)).first()
     if user is None or user.password_hash is None or user.is_superadmin or user.status != "active":
         return None
+    if _managed(db, user.id):
+        raise Forbidden("password_managed", _MANAGED)
     code = _create_otp(db, phone, ip)
     _deliver(sms.send_password_reset, phone, code)
     return code
@@ -226,6 +238,8 @@ def reset_password(db: Session, phone: str, code: str, new_password: str) -> Non
     user = db.scalars(select(User).where(User.phone == phone).with_for_update()).first()
     if user is None or user.password_hash is None or user.is_superadmin:
         raise AuthError("otp_invalid", "Kod noto'g'ri yoki muddati o'tgan")
+    if _managed(db, user.id):
+        raise Forbidden("password_managed", _MANAGED)
     _ensure_can_login(user)
     user.password_hash = security.hash_password(new_password)
     user.must_change_password = False

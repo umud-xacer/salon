@@ -55,7 +55,9 @@ export default function Profile() {
       <View style={styles.group}>
         <Row icon="create-outline" label="Shaxsiy ma'lumotlar" onPress={() => router.push('/profile-edit')} />
         <Row icon="heart-outline" label="Sevimli salonlar" onPress={() => router.push('/favorites')} />
-        <Row icon="lock-closed-outline" label="Parolni almashtirish" onPress={() => router.push('/change-password')} />
+        {me?.workspace !== 'business' && (
+          <Row icon="lock-closed-outline" label="Parolni almashtirish" onPress={() => router.push('/change-password')} />
+        )}
         <Row icon="settings-outline" label="Sozlamalar" onPress={() => router.push('/settings')} />
       </View>
       <View style={styles.group}>

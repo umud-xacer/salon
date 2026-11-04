@@ -361,9 +361,8 @@ function PasswordTab({ businessId, member: m }: { businessId: number; member: Me
   return (
     <form onSubmit={submit} className="space-y-3">
       <p className="text-sm text-muted">
-        Yangi parol vaqtinchalik bo'ladi: xodimning barcha kirishlari yopiladi, birinchi kirishda o'z parolini qo'yadi.
-        Parolni shaxsan bering. U xodim o'z parolini qo'ymaguncha shu yerda ko'z tugmasi bilan ko'rinadi.
-        Xodimning o'zi qo'ygan paroli hech kimga ko'rinmaydi — unutsa, yangisini bering.
+        Xodim shu parol bilan kiradi. Uni faqat rahbar o'zgartiradi — xodimning o'zi almashtira olmaydi.
+        Yangi parol berilganda xodimning barcha kirishlari yopiladi. Parol ko'z tugmasi bilan doim ko'rinadi.
       </p>
       <p className="flex flex-wrap items-center gap-2 text-sm">
         Hozirgi holat: <PasswordBadge status={m.password_status} />

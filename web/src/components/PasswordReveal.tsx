@@ -1,5 +1,5 @@
 // Rahbar bergan boshlang'ich parolni ko'z tugmasi bilan ko'rsatish.
-// Faqat "vaqtinchalik" holatda: odam o'z parolini qo'ygach, u hech kimga ko'rinmaydi (server ham bermaydi).
+// Xodim va direktor parolini faqat rahbar beradi, shuning uchun u doim ko'rinadi ("issued").
 import { Copy, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 
@@ -24,7 +24,7 @@ export function PasswordReveal({ businessId, memberId, status }: {
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
 
-  if (status !== "temporary" || memberId === null) return null;
+  if ((status !== "issued" && status !== "temporary") || memberId === null) return null;
 
   const toggle = async () => {
     if (shown) {
@@ -36,7 +36,7 @@ export function PasswordReveal({ businessId, memberId, status }: {
     try {
       const r = await api<{ password: string | null }>(`/businesses/${businessId}/members/${memberId}/password`);
       if (r.password) setShown(r.password);
-      else setNote("O'z paroliga o'tgan");
+      else setNote("Parol saqlanmagan — yangisini bering");
     } catch {
       setNote("Ko'rib bo'lmadi");
     } finally {
@@ -83,7 +83,7 @@ export function PasswordInput({ value, onChange, required = false, label }: {
         </button>
       </span>
       <span className="mt-1 block text-xs text-muted">
-        Kamida 8 belgi, harf va raqam. Vaqtinchalik: birinchi kirishda o'zi almashtiradi. Shungacha ko'z tugmasi bilan ko'rinadi.
+        Kamida 8 belgi, harf va raqam. Parolni faqat siz o'zgartirasiz, u ko'z tugmasi bilan doim ko'rinadi.
       </span>
     </label>
   );

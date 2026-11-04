@@ -136,47 +136,43 @@ def test_audit_has_no_secret(client, biz):
     assert got == [(None,)]
 
 
-def test_temporary_password_must_be_changed(client, superadmin, biz):
+def test_issued_password_is_permanent_and_only_leader_changes_it(client, superadmin, biz):
+    """Rahbar bergan parol bilan darhol ishlaydi. Xodim o'zi almashtira olmaydi (foydalanuvchi qarori)."""
     usta = add_member(client, biz, "staff")
     phone, mid = usta["member"]["phone"], usta["member"]["id"]
     set_password(client, biz, mid, biz["owner"])
 
     rows = client.get(f"/api/v1/businesses/{biz['id']}/members", headers=auth_header(biz["owner"])).json()
-    assert next(m for m in rows if m["id"] == mid)["password_status"] == "temporary"
+    assert next(m for m in rows if m["id"] == mid)["password_status"] == "issued"
 
     tokens = login(client, phone).json()
-    assert tokens["user"]["must_change_password"] is True
-    h = auth_header(tokens)
-    # Parol almashtirilmaguncha hech narsa ishlamaydi, faqat /auth/me va parol almashtirish
-    assert client.get("/api/v1/auth/me", headers=h).json()["user"]["must_change_password"] is True
-    r = client.get(f"/api/v1/businesses/{biz['id']}/appointments", headers=h, params={"date": "2030-01-01"})
-    assert r.status_code == 403 and r.json()["detail"]["code"] == "password_change_required"
-
-    assert client.post("/api/v1/auth/password", headers=h,
-                       json={"old_password": "Notogri123", "new_password": "OzParolim55"}).status_code == 401
-    assert client.post("/api/v1/auth/password", headers=h,
-                       json={"old_password": NEW, "new_password": "OzParolim55"}).status_code == 204
-
-    tokens = login(client, phone, "OzParolim55").json()
     assert tokens["user"]["must_change_password"] is False
-    r = client.get(f"/api/v1/businesses/{biz['id']}/appointments", headers=auth_header(tokens), params={"date": "2030-01-01"})
+    h = auth_header(tokens)
+    r = client.get(f"/api/v1/businesses/{biz['id']}/appointments", headers=h, params={"date": "2030-01-01"})
     assert r.status_code == 200
 
-    rows = client.get(f"/api/v1/businesses/{biz['id']}/members", headers=auth_header(superadmin)).json()
-    row = next(m for m in rows if m["id"] == mid)
-    assert row["password_status"] == "own" and row["password_changed_at"]
-    assert "password_hash" not in row
+    r = client.post("/api/v1/auth/password", headers=h, json={"old_password": NEW, "new_password": "OzParolim55"})
+    assert r.status_code == 403 and r.json()["detail"]["code"] == "password_managed"
+    assert client.post("/api/v1/auth/password/forgot", json={"phone": phone}).status_code == 403
+    assert login(client, phone).status_code == 200                          # parol o'zgarmagan
 
 
-def test_otp_login_kills_temporary_password(client, biz):
+def test_otp_login_keeps_issued_password(client, biz):
     usta = add_member(client, biz, "staff")
     phone, mid = usta["member"]["phone"], usta["member"]["id"]
     set_password(client, biz, mid, biz["owner"])
-    t = otp_login(client, phone)
-    assert t["user"]["must_change_password"] is False
-    assert login(client, phone).status_code == 401                        # direktor bilgan parol endi ishlamaydi
+    otp_login(client, phone)
+    assert login(client, phone).status_code == 200
     rows = client.get(f"/api/v1/businesses/{biz['id']}/members", headers=auth_header(biz["owner"])).json()
-    assert next(m for m in rows if m["id"] == mid)["password_status"] == "none"
+    assert next(m for m in rows if m["id"] == mid)["password_status"] == "issued"
+
+
+def test_customer_still_manages_own_password(client):
+    phone = new_phone()
+    t = otp_login(client, phone)
+    r = client.post("/api/v1/auth/password", headers=auth_header(t), json={"new_password": "Mijoz2026parol"})
+    assert r.status_code == 204
+    assert login(client, phone, "Mijoz2026parol").status_code == 200
 
 
 def test_superadmin_sees_director_password_status(client, superadmin, biz):
@@ -185,4 +181,4 @@ def test_superadmin_sees_director_password_status(client, superadmin, biz):
     assert row()["owner_password_status"] == "none"
     set_password(client, biz, biz["owner_member_id"], superadmin)
     got = row()
-    assert got["owner_password_status"] == "temporary" and got["owner_password_changed_at"]
+    assert got["owner_password_status"] == "issued" and got["owner_password_changed_at"]

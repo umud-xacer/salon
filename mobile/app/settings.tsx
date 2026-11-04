@@ -58,10 +58,16 @@ export default function Settings() {
       {me && (
         <Card>
           <Text style={type.h3}>Xavfsizlik</Text>
-          <View style={{ marginTop: 12 }}>
-            <Button title="Parolni almashtirish" kind="soft" compact icon="lock-closed-outline"
-              onPress={() => router.push('/change-password')} />
-          </View>
+          {me.workspace === 'business' ? (
+            <Text style={[type.small, { marginTop: 4 }]}>
+              Siz salon xodimisiz: parolingizni faqat rahbaringiz beradi va o'zgartiradi.
+            </Text>
+          ) : (
+            <View style={{ marginTop: 12 }}>
+              <Button title="Parolni almashtirish" kind="soft" compact icon="lock-closed-outline"
+                onPress={() => router.push('/change-password')} />
+            </View>
+          )}
         </Card>
       )}
       <Card>

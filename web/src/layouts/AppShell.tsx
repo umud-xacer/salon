@@ -67,10 +67,12 @@ export function AppShell({ nav, title, header, children }: {
         </nav>
         <div className="border-t border-white/10 p-3">
           <p className="truncate px-3 pb-2 text-sm text-white/70">{me?.user.full_name || me?.user.phone}</p>
-          <button onClick={() => { setOpen(false); setChangingPassword(true); }} className={footerButton}>
-            <KeyRound size={18} aria-hidden />
-            Parolni o'zgartirish
-          </button>
+          {me?.workspace === "superadmin" && (
+            <button onClick={() => { setOpen(false); setChangingPassword(true); }} className={footerButton}>
+              <KeyRound size={18} aria-hidden />
+              Parolni o'zgartirish
+            </button>
+          )}
           <button onClick={() => void signOut()} className={footerButton}>
             <LogOut size={18} aria-hidden />
             Chiqish

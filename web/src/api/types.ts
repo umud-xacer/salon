@@ -10,7 +10,7 @@ export interface User {
   must_change_password: boolean;
 }
 
-export type PasswordStatus = "none" | "temporary" | "own";
+export type PasswordStatus = "none" | "issued" | "temporary" | "own";
 
 export interface Membership {
   member_id: number;

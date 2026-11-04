@@ -26,9 +26,7 @@ _BUSINESS_SELECT = """
            b.is_active, b.subscription_ends_at,
            app.business_operational(b.id) AS operational,
            u.full_name AS owner_name, u.phone AS owner_phone, o.id AS owner_member_id,
-           CASE WHEN u.id IS NULL THEN NULL
-                WHEN u.password_hash IS NULL THEN 'none' WHEN u.must_change_password THEN 'temporary'
-                ELSE 'own' END AS owner_password_status,
+           CASE WHEN u.id IS NULL THEN NULL ELSE app.password_state(u.id) END AS owner_password_status,
            u.password_changed_at AS owner_password_changed_at,
            (SELECT count(*) FROM business_members m WHERE m.business_id = b.id AND m.is_active) AS staff_count,
            (SELECT count(*) FROM services s WHERE s.business_id = b.id AND s.is_active) AS service_count,
@@ -87,8 +85,7 @@ def create_business(body: BusinessCreate, db: Session = Depends(get_db)):
     db.add(owner)
     if body.owner_password:
         # Odamning o'z paroli bo'lsa, ustidan yozilmaydi (u boshqa salon yoki mijoz hisobi bo'lishi mumkin)
-        own = db.scalar(text("SELECT password_hash IS NOT NULL AND NOT must_change_password FROM users WHERE id = :u"),
-                        {"u": owner_id})
+        own = db.scalar(text("SELECT app.password_state(:u) = 'own'"), {"u": owner_id})
         if own:
             raise HTTPException(409, detail={"code": "has_own_password",
                                              "message": "Bu raqam egasining o'z paroli bor. Parol maydonini bo'sh qoldiring"})
