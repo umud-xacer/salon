@@ -59,7 +59,7 @@ export function CreateBusinessDialog({ modules, onClose }: { modules: ModuleInfo
         subscription_days: days ? Number(days) : null,
       })),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: BUSINESSES_KEY });
+      await queryClient.invalidateQueries({ queryKey: ["superadmin"] })   // ro'yxat va menyudagi sonlar;
       onClose();
     },
   });
@@ -179,7 +179,7 @@ export function BusinessDialog({ business: b, modules, onClose }: {
   const [tab, setTab] = useState<Tab>("info");
   const queryClient = useQueryClient();
   const refreshAll = () => Promise.all([
-    queryClient.invalidateQueries({ queryKey: BUSINESSES_KEY }),
+    queryClient.invalidateQueries({ queryKey: ["superadmin"] }),
     queryClient.invalidateQueries({ queryKey: ["members", b.id] }),
   ]);
   return (
@@ -202,7 +202,7 @@ export function BusinessDialog({ business: b, modules, onClose }: {
 
 function useRefresh() {
   const queryClient = useQueryClient();
-  return () => queryClient.invalidateQueries({ queryKey: BUSINESSES_KEY });
+  return () => queryClient.invalidateQueries({ queryKey: ["superadmin"] })   // ro'yxat va menyudagi sonlar;
 }
 
 function InfoTab({ business: b }: { business: BusinessAdmin }) {

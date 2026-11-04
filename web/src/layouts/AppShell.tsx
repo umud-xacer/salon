@@ -11,6 +11,8 @@ export interface NavItem {
   label: string;
   icon: LucideIcon;
   end?: boolean;                 // faqat aynan shu manzilda faol
+  sub?: boolean;                 // ichki band (masalan, "Salonlar" ostidagi turlar)
+  badge?: number;                // yonidagi son
 }
 
 const footerButton = "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-white/80 hover:bg-white/10";
@@ -50,18 +52,20 @@ export function AppShell({ nav, title, header, children }: {
         </div>
         {header && <div className="px-3 pb-2">{header}</div>}
         <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3 py-2">
-          {nav.map(({ to, label, icon: Icon, end }) => (
+          {nav.map(({ to, label, icon: Icon, end, sub, badge }) => (
             <NavLink
               key={to}
               to={to}
               end={end}
               onClick={() => setOpen(false)}
               className={({ isActive }) =>
-                `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm md:py-2 ${isActive ? "bg-primary" : "text-white/80 hover:bg-white/10"}`
+                `flex items-center gap-3 rounded-lg py-2.5 text-sm md:py-2 ${sub ? "ml-4 border-l border-white/15 pl-3" : "px-3"} ${
+                  isActive ? "bg-primary" : "text-white/80 hover:bg-white/10"}`
               }
             >
-              <Icon size={18} aria-hidden />
-              {label}
+              <Icon size={sub ? 16 : 18} aria-hidden />
+              <span className="min-w-0 flex-1 truncate">{label}</span>
+              {badge !== undefined && <span className="mr-2 text-xs tabular-nums text-white/60">{badge}</span>}
             </NavLink>
           ))}
         </nav>

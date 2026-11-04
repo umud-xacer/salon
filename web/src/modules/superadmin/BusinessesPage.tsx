@@ -2,6 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Plus, Search } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 
 import { api } from "../../api/client";
 import type { BusinessAdmin, ModuleInfo } from "../../api/types";
@@ -27,7 +28,15 @@ export function BusinessesPage() {
   const [view, setView] = useState<View>("list");
   const [text, setText] = useState("");
   const types = useBusinessTypes();
-  const [typeId, setTypeId] = useState("");
+  // Tur chap menyudan (/superadmin/t/pharmacy) yoki filtrdan — bitta manba: manzil
+  const { typeSlug } = useParams();
+  const navigate = useNavigate();
+  const currentType = types.data?.find((t) => t.slug === typeSlug);
+  const typeId = currentType ? String(currentType.id) : "";
+  const setTypeId = (id: string) => {
+    const t = types.data?.find((x) => String(x.id) === id);
+    navigate(t ? `/superadmin/t/${t.slug}` : "/superadmin");
+  };
   const [openedId, setOpenedId] = useState<number | null>(null);
   const [creating, setCreating] = useState(false);
 
@@ -45,8 +54,8 @@ export function BusinessesPage() {
   return (
     <>
       <PageTitle
-        title="Salonlar"
-        hint={businesses.data ? `Jami ${businesses.data.length} ta` : undefined}
+        title={currentType ? currentType.name_uz : "Salonlar"}
+        hint={businesses.data ? (currentType ? `${filtered.length} ta` : `Jami ${businesses.data.length} ta`) : undefined}
         action={
           <Button className="flex items-center gap-1" disabled={!modules.data} onClick={() => setCreating(true)}>
             <Plus size={16} aria-hidden /> Yangi muassasa
