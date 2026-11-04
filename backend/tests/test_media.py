@@ -111,4 +111,4 @@ def test_limit_does_not_leave_orphan_files(client, biz):
 
 def test_app_info_public(client):
     r = client.get("/api/v1/catalog/app-info")
-    assert r.status_code == 200 and set(r.json()) == {"support_phone", "support_telegram", "yandex_maps_key"}
+    assert r.status_code == 200 and set(r.json()) == {"support_phone", "support_telegram", "yandex_maps_key", "yandex_maps_panel_key"}

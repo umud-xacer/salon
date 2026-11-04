@@ -65,6 +65,8 @@ class Settings(BaseSettings):
     # Sir emas (brauzerga boradi), Yandex kabinetida HTTP Referer = ariqalqon.uz bilan cheklanadi.
     # Bo'sh bo'lsa ilova OpenStreetMap ishlatadi. Panellar doim OpenStreetMap (yopiq + koordinata saqlanadi).
     yandex_maps_js_key: str | None = None
+    # Veb-panel xaritasi uchun ALOHIDA kalit: panel yopiq, Yandex bu kalitni cheklasa ilova xaritasi ishlayveradi
+    yandex_maps_panel_key: str | None = None
     yandex_geocoder_lang: str = "ru_RU"
 
     @model_validator(mode="after")
