@@ -1,4 +1,5 @@
-// OpenStreetMap xaritasi (Leaflet) WebView ichida. Kalit talab qilmaydi.
+// Mijoz xaritasi WebView ichida: Yandex Maps JS API (kalit serverdan kelsa) yoki OpenStreetMap (Leaflet, kalitsiz).
+// Ikkalasida bir xil window API: setMarkers, setMe, flyTo, locateDone — RN tomoni bitta.
 // Salon nomlari xaritaga faqat matn sifatida qo'yiladi (textContent), HTML sifatida emas.
 import { ComponentType, RefObject, useEffect, useMemo, useRef } from 'react';
 import { WebView, WebViewMessageEvent, WebViewProps } from 'react-native-webview';
@@ -24,7 +25,65 @@ type Props = {
   onError: () => void;
   /** "Mening joyim" tugmasi: joylashuvni topib qaytaradi (ruxsat yo'q bo'lsa null) */
   onLocate?: () => Promise<Point | null>;
+  /** Bo'lmasa — OpenStreetMap. Yandex yuklanmasa onError chaqiriladi, chaqiruvchi OSM ga o'tkazadi */
+  yandexKey?: string | null;
 };
+
+// Yandex JS API 2.1. Shartlar: bepul versiya faqat ochiq ilovada; olingan ma'lumot saqlanmaydi (faqat ko'rsatish).
+const yandexHtml = (lat: number, lng: number, key: string) => `<!doctype html>
+<html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<style>
+  html,body,#map{width:100%;height:100%;margin:0;padding:0;background:#eef1f6}
+  #locate{position:absolute;right:10px;bottom:118px;z-index:2000;width:34px;height:34px;border:0;border-radius:8px;
+          background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;color:#1565F5}
+  #locate.busy{opacity:.5}
+</style>
+<script>const post = (m) => window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify(m));</script>
+<script src="https://api-maps.yandex.ru/2.1/?apikey=${encodeURIComponent(key)}&lang=ru_RU" onerror="post({type:'error'})"></script>
+</head><body><div id="map"></div>
+<button id="locate" aria-label="Mening joyim"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+  stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></button>
+<script>
+  // Salon nomi matn sifatida: Yandex hint HTML qabul qiladi, shuning uchun belgilar ekranlanadi
+  const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const fail = setTimeout(() => post({ type: 'error' }), 15000);
+  if (!window.ymaps) post({ type: 'error' });
+  else ymaps.ready(() => {
+    clearTimeout(fail);
+    const map = new ymaps.Map('map', { center: [${lat}, ${lng}], zoom: 13, controls: ['zoomControl'] },
+                              { suppressMapOpenBlock: true });
+    map.controls.get('zoomControl').options.set({ size: 'small', position: { right: 10, bottom: 30 } });
+    const markers = new ymaps.GeoObjectCollection();
+    map.geoObjects.add(markers);
+    let me = null;
+    window.setMarkers = (list) => {
+      markers.removeAll();
+      list.forEach((b) => {
+        const mark = new ymaps.Placemark([b.lat, b.lng], { hintContent: esc(b.name) },
+                                         { preset: b.open ? 'islands#blueDotIcon' : 'islands#grayDotIcon' });
+        mark.events.add('click', () => post({ type: 'select', id: b.id }));
+        markers.add(mark);
+      });
+    };
+    window.setMe = (p) => {
+      if (me) map.geoObjects.remove(me);
+      me = new ymaps.Placemark([p.lat, p.lng], {}, { preset: 'islands#geolocationIcon', interactive: false });
+      map.geoObjects.add(me);
+    };
+    window.flyTo = (p) => map.setCenter([p.lat, p.lng], 15, { duration: 300 });
+    const btn = document.getElementById('locate');
+    btn.addEventListener('click', () => { btn.classList.add('busy'); post({ type: 'locate' }); });
+    window.locateDone = () => btn.classList.remove('busy');
+    const bounds = () => {
+      const [sw, ne] = map.getBounds();
+      post({ type: 'bounds', sw, ne });
+    };
+    map.events.add('boundschange', bounds);
+    bounds();
+    post({ type: 'ready' });
+  });
+</script></body></html>`;
 
 const html = (lat: number, lng: number) => `<!doctype html>
 <html><head><meta charset="utf-8">
@@ -95,13 +154,16 @@ const html = (lat: number, lng: number) => `<!doctype html>
   post({ type: 'ready' });
 </script></body></html>`;
 
-export function OsmMap({ center, me, businesses, onBounds, onSelect, onError, onLocate }: Props) {
+export function OsmMap({ center, me, businesses, onBounds, onSelect, onError, onLocate, yandexKey }: Props) {
   const web = useRef<WebView | null>(null);
   const ready = useRef(false);
   const latest = useRef({ businesses, me });
   latest.current = { businesses, me };
   // Xarita markazi faqat birinchi ochilganda: keyin foydalanuvchi o'zi suradi
-  const source = useMemo(() => ({ html: html(center.latitude, center.longitude), baseUrl: BASE_URL }), []); // eslint-disable-line react-hooks/exhaustive-deps
+  const source = useMemo(() => ({
+    html: yandexKey ? yandexHtml(center.latitude, center.longitude, yandexKey) : html(center.latitude, center.longitude),
+    baseUrl: BASE_URL,                               // Yandex kaliti shu Referer bilan cheklanadi
+  }), [yandexKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const run = (code: string) => web.current?.injectJavaScript(`${code}; true;`);
   const pushMarkers = () => {

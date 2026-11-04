@@ -61,6 +61,10 @@ class Settings(BaseSettings):
     # Yandex HTTP Geocoder (manzil ↔ koordinata). Kalit faqat serverda — mobil ilovaga berilmaydi.
     # Xaritaning o'zi mobil ilovada Yandex MapKit (alohida, mobil kalit) bilan chiziladi.
     yandex_geocoder_api_key: SecretStr | None = None
+    # Yandex Maps JavaScript API kaliti — faqat mijoz ilovasidagi xarita uchun (ochiq ilova: bepul shart).
+    # Sir emas (brauzerga boradi), Yandex kabinetida HTTP Referer = ariqalqon.uz bilan cheklanadi.
+    # Bo'sh bo'lsa ilova OpenStreetMap ishlatadi. Panellar doim OpenStreetMap (yopiq + koordinata saqlanadi).
+    yandex_maps_js_key: str | None = None
     yandex_geocoder_lang: str = "ru_RU"
 
     @model_validator(mode="after")

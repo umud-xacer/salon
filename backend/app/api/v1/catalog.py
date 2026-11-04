@@ -75,7 +75,8 @@ def _filters(category: str | None, q: str | None, params: dict) -> str:
 def app_info():
     """Ilova uchun ochiq sozlamalar: qo'llab-quvvatlash kontakti."""
     s = get_settings()
-    return {"support_phone": s.support_phone, "support_telegram": s.support_telegram}
+    return {"support_phone": s.support_phone, "support_telegram": s.support_telegram,
+            "yandex_maps_key": s.yandex_maps_js_key or None}
 
 
 @router.get("/categories", response_model=list[CategoryOut])

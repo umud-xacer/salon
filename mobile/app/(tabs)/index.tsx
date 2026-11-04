@@ -63,10 +63,14 @@ export default function Businesses() {
   const [mapItems, setMapItems] = useState<BusinessCard[]>([]);
   const [selected, setSelected] = useState<BusinessCard | null>(null);
   const [mapHint, setMapHint] = useState<string | null>(null);
+  // Yandex kaliti serverdan (almashtirish uchun yangi APK kerak emas). Yuklanmasa — OpenStreetMap
+  const [yandexKey, setYandexKey] = useState<string | null>(null);
   const boundsTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
     api<Category[]>('/catalog/categories').then(setCategories).catch(() => {});
+    api<{ yandex_maps_key: string | null }>('/catalog/app-info')
+      .then((r) => setYandexKey(r.yandex_maps_key)).catch(() => {});
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') return;
@@ -230,13 +234,19 @@ export default function Businesses() {
         <View style={{ flex: 1, padding: 16, paddingTop: 0 }}>
           <View style={{ flex: 1, borderRadius: radius.lg, overflow: 'hidden' }}>
             <OsmMap
+              key={yandexKey ? 'yandex' : 'osm'}
+              yandexKey={yandexKey}
               center={coords}
               me={myPoint}
               onLocate={locate}
               businesses={mapItems}
               onBounds={onBounds}
               onSelect={(id) => setSelected(mapItems.find((b) => b.id === id) ?? null)}
-              onError={() => setMapHint("Xaritani yuklab bo'lmadi. Internetni tekshiring")}
+              onError={() => {
+                // Yandex ishlamasa (kalit, limit, tarmoq) — jimgina OpenStreetMap ga o'tamiz
+                if (yandexKey) setYandexKey(null);
+                else setMapHint("Xaritani yuklab bo'lmadi. Internetni tekshiring");
+              }}
             />
           </View>
           <ErrorText text={mapHint} />
