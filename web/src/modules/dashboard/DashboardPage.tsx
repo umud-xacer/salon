@@ -8,7 +8,7 @@ import { BookingList } from "../../components/BookingList";
 import { formatQty, ROLE_LABELS } from "../../components/format";
 import { Card, PageTitle } from "../../components/ui";
 
-function LowStockCard({ businessId }: { businessId: number }) {
+function LowStockCard({ businessId, kind, slug }: { businessId: number; kind: string; slug: string }) {
   const query = useQuery({
     queryKey: ["inventory-summary", businessId],
     queryFn: () => api<InventorySummary>(`/businesses/${businessId}/inventory/summary`),
@@ -29,7 +29,7 @@ function LowStockCard({ businessId }: { businessId: number }) {
           </li>
         ))}
       </ul>
-      <Link to={`/b/${businessId}/inventory`} className="mt-2 inline-block text-sm text-primary">Omborga o'tish</Link>
+      <Link to={`/${slug}/${kind === "pharmacy" ? "dorilar" : "ombor"}`} className="mt-2 inline-block text-sm text-primary">Omborga o'tish</Link>
     </Card>
   );
 }
@@ -39,7 +39,7 @@ export function DashboardPage({ membership }: { membership: Membership }) {
   return (
     <>
       <PageTitle title={membership.business_name} hint={ROLE_LABELS[membership.role]} />
-      {showStock && <LowStockCard businessId={membership.business_id} />}
+      {showStock && <LowStockCard businessId={membership.business_id} kind={membership.business_kind} slug={membership.business_slug} />}
       {membership.permissions.includes("appointments.view_all") && (
         <BookingList businessId={membership.business_id} showMaster />
       )}

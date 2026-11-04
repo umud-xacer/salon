@@ -2,7 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Plus, Search } from "lucide-react";
 import { useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Navigate, useNavigate, useParams } from "react-router-dom";
 
 import { api } from "../../api/client";
 import type { BusinessAdmin, ModuleInfo } from "../../api/types";
@@ -11,6 +11,7 @@ import { Badge, Button, Card, Empty, ErrorNote, PageTitle, PasswordBadge, Spinne
 import { PasswordReveal } from "../../components/PasswordReveal";
 import { BUSINESSES_KEY, BusinessDialog, CreateBusinessDialog, StatusBadge } from "./BusinessDialogs";
 import { useBusinessTypes } from "./BusinessTypesPage";
+import { typeUrl } from "./typeWording";
 import { BusinessesMap } from "./Maps";
 
 type View = "list" | "map";
@@ -28,14 +29,15 @@ export function BusinessesPage() {
   const [view, setView] = useState<View>("list");
   const [text, setText] = useState("");
   const types = useBusinessTypes();
-  // Tur chap menyudan (/superadmin/t/pharmacy) yoki filtrdan — bitta manba: manzil
-  const { typeSlug } = useParams();
+  // Tur chap menyudan (/superadmin/dorixona) yoki filtrdan — bitta manba: manzil.
+  // Eski /superadmin/t/pharmacy manzili ham ishlaydi
+  const { typeSlug, typePath } = useParams();
   const navigate = useNavigate();
-  const currentType = types.data?.find((t) => t.slug === typeSlug);
+  const currentType = types.data?.find((t) => (typePath ? typeUrl(t) === typePath : t.slug === typeSlug));
   const typeId = currentType ? String(currentType.id) : "";
   const setTypeId = (id: string) => {
     const t = types.data?.find((x) => String(x.id) === id);
-    navigate(t ? `/superadmin/t/${t.slug}` : "/superadmin");
+    navigate(t ? `/superadmin/${typeUrl(t)}` : "/superadmin");
   };
   const [openedId, setOpenedId] = useState<number | null>(null);
   const [creating, setCreating] = useState(false);
@@ -49,6 +51,12 @@ export function BusinessesPage() {
   }, [businesses.data, text, typeId]);
 
   const opened = businesses.data?.find((b) => b.id === openedId);
+
+  // Eski manzil (/superadmin/t/pharmacy) — yangisiga; noma'lum tur — umumiy ro'yxatga
+  if (types.data && typeSlug) {
+    return <Navigate to={currentType ? `/superadmin/${typeUrl(currentType)}` : "/superadmin"} replace />;
+  }
+  if (types.data && typePath && !currentType) return <Navigate to="/superadmin" replace />;
   const noLocation = filtered.filter((b) => b.lat === null).length;
 
   return (

@@ -3,7 +3,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 
 import { useAuth } from "./auth/AuthProvider";
 import { Spinner } from "./components/ui";
-import { BusinessPanel } from "./pages/BusinessPanel";
+import { BusinessPanel, LegacyPanelRedirect } from "./pages/BusinessPanel";
 import { LoginPage } from "./pages/LoginPage";
 import { ClientOnlyPage, ForcePasswordPage } from "./pages/Notices";
 
@@ -22,7 +22,7 @@ function Home() {
   const { me } = useAuth();
   if (me?.workspace === "superadmin") return <Navigate to="/superadmin" replace />;
   const first = me?.memberships[0];
-  return first ? <Navigate to={`/b/${first.business_id}`} replace /> : <ClientOnlyPage />;
+  return first ? <Navigate to={`/${first.business_slug}`} replace /> : <ClientOnlyPage />;
 }
 
 export function App() {
@@ -44,8 +44,10 @@ export function App() {
               <Suspense fallback={<Spinner />}>
                 <Routes>
                   <Route index element={<BusinessesPage />} />
+                  <Route path="turlar" element={<BusinessTypesPage />} />
+                  <Route path="types" element={<Navigate to="/superadmin/turlar" replace />} />
                   <Route path="t/:typeSlug" element={<BusinessesPage />} />
-                  <Route path="types" element={<BusinessTypesPage />} />
+                  <Route path=":typePath" element={<BusinessesPage />} />
                   <Route path="*" element={<Navigate to="/superadmin" replace />} />
                 </Routes>
               </Suspense>
@@ -56,7 +58,9 @@ export function App() {
           )
         }
       />
-      <Route path="/b/:businessId/*" element={<BusinessPanel />} />
+      {/* Eski /b/6/... — muassasa havolasiga: /barber-lab/... */}
+      <Route path="/b/:businessId/*" element={<LegacyPanelRedirect />} />
+      <Route path="/:businessSlug/*" element={<BusinessPanel />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

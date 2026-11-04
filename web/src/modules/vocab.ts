@@ -10,20 +10,21 @@ export interface Vocab {
   inventory: string;
   product: string;
   calendar: string;
+  businessPage: string;  // "Salon" bo'limi nomi
 }
 
 const VOCAB: Record<BusinessKind, Vocab> = {
   salon: {
     staff: "Xodimlar", staffOne: "Usta", services: "Xizmatlar", serviceOne: "Xizmat", clients: "Mijozlar",
-    inventory: "Ombor", product: "Mahsulot", calendar: "Kalendar",
+    inventory: "Ombor", product: "Mahsulot", calendar: "Kalendar", businessPage: "Salon",
   },
   pharmacy: {
     staff: "Farmatsevtlar", staffOne: "Farmatsevt", services: "Xizmatlar", serviceOne: "Xizmat", clients: "Xaridorlar",
-    inventory: "Dorilar va tibbiy buyumlar", product: "Dori", calendar: "Navbat",
+    inventory: "Dorilar va tibbiy buyumlar", product: "Dori", calendar: "Navbat", businessPage: "Dorixona",
   },
   clinic: {
     staff: "Shifokorlar", staffOne: "Shifokor", services: "Tibbiy xizmatlar", serviceOne: "Tibbiy xizmat",
-    clients: "Bemorlar", inventory: "Ombor", product: "Mahsulot", calendar: "Qabullar",
+    clients: "Bemorlar", inventory: "Ombor", product: "Mahsulot", calendar: "Qabullar", businessPage: "Klinika",
   },
 };
 

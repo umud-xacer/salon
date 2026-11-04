@@ -16,6 +16,7 @@ export interface Membership {
   member_id: number;
   business_id: number;
   business_name: string;
+  business_slug: string;
   business_kind: string;
   business_status: "pending" | "active" | "blocked";
   business_active: boolean;

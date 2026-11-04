@@ -20,7 +20,7 @@ import {
 import type { ComponentType } from "react";
 
 import type { Membership, Panel } from "../api/types";
-import { vocabFor, type Vocab } from "./vocab";
+import { vocabFor, type BusinessKind, type Vocab } from "./vocab";
 import { BusinessPage } from "./business/BusinessPage";
 import { CalendarPage } from "./calendar/CalendarPage";
 import { ClientsPage } from "./clients/ClientsPage";
@@ -42,53 +42,60 @@ export interface Section {
   module?: string;                // yoqilgan bo'lishi shart bo'lgan modul
   anyPermission?: string[];       // shulardan biri bo'lsa kifoya
   term?: keyof Vocab;             // nomi muassasa turiga qarab (Ustalar/Shifokorlar...)
+  uz: string;                     // manzil: /b/1/kassa
+  uzByKind?: Partial<Record<BusinessKind, string>>;   // turga qarab: dorixonada /farmatsevtlar
   page: ComponentType<{ membership: Membership }>;
 }
 
 export const SECTIONS: Section[] = [
-  { path: "dashboard", label: "Bosh sahifa", icon: LayoutDashboard, panel: "admin", page: DashboardPage },
+  { path: "dashboard", uz: "bosh-sahifa", label: "Bosh sahifa", icon: LayoutDashboard, panel: "admin", page: DashboardPage },
   {
-    path: "calendar", label: "Kalendar", term: "calendar", icon: CalendarRange, panel: "admin", module: "booking",
+    path: "calendar", uz: "kalendar", uzByKind: { pharmacy: "navbat", clinic: "qabullar" }, label: "Kalendar", term: "calendar", icon: CalendarRange, panel: "admin", module: "booking",
     anyPermission: ["appointments.view_all"], page: CalendarPage,
   },
   {
-    path: "cash", label: "Kassa", icon: Wallet, panel: "admin", module: "finance",
+    path: "cash", uz: "kassa", label: "Kassa", icon: Wallet, panel: "admin", module: "finance",
     anyPermission: ["finance.view", "payments.accept"], page: CashPage,
   },
   {
-    path: "expenses", label: "Xarajatlar", icon: Receipt, panel: "admin", module: "finance",
+    path: "expenses", uz: "xarajatlar", label: "Xarajatlar", icon: Receipt, panel: "admin", module: "finance",
     anyPermission: ["finance.view"], page: ExpensesPage,
   },
   {
-    path: "reports", label: "Hisobotlar", icon: BarChart3, panel: "admin", module: "finance",
+    path: "reports", uz: "hisobotlar", label: "Hisobotlar", icon: BarChart3, panel: "admin", module: "finance",
     anyPermission: ["finance.view"], page: ReportsPage,
   },
   {
-    path: "inventory", label: "Ombor", term: "inventory", icon: Package, panel: "admin", module: "inventory",
+    path: "inventory", uz: "ombor", uzByKind: { pharmacy: "dorilar" }, label: "Ombor", term: "inventory", icon: Package, panel: "admin", module: "inventory",
     anyPermission: ["inventory.view"], page: InventoryPage,
   },
   {
-    path: "payroll", label: "Oylik", icon: WalletCards, panel: "admin", module: "payroll",
+    path: "payroll", uz: "oylik", label: "Oylik", icon: WalletCards, panel: "admin", module: "payroll",
     anyPermission: ["payroll.manage"], page: PayrollPage,
   },
   {
-    path: "clients", label: "Mijozlar", term: "clients", icon: Contact, panel: "admin", module: "booking",
+    path: "clients", uz: "mijozlar", uzByKind: { pharmacy: "xaridorlar", clinic: "bemorlar" }, label: "Mijozlar", term: "clients", icon: Contact, panel: "admin", module: "booking",
     anyPermission: ["clients.view"], page: ClientsPage,
   },
-  { path: "staff", label: "Xodimlar", term: "staff", icon: Users, panel: "admin", anyPermission: ["staff.manage"], page: StaffPage },
+  { path: "staff", uz: "xodimlar", uzByKind: { pharmacy: "farmatsevtlar", clinic: "shifokorlar" }, label: "Xodimlar", term: "staff", icon: Users, panel: "admin", anyPermission: ["staff.manage"], page: StaffPage },
   {
-    path: "work-schedule", label: "Ish jadvali", icon: CalendarClock, panel: "admin",
+    path: "work-schedule", uz: "ish-jadvali", label: "Ish jadvali", icon: CalendarClock, panel: "admin",
     anyPermission: ["staff.manage"], page: WorkSchedulePage,
   },
   {
-    path: "services", label: "Xizmatlar", term: "services", icon: Scissors, panel: "admin",
+    path: "services", uz: "xizmatlar", uzByKind: { clinic: "tibbiy-xizmatlar" }, label: "Xizmatlar", term: "services", icon: Scissors, panel: "admin",
     anyPermission: ["services.manage"], page: ServicesPage,
   },
-  { path: "business", label: "Salon", icon: Store, panel: "admin", anyPermission: ["business.manage"], page: BusinessPage },
-  { path: "bookings", label: "Mening bronlarim", icon: CalendarDays, panel: "staff", page: MyBookingsPage },
-  { path: "schedule", label: "Ish jadvalim", icon: Clock3, panel: "staff", page: MySchedulePage },
-  { path: "my-payroll", label: "Oyliklarim", icon: WalletCards, panel: "staff", module: "payroll", page: MyPayrollPage },
+  { path: "business", uz: "salon", uzByKind: { pharmacy: "dorixona", clinic: "klinika" }, label: "Salon", term: "businessPage", icon: Store, panel: "admin", anyPermission: ["business.manage"], page: BusinessPage },
+  { path: "bookings", uz: "bronlarim", label: "Mening bronlarim", icon: CalendarDays, panel: "staff", page: MyBookingsPage },
+  { path: "schedule", uz: "jadvalim", label: "Ish jadvalim", icon: Clock3, panel: "staff", page: MySchedulePage },
+  { path: "my-payroll", uz: "oyliklarim", label: "Oyliklarim", icon: WalletCards, panel: "staff", module: "payroll", page: MyPayrollPage },
 ];
+
+/** Bo'lim manzili muassasa turiga qarab (o'zbekcha). path — eski inglizcha nom, yo'naltirish uchun. */
+export function sectionUrl(s: Section, kind: string | undefined): string {
+  return s.uzByKind?.[kind as BusinessKind] ?? s.uz;
+}
 
 export function sectionsFor(m: Membership): Section[] {
   const v = vocabFor(m.business_kind);

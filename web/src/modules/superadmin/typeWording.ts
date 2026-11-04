@@ -54,3 +54,15 @@ export function slugFor(name: string, type: BusinessType | undefined): string {
   if (!base || !word || base.split("-").some((part) => part.startsWith(word))) return base;
   return `${base}-${word}`;
 }
+
+// Super Admin manzili turga qarab o'zbekcha: /superadmin/dorixona. Yangi turlar nomidan yasaladi.
+const URLS: Record<string, string> = {
+  beauty_salon: "salon", barbershop: "sartaroshxona", pharmacy: "dorixona", clinic: "klinika",
+  dental: "stomatologiya", spa: "spa-massaj",
+};
+export const RESERVED_PATHS = new Set(["turlar", "types", "t"]);
+
+export function typeUrl(type: BusinessType): string {
+  const u = URLS[type.slug] ?? (slugify(type.name_uz) || type.slug.replaceAll("_", "-"));
+  return RESERVED_PATHS.has(u) ? `${u}-turi` : u;
+}

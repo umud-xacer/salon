@@ -132,6 +132,7 @@ class MembershipOut(BaseModel):
     member_id: int
     business_id: int
     business_name: str
+    business_slug: str = ""                               # panel manzili: /barber-lab/kassa
     business_kind: str = "salon"                          # salon | pharmacy | clinic — panel yozuvlari
     business_status: str
     business_active: bool                                 # obuna bayrog'i
@@ -158,6 +159,9 @@ def _known_region(value: str | None) -> str | None:
     return value
 
 
+RESERVED_SLUGS = {"superadmin", "b", "api", "assets", "media", "login", "admin", "panel", "health", "static"}
+
+
 class BusinessCreate(BaseModel):
     name: str = Field(min_length=2, max_length=120)
     slug: str = Field(pattern=r"^[a-z0-9]+(-[a-z0-9]+)*$", max_length=140)
@@ -178,6 +182,14 @@ class BusinessCreate(BaseModel):
     @classmethod
     def _norm(cls, v: str) -> str:
         return normalize_phone(v)
+
+    @field_validator("slug")
+    @classmethod
+    def _not_reserved(cls, v: str) -> str:
+        # Havola panel manzili ham bo'ladi (www.ariqalqon.uz/<havola>): tizim yo'llari bilan to'qnashmasin
+        if v in RESERVED_SLUGS:
+            raise ValueError("Bu havola band, boshqasini tanlang")
+        return v
 
     @field_validator("owner_password")
     @classmethod
