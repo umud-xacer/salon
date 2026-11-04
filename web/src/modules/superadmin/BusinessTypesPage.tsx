@@ -14,7 +14,12 @@ import { Badge, Button, Card, Empty, ErrorNote, inputClass, PageTitle, Spinner }
 export const TYPES_KEY = ["superadmin", "business-types"];
 
 export function useBusinessTypes() {
-  return useQuery({ queryKey: TYPES_KEY, queryFn: () => api<BusinessType[]>("/superadmin/business-types") });
+  // Tartib — "Tartib raqami" bo'yicha (Go'zallik saloni, Sartaroshxona, Dorixona, Klinika, Stomatologiya, SPA...)
+  return useQuery({
+    queryKey: TYPES_KEY,
+    queryFn: async () => (await api<BusinessType[]>("/superadmin/business-types"))
+      .sort((a, b) => a.sort_order - b.sort_order || a.id - b.id),
+  });
 }
 
 export function BusinessTypesPage() {
