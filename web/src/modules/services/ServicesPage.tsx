@@ -6,6 +6,7 @@ import { api, json } from "../../api/client";
 import type { Membership, Service, ServiceCategory, ServicePresets } from "../../api/types";
 import { formatMoney } from "../../components/format";
 import { Modal } from "../../components/Modal";
+import { vocabFor } from "../vocab";
 import { Badge, Button, Card, Empty, ErrorNote, inputClass, PageTitle, Spinner } from "../../components/ui";
 
 export function ServicesPage({ membership }: { membership: Membership }) {
@@ -28,7 +29,7 @@ export function ServicesPage({ membership }: { membership: Membership }) {
   return (
     <>
       <PageTitle
-        title="Xizmatlar"
+        title={vocabFor(membership.business_kind).services}
         hint="Narx o'zgarsa, eski bronlar narxi saqlanib qoladi"
         action={
           <Button className="flex items-center gap-1" onClick={() => setEditing("new")}>

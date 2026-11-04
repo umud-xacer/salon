@@ -13,6 +13,8 @@ Qty = Field(gt=0, le=MAX_QTY, decimal_places=3)
 class ProductIn(BaseModel):
     name: str = Field(min_length=2, max_length=120)
     sku: str | None = Field(default=None, max_length=60)
+    category: str | None = Field(default=None, max_length=80)
+    barcode: str | None = Field(default=None, pattern=r"^[0-9A-Za-z-]{4,64}$")
     unit: str = Field(default="dona", min_length=1, max_length=20)
     cost_price: int = Field(default=0, ge=0, le=MAX_MONEY)
     sale_price: int = Field(default=0, ge=0, le=MAX_MONEY)
@@ -27,6 +29,8 @@ class ProductOut(BaseModel):
     id: int
     name: str
     sku: str | None
+    category: str | None = None
+    barcode: str | None = None
     unit: str
     cost_price: int
     sale_price: int

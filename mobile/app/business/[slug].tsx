@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Dimensions, Image, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { api, ApiError, BusinessDetail, Service } from '../../src/api';
+import { PharmacyCatalog } from '../../src/PharmacyCatalog';
 import { useFavorites } from '../../src/favorites';
 import { Button, Card, Chip, colors, ErrorText, Icon, money, radius, shared, type } from '../../src/ui';
 
@@ -13,6 +14,7 @@ export default function Business() {
   const [business, setBusiness] = useState<BusinessDetail | null>(null);
   const [service, setService] = useState<Service | null>(null);
   const [memberId, setMemberId] = useState<number | null>(null);
+  const [specialty, setSpecialty] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -24,7 +26,14 @@ export default function Business() {
   if (error) return <ScrollView style={shared.screen}><ErrorText text={error} /></ScrollView>;
   if (!business) return <ActivityIndicator style={{ marginTop: 40 }} size="large" />;
 
+  const kind = business.kind ?? 'salon';
   const masters = service ? business.staff.filter((s) => s.service_ids.includes(service.id)) : [];
+  // Klinika: shifokorlar lavozimi (mutaxassisligi) bo'yicha guruh
+  const specialties = [...new Set(business.staff.map((s) => s.title?.trim() || 'Umumiy amaliyot'))].sort();
+  const doctors = business.staff.filter((s) => (s.title?.trim() || 'Umumiy amaliyot') === specialty);
+  const doctor = business.staff.find((s) => s.member_id === memberId);
+  const allServices = business.service_groups.flatMap((g) => g.services);
+  const doctorServices = doctor ? allServices.filter((sv) => doctor.service_ids.includes(sv.id)) : [];
 
   return (
     <ScrollView style={shared.screen} contentContainerStyle={{ paddingBottom: 32 }}>
@@ -51,7 +60,42 @@ export default function Business() {
       {business.address && <Text style={shared.muted}>{business.address}</Text>}
       {business.description && <Text style={[shared.muted, { marginTop: 8 }]}>{business.description}</Text>}
 
-      <Text style={shared.heading}>Xizmatni tanlang</Text>
+      {kind === 'pharmacy' && <PharmacyCatalog slug={business.slug} />}
+
+      {kind === 'clinic' ? (
+        <>
+          {/* Klinika: mutaxassislik -> shifokor -> tibbiy xizmat -> vaqt */}
+          <Text style={shared.heading}>Mutaxassislikni tanlang</Text>
+          {specialties.length === 0 && <Text style={shared.muted}>Hozircha shifokorlar qo'shilmagan</Text>}
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+            {specialties.map((t) => (
+              <Chip key={t} label={t} active={specialty === t}
+                onPress={() => { setSpecialty(t); setMemberId(null); setService(null); }} />
+            ))}
+          </View>
+          {specialty && (
+            <>
+              <Text style={shared.heading}>Shifokorni tanlang</Text>
+              {doctors.map((d) => (
+                <Chip key={d.member_id} label={d.rating_avg > 0 ? `${d.full_name} · ★ ${d.rating_avg.toFixed(1)}` : d.full_name}
+                  active={memberId === d.member_id} onPress={() => { setMemberId(d.member_id); setService(null); }} />
+              ))}
+            </>
+          )}
+          {doctor && (
+            <>
+              <Text style={shared.heading}>Tibbiy xizmat</Text>
+              {doctorServices.length === 0 && <Text style={shared.muted}>Bu shifokorga hali xizmat biriktirilmagan</Text>}
+              {doctorServices.map((sv) => (
+                <Chip key={sv.id} label={`${sv.name} · ${sv.duration_min} daq · ${money(sv.price)}`}
+                  active={service?.id === sv.id} onPress={() => setService(sv)} />
+              ))}
+            </>
+          )}
+        </>
+      ) : business.service_groups.length > 0 && (
+        <>
+      <Text style={shared.heading}>{kind === 'pharmacy' ? 'Xizmatlar' : 'Xizmatni tanlang'}</Text>
       {business.service_groups.map((group) => (
         <Card key={group.category_id ?? 0}>
           <Text style={shared.name}>{group.category_name}</Text>
@@ -71,8 +115,8 @@ export default function Business() {
 
       {service && (
         <>
-          <Text style={shared.heading}>Ustani tanlang</Text>
-          {masters.length === 0 && <Text style={shared.muted}>Bu xizmat uchun usta yo'q</Text>}
+          <Text style={shared.heading}>{kind === 'pharmacy' ? 'Farmatsevtni tanlang' : 'Ustani tanlang'}</Text>
+          {masters.length === 0 && <Text style={shared.muted}>Bu xizmat uchun mutaxassis yo'q</Text>}
           {masters.map((m) => (
             <Chip
               key={m.member_id}
@@ -81,6 +125,9 @@ export default function Business() {
               onPress={() => setMemberId(m.member_id)}
             />
           ))}
+        </>
+      )}
+
         </>
       )}
 

@@ -16,6 +16,7 @@ export interface Membership {
   member_id: number;
   business_id: number;
   business_name: string;
+  business_kind: string;
   business_status: "pending" | "active" | "blocked";
   business_active: boolean;
   subscription_ends_at: string | null;
@@ -214,6 +215,7 @@ export interface ServicePreset {
 export interface BusinessType {
   id: number;
   slug: string;
+  kind: string;
   name_uz: string;
   name_ru: string;
   icon: string | null;
@@ -322,6 +324,8 @@ export interface Product {
   id: number;
   name: string;
   sku: string | null;
+  category: string | null;
+  barcode: string | null;
   unit: string;
   cost_price: number;
   sale_price: number;

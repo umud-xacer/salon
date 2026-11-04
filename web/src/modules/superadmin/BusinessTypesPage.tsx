@@ -8,6 +8,7 @@ import { api, json } from "../../api/client";
 import type { BusinessType, ServicePreset } from "../../api/types";
 import { formatMoney } from "../../components/format";
 import { Modal } from "../../components/Modal";
+import { KIND_LABELS, type BusinessKind } from "../vocab";
 import { Badge, Button, Card, Empty, ErrorNote, inputClass, PageTitle, Spinner } from "../../components/ui";
 
 export const TYPES_KEY = ["superadmin", "business-types"];
@@ -61,6 +62,7 @@ function TypeDialog({ type, onClose }: { type: BusinessType | null; onClose: () 
   const queryClient = useQueryClient();
   const [slug, setSlug] = useState(type?.slug ?? "");
   const [nameUz, setNameUz] = useState(type?.name_uz ?? "");
+  const [kind, setKind] = useState<string>(type?.kind ?? "salon");
   const [nameRu, setNameRu] = useState(type?.name_ru ?? "");
   const [icon, setIcon] = useState(type?.icon ?? "");
   const [order, setOrder] = useState(String(type?.sort_order ?? 10));
@@ -76,7 +78,7 @@ function TypeDialog({ type, onClose }: { type: BusinessType | null; onClose: () 
   const save = useMutation({
     mutationFn: () => {
       const body = {
-        name_uz: nameUz.trim(), name_ru: nameRu.trim(), icon: icon.trim() || null, sort_order: Number(order) || 0,
+        kind, name_uz: nameUz.trim(), name_ru: nameRu.trim(), icon: icon.trim() || null, sort_order: Number(order) || 0,
         is_active: active, opens_at: opens, closes_at: closes,
         service_presets: presets.filter((p) => p.name.trim()).map((p) => ({ ...p, name: p.name.trim() })),
       };
@@ -98,6 +100,11 @@ function TypeDialog({ type, onClose }: { type: BusinessType | null; onClose: () 
   return (
     <Modal title={type ? type.name_uz : "Yangi muassasa turi"} onClose={onClose}>
       <form onSubmit={submit} className="space-y-3">
+        <label className="block text-sm">Ish tartibi (panel va ilova shunga moslashadi)
+          <select className={inputClass} value={kind} onChange={(e) => setKind(e.target.value)}>
+            {(Object.keys(KIND_LABELS) as BusinessKind[]).map((k) => <option key={k} value={k}>{KIND_LABELS[k]}</option>)}
+          </select>
+        </label>
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="block text-sm">Nomi (o'zbekcha)
             <input className={inputClass} required minLength={2} maxLength={80} value={nameUz} data-autofocus

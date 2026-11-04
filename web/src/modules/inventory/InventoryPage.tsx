@@ -7,6 +7,7 @@ import type { InventorySummary, Membership, Product, StockMovement } from "../..
 import { formatDate, formatMoney, formatQty, formatTime, MOVE_LABELS } from "../../components/format";
 import { Modal } from "../../components/Modal";
 import { Badge, Button, Card, Empty, ErrorNote, inputClass, PageTitle, Spinner, Tabs } from "../../components/ui";
+import { vocabFor } from "../vocab";
 
 const PAGE = 50;
 type View = "active" | "low" | "inactive" | "moves";
@@ -42,11 +43,11 @@ export function InventoryPage({ membership }: { membership: Membership }) {
   return (
     <>
       <PageTitle
-        title="Ombor"
+        title={vocabFor(membership.business_kind).inventory}
         hint={summary.data && `${summary.data.products} ta mahsulot, jami ${formatMoney(summary.data.stock_value)}`}
         action={canManage && (
           <Button className="flex items-center gap-1" onClick={() => setEditing("new")}>
-            <Plus size={16} aria-hidden /> Mahsulot
+            <Plus size={16} aria-hidden /> {vocabFor(membership.business_kind).product}
           </Button>
         )}
       />
@@ -130,7 +131,11 @@ function ProductList({ businessId, show, q, canManage, onEdit, onMove }: {
           <li key={p.id} className="grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-2 px-4 py-3 text-sm lg:grid-cols-[1fr_8rem_7rem_7rem_7rem]">
             <button disabled={!canManage} onClick={() => onEdit(p)} className="min-w-0 text-left disabled:cursor-default">
               <span className="block font-medium break-words">{p.name}</span>
-              {p.sku && <span className="block text-xs text-muted break-words">{p.sku}</span>}
+              {(p.category || p.sku || p.barcode) && (
+                <span className="block text-xs text-muted break-words">
+                  {[p.category, p.sku, p.barcode && `Shtrix-kod: ${p.barcode}`].filter(Boolean).join(" · ")}
+                </span>
+              )}
             </button>
             <span className="text-right tabular-nums">
               <span className="block whitespace-nowrap">{formatQty(p.current_qty)} {p.unit}</span>
@@ -213,6 +218,8 @@ function ProductDialog({ businessId, product, onClose }: {
   const url = `/businesses/${businessId}/products`;
   const [name, setName] = useState(product?.name ?? "");
   const [sku, setSku] = useState(product?.sku ?? "");
+  const [category, setCategory] = useState(product?.category ?? "");
+  const [barcode, setBarcode] = useState(product?.barcode ?? "");
   const [unit, setUnit] = useState(product?.unit ?? "dona");
   const [cost, setCost] = useState(String(product?.cost_price ?? 0));
   const [sale, setSale] = useState(String(product?.sale_price ?? 0));
@@ -221,7 +228,8 @@ function ProductDialog({ businessId, product, onClose }: {
 
   const save = useMutation({
     mutationFn: () => {
-      const body = { name: name.trim(), sku: sku.trim() || null, unit: unit.trim(), cost_price: Number(cost),
+      const body = { name: name.trim(), sku: sku.trim() || null, category: category.trim() || null,
+                     barcode: barcode.trim() || null, unit: unit.trim(), cost_price: Number(cost),
                      sale_price: Number(sale), min_qty: Number(min) };
       return product
         ? api(`${url}/${product.id}`, json("PUT", { ...body, is_active: active }))
@@ -247,6 +255,14 @@ function ProductDialog({ businessId, product, onClose }: {
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="block text-sm">Kodi (ixtiyoriy)
             <input className={inputClass} maxLength={60} value={sku} onChange={(e) => setSku(e.target.value)} />
+          </label>
+          <label className="block text-sm">Kategoriya (ilovada guruh)
+            <input className={inputClass} maxLength={80} placeholder="Vitaminlar, og'riq qoldiruvchi..." value={category}
+              onChange={(e) => setCategory(e.target.value)} />
+          </label>
+          <label className="block text-sm">Shtrix-kod (ixtiyoriy)
+            <input className={`${inputClass} font-mono`} maxLength={64} pattern="[0-9A-Za-z\-]{4,64}" inputMode="numeric"
+              placeholder="Skaner bilan o'qiting" value={barcode} onChange={(e) => setBarcode(e.target.value.trim())} />
           </label>
           <label className="block text-sm">O'lchov birligi
             <input className={inputClass} required maxLength={20} list="units" value={unit}

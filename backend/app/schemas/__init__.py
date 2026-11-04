@@ -132,6 +132,7 @@ class MembershipOut(BaseModel):
     member_id: int
     business_id: int
     business_name: str
+    business_kind: str = "salon"                          # salon | pharmacy | clinic — panel yozuvlari
     business_status: str
     business_active: bool                                 # obuna bayrog'i
     subscription_ends_at: datetime | None                 # None = muddatsiz

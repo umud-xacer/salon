@@ -142,6 +142,7 @@ export type BusinessDetail = {
   phone: string | null;
   photos: string[];
   category_name: string;
+  kind?: 'salon' | 'pharmacy' | 'clinic';
   rating_avg: number;
   rating_count: number;
   is_open_now: boolean;

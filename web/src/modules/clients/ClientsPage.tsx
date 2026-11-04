@@ -7,6 +7,7 @@ import type { Appointment, ClientRecord, Membership } from "../../api/types";
 import { formatDate, formatMoney, formatTime, normalizePhone, STATUS_LABELS } from "../../components/format";
 import { Modal } from "../../components/Modal";
 import { Badge, Button, Card, Empty, ErrorNote, inputClass, PageTitle, Spinner } from "../../components/ui";
+import { vocabFor } from "../vocab";
 
 const PAGE = 50;
 
@@ -34,7 +35,7 @@ export function ClientsPage({ membership }: { membership: Membership }) {
   return (
     <>
       <PageTitle
-        title="Mijozlar"
+        title={vocabFor(membership.business_kind).clients}
         hint="Tashriflar yakunlangan bronlardan hisoblanadi"
         action={
           <Button className="flex items-center gap-1" onClick={() => setEditing("new")}>

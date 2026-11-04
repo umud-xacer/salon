@@ -12,7 +12,8 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_public_db
 from app.core.config import get_settings
-from app.schemas.catalog import (BusinessCard, BusinessDetail, CategoryOut, HoursOut, NearbyOut,
+from app.schemas.catalog import (BusinessCard, BusinessDetail, CategoryOut, HoursOut, NearbyOut, ProductCategory,
+                                 PublicProduct, PublicProducts,
                                  ServiceGroupOut, ServiceOut, StaffOut)
 from app.schemas.schedule import SlotsOut
 from app.services.slots import available_slots
@@ -52,7 +53,7 @@ _SORTS = {
 # Ilovada faqat lokatsiyasi va kamida bitta faol xizmati bor, turi yoqilgan salonlar
 _PUBLIC_WHERE = (
     "b.status = 'active' AND b.is_listed AND b.location IS NOT NULL"
-    " AND EXISTS (SELECT 1 FROM services s0 WHERE s0.business_id = b.id AND s0.is_active)"
+    " AND app.has_public_offer(b.id)"            # faol xizmat yoki (dorixona) katalogdagi dori
     " AND EXISTS (SELECT 1 FROM business_categories c0 WHERE c0.id = b.category_id AND c0.is_active)"
 )
 
@@ -79,7 +80,7 @@ def app_info():
 
 @router.get("/categories", response_model=list[CategoryOut])
 def categories(db: Session = Depends(get_public_db)):
-    rows = db.execute(text("SELECT id, slug, name_uz, name_ru, icon FROM business_categories WHERE is_active "
+    rows = db.execute(text("SELECT id, slug, name_uz, name_ru, icon, kind FROM business_categories WHERE is_active "
                            "ORDER BY sort_order, id"))
     return [CategoryOut(**r) for r in rows.mappings()]
 
@@ -154,12 +155,27 @@ def slots(member_id: int = Query(ge=1), service_id: int = Query(ge=1), day: date
     return available_slots(db, member_id, service_id, day, step)
 
 
+@router.get("/businesses/{slug}/products", response_model=PublicProducts)
+def public_products(slug: str, q: str | None = Query(default=None, max_length=60),
+                    category: str | None = Query(default=None, max_length=80),
+                    limit: int = Query(default=50, ge=1, le=100), offset: int = Query(default=0, ge=0),
+                    db: Session = Depends(get_public_db)):
+    """Dorixona katalogi: nomi, kategoriyasi, narxi, holati (bor/kam/tugagan). Tannarx va aniq qoldiq yo'q."""
+    term = (q or "").strip()
+    pattern = term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") if term else None
+    items = db.execute(text("SELECT * FROM app.public_products(:s, :q, :c, :l, :o)"),
+                       {"s": slug, "q": pattern, "c": category, "l": limit, "o": offset}).mappings()
+    cats = db.execute(text("SELECT * FROM app.public_product_categories(:s)"), {"s": slug}).mappings()
+    return PublicProducts(items=[PublicProduct(**r) for r in items],
+                          categories=[ProductCategory(**c) for c in cats])
+
+
 @router.get("/businesses/{slug}", response_model=BusinessDetail)
 def business_detail(slug: str, db: Session = Depends(get_public_db)):
     """Biznes sahifasi: ma'lumot, ish soatlari, rasmlar, xizmatlar (kategoriya bo'yicha), ustalar."""
     b = db.execute(text(f"""
         SELECT b.id, b.slug, b.name, b.description, c.slug AS category, c.name_uz AS category_name,
-               b.phone, b.city, b.address, b.logo_url, b.cover_url,
+               c.kind, b.phone, b.city, b.address, b.logo_url, b.cover_url,
                ST_Y(b.location::geometry) AS lat, ST_X(b.location::geometry) AS lng,
                b.rating_avg::float AS rating_avg, b.rating_count, {_IS_OPEN} AS is_open_now
           FROM businesses b JOIN business_categories c ON c.id = b.category_id

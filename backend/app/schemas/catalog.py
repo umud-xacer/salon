@@ -1,4 +1,5 @@
 from datetime import time
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator, model_validator
 
@@ -23,6 +24,26 @@ class CategoryOut(BaseModel):
     name_uz: str
     name_ru: str
     icon: str | None
+    kind: str = "salon"              # salon | pharmacy | clinic — ilova sahifasi shunga qarab
+
+
+class PublicProduct(BaseModel):
+    id: int
+    name: str
+    category: str | None
+    unit: str
+    price: int
+    stock: Literal["in", "low", "out"]
+
+
+class ProductCategory(BaseModel):
+    category: str
+    count: int
+
+
+class PublicProducts(BaseModel):
+    items: list[PublicProduct]
+    categories: list[ProductCategory]
 
 
 class BusinessCard(BaseModel):
@@ -92,6 +113,7 @@ class BusinessDetail(BaseModel):
     description: str | None
     category: str
     category_name: str
+    kind: str = "salon"
     phone: str | None
     city: str | None
     address: str | None
@@ -264,6 +286,7 @@ class ServicePreset(BaseModel):
 
 
 class BusinessTypeIn(BaseModel):
+    kind: Literal["salon", "pharmacy", "clinic"] = "salon"
     name_uz: str = Field(min_length=2, max_length=80)
     name_ru: str = Field(min_length=2, max_length=80)
     icon: str | None = Field(default=None, max_length=40, pattern=r"^[a-z0-9-]+$")
@@ -288,6 +311,7 @@ class BusinessTypeCreate(BusinessTypeIn):
 
 
 class BusinessTypeUpdate(BaseModel):
+    kind: Literal["salon", "pharmacy", "clinic"] | None = None
     name_uz: str | None = Field(default=None, min_length=2, max_length=80)
     name_ru: str | None = Field(default=None, min_length=2, max_length=80)
     icon: str | None = Field(default=None, max_length=40, pattern=r"^[a-z0-9-]+$")

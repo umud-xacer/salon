@@ -19,7 +19,7 @@ _NOT_FOUND = HTTPException(404, detail={"code": "not_found", "message": "Mahsulo
 
 _LOW = "p.is_active AND p.min_qty > 0 AND p.current_qty <= p.min_qty"
 _PRODUCT_SELECT = f"""
-    SELECT p.id, p.name, p.sku, p.unit, p.cost_price, p.sale_price, p.min_qty, p.current_qty, p.is_active,
+    SELECT p.id, p.name, p.sku, p.category, p.barcode, p.unit, p.cost_price, p.sale_price, p.min_qty, p.current_qty, p.is_active,
            {_LOW} AS is_low
       FROM products p
 """
@@ -44,6 +44,7 @@ def _product(db: Session, business_id: int, product_id: int) -> ProductOut:
 
 def _clean(body: ProductIn) -> dict:
     return {"name": body.name.strip(), "sku": (body.sku or "").strip() or None, "unit": body.unit.strip(),
+            "category": (body.category or "").strip() or None, "barcode": body.barcode or None,
             "cost": body.cost_price, "sale": body.sale_price, "min": body.min_qty}
 
 
@@ -70,18 +71,19 @@ def list_products(q: str = Query(default="", max_length=60),
     condition = {"active": "p.is_active", "low": _LOW, "inactive": "NOT p.is_active"}[show]
     rows = db.execute(text(_PRODUCT_SELECT + rf"""
          WHERE p.business_id = :b AND {condition}
-           AND (p.name ILIKE :p ESCAPE '\' OR coalesce(p.sku, '') ILIKE :p ESCAPE '\')
+           AND (p.name ILIKE :p ESCAPE '\' OR coalesce(p.sku, '') ILIKE :p ESCAPE '\'
+                OR coalesce(p.barcode, '') = :exact OR coalesce(p.category, '') ILIKE :p ESCAPE '\')
          ORDER BY p.name, p.id
          LIMIT :limit OFFSET :offset
-    """), {"b": business_id, "p": pattern, "limit": limit, "offset": offset}).mappings()
+    """), {"b": business_id, "p": pattern, "exact": q.strip(), "limit": limit, "offset": offset}).mappings()
     return [ProductOut(**r) for r in rows]
 
 
 @router.post("/products", response_model=ProductOut, status_code=201)
 def create_product(body: ProductIn, business_id: int = Depends(_manage), db: Session = Depends(get_db)):
     product_id = db.scalar(text("""
-        INSERT INTO products (business_id, name, sku, unit, cost_price, sale_price, min_qty)
-        VALUES (:b, :name, :sku, :unit, :cost, :sale, :min) RETURNING id
+        INSERT INTO products (business_id, name, sku, category, barcode, unit, cost_price, sale_price, min_qty)
+        VALUES (:b, :name, :sku, :category, :barcode, :unit, :cost, :sale, :min) RETURNING id
     """), {"b": business_id, **_clean(body)})
     audit.log(db, business_id, "create", "product", product_id)
     db.commit()
@@ -93,7 +95,8 @@ def update_product(body: ProductUpdate, product_id: int = Path(ge=1), business_i
                    db: Session = Depends(get_db)):
     updated = db.execute(text("""
         UPDATE products
-           SET name = :name, sku = :sku, unit = :unit, cost_price = :cost, sale_price = :sale, min_qty = :min,
+           SET name = :name, sku = :sku, category = :category, barcode = :barcode, unit = :unit,
+               cost_price = :cost, sale_price = :sale, min_qty = :min,
                is_active = :active
          WHERE id = :id AND business_id = :b
     """), {"id": product_id, "b": business_id, "active": body.is_active, **_clean(body)}).rowcount

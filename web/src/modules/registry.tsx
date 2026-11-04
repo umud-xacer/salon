@@ -20,6 +20,7 @@ import {
 import type { ComponentType } from "react";
 
 import type { Membership, Panel } from "../api/types";
+import { vocabFor, type Vocab } from "./vocab";
 import { BusinessPage } from "./business/BusinessPage";
 import { CalendarPage } from "./calendar/CalendarPage";
 import { ClientsPage } from "./clients/ClientsPage";
@@ -40,13 +41,14 @@ export interface Section {
   panel: Panel;
   module?: string;                // yoqilgan bo'lishi shart bo'lgan modul
   anyPermission?: string[];       // shulardan biri bo'lsa kifoya
+  term?: keyof Vocab;             // nomi muassasa turiga qarab (Ustalar/Shifokorlar...)
   page: ComponentType<{ membership: Membership }>;
 }
 
 export const SECTIONS: Section[] = [
   { path: "dashboard", label: "Bosh sahifa", icon: LayoutDashboard, panel: "admin", page: DashboardPage },
   {
-    path: "calendar", label: "Kalendar", icon: CalendarRange, panel: "admin", module: "booking",
+    path: "calendar", label: "Kalendar", term: "calendar", icon: CalendarRange, panel: "admin", module: "booking",
     anyPermission: ["appointments.view_all"], page: CalendarPage,
   },
   {
@@ -62,7 +64,7 @@ export const SECTIONS: Section[] = [
     anyPermission: ["finance.view"], page: ReportsPage,
   },
   {
-    path: "inventory", label: "Ombor", icon: Package, panel: "admin", module: "inventory",
+    path: "inventory", label: "Ombor", term: "inventory", icon: Package, panel: "admin", module: "inventory",
     anyPermission: ["inventory.view"], page: InventoryPage,
   },
   {
@@ -70,16 +72,16 @@ export const SECTIONS: Section[] = [
     anyPermission: ["payroll.manage"], page: PayrollPage,
   },
   {
-    path: "clients", label: "Mijozlar", icon: Contact, panel: "admin", module: "booking",
+    path: "clients", label: "Mijozlar", term: "clients", icon: Contact, panel: "admin", module: "booking",
     anyPermission: ["clients.view"], page: ClientsPage,
   },
-  { path: "staff", label: "Xodimlar", icon: Users, panel: "admin", anyPermission: ["staff.manage"], page: StaffPage },
+  { path: "staff", label: "Xodimlar", term: "staff", icon: Users, panel: "admin", anyPermission: ["staff.manage"], page: StaffPage },
   {
     path: "work-schedule", label: "Ish jadvali", icon: CalendarClock, panel: "admin",
     anyPermission: ["staff.manage"], page: WorkSchedulePage,
   },
   {
-    path: "services", label: "Xizmatlar", icon: Scissors, panel: "admin",
+    path: "services", label: "Xizmatlar", term: "services", icon: Scissors, panel: "admin",
     anyPermission: ["services.manage"], page: ServicesPage,
   },
   { path: "business", label: "Salon", icon: Store, panel: "admin", anyPermission: ["business.manage"], page: BusinessPage },
@@ -89,10 +91,11 @@ export const SECTIONS: Section[] = [
 ];
 
 export function sectionsFor(m: Membership): Section[] {
+  const v = vocabFor(m.business_kind);
   return SECTIONS.filter(
     (s) =>
       s.panel === m.panel &&
       (!s.module || m.modules.includes(s.module)) &&
       (!s.anyPermission || s.anyPermission.some((p) => m.permissions.includes(p))),
-  );
+  ).map((s) => (s.term ? { ...s, label: v[s.term] } : s));
 }
