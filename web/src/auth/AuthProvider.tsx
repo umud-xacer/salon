@@ -1,7 +1,7 @@
 import { type QueryClient, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createContext, useContext, useEffect, useMemo, type ReactNode } from "react";
 
-import { api, hasSession, logout as apiLogout, setSessionLostHandler, storeSession } from "../api/client";
+import { api, ApiError, clearSession, hasSession, logout as apiLogout, setSessionLostHandler, storeSession } from "../api/client";
 import type { LoginResponse, Me } from "../api/types";
 
 interface AuthValue {
@@ -26,7 +26,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const query = useQuery({
     queryKey: ME_KEY,
-    queryFn: () => (hasSession() ? api<Me>("/auth/me") : Promise.resolve(null)),
+    queryFn: async () => {
+      if (!hasSession()) return null;
+      try {
+        return await api<Me>("/auth/me");
+      } catch (e) {
+        if (e instanceof ApiError && e.code === "wrong_panel") {
+          clearSession();
+          return null;
+        }
+        throw e;
+      }
+    },
     retry: false,
     // Obuna yoki modul Super Admin tomonidan o'zgarsa, panel qayta kirmasdan yangilanadi
     staleTime: 0,

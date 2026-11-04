@@ -16,8 +16,9 @@
 	}
 }
 
-# Veb-panel: API shu domen ostida, shuning uchun CORS kerak emas
-{$WEB_DOMAIN} www.{$WEB_DOMAIN} {
+# Veb-panel: API shu domen ostida, shuning uchun CORS kerak emas.
+# Bitta panel ikki domenda: kim qayerda kira olishini API Host bo'yicha hal qiladi (app/core/panels.py)
+(web_panel) {
 	encode gzip
 
 	header {
@@ -42,6 +43,16 @@
 		try_files {path} /index.html
 		file_server
 	}
+}
+
+# Salon rahbarlari va xodimlari
+{$WEB_DOMAIN} www.{$WEB_DOMAIN} {
+	import web_panel
+}
+
+# Faqat Super Admin
+{$ADMIN_DOMAIN} {$ADMIN_ALIAS:} {
+	import web_panel
 }
 
 # Shu serverdagi boshqa loyihalar (git'da yo'q): deploy/sites/*.caddy

@@ -24,6 +24,9 @@ export function useMembers(businessId: number) {
 /** Menejerni faqat direktor va Super Admin qo'shadi (baza ham shuni tekshiradi) */
 export function MembersPanel({ businessId, canManageManagers }: { businessId: number; canManageManagers: boolean }) {
   const members = useMembers(businessId);
+  const { me } = useAuth();
+  // Super Admin faqat direktor parolini ko'radi, xodimlarnikini direktor (server ham shunday tekshiradi)
+  const canView = (m: Member) => m.password_block === null && (me?.workspace !== "superadmin" || m.role === "owner");
   const [adding, setAdding] = useState(false);
   const [openedId, setOpenedId] = useState<number | null>(null);
   const opened = members.data?.find((m) => m.id === openedId);
@@ -54,9 +57,7 @@ export function MembersPanel({ businessId, canManageManagers }: { businessId: nu
               {!m.is_active && <Badge tone="red">Faol emas</Badge>}
             </button>
             <span className="shrink-0 pr-3">
-              {m.password_block === null && (
-                <PasswordReveal businessId={businessId} memberId={m.id} status={m.password_status} />
-              )}
+              {canView(m) && <PasswordReveal businessId={businessId} memberId={m.id} status={m.password_status} />}
             </span>
           </li>
         ))}
@@ -336,6 +337,7 @@ function ServicesTab({ businessId, memberId }: { businessId: number; memberId: n
 }
 
 function PasswordTab({ businessId, member: m }: { businessId: number; member: Member }) {
+  const { me } = useAuth();
   const queryClient = useQueryClient();
   const [password, setPassword] = useState("");
   const save = useMutation({
@@ -367,7 +369,9 @@ function PasswordTab({ businessId, member: m }: { businessId: number; member: Me
       <p className="flex flex-wrap items-center gap-2 text-sm">
         Hozirgi holat: <PasswordBadge status={m.password_status} />
         {m.password_changed_at && <span className="text-muted">{formatDate(m.password_changed_at)}</span>}
-        <PasswordReveal businessId={businessId} memberId={m.id} status={m.password_status} />
+        {(me?.workspace !== "superadmin" || m.role === "owner") && (
+          <PasswordReveal businessId={businessId} memberId={m.id} status={m.password_status} />
+        )}
       </p>
       <label className="block text-sm">Yangi parol
         <span className="mt-1 flex gap-2">

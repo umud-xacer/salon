@@ -4,6 +4,7 @@ import { loginWithPassword, requestOtp, verifyOtp } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
 import { normalizePhone } from "../components/format";
 import { Button, ErrorNote } from "../components/ui";
+import { isAdminHost } from "../panelHost";
 
 const input = "w-full rounded-lg border border-line px-3 py-2 outline-none focus:border-primary";
 
@@ -52,7 +53,13 @@ export function LoginPage() {
       <div className="w-full max-w-sm rounded-2xl bg-white p-6">
         <div className="mb-5 flex flex-col items-center text-center">
           <img src="/logo.jpg" alt="Chronix" className="mb-3 size-24 rounded-2xl object-cover" />
-          <h1 className="text-lg font-semibold text-navy">Chronix paneliga kirish</h1>
+          <h1 className="text-lg font-semibold text-navy">
+            {isAdminHost ? "Chronix — Super Admin paneli" : "Chronix paneliga kirish"}
+          </h1>
+          <p className="mt-1 text-xs text-muted">
+            {isAdminHost ? "Faqat platforma boshqaruvchisi uchun"
+              : "Salon, dorixona, klinika rahbarlari va xodimlari uchun"}
+          </p>
         </div>
 
         <div className="mb-4 grid grid-cols-2 rounded-lg bg-page p-1 text-sm">

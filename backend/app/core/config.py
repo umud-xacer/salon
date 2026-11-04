@@ -31,6 +31,12 @@ class Settings(BaseSettings):
 
     cors_origins: list[str] = []
 
+    # Panellarni domen bo'yicha ajratish (app/core/panels.py). Bo'sh — cheklov yo'q
+    admin_panel_hosts: list[str] = []          # faqat Super Admin: ["ega.ariqalqon.uz", "www.ega.ariqalqon.uz"]
+    business_panel_hosts: list[str] = []       # Super Admin kirmaydi: ["ariqalqon.uz", "www.ariqalqon.uz"]
+    admin_panel_url: str = "https://ega.ariqalqon.uz"
+    business_panel_url: str = "https://www.ariqalqon.uz"
+
     # Yuklangan rasmlar: papka va ochiq manzil (prod'da Caddy /media ni beradi, https bo'lishi shart)
     media_dir: str = "media"
     media_base_url: str = "https://127.0.0.1:8002/media"

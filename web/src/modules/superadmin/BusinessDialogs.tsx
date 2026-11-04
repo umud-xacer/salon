@@ -178,13 +178,26 @@ export function BusinessDialog({ business: b, modules, onClose }: {
   const [tab, setTab] = useState<Tab>("info");
   return (
     <Modal title={b.name} onClose={onClose}>
-      <p className="mb-3 flex flex-wrap items-center gap-2 text-sm text-muted">
-        <span>Direktor: {b.owner_name ?? "yo'q"}{b.owner_phone ? ` · ${b.owner_phone}` : ""}</span>
+      <p className="mb-2 flex flex-wrap items-center gap-2 text-sm text-muted">
+        <span>Direktor: {b.owner_name ?? "yo'q"}</span>
         <StatusBadge b={b} />
-        <PasswordBadge status={b.owner_password_status} />
-        <PasswordReveal businessId={b.id} memberId={b.owner_member_id} status={b.owner_password_status} />
-        {b.owner_password_changed_at && <span>{formatDate(b.owner_password_changed_at)}</span>}
       </p>
+      <div className="mb-3 rounded-lg border border-line bg-page px-3 py-2 text-sm">
+        <p className="mb-1 text-xs font-medium text-muted">Direktorning kirish ma'lumotlari (www.ariqalqon.uz)</p>
+        <dl className="grid grid-cols-[4.5rem_1fr] items-center gap-y-1">
+          <dt className="text-muted">Login</dt>
+          <dd className="font-mono tabular-nums select-all">{b.owner_phone ?? "—"}</dd>
+          <dt className="text-muted">Parol</dt>
+          <dd className="flex flex-wrap items-center gap-2">
+            <PasswordBadge status={b.owner_password_status} />
+            <PasswordReveal businessId={b.id} memberId={b.owner_member_id} status={b.owner_password_status} />
+            {b.owner_password_changed_at && <span className="text-xs text-muted">{formatDate(b.owner_password_changed_at)}</span>}
+          </dd>
+        </dl>
+        {b.owner_password_status !== "issued" && (
+          <p className="mt-1 text-xs text-muted">Parol berish yoki almashtirish: "Xodimlar" → direktor → "Parol".</p>
+        )}
+      </div>
       <Tabs tabs={TABS} value={tab} onChange={setTab} />
       {tab === "info" && <InfoTab business={b} />}
       {tab === "subscription" && <SubscriptionTab business={b} />}

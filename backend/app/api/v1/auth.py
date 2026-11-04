@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from app.core.panels import check_panel
 from app.api.deps import client_meta, current_user, get_auth_db, get_db
 from app.core.config import get_settings
 from app.models import User
@@ -33,6 +34,7 @@ def otp_verify(body: OtpVerify, request: Request, db: Session = Depends(get_auth
     user, tokens, is_new = auth_service.verify_otp(db, body.phone, body.code, body.full_name, ua, ip,
                                                    birth_date=body.birth_date, gender=body.gender,
                                                    password=body.password)
+    check_panel(request, user.is_superadmin)
     return _login_out(user, tokens, is_new)
 
 
@@ -41,6 +43,7 @@ def login(body: PasswordLogin, request: Request, db: Session = Depends(get_auth_
     """Telefon + parol (veb-admin panel uchun)."""
     ua, ip = client_meta(request)
     user, tokens = auth_service.login_password(db, body.phone, body.password, ua, ip)
+    check_panel(request, user.is_superadmin)        # noto'g'ri panel — tokenlar berilmaydi
     return _login_out(user, tokens)
 
 

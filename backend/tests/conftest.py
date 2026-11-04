@@ -26,6 +26,8 @@ os.environ.update({
     "JWT_SECRET": "test-secret-0123456789-abcdefghijklmnop",
     "SMS_PROVIDER": "console",
     "MEDIA_DIR": str(BACKEND / ".pytest_media"),
+    "ADMIN_PANEL_HOSTS": '["ega.test.chronix.local"]',
+    "BUSINESS_PANEL_HOSTS": '["www.test.chronix.local"]',
     "MEDIA_BASE_URL": "https://test.chronix.local/media",
 })
 

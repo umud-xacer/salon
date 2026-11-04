@@ -8,6 +8,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.core.security import decode_access_token
+from app.core.panels import check_panel
 from app.db.session import api_session, auth_session
 from app.models import User
 
@@ -57,6 +58,7 @@ def get_db(request: Request, creds: HTTPAuthorizationCredentials | None = Depend
         # Bloklangan, o'chirilgan yoki "hamma joydan chiqish" qilgan foydalanuvchi tokeni darhol yaroqsiz
         if user is None or user.status != "active" or user.token_version != claims.token_version:
             raise _UNAUTHORIZED
+        check_panel(request, user.is_superadmin)
         if user.must_change_password and request.url.path not in _PASSWORD_CHANGE_PATHS:
             raise HTTPException(403, detail={"code": "password_change_required",
                                              "message": "Avval vaqtinchalik parolni almashtiring"})
