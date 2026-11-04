@@ -3,6 +3,7 @@ import { useCallback, useState } from 'react';
 import { Alert, FlatList, Linking, Platform, RefreshControl, StyleSheet, Text, View } from 'react-native';
 
 import { api, ApiError, Appointment } from '../../src/api';
+import { cancelBookingReminder } from '../../src/localReminders';
 import {
   Button, Card, colors, dateTimeOf, EmptyState, Icon, money, radius, Segments, shared, type,
 } from '../../src/ui';
@@ -65,7 +66,10 @@ export default function Bookings() {
     {
       text: 'Ha, bekor qilish',
       style: 'destructive',
-      onPress: () => act(() => api(`/appointments/${a.id}/cancel`, { method: 'POST', body: {} })),
+      onPress: () => act(async () => {
+        await api(`/appointments/${a.id}/cancel`, { method: 'POST', body: {} });
+        await cancelBookingReminder(a.id);
+      }),
     },
   ]);
 

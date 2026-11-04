@@ -4,6 +4,7 @@ import { ActivityIndicator, Alert, ScrollView, Text, View } from 'react-native';
 
 import { api, ApiError, Appointment, Slot } from '../src/api';
 import { Button, Chip, Empty, ErrorText, nextDays, shared } from '../src/ui';
+import { scheduleBookingReminder } from '../src/localReminders';
 
 const DAYS = nextDays(14);
 
@@ -49,14 +50,14 @@ export default function Book() {
     setBusy(true);
     setError(null);
     try {
-      if (appointmentId) {
-        await api(`/appointments/${appointmentId}/reschedule`, { method: 'POST', body: { starts_at: selected.starts_at } });
-      } else {
-        await api('/appointments', {
+      const saved = appointmentId
+        ? await api<Appointment>(`/appointments/${appointmentId}/reschedule`, { method: 'POST', body: { starts_at: selected.starts_at } })
+        : await api<Appointment>('/appointments', {
           method: 'POST',
           body: { member_id: Number(memberId), service_id: Number(service), starts_at: selected.starts_at },
         });
-      }
+      // Telefonning o'ziga eslatma (vaqt o'zgarsa — yangisi bilan almashadi)
+      void scheduleBookingReminder(saved.id, saved.starts_at, saved.business_name ?? 'Salon');
       Alert.alert(appointmentId ? 'Vaqt o\'zgartirildi' : 'Bron qilindi', `${day} ${selected.time}`);
       router.replace('/bookings');
     } catch (e) {

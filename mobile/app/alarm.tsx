@@ -7,6 +7,7 @@ import { Linking, StyleSheet, Text, Vibration, View } from 'react-native';
 import { api, ApiError, Appointment } from '../src/api';
 import { openedAlarms } from '../src/notifications';
 import { Button, dateTimeOf, ErrorText } from '../src/ui';
+import { cancelBookingReminder } from '../src/localReminders';
 
 const PATTERN = [0, 800, 400];
 
@@ -58,7 +59,10 @@ export default function Alarm() {
   };
 
   const attend = () => run(() => api(`/appointments/${appointmentId}/attend`, { method: 'POST' }));
-  const cancel = () => run(() => api(`/appointments/${appointmentId}/cancel`, { method: 'POST', body: { reason: 'Budilnik ekranidan' } }));
+  const cancel = () => run(async () => {
+    await api(`/appointments/${appointmentId}/cancel`, { method: 'POST', body: { reason: 'Mijoz budilnikda "Bormayman" dedi' } });
+    await cancelBookingReminder(Number(appointmentId));
+  });
   const call = () => run(async () => {
     const { tel_url } = await api<{ tel_url: string }>(`/appointments/${appointmentId}/client-contact`);
     await Linking.openURL(tel_url);
@@ -83,8 +87,8 @@ export default function Alarm() {
         <ErrorText text={error} />
         {isClient ? (
           <>
-            <Button title="Boraman" onPress={attend} busy={busy} />
-            <Button title="Bekor qilish" kind="danger" onPress={cancel} disabled={busy} />
+            <Button title="Tasdiqlayman, boraman" onPress={attend} busy={busy} />
+            <Button title="Bormayman (bronni bekor qilish)" kind="danger" onPress={cancel} disabled={busy} />
           </>
         ) : !isTest && (
           <Button title="Qo'ng'iroq qilish" onPress={call} busy={busy} />

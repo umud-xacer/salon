@@ -76,7 +76,11 @@ def visit(client, admin, biz):
 
 
 def elapse(admin, appointment, minutes=16):
+    """Vaqt o'tdi: bron boshlanishi yaqinlashadi (eslatma qayta boshlanmasin — trigger chetlab o'tiladi)."""
     with admin.begin() as c:
+        c.execute(text("SET LOCAL session_replication_role = replica"))
+        c.execute(text("UPDATE appointments SET starts_at = starts_at - make_interval(mins => :m), "
+                       "ends_at = ends_at - make_interval(mins => :m) WHERE id = :a"), {"m": minutes, "a": appointment})
         c.execute(text("UPDATE appointment_reminders SET sent_at = sent_at - make_interval(mins => :m) "
                        "WHERE appointment_id = :a"), {"m": minutes, "a": appointment})
 
@@ -149,17 +153,18 @@ def test_no_answer_alerts_master_once(client, admin, visit):
     worker.run_once()
     master = visit["master"]["tokens"]
 
-    elapse(admin, a, minutes=5)
+    elapse(admin, a, minutes=3)
     worker.raise_alerts()
-    assert alerts(client, master) == []                           # javob muddati hali tugamagan
+    assert alerts(client, master) == []                           # 22 daqiqa qoldi — hali erta
 
-    elapse(admin, a, minutes=11)
+    elapse(admin, a, minutes=3)                                   # 19 daqiqa qoldi
     worker.raise_alerts()
     worker.raise_alerts()
     found = alerts(client, master)
     assert len(found) == 1
-    assert "iltimos bog'laning" in found[0]["body"] and "Mijoz Karimov" in found[0]["body"]
-    assert found[0]["data"] == {"appointment_id": a, "action": "call_client"}
+    assert found[0]["title"] == "Mijoz bilan bog'laning!"
+    assert "Mijoz Karimov" in found[0]["body"] and "19 daqiqa qoldi" in found[0]["body"]
+    assert found[0]["data"]["appointment_id"] == a and found[0]["data"]["action"] == "call_client"
     assert visit["phone"] not in str(found[0])                    # telefon xabarda saqlanmaydi
 
     body = client.get(f"{API}/{a}", headers=auth_header(master)).json()
@@ -339,3 +344,21 @@ def test_database_roles_are_separated(visit):
             with pytest.raises(DBAPIError) as e:
                 db.execute(text(sql))
             assert e.value.orig.sqlstate == "42501", sql
+
+
+def test_alert_also_reaches_reception_and_owner_not_other_staff(client, biz, admin, visit):
+    """Panel ham ogohlantirishni ko'radi: bronlarni boshqaradiganlar (direktor, qabulxona). Boshqa usta — yo'q."""
+    reception = add_member(client, biz, "receptionist")
+    other = add_member(client, biz, "staff")
+    a = visit["make"](25)
+    worker.run_once()
+    elapse(admin, a)
+    worker.raise_alerts()
+    mine = lambda tokens: [n for n in alerts(client, tokens) if n["data"]["appointment_id"] == a]  # noqa: E731
+    assert len(mine(visit["master"]["tokens"])) == 1
+    assert len(mine(biz["owner"])) == 1
+    assert len(mine(reception["tokens"])) == 1
+    assert mine(other["tokens"]) == []
+    # Qabulxona telefonni ham ola oladi va qo'ng'iroq qiladi
+    r = client.get(f"{API}/{a}/client-contact", headers=auth_header(reception["tokens"]))
+    assert r.status_code == 200 and r.json()["phone"] == visit["phone"]

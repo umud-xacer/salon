@@ -55,7 +55,8 @@ class Settings(BaseSettings):
 
     # Bron eslatmasi: boshlanishidan necha daqiqa oldin yuboriladi va javob uchun necha daqiqa kutiladi
     reminder_lead_minutes: int = Field(default=30, ge=5, le=240)
-    reminder_response_minutes: int = Field(default=15, ge=1, le=120)
+    # Mijoz javob bermasa, bron vaqtiga shuncha daqiqa qolganda usta va qabulxonaga ogohlantirish
+    reminder_alert_before_minutes: int = Field(default=20, ge=1, le=120)
 
     # Yandex HTTP Geocoder (manzil ↔ koordinata). Kalit faqat serverda — mobil ilovaga berilmaydi.
     # Xaritaning o'zi mobil ilovada Yandex MapKit (alohida, mobil kalit) bilan chiziladi.

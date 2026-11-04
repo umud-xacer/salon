@@ -38,7 +38,7 @@ def create_reminders() -> int:
 def raise_alerts() -> int:
     with worker_session() as db:
         count = db.scalar(text("SELECT app.raise_attendance_alerts(:m)"),
-                          {"m": get_settings().reminder_response_minutes})
+                          {"m": get_settings().reminder_alert_before_minutes})
         db.commit()
         return count
 

@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes, useNavigate, useParams } from "react-router-dom";
 
 import { useAuth } from "../auth/AuthProvider";
+import { AttendanceAlerts } from "../components/AttendanceAlerts";
 import { AppShell } from "../layouts/AppShell";
 import { sectionsFor } from "../modules/registry";
 import { SuspendedPage } from "./Notices";
@@ -47,6 +48,7 @@ export function BusinessPanel() {
         {/* Modul o'chirilgan yoki huquqi yo'q bo'lim ham shu yerga tushadi */}
         <Route path="*" element={<Navigate to={home} replace />} />
       </Routes>
+      <AttendanceAlerts />
     </AppShell>
   );
 }
