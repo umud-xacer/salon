@@ -5,6 +5,7 @@ import { useAuth } from "../auth/AuthProvider";
 import { normalizePhone } from "../components/format";
 import { Button, ErrorNote } from "../components/ui";
 import { isAdminHost } from "../panelHost";
+import { PasswordField } from "../components/PasswordField";
 
 const input = "w-full rounded-lg border border-line px-3 py-2 outline-none focus:border-primary";
 
@@ -92,9 +93,8 @@ export function LoginPage() {
           {mode === "password" && (
             <label className="block text-sm">
               Parol
-              <input
-                className={`${input} mt-1`}
-                type="password"
+              <PasswordField
+                className={input}
                 autoComplete="current-password"
                 required
                 value={password}

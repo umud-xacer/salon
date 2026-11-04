@@ -1,6 +1,6 @@
 // Chronix dizayn tizimi: ranglar, radiuslar, soyalar, matn uslublari va umumiy bloklar.
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { ComponentProps, ReactNode, useEffect, useRef } from 'react';
+import { ComponentProps, ReactNode, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator, Animated, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, TextInputProps,
   View,
@@ -78,10 +78,23 @@ export function Button({ title, onPress, kind = 'primary', busy, disabled, icon,
 }
 
 export function Field({ label, hint, ...props }: TextInputProps & { label: string; hint?: string }) {
+  // Parol maydonida o'ng tomonda "ko'z": bosilsa parol ochiq ko'rinadi
+  const [shown, setShown] = useState(false);
+  const secret = !!props.secureTextEntry;
   return (
     <View style={{ marginBottom: 14 }}>
       <Text style={styles.label}>{label}</Text>
-      <TextInput placeholderTextColor={colors.muted} {...props} style={[styles.input, props.editable === false && styles.inputOff]} />
+      <View>
+        <TextInput placeholderTextColor={colors.muted} {...props} secureTextEntry={secret && !shown}
+          style={[styles.input, secret && { paddingRight: 48 }, props.editable === false && styles.inputOff]} />
+        {secret && (
+          <Pressable onPress={() => setShown(!shown)} hitSlop={8} accessibilityRole="button"
+            accessibilityLabel={shown ? 'Parolni yashirish' : "Parolni ko'rsatish"}
+            style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 48, alignItems: 'center', justifyContent: 'center' }}>
+            <Icon name={shown ? 'eye-off-outline' : 'eye-outline'} size={20} color={colors.muted} />
+          </Pressable>
+        )}
+      </View>
       {hint && <Text style={[type.small, { marginTop: 4 }]}>{hint}</Text>}
     </View>
   );

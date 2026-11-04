@@ -5,6 +5,7 @@ import { api, json } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
 import { Modal } from "./Modal";
 import { Button, ErrorNote, inputClass } from "./ui";
+import { PasswordField } from "./PasswordField";
 
 export function ChangePasswordForm({ forced = false }: { forced?: boolean }) {
   const { signOut } = useAuth();
@@ -26,9 +27,8 @@ export function ChangePasswordForm({ forced = false }: { forced?: boolean }) {
     <form onSubmit={submit} className="space-y-3 text-left">
       <label className="block text-sm">
         {forced ? "Sizga berilgan parol" : "Hozirgi parol"}
-        <input
+        <PasswordField
           className={inputClass}
-          type="password"
           autoComplete="current-password"
           required={forced}
           value={oldPassword}
@@ -40,9 +40,8 @@ export function ChangePasswordForm({ forced = false }: { forced?: boolean }) {
       </label>
       <label className="block text-sm">
         Yangi parol
-        <input
+        <PasswordField
           className={inputClass}
-          type="password"
           autoComplete="new-password"
           required
           minLength={8}
