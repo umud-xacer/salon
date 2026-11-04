@@ -10,6 +10,7 @@ import { formatDate, formatMoney, normalizePhone, ROLE_LABELS } from "../../comp
 import { Modal } from "../../components/Modal";
 import { Badge, Button, Empty, ErrorNote, inputClass, PasswordBadge, Spinner, Tabs } from "../../components/ui";
 import { generatePassword, PasswordInput, PasswordReveal } from "../../components/PasswordReveal";
+import { CredentialsBox } from "../../components/CredentialsBox";
 import { ScheduleEditor } from "./ScheduleEditor";
 
 const membersKey = (b: number) => ["members", b];
@@ -153,21 +154,27 @@ function MemberDialog({ businessId, member: m, canManageManagers, onClose }: {
   onClose: () => void;
 }) {
   const { me } = useAuth();
+  const queryClient = useQueryClient();
   const isSelf = me?.user.id === m.user_id;
   const isOwner = m.role === "owner";
   // Direktorni va o'zini tahrirlash taqiqlangan, menejerni faqat direktor boshqaradi: baza rad etadi, tugmani ham ko'rsatmaymiz
   const editable = !isSelf && !isOwner && (m.role !== "manager" || canManageManagers);
-  const showPassword = m.password_block === null || m.password_block === "shared_account";
   const tabs: { id: Tab; label: string }[] = [
     { id: "main", label: "Asosiy" },
     ...(editable ? [{ id: "permissions" as const, label: "Huquqlar" }, { id: "services" as const, label: "Xizmatlar" }] : []),
     { id: "schedule", label: "Ish jadvali" },
-    ...(showPassword ? [{ id: "password" as const, label: "Parol" }] : []),
+    ...(m.password_block === "shared_account" ? [{ id: "password" as const, label: "Parol" }] : []),
   ];
   const [tab, setTab] = useState<Tab>("main");
 
+  const canViewPassword = me?.workspace !== "superadmin" || m.role === "owner";
   return (
     <Modal title={m.full_name || m.phone} onClose={onClose}>
+      {m.password_block === null && (
+        <CredentialsBox title="Kirish ma'lumotlari" businessId={businessId} memberId={m.id} phone={m.phone}
+          status={m.password_status} changedAt={m.password_changed_at} canView={canViewPassword}
+          onChanged={() => queryClient.invalidateQueries({ queryKey: membersKey(businessId) })} />
+      )}
       <Tabs tabs={tabs} value={tab} onChange={setTab} />
       {tab === "main" && <MainTab businessId={businessId} member={m} editable={editable} canManageManagers={canManageManagers} />}
       {tab === "permissions" && <PermissionsTab businessId={businessId} memberId={m.id} />}
