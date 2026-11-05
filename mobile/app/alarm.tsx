@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Linking, StyleSheet, Text, Vibration, View } from 'react-native';
 
 import { api, ApiError, Appointment } from '../src/api';
-import { openedAlarms } from '../src/notifications';
+import { alarmKey, openedAlarms } from '../src/notifications';
 import { Button, dateTimeOf, ErrorText } from '../src/ui';
 import { cancelBookingReminder } from '../src/localReminders';
 
@@ -23,7 +23,8 @@ export default function Alarm() {
   const isClient = type === 'appointment_reminder';
   const isTest = type === 'test';
   useKeepAwake();
-  openedAlarms.add(notificationId);
+  // To'liq ekran havolasi bilan to'g'ridan-to'g'ri ochilgan bo'lsa ham, shu bron uchun qayta ochilmasin
+  if (!isTest) openedAlarms.add(alarmKey(type, appointmentId));
 
   useEffect(() => {
     setAudioModeAsync({ playsInSilentMode: true }).catch(() => {});
@@ -36,7 +37,10 @@ export default function Alarm() {
   useEffect(() => {
     if (isTest) return;
     api<Appointment>(`/appointments/${appointmentId}`).then(setAppointment).catch(() => {});
-    api(`/notifications/${notificationId}/read`, { method: 'POST' }).catch(() => {});
+    // Telefondagi (mahalliy) budilnikda server bildirishnomasi raqami yo'q
+    if (/^\d+$/.test(notificationId ?? '')) {
+      api(`/notifications/${notificationId}/read`, { method: 'POST' }).catch(() => {});
+    }
   }, [appointmentId, notificationId, isTest]);
 
   const stop = useCallback(() => {

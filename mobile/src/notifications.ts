@@ -5,12 +5,24 @@ import { Platform } from 'react-native';
 
 import { api } from './api';
 
-export const ALARM_TYPES = ['appointment_reminder', 'attendance_alert'];
+export const ALARM_TYPES = ['appointment_reminder', 'attendance_alert', 'test'];
 
-// Bitta budilnik ikki yo'l bilan kelishi mumkin (push va to'liq ekran havolasi): ekran bir marta ochilsin
+// Bildirishnomadagi tugmalar (Android va iOS)
+export const BOOKING_CATEGORY = 'booking_alarm';
+export const ACTION_ATTEND = 'attend';
+export const ACTION_DECLINE = 'decline';
+
+// Bitta budilnik bir necha yo'l bilan kelishi mumkin (telefondagi budilnik, push, to'liq ekran havolasi,
+// ilova ichidagi tekshiruv): bron va tur bo'yicha ekran bir marta ochilsin
 export const openedAlarms = new Set<string>();
+export const alarmKey = (type: string, appointmentId: unknown) => `${type}:${String(appointmentId)}`;
 
 let pushToken: string | null = null;
+
+// Push holati Sozlamalarda ko'rsatiladi: ishlamasa foydalanuvchi va biz sababini ko'ramiz
+export type PushStatus = 'ok' | 'denied' | 'unavailable' | 'error' | 'unknown';
+export let pushStatus: PushStatus = 'unknown';
+export let pushError: string | null = null;
 
 // Ilova ochiq bo'lsa ovozni budilnik ekrani chaladi
 Notifications.setNotificationHandler({
@@ -44,21 +56,50 @@ export async function setupChannels() {
   });
 }
 
-export async function registerForPush() {
-  if (!Device.isDevice) return;
+// Tugmalar ilovani ochadi: ilova yopiq bo'lsa ham javob aniq yetib boradi (fonda JS ishlamasligi mumkin)
+export async function setupCategories() {
+  if (Platform.OS === 'web') return;
+  await Notifications.setNotificationCategoryAsync(BOOKING_CATEGORY, [
+    { identifier: ACTION_ATTEND, buttonTitle: 'Boraman', options: { opensAppToForeground: true } },
+    { identifier: ACTION_DECLINE, buttonTitle: 'Bormayman', options: { opensAppToForeground: true, isDestructive: true } },
+  ]).catch(() => {});
+}
+
+// Bildirishnomaga ruxsat (push bo'lmasa ham telefondagi budilnik uchun kerak)
+export async function ensureNotificationPermission(): Promise<boolean> {
+  if (Platform.OS === 'web') return false;
   const { status } = await Notifications.requestPermissionsAsync({
     ios: { allowAlert: true, allowSound: true, allowBadge: true },
   });
-  if (status !== 'granted') return;
+  return status === 'granted';
+}
+
+export async function registerForPush() {
+  if (!Device.isDevice) return;
+  if (!(await ensureNotificationPermission())) {
+    pushStatus = 'denied';
+    return;
+  }
 
   const projectId = Constants.expoConfig?.extra?.eas?.projectId;
   if (!projectId) {
-    console.warn('EAS projectId yo\'q: "npx eas init" bajaring, push token olinmadi');
+    pushStatus = 'unavailable';
+    pushError = 'EAS projectId yo\'q';
     return;
   }
-  const { data } = await Notifications.getExpoPushTokenAsync({ projectId });
-  pushToken = data;
-  await api('/devices', { method: 'POST', body: { token: data, platform: Platform.OS } });
+  try {
+    const { data } = await Notifications.getExpoPushTokenAsync({ projectId });
+    pushToken = data;
+    await api('/devices', { method: 'POST', body: { token: data, platform: Platform.OS } });
+    pushStatus = 'ok';
+    pushError = null;
+  } catch (e) {
+    // Android'da Firebase (google-services.json) sozlanmagan bo'lsa token olinmaydi.
+    // Bunda ham telefondagi budilnik va ilova ichidagi tekshiruv ishlaydi.
+    pushStatus = 'error';
+    pushError = e instanceof Error ? e.message : String(e);
+    throw e;
+  }
 }
 
 export async function unregisterPush() {
