@@ -14,6 +14,7 @@ import { AddressFields, type AddressValue } from "./AddressFields";
 import { useBusinessTypes } from "./BusinessTypesPage";
 import { slugFor, wordingFor } from "./typeWording";
 import { PaymentHistory, RenewForm } from "./SubscriptionPayments";
+import { OwnerChange } from "./OwnerChange";
 import { VocabContext, vocabFor } from "../vocab";
 
 export const BUSINESSES_KEY = ["superadmin", "businesses"];
@@ -194,6 +195,7 @@ export function BusinessDialog({ business: b, modules, onClose }: {
       <CredentialsBox title="Direktorning kirish ma'lumotlari (www.ariqalqon.uz)" businessId={b.id}
         memberId={b.owner_member_id} phone={b.owner_phone} status={b.owner_password_status}
         changedAt={b.owner_password_changed_at} canView onChanged={refreshAll} />
+      <OwnerChange business={b} />
       <Tabs tabs={TABS} value={tab} onChange={setTab} />
       {tab === "info" && <InfoTab business={b} />}
       {tab === "subscription" && <SubscriptionTab business={b} />}

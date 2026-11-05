@@ -454,6 +454,25 @@ class IssuedPasswordOut(BaseModel):
     changed_at: datetime | None
 
 
+class OwnerChange(_Phone):
+    """Super Admin: muassasa direktorini almashtirish (yoki shu odamning ismini tuzatish)."""
+    full_name: str = Field(min_length=2, max_length=120)
+    password: str | None = Field(default=None, max_length=128)        # yangi direktorning boshlang'ich paroli
+    previous: Literal["manager", "remove"] = "manager"                 # eski direktor: menejer bo'lib qoladi / chiqariladi
+
+    @field_validator("full_name")
+    @classmethod
+    def _name(cls, v: str) -> str:
+        return " ".join(v.split())
+
+    @field_validator("password")
+    @classmethod
+    def _strong(cls, v: str | None) -> str | None:
+        if v:
+            validate_password_strength(v)
+        return v or None
+
+
 class MemberPasswordIn(BaseModel):
     new_password: str = Field(max_length=128)
 

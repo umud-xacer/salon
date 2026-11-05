@@ -8,14 +8,14 @@ from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from fastapi.exceptions import RequestValidationError
 from pydantic import ValidationError
-from sqlalchemy import text
+from sqlalchemy import select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, require_superadmin
 from app.models import Business, BusinessMember, BusinessModule, User
 from app.schemas import (AuditOut, UserAdminOut, UserAdminPage, BusinessAdminOut, BusinessCreate, BusinessDeleteIn, BusinessExpiry, BusinessOut, BusinessStatusIn,
-                         BusinessUpdate, CountRow, DailyPoint, ModuleOut, ModuleToggle, MonthlyRevenue, PlatformStats, RatingRow,
+                         BusinessUpdate, CountRow, OwnerChange, DailyPoint, ModuleOut, ModuleToggle, MonthlyRevenue, PlatformStats, RatingRow,
                          StatusIn, SubscriptionPaymentOut, SubscriptionRenew, SubscriptionUpdate)
 from app.schemas.catalog import BusinessTypeCreate, BusinessTypeIn, BusinessTypeOut, BusinessTypeUpdate
 from app.api.v1.members import assign_password
@@ -134,6 +134,62 @@ def delete_business(body: BusinessDeleteIn, business_id: int = Path(ge=1), db: S
     audit.log(db, None, "delete", "business", business_id, info)
     db.commit()
     media.delete_business_folder(business_id)
+
+
+@router.put("/businesses/{business_id}/owner", response_model=BusinessAdminOut)
+def change_owner(body: OwnerChange, business_id: int = Path(ge=1), db: Session = Depends(get_db)):
+    """Direktorni almashtirish. Telefon o'sha odamniki bo'lsa — faqat ismi yangilanadi.
+
+    Eski direktor: 'manager' — menejer bo'lib qoladi, 'remove' — muassasadan chiqariladi (hisobi o'chmaydi).
+    Yangi odam shu muassasada xodim bo'lsa, o'sha a'zolik direktorga ko'tariladi, aks holda yangisi qo'shiladi.
+    Bazada bitta faol direktor (one_owner_per_business) va faqat Super Admin o'zgartiradi (guard_members).
+    """
+    _business_or_404(db, business_id)
+    old = db.scalars(select(BusinessMember).where(BusinessMember.business_id == business_id,
+                                                  BusinessMember.role == "owner", BusinessMember.is_active)).first()
+    user_id = db.scalar(text("SELECT app.ensure_user(:p, :n)"), {"p": body.phone, "n": body.full_name})
+    target = db.get(User, user_id)
+
+    if old is not None and old.user_id == user_id:
+        # O'sha odam: ism tuzatiladi, parol berilsa — yangilanadi
+        old_name = target.full_name
+        target.full_name = body.full_name
+        db.flush()
+        if body.password:
+            assign_password(db, business_id, old.id, body.password)
+        audit.log(db, business_id, "update", "owner", old.id, {"full_name": [old_name, body.full_name]})
+        db.commit()
+        return _read_business(db, business_id)
+
+    if body.password and db.scalar(text("SELECT app.password_state(:u) = 'own'"), {"u": user_id}):
+        raise HTTPException(409, detail={"code": "has_own_password",
+                                         "message": "Bu raqam egasining o'z paroli bor. Parol maydonini bo'sh qoldiring"})
+    if not target.full_name.strip():
+        target.full_name = body.full_name
+
+    # Avval eskisi bo'shatiladi: bazada bir vaqtda ikkita faol direktor bo'lolmaydi
+    if old is not None:
+        if body.previous == "manager":
+            old.role = "manager"
+        else:
+            old.is_active = False
+        db.flush()
+
+    member = db.scalars(select(BusinessMember).where(BusinessMember.business_id == business_id,
+                                                     BusinessMember.user_id == user_id)).first()
+    if member is None:
+        member = BusinessMember(business_id=business_id, user_id=user_id, role="owner", is_bookable=False)
+        db.add(member)
+    else:
+        member.role, member.is_active = "owner", True
+    db.flush()
+    if body.password:
+        assign_password(db, business_id, member.id, body.password)
+    audit.log(db, business_id, "change", "owner", member.id, {
+        "from": None if old is None else old.user_id, "to": user_id, "previous": body.previous,
+        "phone": body.phone, "full_name": body.full_name})
+    db.commit()
+    return _read_business(db, business_id)
 
 
 @router.patch("/businesses/{business_id}/status", status_code=204)
