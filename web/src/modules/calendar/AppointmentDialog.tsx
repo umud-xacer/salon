@@ -7,6 +7,7 @@ import { formatDate, formatMoney, formatTime, STATUS_LABELS } from "../../compon
 import { Button, ErrorNote } from "../../components/ui";
 import { Modal } from "../../components/Modal";
 import { PaymentPanel } from "../finance/PaymentPanel";
+import { useVocab } from "../vocab";
 
 const OPEN = ["pending", "confirmed"];
 
@@ -17,6 +18,7 @@ export function AppointmentDialog({ membership, appointment: a, masterName, onCl
   onClose: () => void;
 }) {
   const b = membership.business_id;
+  const v = useVocab();
   const queryClient = useQueryClient();
   const [confirmCancel, setConfirmCancel] = useState(false);
   const canManage = membership.permissions.includes("appointments.manage");
@@ -49,7 +51,7 @@ export function AppointmentDialog({ membership, appointment: a, masterName, onCl
         </dd>
         <dt className="text-muted">Xizmat</dt>
         <dd>{a.services.join(", ")}</dd>
-        <dt className="text-muted">Usta</dt>
+        <dt className="text-muted">{v.staffOne}</dt>
         <dd>{masterName}</dd>
         <dt className="text-muted">Narx</dt>
         <dd>{formatMoney(a.total_price)}</dd>

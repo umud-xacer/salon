@@ -43,7 +43,7 @@ export interface Section {
   panel: Panel;
   module?: string;                // yoqilgan bo'lishi shart bo'lgan modul
   anyPermission?: string[];       // shulardan biri bo'lsa kifoya
-  term?: keyof Vocab;             // nomi muassasa turiga qarab (Ustalar/Shifokorlar...)
+  term?: Exclude<keyof Vocab, "titles">;   // nomi muassasa turiga qarab (Ustalar/Shifokorlar...)
   uz: string;                     // manzil: /b/1/kassa
   uzByKind?: Partial<Record<BusinessKind, string>>;   // turga qarab: dorixonada /farmatsevtlar
   page: ComponentType<{ membership: Membership }>;

@@ -4,6 +4,7 @@ import { useAuth } from "../auth/AuthProvider";
 import { AttendanceAlerts } from "../components/AttendanceAlerts";
 import { AppShell } from "../layouts/AppShell";
 import { sectionsFor, sectionUrl } from "../modules/registry";
+import { VocabContext, vocabFor } from "../modules/vocab";
 import { SuspendedPage } from "./Notices";
 
 /** Eski manzil /b/6/kassa -> /barber-lab/kassa (saqlangan havolalar buzilmasin) */
@@ -46,6 +47,7 @@ export function BusinessPanel() {
   );
 
   return (
+    <VocabContext.Provider value={{ ...vocabFor(kind), titles: membership.staff_titles ?? [] }}>
     <AppShell
       title={membership.business_name}
       header={switcher}
@@ -64,5 +66,6 @@ export function BusinessPanel() {
       </Routes>
       <AttendanceAlerts />
     </AppShell>
+    </VocabContext.Provider>
   );
 }

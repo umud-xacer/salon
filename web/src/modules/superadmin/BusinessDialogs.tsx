@@ -14,6 +14,7 @@ import { AddressFields, type AddressValue } from "./AddressFields";
 import { useBusinessTypes } from "./BusinessTypesPage";
 import { slugFor, wordingFor } from "./typeWording";
 import { PaymentHistory, RenewForm } from "./SubscriptionPayments";
+import { VocabContext, vocabFor } from "../vocab";
 
 export const BUSINESSES_KEY = ["superadmin", "businesses"];
 
@@ -178,6 +179,7 @@ export function BusinessDialog({ business: b, modules, onClose }: {
   onClose: () => void;
 }) {
   const [tab, setTab] = useState<Tab>("info");
+  const bizType = useCategories().data?.find((t) => t.id === b.category_id);
   const queryClient = useQueryClient();
   const refreshAll = () => Promise.all([
     queryClient.invalidateQueries({ queryKey: ["superadmin"] }),
@@ -196,7 +198,11 @@ export function BusinessDialog({ business: b, modules, onClose }: {
       {tab === "info" && <InfoTab business={b} />}
       {tab === "subscription" && <SubscriptionTab business={b} />}
       {tab === "modules" && <ModulesTab business={b} modules={modules} />}
-      {tab === "staff" && <MembersPanel businessId={b.id} canManageManagers />}
+      {tab === "staff" && (
+        <VocabContext.Provider value={{ ...vocabFor(bizType?.kind), titles: bizType?.staff_titles ?? [] }}>
+          <MembersPanel businessId={b.id} canManageManagers />
+        </VocabContext.Provider>
+      )}
     </Modal>
   );
 }

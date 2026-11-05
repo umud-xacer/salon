@@ -7,6 +7,7 @@ import { ApiError, api, json, uploadFile } from "../../api/client";
 import type { BusinessHours, BusinessPhoto, BusinessProfile, Membership, Service } from "../../api/types";
 import { WEEKDAYS } from "../../components/format";
 import { Button, Card, ErrorNote, inputClass, PageTitle, Spinner } from "../../components/ui";
+import { useVocab } from "../vocab";
 
 export function BusinessPage({ membership }: { membership: Membership }) {
   const b = membership.business_id;
@@ -107,6 +108,7 @@ type Day = { open: boolean; from: string; to: string };
 function HoursCard({ businessId, hours, defaults }: {
   businessId: number; hours: BusinessHours[]; defaults: [string, string];
 }) {
+  const v = useVocab();
   const queryClient = useQueryClient();
   const [days, setDays] = useState<Day[]>(() => Array.from({ length: 7 }, (_, i) => {
     const h = hours.find((x) => x.weekday === i + 1);
@@ -130,7 +132,7 @@ function HoursCard({ businessId, hours, defaults }: {
   return (
     <Card>
       <h2 className="text-sm font-medium">Ish vaqti</h2>
-      <p className="mb-3 text-xs text-muted">Ish jadvali kiritilmagan ustalar shu vaqt bo'yicha bron qabul qiladi</p>
+      <p className="mb-3 text-xs text-muted">Ish jadvali kiritilmagan {v.staffMany} shu vaqt bo'yicha bron qabul qiladi</p>
       <form onSubmit={submit} className="space-y-2">
         {days.map((d, i) => (
           <div key={WEEKDAYS[i + 1]} className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">

@@ -18,6 +18,7 @@ export interface Membership {
   business_name: string;
   business_slug: string;
   business_kind: string;
+  staff_titles?: string[];
   business_status: "pending" | "active" | "blocked";
   business_active: boolean;
   subscription_ends_at: string | null;
@@ -211,6 +212,7 @@ export interface ServicePreset {
   name: string;
   duration_min: number;
   price: number;
+  category?: string | null;
 }
 
 export interface BusinessType {
@@ -225,6 +227,7 @@ export interface BusinessType {
   opens_at: string;
   closes_at: string;
   service_presets: ServicePreset[];
+  staff_titles: string[];
   business_count: number;
 }
 

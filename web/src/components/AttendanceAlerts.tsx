@@ -5,6 +5,7 @@ import { BellRing, Phone, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { api, ApiError, json } from "../api/client";
+import { useVocab } from "../modules/vocab";
 import { formatTime } from "./format";
 import { Button } from "./ui";
 
@@ -70,6 +71,7 @@ export function AttendanceAlerts() {
 }
 
 function AlertCard({ alert: a }: { alert: Alert }) {
+  const v = useVocab();
   const queryClient = useQueryClient();
   const [phone, setPhone] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -107,7 +109,7 @@ function AlertCard({ alert: a }: { alert: Alert }) {
           <p className="mt-0.5 break-words">{a.body}</p>
           {(a.data?.master || a.data?.starts_at) && (
             <p className="mt-0.5 text-xs text-muted">
-              {a.data?.starts_at && `Bron: ${formatTime(a.data.starts_at)}`}{a.data?.master && ` · Usta: ${a.data.master}`}
+              {a.data?.starts_at && `Bron: ${formatTime(a.data.starts_at)}`}{a.data?.master && ` · ${v.staffOne}: ${a.data.master}`}
             </p>
           )}
         </div>

@@ -222,12 +222,30 @@ def apply_presets(body: PresetsApply, business_id: int = Depends(_services), db:
     """Tanlangan tavsiya xizmatlarni qo'shadi. Salonda bor nomlar va ro'yxatda yo'q nomlar o'tkazib yuboriladi."""
     wanted = {n.strip().lower() for n in body.names}
     created = []
+    # Bo'lim: salonda shu nomli bo'lim bo'lsa — o'sha, bo'lmasa yaratiladi (tavsiyadagi tartib bo'yicha)
+    categories = {name.lower(): cid for cid, name in db.execute(
+        text("SELECT id, name FROM service_categories WHERE business_id = :b"), {"b": business_id})}
+    next_order = db.scalar(text("SELECT coalesce(max(sort_order), 0) FROM service_categories WHERE business_id = :b"),
+                           {"b": business_id})
+
+    def category_id(name: str | None) -> int | None:
+        nonlocal next_order
+        if not name:
+            return None
+        if name.lower() not in categories:
+            next_order += 1
+            categories[name.lower()] = db.scalar(text(
+                "INSERT INTO service_categories (business_id, name, sort_order) VALUES (:b, :n, :o) RETURNING id"),
+                {"b": business_id, "n": name, "o": next_order})
+        return categories[name.lower()]
+
     for p in _presets(db, business_id).presets:
         if p.exists or p.name.lower() not in wanted:
             continue
         row = db.execute(text(f"""
-            INSERT INTO services (business_id, name, duration_min, price) VALUES (:b, :name, :d, :price)
-            RETURNING {_SERVICE_COLS}"""), {"b": business_id, "name": p.name, "d": p.duration_min, "price": p.price}
+            INSERT INTO services (business_id, name, duration_min, price, category_id) VALUES (:b, :name, :d, :price, :c)
+            RETURNING {_SERVICE_COLS}"""), {"b": business_id, "name": p.name, "d": p.duration_min, "price": p.price,
+                                            "c": category_id(p.category)}
         ).mappings().one()
         created.append(ServiceAdminOut(**row))
     if created:

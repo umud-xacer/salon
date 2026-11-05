@@ -75,6 +75,8 @@ function TypeDialog({ type, onClose }: { type: BusinessType | null; onClose: () 
   const [opens, setOpens] = useState(type?.opens_at.slice(0, 5) ?? "09:00");
   const [closes, setCloses] = useState(type?.closes_at.slice(0, 5) ?? "20:00");
   const [presets, setPresets] = useState<ServicePreset[]>(type?.service_presets ?? []);
+  const [titles, setTitles] = useState((type?.staff_titles ?? []).join("\n"));
+  const sections = [...new Set(presets.map((p) => p.category?.trim()).filter((c): c is string => !!c))];
 
   const setPreset = (i: number, patch: Partial<ServicePreset>) =>
     setPresets(presets.map((p, k) => (k === i ? { ...p, ...patch } : p)));
@@ -85,7 +87,9 @@ function TypeDialog({ type, onClose }: { type: BusinessType | null; onClose: () 
       const body = {
         kind, name_uz: nameUz.trim(), name_ru: nameRu.trim(), icon: icon.trim() || null, sort_order: Number(order) || 0,
         is_active: active, opens_at: opens, closes_at: closes,
-        service_presets: presets.filter((p) => p.name.trim()).map((p) => ({ ...p, name: p.name.trim() })),
+        service_presets: presets.filter((p) => p.name.trim())
+          .map((p) => ({ ...p, name: p.name.trim(), category: p.category?.trim() || null })),
+        staff_titles: titles.split("\n").map((x) => x.trim()).filter(Boolean),
       };
       return type
         ? api(`/superadmin/business-types/${type.id}`, json("PATCH", body))
@@ -157,9 +161,12 @@ function TypeDialog({ type, onClose }: { type: BusinessType | null; onClose: () 
           </p>
           <ul className="space-y-2">
             {presets.map((p, i) => (
-              <li key={i} className="grid grid-cols-[1fr_auto] gap-2 sm:grid-cols-[1fr_6rem_8rem_auto]">
-                <input className={`${inputClass} mt-0 col-span-2 sm:col-span-1`} aria-label="Xizmat nomi"
+              <li key={i} className="grid grid-cols-[1fr_1fr_auto] gap-2 sm:grid-cols-[1fr_10rem_5rem_7rem_auto]">
+                <input className={`${inputClass} mt-0 col-span-3 sm:col-span-1`} aria-label="Xizmat nomi"
                   placeholder="Xizmat nomi" maxLength={120} value={p.name} onChange={(e) => setPreset(i, { name: e.target.value })} />
+                <input className={`${inputClass} mt-0 col-span-3 sm:col-span-1`} aria-label="Bo'lim" list="preset-sections"
+                  placeholder="Bo'lim (ixtiyoriy)" maxLength={80} value={p.category ?? ""}
+                  onChange={(e) => setPreset(i, { category: e.target.value })} />
                 <input className={`${inputClass} mt-0`} aria-label="Davomiyligi, daqiqa" type="number" min={5} max={720}
                   value={p.duration_min} onChange={(e) => setPreset(i, { duration_min: Number(e.target.value) })} />
                 <input className={`${inputClass} mt-0`} aria-label="Narxi, so'm" type="number" min={0} step={1000}
@@ -171,6 +178,7 @@ function TypeDialog({ type, onClose }: { type: BusinessType | null; onClose: () 
               </li>
             ))}
           </ul>
+          <datalist id="preset-sections">{sections.map((s) => <option key={s} value={s} />)}</datalist>
           {presets.length > 0 && (
             <p className="mt-1 text-xs text-muted">Daqiqa · so'm. Masalan: {presets[0].duration_min} daqiqa, {formatMoney(presets[0].price)}</p>
           )}
@@ -179,6 +187,12 @@ function TypeDialog({ type, onClose }: { type: BusinessType | null; onClose: () 
             <Plus size={15} aria-hidden /> Xizmat qo'shish
           </Button>
         </fieldset>
+
+        <label className="block text-sm">Lavozim / mutaxassislik tavsiyalari (har qatorda bittadan)
+          <textarea className={`${inputClass} min-h-24`} value={titles} onChange={(e) => setTitles(e.target.value)}
+            placeholder={"Stomatolog-terapevt\nOrtodont"} />
+          <span className="mt-1 block text-xs text-muted">Direktor xodim qo'shganda tanlaydi. Klinikada ilova shifokorlarni shu bo'yicha guruhlaydi.</span>
+        </label>
 
         {save.error && <ErrorNote error={save.error} />}
         <Button type="submit" disabled={save.isPending || badHours} className="w-full">Saqlash</Button>

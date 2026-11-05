@@ -108,6 +108,7 @@ def me(db: Session = Depends(get_db)):
     rows = db.execute(text("""
         SELECT m.id AS member_id, b.id AS business_id, b.name AS business_name, b.slug AS business_slug,
                (SELECT c.kind FROM business_categories c WHERE c.id = b.category_id) AS business_kind,
+               (SELECT c.staff_titles FROM business_categories c WHERE c.id = b.category_id) AS staff_titles,
                b.status::text AS business_status, b.is_active AS business_active, b.subscription_ends_at,
                app.business_operational(b.id) AS operational, m.role::text AS role,
                CASE WHEN m.role = 'staff' THEN 'staff' ELSE 'admin' END AS panel, m.title,

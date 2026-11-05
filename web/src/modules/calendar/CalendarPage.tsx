@@ -19,6 +19,7 @@ import { Button, Empty, ErrorNote, PageTitle, Spinner } from "../../components/u
 import { AppointmentDialog } from "./AppointmentDialog";
 import { BookingDialog, type BookingPreset } from "./BookingDialog";
 import { TimeGrid, type Column } from "./TimeGrid";
+import { useVocab } from "../vocab";
 
 type View = "day" | "week";
 
@@ -42,7 +43,8 @@ export function CalendarPage({ membership }: { membership: Membership }) {
   });
   const data = query.data;
 
-  const masterName = (id: number) => data?.staff.find((s) => s.id === id)?.full_name ?? "Usta";
+  const v = useVocab();
+  const masterName = (id: number) => data?.staff.find((s) => s.id === id)?.full_name ?? v.staffOne;
 
   const columns = useMemo<Column[]>(() => {
     if (!data) return [];
@@ -135,12 +137,12 @@ export function CalendarPage({ membership }: { membership: Membership }) {
         />
         {view === "week" && data && (
           <select
-            aria-label="Usta"
+            aria-label={v.staffOne}
             value={memberFilter ?? ""}
             onChange={(e) => setMemberFilter(e.target.value ? Number(e.target.value) : null)}
             className="rounded-lg border border-line bg-white px-2 py-1.5 text-sm"
           >
-            <option value="">Barcha ustalar</option>
+            <option value="">Barcha {v.staffMany}</option>
             {data.staff.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.full_name}
@@ -152,7 +154,7 @@ export function CalendarPage({ membership }: { membership: Membership }) {
 
       {query.isPending && <Spinner />}
       {query.error && <ErrorNote error={query.error} />}
-      {data && data.staff.length === 0 && <Empty>Hali usta qo'shilmagan</Empty>}
+      {data && data.staff.length === 0 && <Empty>Hali {v.staffMany} qo'shilmagan</Empty>}
       {data && data.staff.length > 0 && (
         <TimeGrid
           columns={columns}

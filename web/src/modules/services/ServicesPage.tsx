@@ -235,6 +235,12 @@ function PresetsCard({ businessId }: { businessId: number }) {
   const available = presets.data?.presets.filter((p) => !p.exists) ?? [];
   if (!presets.data || available.length === 0) return null;
   const toggle = (name: string, on: boolean) => setPicked(on ? [...picked, name] : picked.filter((x) => x !== name));
+  // Bo'limlar tavsiyadagi tartibda (stomatologiya: terapiya, gigiyena, ortodontiya...)
+  const groups = [...available.reduce((m, p) => {
+    const key = p.category ?? "";
+    m.set(key, [...(m.get(key) ?? []), p]);
+    return m;
+  }, new Map<string, typeof available>())];
 
   return (
     <Card className="mb-4">
@@ -242,19 +248,41 @@ function PresetsCard({ businessId }: { businessId: number }) {
         <Sparkles size={16} className="text-primary" aria-hidden />
         {presets.data.category_name} uchun tavsiya xizmatlar
       </h2>
-      <p className="mb-3 text-xs text-muted">Belgilab qo'shing. Narx va vaqtni keyin xizmatni bosib o'zgartirasiz.</p>
-      <ul className="grid gap-1 sm:grid-cols-2">
-        {available.map((p) => (
-          <li key={p.name}>
-            <label className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-page">
-              <input type="checkbox" className="size-4 accent-primary" checked={picked.includes(p.name)}
-                onChange={(e) => toggle(p.name, e.target.checked)} />
-              <span className="min-w-0 flex-1 break-words">{p.name}</span>
-              <span className="text-xs text-muted tabular-nums">{p.duration_min} daq · {formatMoney(p.price)}</span>
-            </label>
-          </li>
-        ))}
-      </ul>
+      <p className="mb-3 text-xs text-muted">
+        Belgilab qo'shing. {groups.length > 1 && "Xizmat o'z bo'limiga tushadi (bo'lim bo'lmasa, yaratiladi). "}
+        Narx va vaqtni keyin xizmatni bosib o'zgartirasiz.
+      </p>
+      <div className="space-y-3">
+        {groups.map(([section, items]) => {
+          const names = items.map((p) => p.name);
+          const all = names.every((n) => picked.includes(n));
+          return (
+            <section key={section || "-"}>
+              {groups.length > 1 && (
+                <div className="mb-1 flex items-center justify-between gap-2 px-2">
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">{section || "Boshqa"}</h3>
+                  <button type="button" className="text-xs text-primary hover:underline"
+                    onClick={() => setPicked(all ? picked.filter((n) => !names.includes(n)) : [...new Set([...picked, ...names])])}>
+                    {all ? "Belgini olish" : "Bo'limni belgilash"}
+                  </button>
+                </div>
+              )}
+              <ul className="grid gap-1 sm:grid-cols-2">
+                {items.map((p) => (
+                  <li key={p.name}>
+                    <label className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-page">
+                      <input type="checkbox" className="size-4 accent-primary" checked={picked.includes(p.name)}
+                        onChange={(e) => toggle(p.name, e.target.checked)} />
+                      <span className="min-w-0 flex-1 break-words">{p.name}</span>
+                      <span className="text-xs text-muted tabular-nums">{p.duration_min} daq · {formatMoney(p.price)}</span>
+                    </label>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          );
+        })}
+      </div>
       {apply.error && <div className="mt-2"><ErrorNote error={apply.error} /></div>}
       <div className="mt-3 flex flex-wrap gap-2">
         <Button disabled={picked.length === 0 || apply.isPending} onClick={() => apply.mutate()}>

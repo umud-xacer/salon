@@ -126,7 +126,7 @@ export default function Bookings() {
                 </View>
               )}
               <View style={styles.line}>
-                <Icon name="cut-outline" size={16} color={colors.muted} />
+                <Icon name="list-outline" size={16} color={colors.muted} />
                 <Text style={[type.body, { flex: 1 }]} numberOfLines={2}>{a.services.join(', ')}</Text>
                 <Text style={{ fontWeight: '700', color: colors.text }}>{money(a.total_price)}</Text>
               </View>

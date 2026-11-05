@@ -6,7 +6,8 @@ import { useState, type FormEvent } from "react";
 import { api, json } from "../../api/client";
 import type { Member, MemberPermission, MemberService, Service } from "../../api/types";
 import { useAuth } from "../../auth/AuthProvider";
-import { formatDate, formatMoney, normalizePhone, ROLE_LABELS } from "../../components/format";
+import { formatDate, formatMoney, normalizePhone } from "../../components/format";
+import { roleLabel, useVocab, type Vocab } from "../vocab";
 import { Modal } from "../../components/Modal";
 import { Badge, Button, Empty, ErrorNote, inputClass, PasswordBadge, Spinner, Tabs } from "../../components/ui";
 import { generatePassword, PasswordInput, PasswordReveal } from "../../components/PasswordReveal";
@@ -24,6 +25,7 @@ export function useMembers(businessId: number) {
 
 /** Menejerni faqat direktor va Super Admin qo'shadi (baza ham shuni tekshiradi) */
 export function MembersPanel({ businessId, canManageManagers }: { businessId: number; canManageManagers: boolean }) {
+  const v = useVocab();
   const members = useMembers(businessId);
   const { me } = useAuth();
   // Super Admin faqat direktor parolini ko'radi, xodimlarnikini direktor (server ham shunday tekshiradi)
@@ -53,7 +55,7 @@ export function MembersPanel({ businessId, canManageManagers }: { businessId: nu
                 <span className="block font-medium break-words">{m.full_name || m.phone}</span>
                 <span className="block text-muted tabular-nums">{m.phone}{m.title ? ` · ${m.title}` : ""}</span>
               </span>
-              <Badge tone={m.role === "owner" ? "green" : "gray"}>{ROLE_LABELS[m.role]}</Badge>
+              <Badge tone={m.role === "owner" ? "green" : "gray"}>{roleLabel(m.role, v)}</Badge>
               <PasswordBadge status={m.password_status} />
               {!m.is_active && <Badge tone="red">Faol emas</Badge>}
             </button>
@@ -79,10 +81,22 @@ export function MembersPanel({ businessId, canManageManagers }: { businessId: nu
   );
 }
 
-const roleOptions = (managers: boolean) =>
+// Lavozim maydoniga turga mos tavsiyalar (Stomatolog-terapevt, Ortodont...). Erkin yozish ham mumkin.
+// Klinikada ilova shifokorlarni aynan shu lavozim (mutaxassislik) bo'yicha guruhlaydi.
+function StaffTitles() {
+  const v = useVocab();
+  if (!v.titles?.length) return null;
+  return (
+    <datalist id="staff-titles">
+      {v.titles.map((t) => <option key={t} value={t} />)}
+    </datalist>
+  );
+}
+
+const roleOptions = (managers: boolean, v: Vocab) =>
   (managers ? ["staff", "receptionist", "manager"] : ["staff", "receptionist"]).map((r) => ({
     value: r,
-    label: ROLE_LABELS[r],
+    label: roleLabel(r, v),
   }));
 
 function AddMember({ businessId, canManageManagers, onClose }: {
@@ -90,6 +104,7 @@ function AddMember({ businessId, canManageManagers, onClose }: {
   canManageManagers: boolean;
   onClose: () => void;
 }) {
+  const v = useVocab();
   const queryClient = useQueryClient();
   const [phone, setPhone] = useState("");
   const [name, setName] = useState("");
@@ -130,14 +145,15 @@ function AddMember({ businessId, canManageManagers, onClose }: {
         </label>
         <label className="block text-sm">Rol
           <select className={inputClass} value={role} onChange={(e) => setRole(e.target.value)}>
-            {roleOptions(canManageManagers).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            {roleOptions(canManageManagers, v).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
         </label>
         <label className="block text-sm">Lavozim
-          <input className={inputClass} maxLength={80} placeholder="Barber, kosmetolog" value={title}
+          <input className={inputClass} maxLength={80} list="staff-titles" placeholder={v.titles?.slice(0, 2).join(", ") || "Lavozim"} value={title}
             onChange={(e) => setTitle(e.target.value)} />
         </label>
         <PasswordInput label="Boshlang'ich parol" value={password} onChange={setPassword} />
+        <StaffTitles />
         {add.error && <ErrorNote error={add.error} />}
         <Button type="submit" disabled={add.isPending} className="w-full">Qo'shish</Button>
       </form>
@@ -191,6 +207,7 @@ function MainTab({ businessId, member: m, editable, canManageManagers }: {
   editable: boolean;
   canManageManagers: boolean;
 }) {
+  const v = useVocab();
   const queryClient = useQueryClient();
   const [title, setTitle] = useState(m.title ?? "");
   const [role, setRole] = useState<string>(m.role);
@@ -205,7 +222,7 @@ function MainTab({ businessId, member: m, editable, canManageManagers }: {
     return (
       <dl className="grid grid-cols-[6rem_1fr] gap-y-2 text-sm">
         <dt className="text-muted">Telefon</dt><dd className="tabular-nums">{m.phone}</dd>
-        <dt className="text-muted">Rol</dt><dd>{ROLE_LABELS[m.role]}</dd>
+        <dt className="text-muted">Rol</dt><dd>{roleLabel(m.role, v)}</dd>
         {m.title && <><dt className="text-muted">Lavozim</dt><dd>{m.title}</dd></>}
       </dl>
     );
@@ -221,12 +238,13 @@ function MainTab({ businessId, member: m, editable, canManageManagers }: {
       <p className="text-sm text-muted tabular-nums">{m.phone}</p>
       <label className="block text-sm">Rol
         <select className={inputClass} value={role} onChange={(e) => setRole(e.target.value)}>
-          {roleOptions(canManageManagers).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+          {roleOptions(canManageManagers, v).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
       </label>
       <label className="block text-sm">Lavozim
-        <input className={inputClass} maxLength={80} value={title} onChange={(e) => setTitle(e.target.value)} />
+        <input className={inputClass} maxLength={80} list="staff-titles" value={title} onChange={(e) => setTitle(e.target.value)} />
       </label>
+      <StaffTitles />
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" className="size-4 accent-primary" checked={m.is_bookable}
           onChange={(e) => update.mutate({ is_bookable: e.target.checked })} />
@@ -298,6 +316,7 @@ function PermissionsTab({ businessId, memberId }: { businessId: number; memberId
 
 function ServicesTab({ businessId, memberId }: { businessId: number; memberId: number }) {
   const url = `/businesses/${businessId}/members/${memberId}/services`;
+  const v = useVocab();
   const queryClient = useQueryClient();
   const services = useQuery({
     queryKey: ["services", businessId],
@@ -324,7 +343,7 @@ function ServicesTab({ businessId, memberId }: { businessId: number; memberId: n
 
   return (
     <>
-      <p className="mb-2 text-sm text-muted">Usta bajaradigan xizmatlar. Faqat shular uchun unga bron qilinadi.</p>
+      <p className="mb-2 text-sm text-muted">{v.staffOne} bajaradigan xizmatlar. Faqat shular uchun unga bron qilinadi.</p>
       {save.error && <div className="mb-2"><ErrorNote error={save.error} /></div>}
       <ul className="divide-y divide-line">
         {active.map((s) => (

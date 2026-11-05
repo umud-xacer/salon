@@ -70,7 +70,8 @@ export default function Business() {
           {specialties.length === 0 && <Text style={shared.muted}>Hozircha shifokorlar qo'shilmagan</Text>}
           <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
             {specialties.map((t) => (
-              <Chip key={t} label={t} active={specialty === t}
+              <Chip key={t} label={`${t} · ${business.staff.filter((s) => (s.title?.trim() || 'Umumiy amaliyot') === t).length}`}
+                active={specialty === t}
                 onPress={() => { setSpecialty(t); setMemberId(null); setService(null); }} />
             ))}
           </View>
@@ -87,10 +88,20 @@ export default function Business() {
             <>
               <Text style={shared.heading}>Tibbiy xizmat</Text>
               {doctorServices.length === 0 && <Text style={shared.muted}>Bu shifokorga hali xizmat biriktirilmagan</Text>}
-              {doctorServices.map((sv) => (
-                <Chip key={sv.id} label={`${sv.name} · ${sv.duration_min} daq · ${money(sv.price)}`}
-                  active={service?.id === sv.id} onPress={() => setService(sv)} />
-              ))}
+              {/* Bo'limlar bo'yicha: terapevtik davolash, ortodontiya, jarrohlik... */}
+              {business.service_groups.map((g) => {
+                const list = g.services.filter((sv) => doctor.service_ids.includes(sv.id));
+                if (list.length === 0) return null;
+                return (
+                  <Card key={g.category_id ?? 0}>
+                    <Text style={shared.name}>{g.category_name}</Text>
+                    {list.map((sv) => (
+                      <Chip key={sv.id} label={`${sv.name} · ${sv.duration_min} daq · ${money(sv.price)}`}
+                        active={service?.id === sv.id} onPress={() => setService(sv)} />
+                    ))}
+                  </Card>
+                );
+              })}
             </>
           )}
         </>

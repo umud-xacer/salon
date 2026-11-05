@@ -278,11 +278,17 @@ class ServicePreset(BaseModel):
     name: str = Field(min_length=2, max_length=120)
     duration_min: int = Field(ge=5, le=720)
     price: int = Field(ge=0, le=100_000_000)
+    category: str | None = Field(default=None, max_length=80)    # bo'lim: "Ortodontiya (breketlar)"
 
     @field_validator("name")
     @classmethod
     def _strip(cls, v: str) -> str:
         return v.strip()
+
+    @field_validator("category")
+    @classmethod
+    def _strip_category(cls, v: str | None) -> str | None:
+        return (v or "").strip() or None
 
 
 class BusinessTypeIn(BaseModel):
@@ -295,6 +301,19 @@ class BusinessTypeIn(BaseModel):
     opens_at: time = time(9)
     closes_at: time = time(20)
     service_presets: list[ServicePreset] = Field(default_factory=list, max_length=50)
+    staff_titles: list[str] = Field(default_factory=list, max_length=30)
+
+    @field_validator("staff_titles")
+    @classmethod
+    def _titles(cls, v: list[str]) -> list[str]:
+        out: list[str] = []
+        for t in v:
+            t = t.strip()
+            if len(t) > 80:
+                raise ValueError("Lavozim nomi 80 belgidan oshmasin")
+            if t and t.lower() not in {x.lower() for x in out}:
+                out.append(t)
+        return out
 
     @model_validator(mode="after")
     def _check(self):
@@ -320,6 +339,7 @@ class BusinessTypeUpdate(BaseModel):
     opens_at: time | None = None
     closes_at: time | None = None
     service_presets: list[ServicePreset] | None = Field(default=None, max_length=50)
+    staff_titles: list[str] | None = Field(default=None, max_length=30)
 
 
 class BusinessTypeOut(BusinessTypeCreate):

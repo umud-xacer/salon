@@ -134,6 +134,7 @@ class MembershipOut(BaseModel):
     business_name: str
     business_slug: str = ""                               # panel manzili: /barber-lab/kassa
     business_kind: str = "salon"                          # salon | pharmacy | clinic — panel yozuvlari
+    staff_titles: list[str] = []                          # turga mos lavozim/mutaxassislik tavsiyalari
     business_status: str
     business_active: bool                                 # obuna bayrog'i
     subscription_ends_at: datetime | None                 # None = muddatsiz

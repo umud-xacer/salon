@@ -7,6 +7,7 @@ import type { Appointment, Client, Membership, ReceptionOptions, Slot } from "..
 import { formatMoney, normalizePhone, todayIso } from "../../components/format";
 import { Button, Empty, ErrorNote, Spinner } from "../../components/ui";
 import { Modal } from "../../components/Modal";
+import { useVocab } from "../vocab";
 
 export interface BookingPreset {
   day: string;
@@ -31,6 +32,7 @@ export function BookingDialog({ membership, preset, onClose }: {
   onClose: () => void;
 }) {
   const b = membership.business_id;
+  const v = useVocab();
   const queryClient = useQueryClient();
   const [phone, setPhone] = useState("");
   const [name, setName] = useState("");
@@ -193,7 +195,7 @@ export function BookingDialog({ membership, preset, onClose }: {
 
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="block text-sm">
-              Usta
+              {v.staffOne}
               <select
                 className={field}
                 value={selectedMember ?? ""}
@@ -201,7 +203,7 @@ export function BookingDialog({ membership, preset, onClose }: {
                   changeSelection(() => setMemberId(e.target.value ? Number(e.target.value) : null))
                 }
               >
-                <option value="">Istalgan usta</option>
+                <option value="">{v.staffAny}</option>
                 {masters.map((m) => (
                   <option key={m.id} value={m.id}>
                     {m.full_name}
