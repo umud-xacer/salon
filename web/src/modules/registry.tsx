@@ -25,7 +25,8 @@ import {
 import type { ComponentType } from "react";
 
 import type { Membership, Panel } from "../api/types";
-import { vocabFor, type BusinessKind, type Vocab } from "./vocab";
+import { panelVocab, type BusinessKind, type Vocab } from "./vocab";
+export { panelVocab } from "./vocab";
 import { BusinessPage } from "./business/BusinessPage";
 import { CalendarPage } from "./calendar/CalendarPage";
 import { ClientsPage } from "./clients/ClientsPage";
@@ -105,13 +106,6 @@ export const SECTIONS: Section[] = [
 /** Bo'lim manzili muassasa turiga qarab (o'zbekcha). path — eski inglizcha nom, yo'naltirish uchun. */
 export function sectionUrl(s: Section, kind: string | undefined): string {
   return s.uzByKind?.[kind as BusinessKind] ?? s.uz;
-}
-
-/** Panel lug'ati: turga mos so'zlar + muassasa turining o'z nomi ("Stomatologiya" bo'limi, "stomatologiya ish soatlari") */
-export function panelVocab(m: Membership): Vocab {
-  const v = vocabFor(m.business_kind);
-  const own = m.business_type_name?.trim();
-  return { ...v, titles: m.staff_titles ?? [], ...(own ? { businessPage: own, place: own.toLowerCase() } : {}) };
 }
 
 export function sectionsFor(m: Membership): Section[] {

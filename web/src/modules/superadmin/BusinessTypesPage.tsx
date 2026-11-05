@@ -76,6 +76,7 @@ function TypeDialog({ type, onClose }: { type: BusinessType | null; onClose: () 
   const [closes, setCloses] = useState(type?.closes_at.slice(0, 5) ?? "20:00");
   const [presets, setPresets] = useState<ServicePreset[]>(type?.service_presets ?? []);
   const [titles, setTitles] = useState((type?.staff_titles ?? []).join("\n"));
+  const [staffWord, setStaffWord] = useState(type?.staff_word ?? "");
   const sections = [...new Set(presets.map((p) => p.category?.trim()).filter((c): c is string => !!c))];
 
   const setPreset = (i: number, patch: Partial<ServicePreset>) =>
@@ -90,6 +91,7 @@ function TypeDialog({ type, onClose }: { type: BusinessType | null; onClose: () 
         service_presets: presets.filter((p) => p.name.trim())
           .map((p) => ({ ...p, name: p.name.trim(), category: p.category?.trim() || null })),
         staff_titles: titles.split("\n").map((x) => x.trim()).filter(Boolean),
+        staff_word: staffWord.trim() || null,
       };
       return type
         ? api(`/superadmin/business-types/${type.id}`, json("PATCH", body))
@@ -188,6 +190,11 @@ function TypeDialog({ type, onClose }: { type: BusinessType | null; onClose: () 
           </Button>
         </fieldset>
 
+        <label className="block text-sm">Xodim nomi (rol ro'yxatida, kalendarda)
+          <input className={inputClass} maxLength={40} value={staffWord} onChange={(e) => setStaffWord(e.target.value)}
+            placeholder={kind === "clinic" ? "Shifokor (standart)" : kind === "pharmacy" ? "Farmatsevt (standart)" : "Usta (standart)"} />
+          <span className="mt-1 block text-xs text-muted">Bo'sh qolsa — ish tartibidagi standart so'z. Masalan, Wellness & Spa: Mutaxassis.</span>
+        </label>
         <label className="block text-sm">Lavozim / mutaxassislik tavsiyalari (har qatorda bittadan)
           <textarea className={`${inputClass} min-h-24`} value={titles} onChange={(e) => setTitles(e.target.value)}
             placeholder={"Stomatolog-terapevt\nOrtodont"} />

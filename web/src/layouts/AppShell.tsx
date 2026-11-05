@@ -1,9 +1,10 @@
-import { KeyRound, LogOut, Menu, X, type LucideIcon } from "lucide-react";
+import { KeyRound, LogOut, Menu, Pencil, X, type LucideIcon } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { NavLink } from "react-router-dom";
 
 import { useAuth } from "../auth/AuthProvider";
 import { ChangePasswordDialog } from "../components/ChangePasswordDialog";
+import { ProfileNameDialog } from "../components/ProfileNameDialog";
 import { Logo } from "../components/ui";
 
 export interface NavItem {
@@ -26,6 +27,7 @@ export function AppShell({ nav, title, header, children }: {
   const { me, signOut } = useAuth();
   const [open, setOpen] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
+  const [editingName, setEditingName] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -70,7 +72,12 @@ export function AppShell({ nav, title, header, children }: {
           ))}
         </nav>
         <div className="border-t border-white/10 p-3">
-          <p className="truncate px-3 pb-2 text-sm text-white/70">{me?.user.full_name || me?.user.phone}</p>
+          <button onClick={() => { setOpen(false); setEditingName(true); }} title="Ismni tahrirlash"
+            className="flex w-full items-center gap-2 truncate rounded-lg px-3 pb-2 pt-1 text-left text-sm text-white/70 hover:bg-white/10">
+            <span className="min-w-0 flex-1 truncate">{me?.user.full_name || me?.user.phone}</span>
+            <Pencil size={14} aria-hidden className="shrink-0" />
+            <span className="sr-only">Ismni tahrirlash</span>
+          </button>
           {me?.workspace === "superadmin" && (
             <button onClick={() => { setOpen(false); setChangingPassword(true); }} className={footerButton}>
               <KeyRound size={18} aria-hidden />
@@ -95,6 +102,7 @@ export function AppShell({ nav, title, header, children }: {
         <main className="mx-auto max-w-5xl p-3 sm:p-4 md:p-6">{children}</main>
       </div>
       {changingPassword && <ChangePasswordDialog onClose={() => setChangingPassword(false)} />}
+      {editingName && <ProfileNameDialog onClose={() => setEditingName(false)} />}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes, useNavigate, useParams } from "react-router-dom";
+import { Navigate, Route, Routes, useParams } from "react-router-dom";
 
 import { useAuth } from "../auth/AuthProvider";
 import { AttendanceAlerts } from "../components/AttendanceAlerts";
@@ -18,7 +18,6 @@ export function LegacyPanelRedirect() {
 /** /:businessSlug/* — bitta muassasa ichidagi panel. Boshqa muassasa havolasi yozilsa, o'ziniki ga qaytaradi. */
 export function BusinessPanel() {
   const { me } = useAuth();
-  const navigate = useNavigate();
   const { businessSlug } = useParams();
   const memberships = me?.memberships ?? [];
   const membership = memberships.find((m) => m.business_slug === businessSlug);
@@ -31,26 +30,12 @@ export function BusinessPanel() {
   const kind = membership.business_kind;
   const url = (s: (typeof sections)[number]) => sectionUrl(s, kind);
   const home = `${base}/${url(sections[0])}`;     // har bir panelda kamida bitta bo'lim bor
-  const switcher = memberships.length > 1 && (
-    <select
-      aria-label="Muassasani tanlash"
-      value={membership.business_slug}
-      onChange={(e) => navigate(`/${e.target.value}`)}
-      className="w-full rounded-lg bg-white/10 px-2 py-1.5 text-sm text-white"
-    >
-      {memberships.map((m) => (
-        <option key={m.business_id} value={m.business_slug} className="text-ink">
-          {m.business_name}
-        </option>
-      ))}
-    </select>
-  );
-
+  // Muassasa almashtirish ro'yxati yo'q (foydalanuvchi talabi): panel faqat shu muassasani ko'rsatadi.
+  // Boshqa muassasaga kirish huquqini baza (RLS) va yuqoridagi tekshiruv hal qiladi.
   return (
     <VocabContext.Provider value={panelVocab(membership)}>
     <AppShell
       title={membership.business_name}
-      header={switcher}
       nav={sections.map((s) => ({ to: `${base}/${url(s)}`, label: s.label, icon: s.icon }))}
     >
       <Routes>

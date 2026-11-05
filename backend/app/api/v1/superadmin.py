@@ -383,7 +383,7 @@ def toggle_module(body: ModuleToggle, business_id: int = Path(ge=1), module_code
 # ─── Muassasa turlari ───────────────────────────────────────────────────────
 _TYPE_SELECT = """
     SELECT c.id, c.slug, c.kind, c.name_uz, c.name_ru, c.icon, c.sort_order, c.is_active, c.opens_at, c.closes_at,
-           c.service_presets, c.staff_titles,
+           c.service_presets, c.staff_titles, c.staff_word,
            (SELECT count(*) FROM businesses b WHERE b.category_id = c.id) AS business_count
       FROM business_categories c
 """
@@ -404,7 +404,8 @@ def _save_type(db: Session, type_id: int, body: BusinessTypeIn) -> None:
     db.execute(text("""
         UPDATE business_categories SET kind = :kind, name_uz = :name_uz, name_ru = :name_ru, icon = :icon,
                sort_order = :sort_order, is_active = :is_active, opens_at = :opens_at, closes_at = :closes_at,
-               service_presets = CAST(:service_presets AS jsonb), staff_titles = CAST(:staff_titles AS jsonb)
+               service_presets = CAST(:service_presets AS jsonb), staff_titles = CAST(:staff_titles AS jsonb),
+               staff_word = :staff_word
          WHERE id = :id"""), {**data, "id": type_id})
 
 

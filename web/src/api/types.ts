@@ -20,6 +20,7 @@ export interface Membership {
   business_kind: string;
   staff_titles?: string[];
   business_type_name?: string | null;
+  staff_word?: string | null;
   business_status: "pending" | "active" | "blocked";
   business_active: boolean;
   subscription_ends_at: string | null;
@@ -231,6 +232,7 @@ export interface BusinessType {
   closes_at: string;
   service_presets: ServicePreset[];
   staff_titles: string[];
+  staff_word?: string | null;
   business_count: number;
 }
 

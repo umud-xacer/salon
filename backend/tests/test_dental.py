@@ -83,3 +83,30 @@ def test_wellness_spa_presets_sections(client, superadmin):
     assert [g["category_name"] for g in detail["service_groups"]] == WELLNESS_SECTIONS
     m = client.get("/api/v1/auth/me", headers=h).json()["memberships"][0]
     assert m["business_type_name"] == "Wellness & Spa" and "Massajchi" in m["staff_titles"]
+
+
+def test_wellness_staff_word_and_titles(client, superadmin):
+    """Wellness & Spa'da xodim "Usta" emas — "Mutaxassis"; lavozim tavsiyalari SPA uchun."""
+    spa = next(c for c in client.get("/api/v1/catalog/categories").json() if c["slug"] == "spa")
+    biz = create_business(client, superadmin, category_id=spa["id"])
+    m = client.get("/api/v1/auth/me", headers=auth_header(biz["owner"])).json()["memberships"][0]
+    assert m["staff_word"] == "Mutaxassis"
+    assert m["staff_titles"] == ["SPA-terapevt", "Massajchi", "Hammomchi / Sauna ustasi", "Kosmetolog-estetist",
+                                 "Aromaterapevt"]
+    # Salon turida standart (null) — panel "Usta" deydi
+    salon = create_business(client, superadmin)
+    assert client.get("/api/v1/auth/me", headers=auth_header(salon["owner"])).json()["memberships"][0]["staff_word"] is None
+    # Super Admin o'zgartiradi; bo'sh — standartga qaytadi
+    sa = auth_header(superadmin)
+    url = f"/api/v1/superadmin/business-types/{spa['id']}"
+    assert client.patch(url, headers=sa, json={"staff_word": "  SPA   ustasi "}).json()["staff_word"] == "SPA ustasi"
+    assert client.patch(url, headers=sa, json={"staff_word": "x"}).status_code == 422
+    assert client.patch(url, headers=sa, json={"staff_word": "Mutaxassis"}).json()["staff_word"] == "Mutaxassis"
+
+
+def test_director_edits_own_name(client, superadmin):
+    biz = create_business(client, superadmin)
+    r = client.patch("/api/v1/auth/me", headers=auth_header(biz["owner"]), json={"full_name": "Yangi Direktor Ismi"})
+    assert r.status_code == 200, r.text
+    rows = client.get("/api/v1/superadmin/businesses", headers=auth_header(superadmin)).json()
+    assert next(b for b in rows if b["id"] == biz["id"])["owner_name"] == "Yangi Direktor Ismi"

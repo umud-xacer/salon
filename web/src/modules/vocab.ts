@@ -2,6 +2,8 @@
 // Klinika va stomatologiyada "usta" emas — "shifokor". Panel ichida useVocab() bilan olinadi.
 import { createContext, useContext } from "react";
 
+import type { Membership } from "../api/types";
+
 export type BusinessKind = "salon" | "pharmacy" | "clinic";
 
 export interface Vocab {
@@ -58,3 +60,18 @@ export const KIND_LABELS: Record<BusinessKind, string> = {
   pharmacy: "Dorixona: farmatsevtlar, dorilar katalogi",
   clinic: "Klinika: shifokorlar, bemorlar qabuli",
 };
+
+/** Panel lug'ati: turga mos so'zlar + muassasa turining o'z nomi ("Stomatologiya" bo'limi, "stomatologiya ish soatlari") */
+export function panelVocab(m: Pick<Membership, "business_kind" | "business_type_name" | "staff_titles" | "staff_word">): Vocab {
+  const v = vocabFor(m.business_kind);
+  const own = m.business_type_name?.trim();
+  // Turning o'z xodim nomi (Wellness & Spa: "Mutaxassis") — rol, kalendar, "Istalgan ..."
+  const w = m.staff_word?.trim();
+  const lw = w?.toLowerCase();
+  return {
+    ...v, titles: m.staff_titles ?? [],
+    ...(own ? { businessPage: own, place: own.toLowerCase() } : {}),
+    ...(w && lw ? { staffOne: w, staffMany: `${lw}lar`, staffAny: `Istalgan ${lw}`, staffDative: `${lw}ga`, staff: `${w}lar` } : {}),
+  };
+}
+

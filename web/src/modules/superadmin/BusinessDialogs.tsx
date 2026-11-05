@@ -16,7 +16,7 @@ import { slugFor, wordingFor } from "./typeWording";
 import { PaymentHistory, RenewForm } from "./SubscriptionPayments";
 import { OwnerChange } from "./OwnerChange";
 import { PhoneOwnerHint, usePhoneLookup } from "./PhoneOwnerHint";
-import { VocabContext, vocabFor } from "../vocab";
+import { panelVocab, VocabContext } from "../vocab";
 
 export const BUSINESSES_KEY = ["superadmin", "businesses"];
 
@@ -204,7 +204,7 @@ export function BusinessDialog({ business: b, modules, onClose }: {
       {tab === "subscription" && <SubscriptionTab business={b} />}
       {tab === "modules" && <ModulesTab business={b} modules={modules} />}
       {tab === "staff" && (
-        <VocabContext.Provider value={{ ...vocabFor(bizType?.kind), titles: bizType?.staff_titles ?? [] }}>
+        <VocabContext.Provider value={panelVocab({ business_kind: bizType?.kind ?? "salon", staff_titles: bizType?.staff_titles ?? [], staff_word: bizType?.staff_word, business_type_name: bizType?.name_uz })}>
           <MembersPanel businessId={b.id} canManageManagers />
         </VocabContext.Provider>
       )}

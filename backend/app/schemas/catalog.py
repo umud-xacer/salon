@@ -302,6 +302,15 @@ class BusinessTypeIn(BaseModel):
     closes_at: time = time(20)
     service_presets: list[ServicePreset] = Field(default_factory=list, max_length=50)
     staff_titles: list[str] = Field(default_factory=list, max_length=30)
+    staff_word: str | None = Field(default=None, max_length=40)           # "Mutaxassis"; bo'sh — standart
+
+    @field_validator("staff_word")
+    @classmethod
+    def _word(cls, v: str | None) -> str | None:
+        v = " ".join((v or "").split())
+        if v and len(v) < 2:
+            raise ValueError("Xodim nomi kamida 2 harf")
+        return v or None
 
     @field_validator("staff_titles")
     @classmethod
@@ -340,6 +349,7 @@ class BusinessTypeUpdate(BaseModel):
     closes_at: time | None = None
     service_presets: list[ServicePreset] | None = Field(default=None, max_length=50)
     staff_titles: list[str] | None = Field(default=None, max_length=30)
+    staff_word: str | None = Field(default=None, max_length=40)
 
 
 class BusinessTypeOut(BusinessTypeCreate):
