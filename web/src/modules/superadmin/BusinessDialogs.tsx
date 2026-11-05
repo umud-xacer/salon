@@ -13,6 +13,7 @@ import { MembersPanel } from "../staff/MembersPanel";
 import { AddressFields, type AddressValue } from "./AddressFields";
 import { useBusinessTypes } from "./BusinessTypesPage";
 import { slugFor, wordingFor } from "./typeWording";
+import { PaymentHistory, RenewForm } from "./SubscriptionPayments";
 
 export const BUSINESSES_KEY = ["superadmin", "businesses"];
 
@@ -260,13 +261,10 @@ function SubscriptionTab({ business: b }: { business: BusinessAdmin }) {
   const [deleting, setDeleting] = useState(false);
   const base = `/superadmin/businesses/${b.id}`;
 
-  const renew = useMutation({
-    mutationFn: (days: number) => api<BusinessAdmin>(`${base}/subscription/renew`, json("POST", { days })),
-    onSuccess: (r) => {
-      if (r.subscription_ends_at) setDate(dayOf(r.subscription_ends_at));
-      return refresh();
-    },
-  });
+  const renewed = (r: BusinessAdmin) => {
+    if (r.subscription_ends_at) setDate(dayOf(r.subscription_ends_at));
+    return refresh();
+  };
   const update = useMutation({
     mutationFn: (body: Record<string, unknown>) => api(`${base}/subscription`, json("PATCH", body)),
     onSuccess: () => {
@@ -278,7 +276,7 @@ function SubscriptionTab({ business: b }: { business: BusinessAdmin }) {
     mutationFn: (status: string) => api(`${base}/status`, json("PATCH", { status })),
     onSuccess: refresh,
   });
-  const error = renew.error ?? update.error ?? block.error;
+  const error = update.error ?? block.error;
 
   return (
     <div className="space-y-4 text-sm">
@@ -286,11 +284,8 @@ function SubscriptionTab({ business: b }: { business: BusinessAdmin }) {
         Hozir: {b.subscription_ends_at ? `${formatDate(b.subscription_ends_at)} gacha` : "muddatsiz"}
         {!b.is_active && " (to'xtatilgan)"}
       </p>
-      <div className="flex flex-wrap gap-2">
-        {[30, 90, 365].map((d) => (
-          <Button key={d} disabled={renew.isPending} onClick={() => renew.mutate(d)}>+{d} kun</Button>
-        ))}
-      </div>
+      <RenewForm business={b} onDone={renewed} />
+      <p className="text-xs text-muted">Quyidagilar pulsiz tuzatish uchun (to'lov tarixiga yozilmaydi):</p>
       <label className="block max-w-xs">Aniq sana (kun oxirigacha)
         <input className={inputClass} type="date" min={todayIso()} value={date} onChange={(e) => setDate(e.target.value)} />
       </label>
@@ -329,6 +324,9 @@ function SubscriptionTab({ business: b }: { business: BusinessAdmin }) {
       <p className="text-xs text-muted">To'xtatish yoki bloklash ma'lumotni o'chirmaydi. Blokni to'lov ochmaydi.</p>
       {deleting && <DeleteBox business={b} onCancel={() => setDeleting(false)} />}
       {error && <ErrorNote error={error} />}
+      <div className="border-t border-line pt-4">
+        <PaymentHistory businessId={b.id} />
+      </div>
     </div>
   );
 }

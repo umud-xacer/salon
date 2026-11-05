@@ -12,8 +12,9 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, require_superadmin
 from app.models import Business, BusinessMember, BusinessModule, User
-from app.schemas import (BusinessAdminOut, BusinessCreate, BusinessDeleteIn, BusinessOut, BusinessStatusIn, BusinessUpdate, ModuleOut,
-                         ModuleToggle, StatusIn, SubscriptionRenew, SubscriptionUpdate)
+from app.schemas import (BusinessAdminOut, BusinessCreate, BusinessDeleteIn, BusinessExpiry, BusinessOut, BusinessStatusIn,
+                         BusinessUpdate, CountRow, DailyPoint, ModuleOut, ModuleToggle, MonthlyRevenue, PlatformStats,
+                         StatusIn, SubscriptionPaymentOut, SubscriptionRenew, SubscriptionUpdate)
 from app.schemas.catalog import BusinessTypeCreate, BusinessTypeIn, BusinessTypeOut, BusinessTypeUpdate
 from app.api.v1.members import assign_password
 from app.services import audit, media
@@ -146,10 +147,118 @@ def renew_subscription(body: SubscriptionRenew, business_id: int = Path(ge=1), d
     now = datetime.now(timezone.utc)
     biz.subscription_ends_at = max(biz.subscription_ends_at or now, now) + timedelta(days=body.days)
     biz.is_active = True
+    db.execute(text("""
+        INSERT INTO subscription_payments (business_id, business_name, days, amount, method, note, ends_at)
+        VALUES (:b, :n, :d, :a, :m, :note, :e)"""),
+        {"b": business_id, "n": biz.name, "d": body.days, "a": body.amount, "m": body.method,
+         "note": (body.note or "").strip() or None, "e": biz.subscription_ends_at})
     audit.log(db, business_id, "renew", "subscription", business_id,
-              {"days": body.days, "ends_at": biz.subscription_ends_at})
+              {"days": body.days, "amount": body.amount, "method": body.method, "ends_at": biz.subscription_ends_at})
     db.commit()
     return _read_business(db, business_id)
+
+
+_PAYMENT_SELECT = """
+    SELECT p.id, p.business_id, p.business_name, p.days, p.amount, p.method, p.note, p.ends_at, p.created_at,
+           u.full_name AS created_by_name
+      FROM subscription_payments p
+      LEFT JOIN users u ON u.id = p.created_by
+"""
+
+
+@router.get("/businesses/{business_id}/subscription/payments", response_model=list[SubscriptionPaymentOut])
+def subscription_payments(business_id: int = Path(ge=1), db: Session = Depends(get_db)):
+    _business_or_404(db, business_id)
+    rows = db.execute(text(f"{_PAYMENT_SELECT} WHERE p.business_id = :b ORDER BY p.created_at DESC, p.id DESC LIMIT 200"),
+                      {"b": business_id}).mappings()
+    return [SubscriptionPaymentOut(**r) for r in rows]
+
+
+# ─── Platforma statistikasi ─────────────────────────────────────────────────
+_TZ = "Asia/Tashkent"
+
+
+@router.get("/stats", response_model=PlatformStats)
+def platform_stats(db: Session = Depends(get_db)):
+    """Bosh sahifa: muassasalar holati, foydalanuvchilar, bronlar faolligi va obuna daromadi (Toshkent vaqti)."""
+    q = lambda sql, **p: db.execute(text(sql), {"tz": _TZ, **p})     # noqa: E731
+
+    biz = q("""
+        SELECT count(*) AS total,
+               count(*) FILTER (WHERE app.business_operational(b.id)) AS operational,
+               count(*) FILTER (WHERE b.status <> 'blocked' AND NOT app.business_operational(b.id)) AS suspended,
+               count(*) FILTER (WHERE b.status = 'blocked') AS blocked,
+               count(*) FILTER (WHERE b.status = 'active' AND b.is_listed AND c.is_active AND b.location IS NOT NULL
+                                  AND app.subscription_ok(b.is_active, b.subscription_ends_at)
+                                  AND app.has_public_offer(b.id)) AS listed
+          FROM businesses b JOIN business_categories c ON c.id = b.category_id""").mappings().one()
+
+    expiring = q("""
+        SELECT b.id, b.name, b.subscription_ends_at, u.phone AS owner_phone
+          FROM businesses b
+          LEFT JOIN business_members o ON o.business_id = b.id AND o.role = 'owner' AND o.is_active
+          LEFT JOIN users u ON u.id = o.user_id
+         WHERE b.status <> 'blocked' AND b.is_active
+           AND b.subscription_ends_at > now() AND b.subscription_ends_at <= now() + interval '7 days'
+         ORDER BY b.subscription_ends_at LIMIT 20""").mappings().all()
+
+    by_type = q("""
+        SELECT c.slug AS key, c.name_uz AS label, count(b.id) AS count
+          FROM business_categories c LEFT JOIN businesses b ON b.category_id = c.id
+         GROUP BY c.id HAVING c.is_active OR count(b.id) > 0
+         ORDER BY c.sort_order, c.id""").mappings().all()
+
+    people = q("""
+        SELECT count(u.id) AS users_total,
+               count(u.id) FILTER (WHERE EXISTS (SELECT 1 FROM business_members m
+                                                  WHERE m.user_id = u.id AND m.is_active)) AS staff_total
+          FROM users u WHERE NOT u.is_superadmin""").mappings().one()
+
+    # Bronlar yaratilgan kun bo'yicha (faollik); bekor qilinganlar ham — bu talab ko'rsatkichi
+    bookings = q("""
+        SELECT count(*) FILTER (WHERE (a.created_at AT TIME ZONE :tz)::date = (now() AT TIME ZONE :tz)::date) AS today,
+               count(*) FILTER (WHERE a.created_at > now() - interval '30 days') AS d30,
+               count(*) FILTER (WHERE a.created_at <= now() - interval '30 days') AS d30_prev
+          FROM appointments a WHERE a.created_at > now() - interval '60 days'""").mappings().one()
+
+    daily = q("""
+        WITH days AS (
+            SELECT generate_series((now() AT TIME ZONE :tz)::date - 29, (now() AT TIME ZONE :tz)::date, '1 day')::date AS day
+        )
+        SELECT d.day,
+               (SELECT count(*) FROM appointments a
+                 WHERE (a.created_at AT TIME ZONE :tz)::date = d.day) AS bookings,
+               (SELECT count(u.id) FROM users u
+                 WHERE NOT u.is_superadmin AND (u.created_at AT TIME ZONE :tz)::date = d.day) AS new_clients
+          FROM days d ORDER BY d.day""").mappings().all()
+
+    monthly = q("""
+        WITH months AS (
+            SELECT generate_series(date_trunc('month', now() AT TIME ZONE :tz) - interval '11 months',
+                                   date_trunc('month', now() AT TIME ZONE :tz), '1 month') AS m
+        )
+        SELECT to_char(m.m, 'YYYY-MM') AS month,
+               coalesce(sum(p.amount), 0) AS amount, count(p.id) AS count
+          FROM months m
+          LEFT JOIN subscription_payments p
+                 ON date_trunc('month', p.created_at AT TIME ZONE :tz) = m.m AND p.method <> 'free'
+         GROUP BY m.m ORDER BY m.m""").mappings().all()
+
+    recent = q(f"{_PAYMENT_SELECT} ORDER BY p.created_at DESC, p.id DESC LIMIT 10").mappings().all()
+
+    return PlatformStats(
+        businesses_total=biz["total"], businesses_operational=biz["operational"],
+        businesses_suspended=biz["suspended"], businesses_blocked=biz["blocked"], businesses_listed=biz["listed"],
+        expiring_soon=[BusinessExpiry(**r) for r in expiring],
+        by_type=[CountRow(**r) for r in by_type],
+        users_total=people["users_total"], staff_total=people["staff_total"],
+        clients_total=people["users_total"] - people["staff_total"],
+        bookings_today=bookings["today"], bookings_30d=bookings["d30"], bookings_30d_prev=bookings["d30_prev"],
+        daily=[DailyPoint(**r) for r in daily],
+        revenue_this_month=monthly[-1]["amount"], revenue_prev_month=monthly[-2]["amount"],
+        revenue_monthly=[MonthlyRevenue(**r) for r in monthly],
+        recent_payments=[SubscriptionPaymentOut(**r) for r in recent],
+    )
 
 
 @router.patch("/businesses/{business_id}/subscription", response_model=BusinessAdminOut)

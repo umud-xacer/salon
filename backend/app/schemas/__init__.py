@@ -283,6 +283,74 @@ class BusinessAdminOut(BaseModel):
 
 class SubscriptionRenew(BaseModel):
     days: int = Field(ge=1, le=3660)
+    amount: int = Field(default=0, ge=0, le=10**12)                # so'm; 0 = pul olinmadi
+    method: Literal["cash", "card", "transfer", "free"] = "cash"
+    note: str | None = Field(default=None, max_length=300)
+
+    @model_validator(mode="after")
+    def _free_has_no_amount(self):
+        if self.method == "free" and self.amount:
+            raise ValueError("Bepul uzaytirishda summa bo'lmaydi")
+        return self
+
+
+class SubscriptionPaymentOut(BaseModel):
+    id: int
+    business_id: int | None
+    business_name: str
+    days: int
+    amount: int
+    method: str
+    note: str | None
+    ends_at: datetime
+    created_by_name: str | None
+    created_at: datetime
+
+
+class BusinessExpiry(BaseModel):
+    id: int
+    name: str
+    subscription_ends_at: datetime
+    owner_phone: str | None
+
+
+class CountRow(BaseModel):
+    key: str
+    label: str
+    count: int
+
+
+class DailyPoint(BaseModel):
+    day: date
+    bookings: int
+    new_clients: int
+
+
+class MonthlyRevenue(BaseModel):
+    month: str                                                  # 'YYYY-MM'
+    amount: int
+    count: int
+
+
+class PlatformStats(BaseModel):
+    businesses_total: int
+    businesses_operational: int
+    businesses_suspended: int
+    businesses_blocked: int
+    businesses_listed: int                                      # ilovada ko'rinadi
+    expiring_soon: list[BusinessExpiry]
+    by_type: list[CountRow]
+    users_total: int
+    clients_total: int                                          # hech qayerda xodim emas
+    staff_total: int
+    bookings_today: int
+    bookings_30d: int
+    bookings_30d_prev: int
+    daily: list[DailyPoint]
+    revenue_this_month: int
+    revenue_prev_month: int
+    revenue_monthly: list[MonthlyRevenue]
+    recent_payments: list[SubscriptionPaymentOut]
 
 
 class SubscriptionUpdate(BaseModel):

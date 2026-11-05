@@ -411,3 +411,40 @@ export interface ExpenseList {
   total: number;
   items: Expense[];
 }
+
+// ─── Super Admin: obuna to'lovlari va platforma statistikasi (W7) ──────────
+export type SubscriptionMethod = "cash" | "card" | "transfer" | "free";
+
+export interface SubscriptionPayment {
+  id: number;
+  business_id: number | null;
+  business_name: string;
+  days: number;
+  amount: number;
+  method: SubscriptionMethod;
+  note: string | null;
+  ends_at: string;
+  created_by_name: string | null;
+  created_at: string;
+}
+
+export interface PlatformStats {
+  businesses_total: number;
+  businesses_operational: number;
+  businesses_suspended: number;
+  businesses_blocked: number;
+  businesses_listed: number;
+  expiring_soon: { id: number; name: string; subscription_ends_at: string; owner_phone: string | null }[];
+  by_type: { key: string; label: string; count: number }[];
+  users_total: number;
+  clients_total: number;
+  staff_total: number;
+  bookings_today: number;
+  bookings_30d: number;
+  bookings_30d_prev: number;
+  daily: { day: string; bookings: number; new_clients: number }[];
+  revenue_this_month: number;
+  revenue_prev_month: number;
+  revenue_monthly: { month: string; amount: number; count: number }[];
+  recent_payments: SubscriptionPayment[];
+}
