@@ -3,7 +3,9 @@ from datetime import datetime, timedelta, timezone
 
 import json
 
-from fastapi import APIRouter, Depends, HTTPException, Path
+from typing import Literal
+
+from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from fastapi.exceptions import RequestValidationError
 from pydantic import ValidationError
 from sqlalchemy import text
@@ -12,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, require_superadmin
 from app.models import Business, BusinessMember, BusinessModule, User
-from app.schemas import (BusinessAdminOut, BusinessCreate, BusinessDeleteIn, BusinessExpiry, BusinessOut, BusinessStatusIn,
+from app.schemas import (AuditOut, UserAdminOut, UserAdminPage, BusinessAdminOut, BusinessCreate, BusinessDeleteIn, BusinessExpiry, BusinessOut, BusinessStatusIn,
                          BusinessUpdate, CountRow, DailyPoint, ModuleOut, ModuleToggle, MonthlyRevenue, PlatformStats,
                          StatusIn, SubscriptionPaymentOut, SubscriptionRenew, SubscriptionUpdate)
 from app.schemas.catalog import BusinessTypeCreate, BusinessTypeIn, BusinessTypeOut, BusinessTypeUpdate
@@ -353,5 +355,91 @@ def set_user_status(body: StatusIn, user_id: int = Path(ge=1), db: Session = Dep
         raise HTTPException(404, detail={"code": "not_found", "message": "Foydalanuvchi topilmadi"})
     if target.is_superadmin:
         raise HTTPException(403, detail={"code": "forbidden", "message": "Super Adminni bloklab bo'lmaydi"})
-    target.status = body.status
+    if target.status != body.status:
+        target.status = body.status
+        audit.log(db, None, "block" if body.status == "blocked" else "unblock", "user", user_id,
+                  {"phone": target.phone, "name": target.full_name})
     db.commit()
+
+
+# ─── Foydalanuvchilar ───────────────────────────────────────────────────────
+@router.get("/users", response_model=UserAdminPage)
+def list_users(q: str | None = Query(default=None, max_length=60),
+               status: Literal["active", "blocked"] | None = None,
+               kind: Literal["client", "staff", "superadmin"] | None = None,
+               limit: int = Query(default=50, ge=1, le=200), offset: int = Query(default=0, ge=0, le=100_000),
+               db: Session = Depends(get_db)):
+    """Qidiruv: ism yoki telefon (raqamlarning bir qismi ham). Xodim — biror muassasada faol a'zo."""
+    where, params = ["u.status <> 'deleted'"], {"limit": limit, "offset": offset}
+    if q and q.strip():
+        term = q.strip()
+        digits = "".join(ch for ch in term if ch.isdigit())
+        cond = ["u.full_name ILIKE :name"]
+        params["name"] = f"%{term.replace('%', '').replace('_', '')}%"
+        if len(digits) >= 3:
+            cond.append("u.phone LIKE :digits")
+            params["digits"] = f"%{digits}%"
+        where.append(f"({' OR '.join(cond)})")
+    if status:
+        where.append("u.status = :status")
+        params["status"] = status
+    staff_cond = "EXISTS (SELECT 1 FROM business_members m WHERE m.user_id = u.id AND m.is_active)"
+    if kind == "superadmin":
+        where.append("u.is_superadmin")
+    elif kind == "staff":
+        where.append(f"NOT u.is_superadmin AND {staff_cond}")
+    elif kind == "client":
+        where.append(f"NOT u.is_superadmin AND NOT {staff_cond}")
+    sql_where = " AND ".join(where)
+    total = db.scalar(text(f"SELECT count(u.id) FROM users u WHERE {sql_where}"), params)
+    rows = db.execute(text(f"""
+        SELECT u.id, u.phone, u.full_name, u.status::text AS status, u.is_superadmin, u.created_at, u.last_login_at,
+               coalesce((SELECT jsonb_agg(jsonb_build_object('business_id', b.id, 'business_name', b.name,
+                                                             'role', m.role::text) ORDER BY b.name)
+                           FROM business_members m JOIN businesses b ON b.id = m.business_id
+                          WHERE m.user_id = u.id AND m.is_active), '[]') AS memberships,
+               (SELECT count(*) FROM business_clients c WHERE c.user_id = u.id) AS client_of
+          FROM users u WHERE {sql_where}
+         ORDER BY u.created_at DESC, u.id DESC LIMIT :limit OFFSET :offset"""), params).mappings()
+    return UserAdminPage(total=total, items=[UserAdminOut(**r) for r in rows])
+
+
+# ─── Audit jurnali ──────────────────────────────────────────────────────────
+@router.get("/audit", response_model=list[AuditOut])
+def audit_log(business_id: int | None = Query(default=None, ge=1),
+              entity_type: str | None = Query(default=None, max_length=40),
+              user_id: int | None = Query(default=None, ge=1),
+              platform_only: bool = False,
+              before_id: int | None = Query(default=None, ge=1),
+              limit: int = Query(default=50, ge=1, le=200),
+              db: Session = Depends(get_db)):
+    """Kim, qachon, nimani o'zgartirdi. Sahifalash: oxirgi qatorning id si before_id ga beriladi."""
+    where, params = ["true"], {"limit": limit}
+    if business_id:
+        where.append("a.business_id = :b")
+        params["b"] = business_id
+    if platform_only:
+        where.append("a.business_id IS NULL")
+    if entity_type:
+        where.append("a.entity_type = :t")
+        params["t"] = entity_type
+    if user_id:
+        where.append("a.user_id = :u")
+        params["u"] = user_id
+    if before_id:
+        where.append("a.id < :before")
+        params["before"] = before_id
+    rows = db.execute(text(f"""
+        SELECT a.id, a.business_id, b.name AS business_name, a.user_id, u.full_name AS user_name, u.phone AS user_phone,
+               a.action, a.entity_type, a.entity_id, a.changes, a.created_at
+          FROM audit_logs a
+          LEFT JOIN businesses b ON b.id = a.business_id
+          LEFT JOIN users u ON u.id = a.user_id
+         WHERE {' AND '.join(where)}
+         ORDER BY a.id DESC LIMIT :limit"""), params).mappings()
+    return [AuditOut(**r) for r in rows]
+
+
+@router.get("/audit/entity-types", response_model=list[str])
+def audit_entity_types(db: Session = Depends(get_db)):
+    return list(db.scalars(text("SELECT DISTINCT entity_type FROM audit_logs ORDER BY 1")))

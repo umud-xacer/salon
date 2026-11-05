@@ -448,3 +448,29 @@ export interface PlatformStats {
   revenue_monthly: { month: string; amount: number; count: number }[];
   recent_payments: SubscriptionPayment[];
 }
+
+export interface UserAdmin {
+  id: number;
+  phone: string;
+  full_name: string;
+  status: "active" | "blocked";
+  is_superadmin: boolean;
+  created_at: string;
+  last_login_at: string | null;
+  memberships: { business_id: number; business_name: string; role: string }[];
+  client_of: number;
+}
+
+export interface AuditEntry {
+  id: number;
+  business_id: number | null;
+  business_name: string | null;
+  user_id: number | null;
+  user_name: string | null;
+  user_phone: string | null;
+  action: string;
+  entity_type: string;
+  entity_id: number | null;
+  changes: Record<string, unknown> | unknown[] | null;
+  created_at: string;
+}

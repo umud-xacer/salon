@@ -307,6 +307,43 @@ class SubscriptionPaymentOut(BaseModel):
     created_at: datetime
 
 
+class UserMembershipBrief(BaseModel):
+    business_id: int
+    business_name: str
+    role: str
+
+
+class UserAdminOut(BaseModel):
+    id: int
+    phone: str
+    full_name: str
+    status: str
+    is_superadmin: bool
+    created_at: datetime
+    last_login_at: datetime | None
+    memberships: list[UserMembershipBrief]
+    client_of: int                                              # nechta muassasada mijoz kartasi bor
+
+
+class UserAdminPage(BaseModel):
+    total: int
+    items: list[UserAdminOut]
+
+
+class AuditOut(BaseModel):
+    id: int
+    business_id: int | None
+    business_name: str | None
+    user_id: int | None
+    user_name: str | None
+    user_phone: str | None
+    action: str
+    entity_type: str
+    entity_id: int | None
+    changes: dict | list | None
+    created_at: datetime
+
+
 class BusinessExpiry(BaseModel):
     id: int
     name: str
