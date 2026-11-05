@@ -64,3 +64,29 @@ Cheklovlar:
 - `modules/chronix-alarm` Kotlin kodi hali kompilyatsiya qilinmagan: birinchi EAS build uni tekshiradi.
 
 Ovoz: `assets/sounds/alarm.wav`. Android kanal sozlamasi yaratilgandan keyin o'zgarmaydi, ovozni almashtirsangiz `src/notifications.ts` dagi kanal id sini ham almashtiring (backend `app/services/push.py` bilan birga).
+
+
+## iPhone (iOS) build
+
+Kod va sozlamalar iOS'ga tayyor (`app.json` → `ios`, `eas.json` → `preview`/`production`). Build uchun
+**Apple Developer Program** hisobi kerak (yiliga $99, developer.apple.com). Hisobsiz iPhone'ga o'rnatib bo'lmaydi.
+
+Birinchi native build'dan oldin (Android APK bilan birga):
+
+```bash
+npx expo install expo-font          # @expo/vector-icons uchun yetishmaydi
+npx expo install --fix              # SDK 58 patch versiyalari
+# app.json: "version": "1.0.1" — eski APK eski OTA'da qoladi, yangi build'lar yangisini oladi
+```
+
+Sinash usullari:
+
+- **TestFlight (tavsiya):** `npx eas-cli@latest build --platform ios --profile production`, keyin
+  `npx eas-cli@latest submit --platform ios --latest`. iPhone'da TestFlight ilovasi orqali o'rnatiladi.
+  EAS birinchi safar Apple ID bilan kiradi va sertifikat, profil, push (APNs) kalitini o'zi yaratadi.
+- **Ad-hoc (to'g'ridan-to'g'ri):** `npx eas-cli@latest device:create` (iPhone'dan havolani ochib ro'yxatdan
+  o'tkaziladi), keyin `npx eas-cli@latest build --platform ios --profile preview`. Faqat ro'yxatdagi qurilmalar.
+
+iOS'dagi farqlar: to'liq ekranli budilnik (`modules/chronix-alarm`) faqat Android'da; iPhone'da budilnik
+bildirishnoma ovozi (`alarm.wav`) va bosilganda ochiladigan budilnik ekrani bilan ishlaydi. Push iOS'da
+Firebase'siz, APNs orqali keladi. OTA'ni ikkala platformaga: `--platform all`.

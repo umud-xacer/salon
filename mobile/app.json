@@ -7,8 +7,11 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "uz.chronix.app",
+      "config": {
+        "usesNonExemptEncryption": false
+      },
       "infoPlist": {
         "UIBackgroundModes": [
           "remote-notification"
@@ -40,8 +43,19 @@
     },
     "plugins": [
       "expo-router",
-      "expo-secure-store",
-      "expo-audio",
+      [
+        "expo-secure-store",
+        {
+          "faceIDPermission": false
+        }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": false,
+          "enableBackgroundPlayback": false
+        }
+      ],
       "expo-status-bar",
       [
         "expo-notifications",
@@ -54,7 +68,11 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Yaqin atrofdagi salonlarni ko'rsatish uchun"
+          "locationWhenInUsePermission": "Yaqin atrofdagi salonlarni ko'rsatish uchun",
+          "locationAlwaysAndWhenInUsePermission": false,
+          "locationAlwaysPermission": false,
+          "motionUsagePermission": false,
+          "locationFullAccuracyPermission": "Eng yaqin salonni aniq ko'rsatish uchun"
         }
       ],
       "./plugins/with-alarm-activity.js",
