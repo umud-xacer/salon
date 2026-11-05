@@ -54,6 +54,8 @@ export interface Appointment {
   services: string[];
   client_name: string | null;
   client_phone: string | null;
+  confirm_by?: string | null;        // 'pending': shu vaqtgacha tasdiqlanmasa — avtomatik bekor qilinadi
+  cancel_reason?: string | null;
 }
 
 export interface CalendarStaff {

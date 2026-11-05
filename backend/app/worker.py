@@ -27,6 +27,14 @@ def expire_subscriptions() -> int:
         return count
 
 
+def expire_pending() -> int:
+    """Salon tasdiqlamagan bronlar: muddati yoki bron vaqti o'tsa — bekor, vaqt bo'shaydi (sql/030)."""
+    with worker_session() as db:
+        count = db.scalar(text("SELECT app.expire_pending_appointments()"))
+        db.commit()
+        return count
+
+
 def create_reminders() -> int:
     with worker_session() as db:
         count = db.scalar(text("SELECT app.create_due_reminders(:lead)"),
@@ -69,10 +77,12 @@ def send_pushes() -> int:
 
 def run_once() -> dict:
     expired = expire_subscriptions()
+    auto_cancelled = expire_pending()      # eslatmadan oldin: bekor bo'lgan bronga eslatma ketmasin
     reminders = create_reminders()
     pushes = send_pushes()                 # yetkazilmagan eslatma shu aylanishda ogohlantirishga aylansin
     alerts = raise_alerts()
-    return {"expired": expired, "reminders": reminders, "alerts": alerts, "pushes": pushes + send_pushes()}
+    return {"expired": expired, "auto_cancelled": auto_cancelled, "reminders": reminders, "alerts": alerts,
+            "pushes": pushes + send_pushes()}
 
 
 def main() -> None:

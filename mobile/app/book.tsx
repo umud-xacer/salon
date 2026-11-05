@@ -58,7 +58,10 @@ export default function Book() {
         });
       // Telefonning o'ziga eslatma (vaqt o'zgarsa — yangisi bilan almashadi)
       void scheduleBookingReminder(saved.id, saved.starts_at, saved.business_name ?? 'Salon');
-      Alert.alert(appointmentId ? 'Vaqt o\'zgartirildi' : 'Bron qilindi', `${day} ${selected.time}`);
+      Alert.alert(appointmentId ? 'Vaqt o\'zgartirildi' : 'Bron qilindi',
+        saved.status === 'pending'
+          ? `${day} ${selected.time}. Salon tasdiqlashini kuting: tasdiqlanmasa, bron avtomatik bekor qilinadi.`
+          : `${day} ${selected.time}`);
       router.replace('/bookings');
     } catch (e) {
       // Vaqtni shu orada boshqa mijoz olgan bo'lishi mumkin: ro'yxat yangilanadi

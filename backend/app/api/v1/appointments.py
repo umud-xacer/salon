@@ -34,6 +34,8 @@ _SELECT = """
            coalesce((SELECT array_agg(s.service_id ORDER BY s.id) FROM appointment_services s
                       WHERE s.appointment_id = a.id), '{}') AS service_ids,
            rv.rating AS review_rating, rv.staff_rating AS review_staff_rating,
+           CASE WHEN a.status = 'pending' THEN app.confirm_deadline(a.business_id, a.created_at, a.starts_at) END
+               AS confirm_by,
            (a.status = 'completed' AND rv.id IS NULL
             AND coalesce(a.completed_at, a.ends_at) > now() - interval '30 days') AS can_review
       FROM appointments a

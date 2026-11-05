@@ -66,5 +66,6 @@ class AppointmentOut(BaseModel):
     review_rating: int | None = None                    # mijoz qo'ygan baho (bo'lsa)
     review_staff_rating: int | None = None
     can_review: bool = False                            # yakunlangan, 30 kun o'tmagan, hali baholanmagan
+    confirm_by: dt.datetime | None = None               # 'pending': salon shu vaqtgacha tasdiqlamasa — avtomatik bekor
     client_name: str | None = None                      # faqat 'clients.view' huquqi borlarga
     client_phone: str | None = None

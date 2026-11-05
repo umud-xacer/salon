@@ -19,10 +19,13 @@ const STATUS: Record<Appointment['status'], { label: string; color: string; bg: 
   no_show: { label: 'Kelinmadi', color: colors.danger, bg: colors.dangerSoft },
 };
 
+// Vaqti o'tib ketgan bron "Faol"da turmaydi: tasdiqlanmagani server tomonida avtomatik bekor bo'ladi,
+// tasdiqlangani (salon yakunlamagan bo'lsa) "Tarix"ga o'tadi
+const isPast = (a: Appointment) => new Date(a.ends_at).getTime() <= Date.now();
 const inTab = (a: Appointment, tab: Tab) => {
   if (tab === 'cancelled') return a.status === 'cancelled' || a.status === 'no_show';
-  if (tab === 'history') return a.status === 'completed';
-  return a.status === 'pending' || a.status === 'confirmed' || a.status === 'in_progress';
+  if (tab === 'history') return a.status === 'completed' || (a.status === 'confirmed' && isPast(a));
+  return a.status === 'in_progress' || ((a.status === 'pending' || a.status === 'confirmed') && !isPast(a));
 };
 
 const EMPTY: Record<Tab, string> = {
@@ -130,6 +133,20 @@ export default function Bookings() {
                 <Text style={[type.body, { flex: 1 }]} numberOfLines={2}>{a.services.join(', ')}</Text>
                 <Text style={{ fontWeight: '700', color: colors.text }}>{money(a.total_price)}</Text>
               </View>
+              {a.status === 'pending' && a.confirm_by && !isPast(a) && (
+                <View style={styles.line}>
+                  <Icon name="hourglass-outline" size={16} color={colors.warning} />
+                  <Text style={[type.small, { flex: 1, color: colors.warning }]}>
+                    Salon {dateTimeOf(a.confirm_by)} gacha tasdiqlashi kerak. Tasdiqlanmasa, bron avtomatik bekor qilinadi.
+                  </Text>
+                </View>
+              )}
+              {a.status === 'cancelled' && a.cancel_reason && (
+                <View style={styles.line}>
+                  <Icon name="information-circle-outline" size={16} color={colors.muted} />
+                  <Text style={[type.small, { flex: 1, color: colors.muted }]}>{a.cancel_reason}</Text>
+                </View>
+              )}
               {a.attendance === 'confirmed' && (
                 <View style={styles.line}>
                   <Icon name="checkmark-circle" size={16} color={colors.success} />

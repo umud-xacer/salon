@@ -67,7 +67,15 @@ export function AppointmentDialog({ membership, appointment: a, masterName, onCl
         )}
         <dt className="text-muted">Holat</dt>
         <dd>{STATUS_LABELS[a.status] ?? a.status}</dd>
+        {a.cancel_reason && a.status === "cancelled" && <><dt className="text-muted">Sabab</dt><dd className="break-words">{a.cancel_reason}</dd></>}
       </dl>
+
+      {a.status === "pending" && a.confirm_by && (
+        <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
+          Mijoz ilovadan bron qildi. {formatDate(a.confirm_by)} {formatTime(a.confirm_by)} gacha tasdiqlanmasa,
+          bron avtomatik bekor qilinadi va vaqt bo'shaydi.
+        </p>
+      )}
 
       {showPayments && <PaymentPanel membership={membership} appointmentId={a.id} />}
 

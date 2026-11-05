@@ -172,6 +172,8 @@ export type Appointment = {
   review_rating?: number | null;
   review_staff_rating?: number | null;
   can_review?: boolean;
+  confirm_by?: string | null;          // salon shu vaqtgacha tasdiqlamasa — avtomatik bekor
+  cancel_reason?: string | null;
 };
 
 export type PublicReview = {
