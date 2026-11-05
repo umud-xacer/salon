@@ -459,6 +459,19 @@ class IssuedPasswordOut(BaseModel):
     changed_at: datetime | None
 
 
+class PhoneMembership(BaseModel):
+    business_id: int
+    business_name: str
+    role: str
+
+
+class PhoneLookupOut(BaseModel):
+    phone: str
+    exists: bool
+    full_name: str | None = None
+    memberships: list[PhoneMembership] = []
+
+
 class OwnerChange(_Phone):
     """Super Admin: muassasa direktorini almashtirish (yoki shu odamning ismini tuzatish)."""
     full_name: str = Field(min_length=2, max_length=120)

@@ -35,6 +35,9 @@ export function DirectorsPage() {
   const [openedId, setOpenedId] = useState<number | null>(null);
 
   const all = useMemo(() => (businesses.data ?? []).filter((b) => b.owner_member_id !== null), [businesses.data]);
+  // Bitta odam (bitta telefon) bir necha muassasada direktor: ismi hammasida bir xil
+  const perOwner = useMemo(() => all.reduce((m, b) => m.set(b.owner_user_id ?? -b.id, (m.get(b.owner_user_id ?? -b.id) ?? 0) + 1),
+    new Map<number, number>()), [all]);
   // Tugashiga oz qolgan (yoki o'tib ketgan), bloklanmagan — eng shoshilinchi birinchi
   const soon = useMemo(() => all
     .filter((b) => b.status !== "blocked" && (daysLeft(b) ?? Infinity) <= SOON_DAYS)
@@ -65,7 +68,7 @@ export function DirectorsPage() {
         <p className="mb-2 text-xs text-muted">{SOON_DAYS} kun va undan kam qolgan yoki muddati o'tgan. Bossangiz — uzaytirish oynasi.</p>
         {soon.length === 0 ? <Empty>Yaqin kunlarda tugaydigan obuna yo'q</Empty> : (
           <ul className="divide-y divide-line">
-            {soon.map((b) => <Row key={b.id} b={b} onOpen={() => setOpenedId(b.id)} />)}
+            {soon.map((b) => <Row key={b.id} b={b} shared={perOwner.get(b.owner_user_id ?? -b.id) ?? 1} onOpen={() => setOpenedId(b.id)} />)}
           </ul>
         )}
       </Card>
@@ -84,7 +87,7 @@ export function DirectorsPage() {
       {list.length === 0 ? <Empty>Hech kim topilmadi</Empty> : (
         <Card className="p-0">
           <ul className="divide-y divide-line px-4">
-            {list.map((b) => <Row key={b.id} b={b} onOpen={() => setOpenedId(b.id)} />)}
+            {list.map((b) => <Row key={b.id} b={b} shared={perOwner.get(b.owner_user_id ?? -b.id) ?? 1} onOpen={() => setOpenedId(b.id)} />)}
           </ul>
         </Card>
       )}
@@ -96,7 +99,7 @@ export function DirectorsPage() {
   );
 }
 
-function Row({ b, onOpen }: { b: BusinessAdmin; onOpen: () => void }) {
+function Row({ b, shared, onOpen }: { b: BusinessAdmin; shared: number; onOpen: () => void }) {
   return (
     <li className="flex flex-wrap items-center gap-x-3 gap-y-1 py-3 text-sm">
       <button type="button" onClick={onOpen} className="min-w-0 flex-1 text-left hover:underline">
@@ -113,6 +116,7 @@ function Row({ b, onOpen }: { b: BusinessAdmin; onOpen: () => void }) {
       <span className="flex flex-wrap items-center gap-1.5">
         <StatusBadge b={b} />
         {b.owner_status === "blocked" && <Badge tone="red">Direktor bloklangan</Badge>}
+        {shared > 1 && <span title="Bitta telefon raqami bir necha muassasada direktor: ismi hammasida bir xil"><Badge tone="amber">Bitta raqam: {shared} ta muassasa</Badge></span>}
         <PasswordBadge status={b.owner_password_status} />
         <LeftBadge b={b} />
         {b.subscription_ends_at && <span className="text-xs text-muted">{formatDate(b.subscription_ends_at)} gacha</span>}

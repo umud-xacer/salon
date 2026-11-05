@@ -84,3 +84,19 @@ def test_business_list_has_director_account_fields(client, superadmin):
     assert row["owner_user_id"] == biz["owner"]["user"]["id"]
     assert row["owner_status"] == "active" and row["owner_last_login_at"] is not None
     assert row["type_name"]
+
+
+def test_phone_lookup_shows_shared_director(client, superadmin):
+    """Bitta telefon = bitta odam: ikki muassasada direktor bo'lsa, ism ikkalasida bir xil o'zgaradi.
+    Forma buni oldindan ko'rsatishi uchun lookup qaytaradi: kimniki va qaysi muassasalarda."""
+    a = create_business(client, superadmin)
+    phone = a["owner"]["user"]["phone"]
+    url = "/api/v1/superadmin/phone-lookup"
+    r = client.get(url, headers=auth_header(superadmin), params={"phone": phone[-9:]})
+    assert r.status_code == 200, r.text
+    d = r.json()
+    assert d["exists"] and d["phone"] == phone and d["full_name"] == "Salon Egasi"
+    assert [m["role"] for m in d["memberships"] if m["business_id"] == a["id"]] == ["owner"]
+    assert client.get(url, headers=auth_header(superadmin), params={"phone": new_phone()}).json()["exists"] is False
+    assert client.get(url, headers=auth_header(superadmin), params={"phone": "12345678901234"}).status_code == 422
+    assert client.get(url, headers=auth_header(a["owner"]), params={"phone": phone}).status_code == 403

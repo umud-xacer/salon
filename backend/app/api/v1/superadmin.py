@@ -13,9 +13,10 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, require_superadmin
+from app.core.security import normalize_phone
 from app.models import Business, BusinessMember, BusinessModule, User
 from app.schemas import (AuditOut, UserAdminOut, UserAdminPage, BusinessAdminOut, BusinessCreate, BusinessDeleteIn, BusinessExpiry, BusinessOut, BusinessStatusIn,
-                         BusinessUpdate, CountRow, OwnerChange, DailyPoint, ModuleOut, ModuleToggle, MonthlyRevenue, PlatformStats, RatingRow,
+                         BusinessUpdate, CountRow, OwnerChange, PhoneLookupOut, PhoneMembership, DailyPoint, ModuleOut, ModuleToggle, MonthlyRevenue, PlatformStats, RatingRow,
                          StatusIn, SubscriptionPaymentOut, SubscriptionRenew, SubscriptionUpdate)
 from app.schemas.catalog import BusinessTypeCreate, BusinessTypeIn, BusinessTypeOut, BusinessTypeUpdate
 from app.api.v1.members import assign_password
@@ -136,6 +137,24 @@ def delete_business(body: BusinessDeleteIn, business_id: int = Path(ge=1), db: S
     audit.log(db, None, "delete", "business", business_id, info)
     db.commit()
     media.delete_business_folder(business_id)
+
+
+@router.get("/phone-lookup", response_model=PhoneLookupOut)
+def phone_lookup(phone: str = Query(min_length=9, max_length=20), db: Session = Depends(get_db)):
+    """Telefon kimniki: bitta telefon = bitta odam (login). Forma oldindan ogohlantirishi uchun."""
+    try:
+        normalized = normalize_phone(phone)
+    except ValueError:
+        raise HTTPException(422, detail={"code": "invalid_phone", "message": "Telefon raqami noto'g'ri"})
+    user = db.execute(text("SELECT id, full_name FROM users WHERE phone = :p"), {"p": normalized}).mappings().first()
+    if user is None:
+        return PhoneLookupOut(phone=normalized, exists=False)
+    rows = db.execute(text("""
+        SELECT b.id AS business_id, b.name AS business_name, m.role::text AS role
+          FROM business_members m JOIN businesses b ON b.id = m.business_id
+         WHERE m.user_id = :u AND m.is_active ORDER BY b.name"""), {"u": user["id"]}).mappings()
+    return PhoneLookupOut(phone=normalized, exists=True, full_name=user["full_name"] or None,
+                          memberships=[PhoneMembership(**r) for r in rows])
 
 
 @router.put("/businesses/{business_id}/owner", response_model=BusinessAdminOut)

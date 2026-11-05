@@ -9,6 +9,7 @@ import type { BusinessAdmin } from "../../api/types";
 import { normalizePhone } from "../../components/format";
 import { PasswordInput } from "../../components/PasswordReveal";
 import { Button, ErrorNote, inputClass } from "../../components/ui";
+import { PhoneOwnerHint, usePhoneLookup } from "./PhoneOwnerHint";
 
 export function OwnerChange({ business: b }: { business: BusinessAdmin }) {
   const queryClient = useQueryClient();
@@ -21,6 +22,7 @@ export function OwnerChange({ business: b }: { business: BusinessAdmin }) {
 
   const normalized = phone.trim() ? normalizePhone(phone) : "";
   const sameOwner = !!b.owner_phone && normalized === b.owner_phone;
+  const lookup = usePhoneLookup(open ? phone : "");
 
   const save = useMutation({
     mutationFn: () => api<BusinessAdmin>(`/superadmin/businesses/${b.id}/owner`, json("PUT", {
@@ -48,9 +50,12 @@ export function OwnerChange({ business: b }: { business: BusinessAdmin }) {
     }
   };
 
+  // Shu odam boshqa muassasalarda ham bor: ism hammasida o'zgaradi — tasdiqlatamiz
+  const shared = (lookup.data?.memberships ?? []).filter((m) => m.business_id !== b.id).length > 0;
+
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    if (!sameOwner && b.owner_phone && !confirming) {
+    if (((!sameOwner && b.owner_phone) || (sameOwner && shared)) && !confirming) {
       setConfirming(true);
       return;
     }
@@ -84,6 +89,7 @@ export function OwnerChange({ business: b }: { business: BusinessAdmin }) {
             onChange={(e) => setName(e.target.value)} />
         </label>
       </div>
+      <PhoneOwnerHint lookup={lookup.data} businessId={b.id} mode={sameOwner ? "rename" : "assign"} />
       <PasswordInput label={sameOwner ? "Yangi parol (ixtiyoriy)" : "Boshlang'ich parol (ixtiyoriy)"}
         value={password} onChange={setPassword} />
       {!sameOwner && b.owner_phone && (
@@ -107,7 +113,12 @@ export function OwnerChange({ business: b }: { business: BusinessAdmin }) {
           shu telefon va parol bilan kiradi.
         </p>
       )}
-      {confirming && (
+      {confirming && sameOwner && (
+        <p role="alert" className="rounded-lg bg-amber-50 px-3 py-2 text-amber-800">
+          Ism shu telefon egasining hamma muassasalarida "{name.trim()}" bo'ladi. Rozimisiz? Yana bir marta bosing.
+        </p>
+      )}
+      {confirming && !sameOwner && (
         <p role="alert" className="rounded-lg bg-amber-50 px-3 py-2 text-amber-800">
           {b.owner_name ?? b.owner_phone} o'rniga {name.trim() || normalized} direktor bo'ladi
           ({previous === "manager" ? "eski direktor menejer bo'lib qoladi" : "eski direktor chiqariladi"}).
@@ -117,7 +128,7 @@ export function OwnerChange({ business: b }: { business: BusinessAdmin }) {
       {save.error && <ErrorNote error={save.error} />}
       <div className="flex flex-wrap gap-2">
         <Button type="submit" variant={confirming ? "danger" : "primary"} disabled={save.isPending}>
-          {sameOwner ? "Saqlash" : confirming ? "Ha, almashtirish" : "Direktorni almashtirish"}
+          {sameOwner ? (confirming ? "Ha, hammasida o'zgartirish" : "Saqlash") : confirming ? "Ha, almashtirish" : "Direktorni almashtirish"}
         </Button>
         <Button type="button" variant="secondary" onClick={() => setOpen(false)}>Bekor</Button>
       </div>

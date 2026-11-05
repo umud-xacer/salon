@@ -15,6 +15,7 @@ import { useBusinessTypes } from "./BusinessTypesPage";
 import { slugFor, wordingFor } from "./typeWording";
 import { PaymentHistory, RenewForm } from "./SubscriptionPayments";
 import { OwnerChange } from "./OwnerChange";
+import { PhoneOwnerHint, usePhoneLookup } from "./PhoneOwnerHint";
 import { VocabContext, vocabFor } from "../vocab";
 
 export const BUSINESSES_KEY = ["superadmin", "businesses"];
@@ -40,6 +41,7 @@ export function CreateBusinessDialog({ modules, onClose }: { modules: ModuleInfo
   const [place, setPlace] = useState<AddressValue>({ region: "", city: "", address: "", lat: null, lng: null });
   const [ownerName, setOwnerName] = useState("");
   const [ownerPhone, setOwnerPhone] = useState("");
+  const ownerLookup = usePhoneLookup(ownerPhone);
   const [ownerPassword, setOwnerPassword] = useState("");
   const [days, setDays] = useState("30");
   const [picked, setPicked] = useState<string[]>(["booking"]);
@@ -134,6 +136,7 @@ export function CreateBusinessDialog({ modules, onClose }: { modules: ModuleInfo
               onChange={(e) => setOwnerPhone(e.target.value)} />
           </label>
         </div>
+        <PhoneOwnerHint lookup={ownerLookup.data} mode="assign" />
         <PasswordInput label="Direktorning boshlang'ich paroli" value={ownerPassword} onChange={setOwnerPassword} />
         <label className="block text-sm">Obuna (kun, bo'sh qolsa muddatsiz)
           <input className={inputClass} type="number" min={1} max={3660} value={days} onChange={(e) => setDays(e.target.value)} />
