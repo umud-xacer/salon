@@ -127,3 +127,11 @@ def test_inactive_type_hides_its_businesses(client, superadmin):
 def test_profile_has_type_defaults(client, pharmacy_biz):
     p = client.get(f"/api/v1/businesses/{pharmacy_biz['id']}/profile", headers=auth_header(pharmacy_biz["owner"])).json()
     assert p["category_name"] == "Dorixona" and p["default_opens_at"].startswith("08:00")
+
+
+def test_migration_hides_pharmacy_and_clinic_and_renames_spa(database):
+    """sql/031: hozirgi bosqichda dorixona va klinika yashirin, stomatologiya qoladi, SPA — "Wellness & Spa"."""
+    m = database
+    assert m["pharmacy"][0] is False and m["clinic"][0] is False
+    assert m["dental"][0] is True and m["beauty_salon"][0] is True and m["barbershop"][0] is True
+    assert m["spa"] == (True, "Wellness & Spa")

@@ -58,7 +58,7 @@ export function slugFor(name: string, type: BusinessType | undefined): string {
 // Super Admin manzili turga qarab o'zbekcha: /superadmin/dorixona. Yangi turlar nomidan yasaladi.
 const URLS: Record<string, string> = {
   beauty_salon: "salon", barbershop: "sartaroshxona", pharmacy: "dorixona", clinic: "klinika",
-  dental: "stomatologiya", spa: "spa-massaj",
+  dental: "stomatologiya", spa: "wellness-spa",
 };
 export const RESERVED_PATHS = new Set(["turlar", "types", "t", "statistika", "tolovlar", "foydalanuvchilar", "direktorlar", "jurnal"]);
 

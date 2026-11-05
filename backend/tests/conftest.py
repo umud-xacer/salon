@@ -40,6 +40,9 @@ def _recreate_database():
     engine.dispose()
 
 
+MIGRATED_CATEGORIES: dict[str, tuple[bool, str]] = {}
+
+
 @pytest.fixture(scope="session", autouse=True)
 def database():
     from alembic import command
@@ -50,10 +53,19 @@ def database():
     cfg.set_main_option("script_location", str(BACKEND / "migrations"))
     command.upgrade(cfg, "head")
 
+    # Migratsiyalardan keyingi holat (masalan, 031: dorixona/klinika vaqtincha yashirin) — alohida tekshiriladi.
+    # Testlar esa barcha turlarni sinaydi: funksiyalar kodda qoladi, faqat prod'da yashiringan.
+    engine = create_engine(_admin.set(database=DB_NAME))
+    with engine.begin() as c:
+        MIGRATED_CATEGORIES.update({r.slug: (r.is_active, r.name_uz) for r in c.exec_driver_sql(
+            "SELECT slug, is_active, name_uz FROM business_categories")})
+        c.exec_driver_sql("UPDATE business_categories SET is_active = TRUE")
+    engine.dispose()
+
     from app.cli import create_superadmin, setup_roles
     setup_roles()
     create_superadmin("+998900000001", "Super Admin", "SuperPass123")
-    yield
+    yield dict(MIGRATED_CATEGORIES)
 
 
 @pytest.fixture(scope="session")

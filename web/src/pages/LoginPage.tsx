@@ -59,7 +59,7 @@ export function LoginPage() {
           </h1>
           <p className="mt-1 text-xs text-muted">
             {isAdminHost ? "Faqat platforma boshqaruvchisi uchun"
-              : "Salon, dorixona, klinika rahbarlari va xodimlari uchun"}
+              : "Salon, sartaroshxona va go'zallik markazlari rahbarlari va xodimlari uchun"}
           </p>
         </div>
 
