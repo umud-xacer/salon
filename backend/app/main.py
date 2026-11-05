@@ -6,7 +6,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.exc import DBAPIError
 
 from app.api.v1 import (appointments, auth, business_admin, catalog, clients, finance, geo, inventory, me, members,
-                        payroll, reception, reminders, reports, schedule, superadmin)
+                        payroll, reception, reminders, reports, reviews, schedule, superadmin)
 from app.core.config import get_settings
 from app.services.auth_service import AuthError
 
@@ -70,6 +70,9 @@ _DB_ERRORS = {
     "P0415": (409, "product_inactive", "Mahsulot yashirilgan, avval uni faollashtiring"),
     "P0416": (409, "payroll_locked", "Tasdiqlangan oylikni o'zgartirib bo'lmaydi"),
     "P0417": (409, "payroll_not_approved", "Oylik avval tasdiqlanishi kerak"),
+    "P0418": (409, "not_completed", "Baho faqat yakunlangan tashrifdan keyin qo'yiladi"),
+    "P0419": (409, "review_expired", "Baho tashrifdan keyin 30 kun ichida qo'yiladi"),
+    "P0420": (409, "already_reviewed", "Bu tashrifga baho allaqachon qo'yilgan"),
 }
 
 
@@ -98,6 +101,7 @@ app.include_router(finance.router, prefix="/api/v1")
 app.include_router(inventory.router, prefix="/api/v1")
 app.include_router(payroll.router, prefix="/api/v1")
 app.include_router(reports.router, prefix="/api/v1")
+app.include_router(reviews.router, prefix="/api/v1")
 app.include_router(me.router, prefix="/api/v1")
 
 # Prod'da rasmlarni Caddy beradi. Dev'da shu yerdan

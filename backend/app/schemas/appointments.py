@@ -63,5 +63,8 @@ class AppointmentOut(BaseModel):
     cancel_reason: str | None
     attendance: Literal["reminded", "confirmed", "no_response"] | None = None
     needs_contact: bool = False                         # ochiq ogohlantirish: qo'ng'iroq tugmasi faol
+    review_rating: int | None = None                    # mijoz qo'ygan baho (bo'lsa)
+    review_staff_rating: int | None = None
+    can_review: bool = False                            # yakunlangan, 30 kun o'tmagan, hali baholanmagan
     client_name: str | None = None                      # faqat 'clients.view' huquqi borlarga
     client_phone: str | None = None

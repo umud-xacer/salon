@@ -32,8 +32,12 @@ _SELECT = """
            coalesce((SELECT array_agg(s.service_name ORDER BY s.id) FROM appointment_services s
                       WHERE s.appointment_id = a.id), '{}') AS services,
            coalesce((SELECT array_agg(s.service_id ORDER BY s.id) FROM appointment_services s
-                      WHERE s.appointment_id = a.id), '{}') AS service_ids
+                      WHERE s.appointment_id = a.id), '{}') AS service_ids,
+           rv.rating AS review_rating, rv.staff_rating AS review_staff_rating,
+           (a.status = 'completed' AND rv.id IS NULL
+            AND coalesce(a.completed_at, a.ends_at) > now() - interval '30 days') AS can_review
       FROM appointments a
+      LEFT JOIN reviews rv         ON rv.appointment_id = a.id
       LEFT JOIN businesses b       ON b.id = a.business_id
       LEFT JOIN public_staff ps    ON ps.member_id = a.member_id
       LEFT JOIN business_clients c ON c.id = a.client_id

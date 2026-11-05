@@ -1,4 +1,4 @@
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
@@ -15,7 +15,8 @@ const GROUPS: { id: Group; label: string }[] = [
 ];
 
 const groupOf = (type: string): Group => {
-  if (type.startsWith('booking') || type.startsWith('appointment') || type.startsWith('attendance')) return 'booking';
+  if (type.startsWith('booking') || type.startsWith('appointment') || type.startsWith('attendance')
+      || type === 'review_request') return 'booking';
   if (type.startsWith('promo')) return 'promo';
   return 'system';
 };
@@ -27,6 +28,7 @@ const ICONS: Record<Exclude<Group, 'all'>, IconName> = {
 };
 
 export default function Inbox() {
+  const router = useRouter();
   const [items, setItems] = useState<Notification[]>([]);
   const [group, setGroup] = useState<Group>('all');
   const [loading, setLoading] = useState(false);
@@ -47,6 +49,9 @@ export default function Inbox() {
   }, [load]));
 
   const read = async (n: Notification) => {
+    if (n.type === 'review_request' && n.data?.appointment_id) {
+      router.push({ pathname: '/review', params: { appointmentId: String(n.data.appointment_id) } });
+    }
     if (n.read_at) return;
     setItems((list) => list.map((x) => (x.id === n.id ? { ...x, read_at: new Date().toISOString() } : x)));
     await api(`/notifications/${n.id}/read`, { method: 'POST' }).catch(() => {});

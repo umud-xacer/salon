@@ -59,6 +59,10 @@ async function handleAction(router: ReturnType<typeof useRouter>, r: Notificatio
     router.replace('/bookings');
     return;
   }
+  if (data.type === 'review_request' || data.action === 'review') {
+    router.push({ pathname: '/review', params: { appointmentId: String(data.appointment_id) } });
+    return;
+  }
   openAlarm(router, data);
 }
 
@@ -157,6 +161,7 @@ function Navigator() {
       <Stack.Screen name="change-password" options={{ title: 'Parolni almashtirish' }} />
       <Stack.Screen name="business/[slug]" options={{ title: 'Salon' }} />
       <Stack.Screen name="book" options={{ title: 'Vaqt tanlash' }} />
+      <Stack.Screen name="review" options={{ title: 'Xizmatni baholash' }} />
       <Stack.Screen name="alarm" options={{ headerShown: false, presentation: 'fullScreenModal', gestureEnabled: false }} />
     </Stack>
   );

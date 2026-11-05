@@ -132,7 +132,7 @@ export type BusinessCard = {
 export type Category = { id: number; slug: string; name_uz: string };
 
 export type Service = { id: number; name: string; description: string | null; duration_min: number; price: number };
-export type Staff = { member_id: number; full_name: string; title: string | null; rating_avg: number; service_ids: number[] };
+export type Staff = { member_id: number; full_name: string; title: string | null; rating_avg: number; rating_count: number; service_ids: number[] };
 export type BusinessDetail = {
   id: number;
   slug: string;
@@ -169,6 +169,36 @@ export type Appointment = {
   service_ids: number[];
   attendance: 'reminded' | 'confirmed' | 'no_response' | null;
   needs_contact: boolean;
+  review_rating?: number | null;
+  review_staff_rating?: number | null;
+  can_review?: boolean;
+};
+
+export type PublicReview = {
+  id: number;
+  author: string;
+  member_id: number | null;
+  member_name: string | null;
+  rating: number;
+  cleanliness: number | null;
+  service_quality: number | null;
+  comment: string | null;
+  staff_rating: number | null;
+  staff_comment: string | null;
+  reply: string | null;
+  reply_at: string | null;
+  created_at: string;
+};
+
+export type ReviewsOut = {
+  summary: {
+    count: number;
+    rating_avg: number | null;
+    cleanliness_avg: number | null;
+    quality_avg: number | null;
+    distribution: Record<string, number>;
+  };
+  items: PublicReview[];
 };
 
 export type Notification = {

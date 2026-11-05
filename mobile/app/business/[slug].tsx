@@ -4,6 +4,7 @@ import { ActivityIndicator, Dimensions, Image, Pressable, ScrollView, Text, View
 
 import { api, ApiError, BusinessDetail, Service } from '../../src/api';
 import { PharmacyCatalog } from '../../src/PharmacyCatalog';
+import { BusinessReviews } from '../../src/Reviews';
 import { useFavorites } from '../../src/favorites';
 import { Button, Card, Chip, colors, ErrorText, Icon, money, radius, shared, type } from '../../src/ui';
 
@@ -120,7 +121,8 @@ export default function Business() {
           {masters.map((m) => (
             <Chip
               key={m.member_id}
-              label={m.title ? `${m.full_name} · ${m.title}` : m.full_name}
+              label={[m.full_name, m.title, m.rating_count > 0 ? `★ ${m.rating_avg.toFixed(1)} (${m.rating_count})` : null]
+                .filter(Boolean).join(' · ')}
               active={memberId === m.member_id}
               onPress={() => setMemberId(m.member_id)}
             />
@@ -140,6 +142,8 @@ export default function Business() {
           })}
         />
       )}
+
+      <BusinessReviews slug={business.slug} staffWord={kind === 'clinic' ? 'Shifokor' : kind === 'pharmacy' ? 'Farmatsevt' : 'Usta'} />
     </ScrollView>
   );
 }

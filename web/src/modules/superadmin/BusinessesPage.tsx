@@ -1,6 +1,6 @@
 // Super Admin: barcha salonlar ro'yxat va xaritada, direktorlari bilan.
 import { useQuery } from "@tanstack/react-query";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Star } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
 
@@ -129,6 +129,10 @@ export function BusinessesPage() {
                   )}
                   <PasswordBadge status={b.owner_password_status} />
                   <span className="text-muted">{b.staff_count} xodim</span>
+                  <span className="flex items-center gap-1 tabular-nums" title={`${b.rating_count} ta baho`}>
+                    <Star size={14} aria-hidden className={b.rating_count ? "fill-amber-400 text-amber-400" : "text-line"} />
+                    {b.rating_count ? `${b.rating_avg.toFixed(1)} (${b.rating_count})` : "—"}
+                  </span>
                   <span className="sm:w-32 sm:text-right">
                     {b.subscription_ends_at ? `${formatDate(b.subscription_ends_at)} gacha` : "Muddatsiz"}
                   </span>

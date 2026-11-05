@@ -7,6 +7,7 @@ import { Link } from "react-router-dom";
 import { api } from "../../api/client";
 import type { PlatformStats } from "../../api/types";
 import { formatDate, formatMoney, shortDate } from "../../components/format";
+import { Stars } from "../../components/Stars";
 import { Card, Empty, ErrorNote, PageTitle, Spinner, Tabs } from "../../components/ui";
 import { PAYMENT_METHODS } from "./SubscriptionPayments";
 
@@ -53,6 +54,23 @@ export function StatsPage() {
           <BarList rows={s.by_type.map((t) => ({ label: t.label, value: t.count }))} format={String} empty="Muassasa yo'q" />
         </Card>
       </div>
+
+      <Card>
+        <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="text-sm font-medium">Reytinglar</h2>
+          <span className="flex items-center gap-2 text-sm">
+            <Stars value={s.rating_avg} />
+            <span className="tabular-nums">{s.rating_avg ? s.rating_avg.toFixed(2) : "—"}</span>
+            <span className="text-xs text-muted">· {s.reviews_total} ta baho, 30 kunda {s.reviews_30d}</span>
+          </span>
+        </div>
+        {s.rating_top.length === 0 ? <Empty>Hali baho qo'yilmagan</Empty> : (
+          <div className="grid gap-4 lg:grid-cols-2">
+            <RatingList title="Eng yuqori" rows={s.rating_top} />
+            <RatingList title="Eng past" rows={s.rating_low} />
+          </div>
+        )}
+      </Card>
 
       <Card>
         <h2 className="mb-1 text-sm font-medium">Obunasi 7 kun ichida tugaydi</h2>
@@ -110,6 +128,24 @@ export function StatsPage() {
           </ul>
         )}
       </Card>
+    </div>
+  );
+}
+
+function RatingList({ title, rows }: { title: string; rows: PlatformStats["rating_top"] }) {
+  return (
+    <div>
+      <p className="mb-1 text-xs text-muted">{title}</p>
+      <ul className="divide-y divide-line text-sm">
+        {rows.map((r) => (
+          <li key={r.id} className="flex items-center justify-between gap-3 py-1.5">
+            <span className="min-w-0 truncate">{r.name} <span className="text-xs text-muted">· {r.category}</span></span>
+            <span className="flex shrink-0 items-center gap-1.5 tabular-nums">
+              <Stars value={r.rating_avg} size={12} /> {r.rating_avg.toFixed(1)} <span className="text-xs text-muted">({r.rating_count})</span>
+            </span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

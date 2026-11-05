@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_db, require_superadmin
 from app.models import Business, BusinessMember, BusinessModule, User
 from app.schemas import (AuditOut, UserAdminOut, UserAdminPage, BusinessAdminOut, BusinessCreate, BusinessDeleteIn, BusinessExpiry, BusinessOut, BusinessStatusIn,
-                         BusinessUpdate, CountRow, DailyPoint, ModuleOut, ModuleToggle, MonthlyRevenue, PlatformStats,
+                         BusinessUpdate, CountRow, DailyPoint, ModuleOut, ModuleToggle, MonthlyRevenue, PlatformStats, RatingRow,
                          StatusIn, SubscriptionPaymentOut, SubscriptionRenew, SubscriptionUpdate)
 from app.schemas.catalog import BusinessTypeCreate, BusinessTypeIn, BusinessTypeOut, BusinessTypeUpdate
 from app.api.v1.members import assign_password
@@ -26,7 +26,7 @@ router = APIRouter(prefix="/superadmin", tags=["superadmin"], dependencies=[Depe
 _BUSINESS_SELECT = """
     SELECT b.id, b.name, b.slug, b.category_id, b.region, b.city, b.address, b.status::text AS status,
            ST_Y(b.location::geometry) AS lat, ST_X(b.location::geometry) AS lng,
-           b.is_active, b.subscription_ends_at,
+           b.is_active, b.subscription_ends_at, b.rating_avg::float AS rating_avg, b.rating_count,
            app.business_operational(b.id) AS operational,
            u.full_name AS owner_name, u.phone AS owner_phone, o.id AS owner_member_id,
            CASE WHEN u.id IS NULL THEN NULL ELSE app.password_state(u.id) END AS owner_password_status,
@@ -248,6 +248,17 @@ def platform_stats(db: Session = Depends(get_db)):
 
     recent = q(f"{_PAYMENT_SELECT} ORDER BY p.created_at DESC, p.id DESC LIMIT 10").mappings().all()
 
+    reviews = q("""
+        SELECT count(*) AS total, count(*) FILTER (WHERE created_at > now() - interval '30 days') AS d30,
+               round(avg(rating), 2)::float AS avg
+          FROM reviews WHERE NOT is_hidden""").mappings().one()
+    rated = """
+        SELECT b.id, b.name, c.name_uz AS category, b.rating_avg::float AS rating_avg, b.rating_count
+          FROM businesses b JOIN business_categories c ON c.id = b.category_id
+         WHERE b.rating_count > 0"""
+    top = q(f"{rated} ORDER BY b.rating_avg DESC, b.rating_count DESC, b.id LIMIT 5").mappings().all()
+    low = q(f"{rated} ORDER BY b.rating_avg, b.rating_count DESC, b.id LIMIT 5").mappings().all()
+
     return PlatformStats(
         businesses_total=biz["total"], businesses_operational=biz["operational"],
         businesses_suspended=biz["suspended"], businesses_blocked=biz["blocked"], businesses_listed=biz["listed"],
@@ -260,6 +271,8 @@ def platform_stats(db: Session = Depends(get_db)):
         revenue_this_month=monthly[-1]["amount"], revenue_prev_month=monthly[-2]["amount"],
         revenue_monthly=[MonthlyRevenue(**r) for r in monthly],
         recent_payments=[SubscriptionPaymentOut(**r) for r in recent],
+        reviews_total=reviews["total"], reviews_30d=reviews["d30"], rating_avg=reviews["avg"],
+        rating_top=[RatingRow(**r) for r in top], rating_low=[RatingRow(**r) for r in low],
     )
 
 

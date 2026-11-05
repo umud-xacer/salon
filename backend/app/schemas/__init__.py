@@ -278,6 +278,8 @@ class BusinessAdminOut(BaseModel):
     service_count: int = 0
     hours_count: int = 0
     photo_count: int = 0
+    rating_avg: float = 0
+    rating_count: int = 0
     modules: list[str]
 
 
@@ -369,6 +371,14 @@ class MonthlyRevenue(BaseModel):
     count: int
 
 
+class RatingRow(BaseModel):
+    id: int
+    name: str
+    category: str
+    rating_avg: float
+    rating_count: int
+
+
 class PlatformStats(BaseModel):
     businesses_total: int
     businesses_operational: int
@@ -388,6 +398,11 @@ class PlatformStats(BaseModel):
     revenue_prev_month: int
     revenue_monthly: list[MonthlyRevenue]
     recent_payments: list[SubscriptionPaymentOut]
+    reviews_total: int = 0
+    reviews_30d: int = 0
+    rating_avg: float | None = None                             # barcha (yashirilmagan) baholar o'rtachasi
+    rating_top: list[RatingRow] = []
+    rating_low: list[RatingRow] = []
 
 
 class SubscriptionUpdate(BaseModel):

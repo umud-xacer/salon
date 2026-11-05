@@ -273,6 +273,8 @@ export interface BusinessAdmin {
   service_count: number;
   hours_count: number;
   photo_count: number;
+  rating_avg: number;
+  rating_count: number;
   modules: string[];
 }
 
@@ -447,6 +449,11 @@ export interface PlatformStats {
   revenue_prev_month: number;
   revenue_monthly: { month: string; amount: number; count: number }[];
   recent_payments: SubscriptionPayment[];
+  reviews_total: number;
+  reviews_30d: number;
+  rating_avg: number | null;
+  rating_top: RatingRow[];
+  rating_low: RatingRow[];
 }
 
 export interface UserAdmin {
@@ -474,3 +481,42 @@ export interface AuditEntry {
   changes: Record<string, unknown> | unknown[] | null;
   created_at: string;
 }
+
+// ─── Reyting va baholash ───────────────────────────────────────────────────
+export interface ReviewSummary {
+  count: number;
+  rating_avg: number | null;
+  cleanliness_avg: number | null;
+  quality_avg: number | null;
+  distribution: Record<string, number>;
+}
+
+export interface BusinessReview {
+  id: number;
+  author: string;
+  member_id: number | null;
+  member_name: string | null;
+  rating: number;
+  cleanliness: number | null;
+  service_quality: number | null;
+  comment: string | null;
+  staff_rating: number | null;
+  staff_comment: string | null;
+  reply: string | null;
+  reply_at: string | null;
+  created_at: string;
+  client_name?: string | null;
+  client_phone?: string | null;
+  appointment_id?: number;
+  appointment_starts_at?: string;
+  is_hidden?: boolean;
+  replied_by_name?: string | null;
+}
+
+export interface ReviewsPage {
+  summary: ReviewSummary;
+  items: BusinessReview[];
+  total?: number;
+}
+
+export interface RatingRow { id: number; name: string; category: string; rating_avg: number; rating_count: number }

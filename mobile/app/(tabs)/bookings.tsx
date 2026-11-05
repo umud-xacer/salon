@@ -155,6 +155,18 @@ export default function Bookings() {
                   <Button title="Bekor qilish" kind="danger" onPress={() => cancel(a)} />
                 </View>
               )}
+              {a.status === 'completed' && a.review_rating != null && (
+                <View style={styles.line}>
+                  <Icon name="star" size={16} color={colors.star} />
+                  <Text style={type.body}>Bahoyingiz: {a.review_rating} / 5</Text>
+                </View>
+              )}
+              {a.can_review && (
+                <View style={{ marginTop: 10 }}>
+                  <Button title="Xizmatni baholash" icon="star-outline"
+                    onPress={() => router.push({ pathname: '/review', params: { appointmentId: String(a.id) } })} />
+                </View>
+              )}
               {!open && tab !== 'active' && a.business_slug && (
                 <View style={{ marginTop: 10 }}>
                   <Button title="Qayta bron qilish" kind="soft" compact

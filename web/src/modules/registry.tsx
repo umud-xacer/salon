@@ -11,6 +11,7 @@ import {
   Package,
   Receipt,
   Scissors,
+  Star,
   Store,
   Users,
   Wallet,
@@ -29,6 +30,7 @@ import { CashPage, ExpensesPage } from "./finance/FinancePages";
 import { InventoryPage } from "./inventory/InventoryPage";
 import { MyPayrollPage, PayrollPage } from "./payroll/PayrollPage";
 import { ReportsPage } from "./reports/ReportsPage";
+import { MyReviewsPage, ReviewsPage } from "./reviews/ReviewsPage";
 import { MyBookingsPage, MySchedulePage } from "./schedule/StaffPages";
 import { ServicesPage } from "./services/ServicesPage";
 import { StaffPage } from "./staff/StaffPage";
@@ -86,9 +88,11 @@ export const SECTIONS: Section[] = [
     path: "services", uz: "xizmatlar", uzByKind: { clinic: "tibbiy-xizmatlar" }, label: "Xizmatlar", term: "services", icon: Scissors, panel: "admin",
     anyPermission: ["services.manage"], page: ServicesPage,
   },
+  { path: "reviews", uz: "baholar", label: "Baholar", icon: Star, panel: "admin", anyPermission: ["business.manage"], page: ReviewsPage },
   { path: "business", uz: "salon", uzByKind: { pharmacy: "dorixona", clinic: "klinika" }, label: "Salon", term: "businessPage", icon: Store, panel: "admin", anyPermission: ["business.manage"], page: BusinessPage },
   { path: "bookings", uz: "bronlarim", label: "Mening bronlarim", icon: CalendarDays, panel: "staff", page: MyBookingsPage },
   { path: "schedule", uz: "jadvalim", label: "Ish jadvalim", icon: Clock3, panel: "staff", page: MySchedulePage },
+  { path: "my-reviews", uz: "baholarim", label: "Baholarim", icon: Star, panel: "staff", page: MyReviewsPage },
   { path: "my-payroll", uz: "oyliklarim", label: "Oyliklarim", icon: WalletCards, panel: "staff", module: "payroll", page: MyPayrollPage },
 ];
 
