@@ -10,6 +10,7 @@ export interface Vocab {
   staffMany: string;      // gap ichida: "barcha ustalar" / "barcha shifokorlar"
   staffAny: string;       // "Istalgan usta"
   staffDative: string;    // "ustaga berildi"
+  receptionOne: string;   // qabulxona roli: salonda "Kassir", klinikada "Registrator"
   services: string;
   serviceOne: string;
   clients: string;
@@ -24,18 +25,18 @@ export interface Vocab {
 
 const VOCAB: Record<BusinessKind, Vocab> = {
   salon: {
-    staff: "Xodimlar", staffOne: "Usta", staffMany: "ustalar", staffAny: "Istalgan usta", staffDative: "ustaga",
+    staff: "Xodimlar", staffOne: "Usta", staffMany: "ustalar", staffAny: "Istalgan usta", staffDative: "ustaga", receptionOne: "Kassir",
     services: "Xizmatlar", serviceOne: "Xizmat", clients: "Mijozlar", clientOne: "Mijoz",
     inventory: "Ombor", product: "Mahsulot", calendar: "Kalendar", businessPage: "Salon", place: "salon",
   },
   pharmacy: {
     staff: "Farmatsevtlar", staffOne: "Farmatsevt", staffMany: "farmatsevtlar", staffAny: "Istalgan farmatsevt",
-    staffDative: "farmatsevtga", services: "Xizmatlar", serviceOne: "Xizmat", clients: "Xaridorlar", clientOne: "Xaridor",
+    staffDative: "farmatsevtga", receptionOne: "Kassir", services: "Xizmatlar", serviceOne: "Xizmat", clients: "Xaridorlar", clientOne: "Xaridor",
     inventory: "Dorilar va tibbiy buyumlar", product: "Dori", calendar: "Navbat", businessPage: "Dorixona", place: "dorixona",
   },
   clinic: {
     staff: "Shifokorlar", staffOne: "Shifokor", staffMany: "shifokorlar", staffAny: "Istalgan shifokor",
-    staffDative: "shifokorga", services: "Tibbiy xizmatlar", serviceOne: "Tibbiy xizmat",
+    staffDative: "shifokorga", receptionOne: "Registrator", services: "Tibbiy xizmatlar", serviceOne: "Tibbiy xizmat",
     clients: "Bemorlar", clientOne: "Bemor", inventory: "Ombor", product: "Mahsulot", calendar: "Qabullar",
     businessPage: "Klinika", place: "klinika",
   },
@@ -49,7 +50,7 @@ export const useVocab = () => useContext(VocabContext);
 
 // Rol nomi: oddiy xodim — turga qarab (Usta / Shifokor / Farmatsevt)
 export const roleLabel = (role: string, v: Vocab) =>
-  ({ owner: "Direktor", manager: "Menejer", receptionist: "Kassir", staff: v.staffOne } as Record<string, string>)[role] ?? role;
+  ({ owner: "Direktor", manager: "Menejer", receptionist: v.receptionOne, staff: v.staffOne } as Record<string, string>)[role] ?? role;
 
 export const KIND_LABELS: Record<BusinessKind, string> = {
   salon: "Salon: ustalar, xizmatlar, vaqtga bron",
