@@ -90,6 +90,7 @@ async def db_error_handler(request: Request, exc: DBAPIError):
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(superadmin.router, prefix="/api/v1")
 app.include_router(members.router, prefix="/api/v1")
+app.include_router(members.my_router, prefix="/api/v1")
 app.include_router(catalog.router, prefix="/api/v1")
 app.include_router(geo.router, prefix="/api/v1")
 app.include_router(business_admin.router, prefix="/api/v1")

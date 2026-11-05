@@ -6,7 +6,7 @@ import { useState, type FormEvent } from "react";
 import { api, json } from "../../api/client";
 import type { Member, MemberPermission, MemberService, Service } from "../../api/types";
 import { useAuth } from "../../auth/AuthProvider";
-import { formatDate, formatMoney, normalizePhone } from "../../components/format";
+import { DURATION_CHOICES, formatDate, formatDuration, formatMoney, normalizePhone } from "../../components/format";
 import { roleLabel, useVocab, type Vocab } from "../vocab";
 import { Modal } from "../../components/Modal";
 import { Badge, Button, Empty, ErrorNote, inputClass, PasswordBadge, Spinner, Tabs } from "../../components/ui";
@@ -340,24 +340,45 @@ function ServicesTab({ businessId, memberId }: { businessId: number; memberId: n
     save.mutate(on
       ? [...assigned.data, { service_id: id, custom_price: null, custom_duration: null }]
       : assigned.data.filter((a) => a.service_id !== id));
+  const setDuration = (id: number, minutes: number | null) =>
+    save.mutate(assigned.data.map((a) => (a.service_id === id ? { ...a, custom_duration: minutes } : a)));
 
   return (
     <>
       <p className="mb-2 text-sm text-muted">{v.staffOne} bajaradigan xizmatlar. Faqat shular uchun unga bron qilinadi.</p>
       {save.error && <div className="mb-2"><ErrorNote error={save.error} /></div>}
       <ul className="divide-y divide-line">
-        {active.map((s) => (
-          <li key={s.id} className="py-2 text-sm">
-            <label className="flex items-center gap-2">
-              <input type="checkbox" className="size-4 accent-primary" disabled={save.isPending}
-                checked={assigned.data.some((a) => a.service_id === s.id)}
-                onChange={(e) => toggle(s.id, e.target.checked)} />
-              <span className="flex-1">{s.name}</span>
-              <span className="text-right text-muted tabular-nums">{s.duration_min} daq · {formatMoney(s.price)}</span>
-            </label>
-          </li>
-        ))}
+        {active.map((s) => {
+          const mine = assigned.data.find((a) => a.service_id === s.id);
+          return (
+            <li key={s.id} className="flex flex-wrap items-center gap-2 py-2 text-sm">
+              <label className="flex min-w-0 flex-1 items-center gap-2">
+                <input type="checkbox" className="size-4 accent-primary" disabled={save.isPending}
+                  checked={!!mine} onChange={(e) => toggle(s.id, e.target.checked)} />
+                <span className="min-w-0 flex-1 break-words">{s.name}</span>
+              </label>
+              {mine ? (
+                <select aria-label={`${s.name}: ${v.staffOne.toLowerCase()}ga xos davomiylik`} disabled={save.isPending}
+                  className="rounded-lg border border-line bg-white px-2 py-1 text-xs"
+                  value={mine.custom_duration ?? ""}
+                  onChange={(e) => setDuration(s.id, e.target.value ? Number(e.target.value) : null)}>
+                  <option value="">{formatDuration(s.duration_min)} (umumiy)</option>
+                  {DURATION_CHOICES.filter((m) => m !== s.duration_min).map((m) => (
+                    <option key={m} value={m}>{formatDuration(m)}</option>
+                  ))}
+                </select>
+              ) : (
+                <span className="text-xs text-muted tabular-nums">{formatDuration(s.duration_min)}</span>
+              )}
+              <span className="w-24 text-right text-xs text-muted tabular-nums">{formatMoney(mine?.custom_price ?? s.price)}</span>
+            </li>
+          );
+        })}
       </ul>
+      <p className="mt-2 text-xs text-muted">
+        Vaqt shu {v.staffOne.toLowerCase()}ga xos bo'lishi mumkin (masalan, tezroq ishlaydi). Bron vaqtlari shunga qarab hisoblanadi.
+        {v.staffOne} ham o'z panelidagi "Xizmatlarim" bo'limida o'zgartira oladi.
+      </p>
     </>
   );
 }

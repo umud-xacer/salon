@@ -4,7 +4,7 @@ import { useState, type FormEvent } from "react";
 
 import { api, json } from "../../api/client";
 import type { Membership, Service, ServiceCategory, ServicePresets } from "../../api/types";
-import { formatMoney } from "../../components/format";
+import { formatDuration, formatMoney } from "../../components/format";
 import { Modal } from "../../components/Modal";
 import { vocabFor } from "../vocab";
 import { Badge, Button, Card, Empty, ErrorNote, inputClass, PageTitle, Spinner } from "../../components/ui";
@@ -54,7 +54,7 @@ export function ServicesPage({ membership }: { membership: Membership }) {
                   >
                     <span className="min-w-0 basis-full font-medium break-words sm:basis-auto sm:flex-1">{s.name}</span>
                     {!s.is_active && <Badge tone="gray">Yashirilgan</Badge>}
-                    <span className="text-muted tabular-nums">{s.duration_min} daqiqa</span>
+                    <span className="text-muted tabular-nums">{formatDuration(s.duration_min)}</span>
                     <span className="tabular-nums sm:w-28 sm:text-right">{formatMoney(s.price)}</span>
                   </button>
                 </li>
@@ -84,7 +84,7 @@ function ServiceDialog({ businessId, service, categories, onClose }: {
 }) {
   const queryClient = useQueryClient();
   const [name, setName] = useState(service?.name ?? "");
-  const [duration, setDuration] = useState(String(service?.duration_min ?? 30));
+  const [duration, setDuration] = useState(String(service?.duration_min ?? 60));   // yangi xizmat — 1 soat
   const [price, setPrice] = useState(String(service?.price ?? ""));
   const [category, setCategory] = useState(service?.category_id ? String(service.category_id) : "");
   const [description, setDescription] = useState(service?.description ?? "");
@@ -126,8 +126,19 @@ function ServiceDialog({ businessId, service, categories, onClose }: {
           <input className={inputClass} required minLength={2} maxLength={120} value={name}
             onChange={(e) => setName(e.target.value)} />
         </label>
+        <fieldset>
+          <legend className="text-sm">Davomiyligi: <b>{Number(duration) >= 5 ? formatDuration(Number(duration)) : "—"}</b></legend>
+          <div className="mt-1 flex flex-wrap gap-1.5">
+            {[30, 45, 60, 90, 120].map((m) => (
+              <button key={m} type="button" onClick={() => setDuration(String(m))}
+                className={`rounded-full border px-3 py-1 text-xs ${Number(duration) === m ? "border-primary bg-primary text-white" : "border-line hover:bg-page"}`}>
+                {formatDuration(m)}
+              </button>
+            ))}
+          </div>
+        </fieldset>
         <div className="grid grid-cols-2 gap-3">
-          <label className="block text-sm">Davomiyligi (daqiqa)
+          <label className="block text-sm">Boshqa vaqt (daqiqa)
             <input className={inputClass} type="number" required min={5} max={720} step={5} value={duration}
               onChange={(e) => setDuration(e.target.value)} />
           </label>
@@ -274,7 +285,7 @@ function PresetsCard({ businessId }: { businessId: number }) {
                       <input type="checkbox" className="size-4 accent-primary" checked={picked.includes(p.name)}
                         onChange={(e) => toggle(p.name, e.target.checked)} />
                       <span className="min-w-0 flex-1 break-words">{p.name}</span>
-                      <span className="text-xs text-muted tabular-nums">{p.duration_min} daq · {formatMoney(p.price)}</span>
+                      <span className="text-xs text-muted tabular-nums">{formatDuration(p.duration_min)} · {formatMoney(p.price)}</span>
                     </label>
                   </li>
                 ))}

@@ -75,3 +75,13 @@ export const ROLE_LABELS: Record<string, string> = {
   receptionist: "Kassir",
   staff: "Mutaxassis",          // turli muassasalar aralash joyda (Super Admin). Panel ichida — roleLabel()
 };
+
+/** 90 -> "1 soat 30 daq", 60 -> "1 soat", 45 -> "45 daq" */
+export function formatDuration(min: number) {
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return [h ? `${h} soat` : "", m ? `${m} daq` : ""].filter(Boolean).join(" ") || "0 daq";
+}
+
+/** Xizmat davomiyligi uchun tez tanlov */
+export const DURATION_CHOICES = [15, 30, 45, 60, 75, 90, 120, 150, 180, 240];

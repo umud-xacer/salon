@@ -14,7 +14,7 @@ from app.core import secretbox
 from app.core.security import hash_password
 from app.schemas import (IssuedPasswordOut, MemberCreate, MemberOut, MemberPasswordIn, MemberPermissionOut,
                          MemberUpdate, PermissionOverride)
-from app.schemas.catalog import MemberServiceIn, MemberServicesReplace
+from app.schemas.catalog import MemberServiceIn, MemberServicesReplace, MyDurationIn, MyServiceOut
 from app.services import audit
 
 router = APIRouter(prefix="/businesses/{business_id}/members", tags=["members"])
@@ -163,4 +163,32 @@ def override_permission(body: PermissionOverride, member_id: int = Path(ge=1),
         row.granted = body.granted
     audit.log(db, business_id, "permission", "member", member_id,
               {"permission": permission_code, "granted": body.granted})
+    db.commit()
+
+
+# ─── Usta / shifokor: o'z xizmatlari va ularning davomiyligi ────────────────
+my_router = APIRouter(prefix="/businesses/{business_id}/my-services", tags=["members"])
+
+
+@my_router.get("", response_model=list[MyServiceOut])
+def my_services(business_id: int = Path(ge=1), db: Session = Depends(get_db)):
+    """Menga biriktirilgan xizmatlar: umumiy davomiylik, menga xos davomiylik va narx (narxni direktor belgilaydi)."""
+    member_id = db.scalar(text("SELECT app.my_member_in(:b)"), {"b": business_id})
+    if member_id is None:
+        raise HTTPException(403, detail={"code": "forbidden", "message": "Bu muassasa xodimi emassiz"})
+    rows = db.execute(text("""
+        SELECT s.id AS service_id, s.name, s.duration_min, ms.custom_duration,
+               coalesce(ms.custom_price, s.price) AS price
+          FROM member_services ms JOIN services s ON s.id = ms.service_id AND s.is_active
+         WHERE ms.member_id = :m AND ms.business_id = :b
+         ORDER BY s.name"""), {"m": member_id, "b": business_id}).mappings()
+    return [MyServiceOut(**r) for r in rows]
+
+
+@my_router.put("/{service_id}", status_code=204)
+def set_my_duration(body: MyDurationIn, business_id: int = Path(ge=1), service_id: int = Path(ge=1),
+                    db: Session = Depends(get_db)):
+    """Faqat o'zimga biriktirilgan xizmat va faqat vaqt. null — umumiy davomiylikka qaytish."""
+    db.execute(text("SELECT app.set_my_service_duration(:b, :s, :d)"),
+               {"b": business_id, "s": service_id, "d": body.custom_duration})
     db.commit()

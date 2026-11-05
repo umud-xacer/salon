@@ -376,3 +376,15 @@ class MemberServicesReplace(BaseModel):
         if len({s.service_id for s in v}) != len(v):
             raise ValueError("Xizmat ikki marta berilgan")
         return v
+
+
+class MyServiceOut(BaseModel):
+    service_id: int
+    name: str
+    duration_min: int                      # xizmatning umumiy davomiyligi
+    custom_duration: int | None            # menga xos (bo'lmasa — umumiy)
+    price: int
+
+
+class MyDurationIn(BaseModel):
+    custom_duration: int | None = Field(default=None, ge=5, le=720, multiple_of=5)
