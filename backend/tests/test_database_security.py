@@ -231,6 +231,22 @@ def test_stock_cannot_go_negative_or_be_edited_directly(world):
         assert db.execute(text("SELECT current_qty FROM products WHERE id = :id"), {"id": pid}).scalar() == 400
 
 
+def test_member_cannot_write_notifications_to_anyone(world):
+    """Usta yoki direktor boshqa odamga (mijozga) o'z nomidan push yoza olmaydi — faqat bazadagi funksiyalar yozadi."""
+    victim = uid(world["customer"])
+    for tokens in (world["a"]["owner"], world["usta"]["tokens"], world["customer"]):
+        with api_session(uid(tokens)) as db:
+            with pytest.raises(DBAPIError) as e:
+                db.execute(text("INSERT INTO notifications (user_id, business_id, type, title) "
+                                "VALUES (:u, :b, 'promo', 'Soxta xabar')"), {"u": victim, "b": world["a"]["id"]})
+            assert sqlstate(e) == "42501"
+            db.rollback()
+            with pytest.raises(DBAPIError) as e:
+                db.execute(text("DELETE FROM notifications"))
+            assert sqlstate(e) == "42501"
+            db.rollback()
+
+
 def test_only_superadmin_writes_business_types(world, superadmin):
     """Muassasa turlari (tavsiya xizmatlar, ish vaqti) — direktor ham, mijoz ham o'zgartira olmaydi."""
     for tokens in (world["a"]["owner"], world["customer"]):
