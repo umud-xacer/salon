@@ -7,6 +7,7 @@ import { api, downloadFile } from "../../api/client";
 import type { Membership, Report, ReportDay } from "../../api/types";
 import { addDays, formatMoney, METHOD_LABELS, shortDate, STATUS_LABELS, todayIso } from "../../components/format";
 import { Button, Card, Empty, ErrorNote, inputClass, PageTitle, Spinner, Tabs } from "../../components/ui";
+import { useVocab } from "../vocab";
 
 type Preset = "today" | "week" | "month" | "last_month" | "custom";
 
@@ -120,6 +121,7 @@ function Stat({ label, value, sub }: { label: string; value: string; sub?: React
 }
 
 function ReportView({ r }: { r: Report }) {
+  const v = useVocab();
   const m = r.money;
   const bk = r.bookings;
   return (
@@ -169,8 +171,8 @@ function ReportView({ r }: { r: Report }) {
           )}
         </Card>
         <Card>
-          <h2 className="mb-3 text-sm font-medium">Mijozlar</h2>
-          {r.clients.total === 0 ? <Empty>Bu davrda mijoz yo'q</Empty> : (
+          <h2 className="mb-3 text-sm font-medium">{v.clients}</h2>
+          {r.clients.total === 0 ? <Empty>Bu davrda {v.clientOne.toLowerCase()} yo'q</Empty> : (
             <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
               <Row label="Jami (bekor qilinmagan bron bilan)" value={r.clients.total} />
               <Row label="Yangi" value={r.clients.new} />

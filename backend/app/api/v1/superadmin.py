@@ -29,6 +29,8 @@ _BUSINESS_SELECT = """
            b.is_active, b.subscription_ends_at, b.rating_avg::float AS rating_avg, b.rating_count,
            app.business_operational(b.id) AS operational,
            u.full_name AS owner_name, u.phone AS owner_phone, o.id AS owner_member_id,
+           u.id AS owner_user_id, u.status::text AS owner_status, u.last_login_at AS owner_last_login_at,
+           (SELECT c.name_uz FROM business_categories c WHERE c.id = b.category_id) AS type_name,
            CASE WHEN u.id IS NULL THEN NULL ELSE app.password_state(u.id) END AS owner_password_status,
            u.password_changed_at AS owner_password_changed_at,
            (SELECT count(*) FROM business_members m WHERE m.business_id = b.id AND m.is_active) AS staff_count,

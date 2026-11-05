@@ -58,7 +58,7 @@ export function ForcePasswordPage() {
 export function ClientOnlyPage() {
   return (
     <Notice title="Panel xodimlar uchun">
-      <p>Bu raqam hech qaysi salonga xodim sifatida ulanmagan. Mijozlar Chronix mobil ilovasidan foydalanadi.</p>
+      <p>Bu raqam hech qaysi muassasaga xodim sifatida ulanmagan. Mijozlar Chronix mobil ilovasidan foydalanadi.</p>
     </Notice>
   );
 }

@@ -43,7 +43,7 @@ export function AppointmentDialog({ membership, appointment: a, masterName, onCl
   const busy = setStatus.isPending || cancel.isPending;
 
   return (
-    <Modal title={a.client_name ?? "Mijoz"} onClose={onClose}>
+    <Modal title={a.client_name ?? v.clientOne} onClose={onClose}>
       <dl className="grid grid-cols-[6rem_1fr] gap-y-2 text-sm">
         <dt className="text-muted">Vaqt</dt>
         <dd className="tabular-nums">
@@ -72,7 +72,7 @@ export function AppointmentDialog({ membership, appointment: a, masterName, onCl
 
       {a.status === "pending" && a.confirm_by && (
         <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
-          Mijoz ilovadan bron qildi. {formatDate(a.confirm_by)} {formatTime(a.confirm_by)} gacha tasdiqlanmasa,
+          {v.clientOne} ilovadan bron qildi. {formatDate(a.confirm_by)} {formatTime(a.confirm_by)} gacha tasdiqlanmasa,
           bron avtomatik bekor qilinadi va vaqt bo'shaydi.
         </p>
       )}
@@ -95,7 +95,7 @@ export function AppointmentDialog({ membership, appointment: a, masterName, onCl
           {OPEN.includes(a.status) && (
             <>
               <Button disabled={busy} variant="secondary" onClick={() => setStatus.mutate("in_progress")}>
-                Mijoz keldi
+                {v.clientOne} keldi
               </Button>
               <Button disabled={busy} variant="secondary" onClick={() => setStatus.mutate("no_show")}>
                 Kelmadi

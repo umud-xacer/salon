@@ -62,7 +62,7 @@ export function BusinessesPage() {
   return (
     <>
       <PageTitle
-        title={currentType ? currentType.name_uz : "Salonlar"}
+        title={currentType ? currentType.name_uz : "Muassasalar"}
         hint={businesses.data ? (currentType ? `${filtered.length} ta` : `Jami ${businesses.data.length} ta`) : undefined}
         action={
           <Button className="flex items-center gap-1" disabled={!modules.data} onClick={() => setCreating(true)}>

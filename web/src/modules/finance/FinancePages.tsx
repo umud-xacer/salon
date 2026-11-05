@@ -8,6 +8,7 @@ import { addDays, formatDate, formatMoney, formatTime, METHOD_LABELS, STATUS_LAB
 import { Modal } from "../../components/Modal";
 import { Button, Card, Empty, ErrorNote, inputClass, PageTitle, Spinner } from "../../components/ui";
 import { PaymentPanel, PaymentRow } from "./PaymentPanel";
+import { useVocab } from "../vocab";
 
 function Tile({ label, value, strong }: { label: string; value: number; strong?: boolean }) {
   return (
@@ -21,6 +22,7 @@ function Tile({ label, value, strong }: { label: string; value: number; strong?:
 }
 
 export function CashPage({ membership }: { membership: Membership }) {
+  const v = useVocab();
   const b = membership.business_id;
   const queryClient = useQueryClient();
   const [day, setDay] = useState(todayIso);
@@ -113,7 +115,7 @@ export function CashPage({ membership }: { membership: Membership }) {
         </div>
       )}
       {paying && (
-        <Modal title={paying.client_name ?? "Mijoz"} onClose={() => setPaying(null)}>
+        <Modal title={paying.client_name ?? v.clientOne} onClose={() => setPaying(null)}>
           <p className="text-sm text-muted">{paying.services.join(", ")}</p>
           <PaymentPanel membership={membership} appointmentId={paying.id} onPaid={() => setPaying(null)} />
         </Modal>

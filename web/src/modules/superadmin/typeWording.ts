@@ -60,7 +60,7 @@ const URLS: Record<string, string> = {
   beauty_salon: "salon", barbershop: "sartaroshxona", pharmacy: "dorixona", clinic: "klinika",
   dental: "stomatologiya", spa: "spa-massaj",
 };
-export const RESERVED_PATHS = new Set(["turlar", "types", "t", "statistika", "tolovlar", "foydalanuvchilar", "jurnal"]);
+export const RESERVED_PATHS = new Set(["turlar", "types", "t", "statistika", "tolovlar", "foydalanuvchilar", "direktorlar", "jurnal"]);
 
 export function typeUrl(type: BusinessType): string {
   const u = URLS[type.slug] ?? (slugify(type.name_uz) || type.slug.replaceAll("_", "-"));

@@ -10,6 +10,7 @@ import { Button, Card, ErrorNote, inputClass, PageTitle, Spinner } from "../../c
 import { useVocab } from "../vocab";
 
 export function BusinessPage({ membership }: { membership: Membership }) {
+  const v = useVocab();
   const b = membership.business_id;
   const profile = useQuery({ queryKey: ["biz-profile", b], queryFn: () => api<BusinessProfile>(`/businesses/${b}/profile`) });
   const hours = useQuery({ queryKey: ["biz-hours", b], queryFn: () => api<BusinessHours[]>(`/businesses/${b}/hours`) });
@@ -34,12 +35,12 @@ export function BusinessPage({ membership }: { membership: Membership }) {
 
   return (
     <>
-      <PageTitle title="Salon" hint={`${profile.data.category_name} · mijozlar ilovada ko'radigan ma'lumotlar`} />
+      <PageTitle title={v.businessPage} hint={`${profile.data.category_name} · ${v.clients.toLowerCase()} ilovada ko'radigan ma'lumotlar`} />
       <div className="space-y-4">
         <Card>
           <h2 className="mb-2 flex items-center gap-2 text-sm font-medium">
             {ready ? <CheckCircle2 size={18} className="text-success" aria-hidden /> : <CircleAlert size={18} className="text-warning" aria-hidden />}
-            {ready ? "Salon ilovada to'liq ko'rinadi" : "Ilovada to'liq ko'rinishi uchun"}
+            {ready ? `${v.businessPage} ilovada to'liq ko'rinadi` : "Ilovada to'liq ko'rinishi uchun"}
           </h2>
           <ul className="grid gap-1 text-sm sm:grid-cols-2">
             {checks.map((c) => (
@@ -62,6 +63,7 @@ export function BusinessPage({ membership }: { membership: Membership }) {
 }
 
 function ProfileCard({ businessId, profile }: { businessId: number; profile: BusinessProfile }) {
+  const v = useVocab();
   const queryClient = useQueryClient();
   const [description, setDescription] = useState(profile.description ?? "");
   const [phone, setPhone] = useState(profile.phone ?? "");
@@ -81,11 +83,11 @@ function ProfileCard({ businessId, profile }: { businessId: number; profile: Bus
     <Card>
       <h2 className="mb-3 text-sm font-medium">Ma'lumotlar</h2>
       <form onSubmit={submit} className="space-y-3">
-        <label className="block text-sm">Salon haqida
+        <label className="block text-sm">{v.businessPage} haqida
           <textarea className={inputClass} rows={3} maxLength={2000} value={description}
             placeholder="Xizmatlar, afzalliklar, mo'ljal" onChange={(e) => setDescription(e.target.value)} />
         </label>
-        <label className="block text-sm">Telefon (mijozlar uchun)
+        <label className="block text-sm">Telefon ({v.clients.toLowerCase()} uchun)
           <input className={inputClass} type="tel" placeholder="+998 90 123 45 67" value={phone}
             onChange={(e) => setPhone(e.target.value)} />
         </label>
@@ -163,6 +165,7 @@ function HoursCard({ businessId, hours, defaults }: {
 }
 
 function PhotosCard({ businessId, photos }: { businessId: number; photos: BusinessPhoto[] }) {
+  const v = useVocab();
   const queryClient = useQueryClient();
   const input = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<unknown>(null);
@@ -211,7 +214,7 @@ function PhotosCard({ businessId, photos }: { businessId: number; photos: Busine
         <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {photos.map((p, i) => (
             <li key={p.id} className="relative overflow-hidden rounded-lg border border-line">
-              <img src={p.url} alt={`Salon rasmi ${i + 1}`} className="aspect-[4/3] w-full object-cover" loading="lazy" />
+              <img src={p.url} alt={`${v.businessPage} rasmi ${i + 1}`} className="aspect-[4/3] w-full object-cover" loading="lazy" />
               {i === 0 && <span className="absolute top-1.5 left-1.5 rounded bg-navy/80 px-1.5 py-0.5 text-xs text-white">Asosiy</span>}
               <button type="button" aria-label="Rasmni o'chirish" disabled={remove.isPending}
                 onClick={() => remove.mutate(p.id)}

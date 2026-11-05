@@ -5,12 +5,14 @@ import { api } from "../api/client";
 import type { Appointment } from "../api/types";
 import { formatMoney, formatTime, STATUS_LABELS, todayIso } from "./format";
 import { Badge, Card, Empty, ErrorNote, Spinner } from "./ui";
+import { useVocab } from "../modules/vocab";
 
 const tone = (status: string) =>
   status === "completed" ? "green" : status === "cancelled" || status === "no_show" ? "red" : status === "pending" ? "amber" : "gray";
 
 /** Kunlik bronlar. Ustaga RLS faqat o'z bronlarini beradi, shuning uchun komponent ikkala panelga ham yaraydi. */
 export function BookingList({ businessId, showMaster }: { businessId: number; showMaster: boolean }) {
+  const v = useVocab();
   const [day, setDay] = useState(todayIso());
   const query = useQuery({
     queryKey: ["appointments", businessId, day],
@@ -43,7 +45,7 @@ export function BookingList({ businessId, showMaster }: { businessId: number; sh
             <span className="min-w-0 basis-full sm:basis-auto sm:flex-1">
               {a.services.join(", ") || "Xizmat"}
               <span className="block text-muted">
-                {a.client_name ?? "Mijoz"}
+                {a.client_name ?? v.clientOne}
                 {showMaster && a.member_name ? ` · ${a.member_name}` : ""}
               </span>
             </span>

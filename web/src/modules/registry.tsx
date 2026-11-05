@@ -5,13 +5,17 @@ import {
   CalendarDays,
   CalendarRange,
   CalendarClock,
+  ClipboardList,
   Clock3,
   Contact,
+  Hospital,
   LayoutDashboard,
   Package,
+  Pill,
   Receipt,
   Scissors,
   Star,
+  Stethoscope,
   Store,
   Users,
   Wallet,
@@ -46,6 +50,7 @@ export interface Section {
   term?: Exclude<keyof Vocab, "titles">;   // nomi muassasa turiga qarab (Ustalar/Shifokorlar...)
   uz: string;                     // manzil: /b/1/kassa
   uzByKind?: Partial<Record<BusinessKind, string>>;   // turga qarab: dorixonada /farmatsevtlar
+  iconByKind?: Partial<Record<BusinessKind, LucideIcon>>;   // klinikada qaychi emas — stetoskop
   page: ComponentType<{ membership: Membership }>;
 }
 
@@ -85,11 +90,11 @@ export const SECTIONS: Section[] = [
     anyPermission: ["staff.manage"], page: WorkSchedulePage,
   },
   {
-    path: "services", uz: "xizmatlar", uzByKind: { clinic: "tibbiy-xizmatlar" }, label: "Xizmatlar", term: "services", icon: Scissors, panel: "admin",
+    path: "services", uz: "xizmatlar", uzByKind: { clinic: "tibbiy-xizmatlar" }, label: "Xizmatlar", term: "services", icon: Scissors, iconByKind: { clinic: Stethoscope, pharmacy: ClipboardList }, panel: "admin",
     anyPermission: ["services.manage"], page: ServicesPage,
   },
   { path: "reviews", uz: "baholar", label: "Baholar", icon: Star, panel: "admin", anyPermission: ["business.manage"], page: ReviewsPage },
-  { path: "business", uz: "salon", uzByKind: { pharmacy: "dorixona", clinic: "klinika" }, label: "Salon", term: "businessPage", icon: Store, panel: "admin", anyPermission: ["business.manage"], page: BusinessPage },
+  { path: "business", uz: "salon", uzByKind: { pharmacy: "dorixona", clinic: "klinika" }, label: "Salon", term: "businessPage", icon: Store, iconByKind: { clinic: Hospital, pharmacy: Pill }, panel: "admin", anyPermission: ["business.manage"], page: BusinessPage },
   { path: "bookings", uz: "bronlarim", label: "Mening bronlarim", icon: CalendarDays, panel: "staff", page: MyBookingsPage },
   { path: "schedule", uz: "jadvalim", label: "Ish jadvalim", icon: Clock3, panel: "staff", page: MySchedulePage },
   { path: "my-reviews", uz: "baholarim", label: "Baholarim", icon: Star, panel: "staff", page: MyReviewsPage },
@@ -101,12 +106,19 @@ export function sectionUrl(s: Section, kind: string | undefined): string {
   return s.uzByKind?.[kind as BusinessKind] ?? s.uz;
 }
 
-export function sectionsFor(m: Membership): Section[] {
+/** Panel lug'ati: turga mos so'zlar + muassasa turining o'z nomi ("Stomatologiya" bo'limi, "stomatologiya ish soatlari") */
+export function panelVocab(m: Membership): Vocab {
   const v = vocabFor(m.business_kind);
+  const own = m.business_type_name?.trim();
+  return { ...v, titles: m.staff_titles ?? [], ...(own ? { businessPage: own, place: own.toLowerCase() } : {}) };
+}
+
+export function sectionsFor(m: Membership): Section[] {
+  const v = panelVocab(m);
   return SECTIONS.filter(
     (s) =>
       s.panel === m.panel &&
       (!s.module || m.modules.includes(s.module)) &&
       (!s.anyPermission || s.anyPermission.some((p) => m.permissions.includes(p))),
-  ).map((s) => (s.term ? { ...s, label: v[s.term] } : s));
+  ).map((s) => ({ ...s, ...(s.term ? { label: v[s.term] } : {}), icon: s.iconByKind?.[m.business_kind as BusinessKind] ?? s.icon }));
 }

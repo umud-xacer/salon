@@ -248,7 +248,7 @@ function MainTab({ businessId, member: m, editable, canManageManagers }: {
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" className="size-4 accent-primary" checked={m.is_bookable}
           onChange={(e) => update.mutate({ is_bookable: e.target.checked })} />
-        Mijoz qabul qiladi (kalendarda ko'rinadi)
+        {v.clientOne} qabul qiladi (kalendarda ko'rinadi)
       </label>
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" className="size-4 accent-primary" checked={m.is_active}
@@ -363,6 +363,7 @@ function ServicesTab({ businessId, memberId }: { businessId: number; memberId: n
 }
 
 function PasswordTab({ businessId, member: m }: { businessId: number; member: Member }) {
+  const v = useVocab();
   const { me } = useAuth();
   const queryClient = useQueryClient();
   const [password, setPassword] = useState("");
@@ -375,7 +376,7 @@ function PasswordTab({ businessId, member: m }: { businessId: number; member: Me
   if (m.password_block === "shared_account") {
     return (
       <p className="text-sm text-muted">
-        Bu odam boshqa salon yoki mijoz hisobiga ham bog'langan. Xavfsizlik uchun parolni o'zi o'zgartiradi
+        Bu odam boshqa muassasa yoki {v.clientOne.toLowerCase()} hisobiga ham bog'langan. Xavfsizlik uchun parolni o'zi o'zgartiradi
         yoki Super Admin tiklaydi.
       </p>
     );

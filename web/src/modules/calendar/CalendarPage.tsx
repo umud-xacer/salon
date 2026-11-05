@@ -93,12 +93,12 @@ export function CalendarPage({ membership }: { membership: Membership }) {
   return (
     <>
       <PageTitle
-        title="Kalendar"
+        title={v.calendar}
         hint={title}
         action={
           canBook && (
             <Button className="flex items-center gap-1" onClick={() => setBooking({ day: day < todayIso() ? todayIso() : day })}>
-              <Plus size={16} aria-hidden /> Yangi bron
+              <Plus size={16} aria-hidden /> {v.newBooking}
             </Button>
           )
         }

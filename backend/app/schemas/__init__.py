@@ -135,6 +135,7 @@ class MembershipOut(BaseModel):
     business_slug: str = ""                               # panel manzili: /barber-lab/kassa
     business_kind: str = "salon"                          # salon | pharmacy | clinic — panel yozuvlari
     staff_titles: list[str] = []                          # turga mos lavozim/mutaxassislik tavsiyalari
+    business_type_name: str | None = None                 # "Stomatologiya", "Sartaroshxona" — panel bo'lim nomi
     business_status: str
     business_active: bool                                 # obuna bayrog'i
     subscription_ends_at: datetime | None                 # None = muddatsiz
@@ -281,6 +282,10 @@ class BusinessAdminOut(BaseModel):
     photo_count: int = 0
     rating_avg: float = 0
     rating_count: int = 0
+    owner_user_id: int | None = None
+    owner_status: str | None = None                       # active | blocked
+    owner_last_login_at: datetime | None = None
+    type_name: str | None = None
     modules: list[str]
 
 

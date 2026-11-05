@@ -3,8 +3,8 @@ import { Navigate, Route, Routes, useNavigate, useParams } from "react-router-do
 import { useAuth } from "../auth/AuthProvider";
 import { AttendanceAlerts } from "../components/AttendanceAlerts";
 import { AppShell } from "../layouts/AppShell";
-import { sectionsFor, sectionUrl } from "../modules/registry";
-import { VocabContext, vocabFor } from "../modules/vocab";
+import { panelVocab, sectionsFor, sectionUrl } from "../modules/registry";
+import { VocabContext } from "../modules/vocab";
 import { SuspendedPage } from "./Notices";
 
 /** Eski manzil /b/6/kassa -> /barber-lab/kassa (saqlangan havolalar buzilmasin) */
@@ -33,7 +33,7 @@ export function BusinessPanel() {
   const home = `${base}/${url(sections[0])}`;     // har bir panelda kamida bitta bo'lim bor
   const switcher = memberships.length > 1 && (
     <select
-      aria-label="Salonni tanlash"
+      aria-label="Muassasani tanlash"
       value={membership.business_slug}
       onChange={(e) => navigate(`/${e.target.value}`)}
       className="w-full rounded-lg bg-white/10 px-2 py-1.5 text-sm text-white"
@@ -47,7 +47,7 @@ export function BusinessPanel() {
   );
 
   return (
-    <VocabContext.Provider value={{ ...vocabFor(kind), titles: membership.staff_titles ?? [] }}>
+    <VocabContext.Provider value={panelVocab(membership)}>
     <AppShell
       title={membership.business_name}
       header={switcher}

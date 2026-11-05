@@ -19,6 +19,7 @@ export interface Membership {
   business_slug: string;
   business_kind: string;
   staff_titles?: string[];
+  business_type_name?: string | null;
   business_status: "pending" | "active" | "blocked";
   business_active: boolean;
   subscription_ends_at: string | null;
@@ -274,6 +275,10 @@ export interface BusinessAdmin {
   owner_password_status: PasswordStatus | null;
   owner_password_changed_at: string | null;
   owner_member_id: number | null;
+  owner_user_id?: number | null;
+  owner_status?: string | null;
+  owner_last_login_at?: string | null;
+  type_name?: string | null;
   staff_count: number;
   service_count: number;
   hours_count: number;

@@ -9,13 +9,13 @@ import type { BusinessReview, Membership, ReviewsPage as ReviewsData, ReviewSumm
 import { formatDate } from "../../components/format";
 import { ratingText, Stars } from "../../components/Stars";
 import { Badge, Button, Card, Empty, ErrorNote, inputClass, PageTitle, Spinner, Tabs } from "../../components/ui";
-import { vocabFor } from "../vocab";
+import { useVocab } from "../vocab";
 
 type Filter = "all" | "unanswered" | "low";
 
 export function ReviewsPage({ membership }: { membership: Membership }) {
+  const v = useVocab();
   const b = membership.business_id;
-  const v = vocabFor(membership.business_kind);
   const [filter, setFilter] = useState<Filter>("all");
   const params = new URLSearchParams({ limit: "200" });
   if (filter === "unanswered") params.set("unanswered", "true");
@@ -27,7 +27,7 @@ export function ReviewsPage({ membership }: { membership: Membership }) {
 
   return (
     <div className="space-y-4">
-      <PageTitle title="Baholar" hint="Faqat xizmatdan foydalangan (yakunlangan tashrif) mijozlar baho qo'ya oladi." />
+      <PageTitle title="Baholar" hint={`Faqat xizmatdan foydalangan (yakunlangan tashrif) ${v.clients.toLowerCase()} baho qo'ya oladi.`} />
       {q.isLoading ? <Spinner /> : q.error ? <ErrorNote error={q.error} /> : (
         <>
           <SummaryCard s={q.data!.summary} criteria />
@@ -45,11 +45,12 @@ export function ReviewsPage({ membership }: { membership: Membership }) {
 }
 
 export function MyReviewsPage({ membership }: { membership: Membership }) {
+  const v = useVocab();
   const b = membership.business_id;
   const q = useQuery({ queryKey: ["reviews", b, "mine"], queryFn: () => api<ReviewsData>(`/businesses/${b}/reviews/mine`) });
   return (
     <div className="space-y-4">
-      <PageTitle title="Baholarim" hint="Mijozlar sizning ishingizga qo'ygan baholar. Bu reyting ilovada profilingizda ko'rinadi." />
+      <PageTitle title="Baholarim" hint={`${v.clients} sizning ishingizga qo'ygan baholar. Bu reyting ilovada profilingizda ko'rinadi.`} />
       {q.isLoading ? <Spinner /> : q.error ? <ErrorNote error={q.error} /> : (
         <>
           <SummaryCard s={q.data!.summary} />
@@ -108,6 +109,7 @@ function SummaryCard({ s, criteria = false }: { s: ReviewSummary; criteria?: boo
 }
 
 function ReviewItem({ r, businessId, staffWord }: { r: BusinessReview; businessId: number; staffWord: string }) {
+  const v = useVocab();
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState(r.reply ?? "");
@@ -149,7 +151,7 @@ function ReviewItem({ r, businessId, staffWord }: { r: BusinessReview; businessI
         {editing ? (
           <form className="space-y-2" onSubmit={(e) => { e.preventDefault(); save.mutate(text.trim() || null); }}>
             <textarea className={`${inputClass} min-h-20`} maxLength={1000} value={text} autoFocus
-              placeholder="Mijozga javobingiz (ilovada hamma ko'radi)" onChange={(e) => setText(e.target.value)} />
+              placeholder={`${v.clientOne}ga javobingiz (ilovada hamma ko'radi)`} onChange={(e) => setText(e.target.value)} />
             {save.error && <ErrorNote error={save.error} />}
             <div className="flex flex-wrap gap-2">
               <Button type="submit" disabled={save.isPending || !text.trim()}>Javobni saqlash</Button>

@@ -81,7 +81,7 @@ function AlertCard({ alert: a }: { alert: Alert }) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: KEY }),
   });
   const cancel = useMutation({
-    mutationFn: () => api(`/appointments/${appointmentId}/cancel`, json("POST", { reason: "Mijoz bilan bog'lanib bo'lmadi" })),
+    mutationFn: () => api(`/appointments/${appointmentId}/cancel`, json("POST", { reason: `${v.clientOne} bilan bog'lanib bo'lmadi` })),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["calendar"] });
       close.mutate();
@@ -95,7 +95,7 @@ function AlertCard({ alert: a }: { alert: Alert }) {
       setPhone(r.phone);
     } catch (e) {
       // Mijoz shu orada tasdiqlagan yoki bron bekor bo'lgan
-      setError(e instanceof ApiError ? "Ogohlantirish yopilgan: mijoz tasdiqlagan yoki bron o'zgargan" : "Xatolik");
+      setError(e instanceof ApiError ? `Ogohlantirish yopilgan: ${v.clientOne.toLowerCase()} tasdiqlagan yoki bron o'zgargan` : "Xatolik");
     }
   };
 
@@ -138,7 +138,7 @@ function AlertCard({ alert: a }: { alert: Alert }) {
         <Button variant="secondary" disabled={close.isPending} onClick={() => close.mutate()}>Yopish</Button>
       </div>
       <p className="mt-1.5 text-xs text-muted">
-        Bekor qilinsa, vaqt boshqa mijozlar uchun darhol ochiladi. Mijoz kelmasa — kalendarda "Kelmadi" deb belgilang.
+        Bekor qilinsa, vaqt boshqa {v.clients.toLowerCase()} uchun darhol ochiladi. {v.clientOne} kelmasa — kalendarda "Kelmadi" deb belgilang.
       </p>
     </div>
   );

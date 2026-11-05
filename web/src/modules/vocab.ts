@@ -11,6 +11,7 @@ export interface Vocab {
   staffAny: string;       // "Istalgan usta"
   staffDative: string;    // "ustaga berildi"
   receptionOne: string;   // qabulxona roli: salonda "Kassir", klinikada "Registrator"
+  newBooking: string;     // "Yangi bron" / "Qabulga yozish"
   services: string;
   serviceOne: string;
   clients: string;
@@ -25,18 +26,18 @@ export interface Vocab {
 
 const VOCAB: Record<BusinessKind, Vocab> = {
   salon: {
-    staff: "Xodimlar", staffOne: "Usta", staffMany: "ustalar", staffAny: "Istalgan usta", staffDative: "ustaga", receptionOne: "Kassir",
+    staff: "Xodimlar", staffOne: "Usta", staffMany: "ustalar", staffAny: "Istalgan usta", staffDative: "ustaga", receptionOne: "Kassir", newBooking: "Yangi bron",
     services: "Xizmatlar", serviceOne: "Xizmat", clients: "Mijozlar", clientOne: "Mijoz",
     inventory: "Ombor", product: "Mahsulot", calendar: "Kalendar", businessPage: "Salon", place: "salon",
   },
   pharmacy: {
     staff: "Farmatsevtlar", staffOne: "Farmatsevt", staffMany: "farmatsevtlar", staffAny: "Istalgan farmatsevt",
-    staffDative: "farmatsevtga", receptionOne: "Kassir", services: "Xizmatlar", serviceOne: "Xizmat", clients: "Xaridorlar", clientOne: "Xaridor",
+    staffDative: "farmatsevtga", receptionOne: "Kassir", newBooking: "Navbatga yozish", services: "Xizmatlar", serviceOne: "Xizmat", clients: "Xaridorlar", clientOne: "Xaridor",
     inventory: "Dorilar va tibbiy buyumlar", product: "Dori", calendar: "Navbat", businessPage: "Dorixona", place: "dorixona",
   },
   clinic: {
     staff: "Shifokorlar", staffOne: "Shifokor", staffMany: "shifokorlar", staffAny: "Istalgan shifokor",
-    staffDative: "shifokorga", receptionOne: "Registrator", services: "Tibbiy xizmatlar", serviceOne: "Tibbiy xizmat",
+    staffDative: "shifokorga", receptionOne: "Registrator", newBooking: "Qabulga yozish", services: "Tibbiy xizmatlar", serviceOne: "Tibbiy xizmat",
     clients: "Bemorlar", clientOne: "Bemor", inventory: "Ombor", product: "Mahsulot", calendar: "Qabullar",
     businessPage: "Klinika", place: "klinika",
   },

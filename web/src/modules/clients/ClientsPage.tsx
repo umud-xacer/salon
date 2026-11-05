@@ -8,10 +8,12 @@ import { formatDate, formatMoney, formatTime, normalizePhone, STATUS_LABELS } fr
 import { Modal } from "../../components/Modal";
 import { Badge, Button, Card, Empty, ErrorNote, inputClass, PageTitle, Spinner } from "../../components/ui";
 import { vocabFor } from "../vocab";
+import { useVocab } from "../vocab";
 
 const PAGE = 50;
 
 export function ClientsPage({ membership }: { membership: Membership }) {
+  const v = useVocab();
   const b = membership.business_id;
   const [text, setText] = useState("");
   const [q, setQ] = useState("");
@@ -39,7 +41,7 @@ export function ClientsPage({ membership }: { membership: Membership }) {
         hint="Tashriflar yakunlangan bronlardan hisoblanadi"
         action={
           <Button className="flex items-center gap-1" onClick={() => setEditing("new")}>
-            <Plus size={16} aria-hidden /> Mijoz qo'shish
+            <Plus size={16} aria-hidden /> {v.clientOne} qo'shish
           </Button>
         }
       />
@@ -56,7 +58,7 @@ export function ClientsPage({ membership }: { membership: Membership }) {
       </label>
       {query.isPending && <Spinner />}
       {query.error && <ErrorNote error={query.error} />}
-      {clients?.length === 0 && <Card><Empty>{q ? "Topilmadi" : "Hali mijoz yo'q"}</Empty></Card>}
+      {clients?.length === 0 && <Card><Empty>{q ? "Topilmadi" : `Hali ${v.clientOne.toLowerCase()} yo'q`}</Empty></Card>}
       {clients && clients.length > 0 && (
         <ul className="divide-y divide-line rounded-xl border border-line bg-white">
           {clients.map((c) => (
@@ -96,6 +98,7 @@ function ClientDialog({ businessId, client, onClose }: {
   client: ClientRecord | null;
   onClose: () => void;
 }) {
+  const v = useVocab();
   const queryClient = useQueryClient();
   const url = `/businesses/${businessId}/clients`;
   const [name, setName] = useState(client?.full_name ?? "");
@@ -126,7 +129,7 @@ function ClientDialog({ businessId, client, onClose }: {
   };
 
   return (
-    <Modal title={client ? client.full_name : "Yangi mijoz"} onClose={onClose}>
+    <Modal title={client ? client.full_name : `Yangi ${v.clientOne.toLowerCase()}`} onClose={onClose}>
       <form onSubmit={submit} className="space-y-3">
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="block text-sm">Ism familiya
@@ -139,7 +142,7 @@ function ClientDialog({ businessId, client, onClose }: {
           </label>
         </div>
         {client?.has_account && (
-          <p className="text-xs text-muted">Mijoz ilovadan foydalanadi, telefonini faqat o'zi o'zgartiradi.</p>
+          <p className="text-xs text-muted">{v.clientOne} ilovadan foydalanadi, telefonini faqat o'zi o'zgartiradi.</p>
         )}
         <label className="block text-sm">Izoh
           <textarea className={inputClass} rows={2} maxLength={2000} placeholder="Allergiya, afzalliklar" value={notes}

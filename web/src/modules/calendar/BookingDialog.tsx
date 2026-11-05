@@ -149,7 +149,7 @@ export function BookingDialog({ membership, preset, onClose }: {
               />
             </label>
             <label className="block text-sm">
-              Mijoz ismi
+              {v.clientOne} ismi
               <input
                 className={field}
                 required
@@ -162,7 +162,7 @@ export function BookingDialog({ membership, preset, onClose }: {
           </div>
 
           {suggestions.length > 0 && (
-            <ul className="rounded-lg border border-line text-sm" aria-label="Topilgan mijozlar">
+            <ul className="rounded-lg border border-line text-sm" aria-label={`Topilgan ${v.clients.toLowerCase()}`}>
               {suggestions.map((c) => (
                 <li key={c.id}>
                   <button

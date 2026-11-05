@@ -19,7 +19,7 @@ export function WorkSchedulePage({ membership }: { membership: Membership }) {
       <PageTitle title="Ish jadvali" hint={`Jadval kiritilmagan ${v.staffOne.toLowerCase()} ${v.place} ish soatlari bo'yicha ishlaydi`} />
       {members.isPending && <Spinner />}
       {members.error && <ErrorNote error={members.error} />}
-      {members.data && masters.length === 0 && <Card><Empty>Mijoz qabul qiladigan xodim yo'q</Empty></Card>}
+      {members.data && masters.length === 0 && <Card><Empty>{v.clientOne} qabul qiladigan xodim yo'q</Empty></Card>}
       {memberId !== null && (
         <Card>
           <label className="mb-3 block max-w-xs text-sm">{v.staffOne}

@@ -3,6 +3,7 @@ import type { MouseEvent } from "react";
 
 import type { Appointment } from "../../api/types";
 import { clock, formatTime, minutesOf } from "../../components/format";
+import { useVocab } from "../vocab";
 
 const HOUR_PX = 64;
 const SNAP_MIN = 30;
@@ -43,6 +44,7 @@ export function TimeGrid({ columns, hourFrom, hourTo, onEmptyClick, onOpen, labe
   onOpen: (a: Appointment) => void;
   label: (a: Appointment) => string;
 }) {
+  const v = useVocab();
   const hours = Array.from({ length: hourTo - hourFrom }, (_, i) => hourFrom + i);
   const height = hours.length * HOUR_PX;
 
@@ -105,7 +107,7 @@ export function TimeGrid({ columns, hourFrom, hourTo, onEmptyClick, onOpen, labe
                       }}
                     >
                       <span className="block font-medium tabular-nums">
-                        {formatTime(a.starts_at)} {a.client_name ?? "Mijoz"}
+                        {formatTime(a.starts_at)} {a.client_name ?? v.clientOne}
                       </span>
                       <span className="block truncate text-muted">{label(a)}</span>
                     </button>

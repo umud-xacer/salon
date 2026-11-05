@@ -14,13 +14,13 @@ export function SuperAdminShell({ children }: { children: ReactNode }) {
   const types = useBusinessTypes();
   const nav: NavItem[] = [
     { to: "/superadmin/statistika", label: "Statistika", icon: BarChart3 },
-    { to: "/superadmin", label: "Salonlar", icon: Building2, end: true,
+    { to: "/superadmin", label: "Muassasalar", icon: Building2, end: true,
       badge: types.data?.reduce((n, t) => n + t.business_count, 0) },
     ...(types.data ?? []).filter((t) => t.is_active || t.business_count > 0).map((t) => ({
       to: `/superadmin/${typeUrl(t)}`, label: t.name_uz, icon: ICONS[t.slug] ?? Store, sub: true, badge: t.business_count,
     })),
     { to: "/superadmin/turlar", label: "Muassasa turlari", icon: Layers },
-    { to: "/superadmin/foydalanuvchilar", label: "Foydalanuvchilar", icon: Users },
+    { to: "/superadmin/direktorlar", label: "Direktorlar", icon: Users },
     { to: "/superadmin/jurnal", label: "Audit jurnali", icon: ScrollText },
   ];
   return <AppShell title="Super Admin" nav={nav}>{children}</AppShell>;

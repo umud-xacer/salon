@@ -75,3 +75,12 @@ def test_validation_and_permissions(client, superadmin):
     assert r.status_code == 409 and r.json()["detail"]["code"] == "has_own_password"
     # Paroli bo'lmasa — o'tkaziladi, o'z paroli bilan kiradi
     assert change(client, superadmin, biz, phone=customer_phone, full_name="Mijoz Direktor").status_code == 200
+
+
+def test_business_list_has_director_account_fields(client, superadmin):
+    biz = create_business(client, superadmin)
+    rows = client.get("/api/v1/superadmin/businesses", headers=auth_header(superadmin)).json()
+    row = next(b for b in rows if b["id"] == biz["id"])
+    assert row["owner_user_id"] == biz["owner"]["user"]["id"]
+    assert row["owner_status"] == "active" and row["owner_last_login_at"] is not None
+    assert row["type_name"]
