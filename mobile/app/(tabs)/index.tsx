@@ -16,7 +16,8 @@ import { Bounds, OsmMap } from '../../src/OsmMap';
 
 const TASHKENT = { latitude: 41.3111, longitude: 69.2797 };
 const MAX_BOUNDS_DEG = 1;          // backend chegarasi: bundan keng oynada so'rov rad etiladi
-const BANNER_WIDTH = Dimensions.get('window').width - 48;
+// Keyingi banner chetdan ko'rinib tursin: ro'yxat davom etishi seziladi
+const BANNER_WIDTH = Math.round(Dimensions.get('window').width * 0.72);
 
 const CATEGORY_ICONS: [RegExp, IconName][] = [
   [/barber/i, 'cut-outline'],
@@ -272,15 +273,15 @@ export default function Businesses() {
       {top.length > 0 && !query && (
         <>
           <Text style={[type.h2, styles.section]}>Top salonlar</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} snapToInterval={BANNER_WIDTH + 12} decelerationRate="fast"
-            contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} snapToInterval={BANNER_WIDTH + 10} decelerationRate="fast"
+            contentContainerStyle={{ paddingHorizontal: 16, gap: 10 }}>
             {top.map((b) => (
               <Pressable key={b.id} onPress={() => openBusiness(b.slug)} style={styles.banner}>
                 {b.photos?.[0] && <Image source={{ uri: b.photos[0] }} style={StyleSheet.absoluteFill} resizeMode="cover" />}
                 <View style={styles.bannerShade} />
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                   <Icon name="star" size={15} color={colors.star} />
-                  <Text style={styles.bannerSmall}>{b.rating_avg.toFixed(1)} ({b.rating_count} sharh)</Text>
+                  <Text style={styles.bannerSmall}>{b.rating_avg.toFixed(1)} ({b.rating_count})</Text>
                 </View>
                 <Text style={styles.bannerTitle} numberOfLines={1}>{b.name}</Text>
                 <Text style={styles.bannerSmall} numberOfLines={1}>
@@ -292,7 +293,7 @@ export default function Businesses() {
         </>
       )}
       {categories.length > 0 && (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 14 }}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 10, paddingBottom: 2 }}>
           <Chip label="Hammasi" icon="apps-outline" active={category === null} onPress={() => setCategory(null)} />
           {categories.map((c) => (
             <Chip key={c.id} label={c.name_uz} icon={categoryIcon(c)} active={category === c.slug}
@@ -320,7 +321,7 @@ export default function Businesses() {
             : <EmptyState icon="storefront-outline" title="Yaqin atrofda salon yo'q" text="Hududingizdagi salonlar tez orada qo'shiladi" />
         )}
         renderItem={({ item }) => (
-          <View style={{ paddingHorizontal: 16, marginTop: 4 }}>
+          <View style={{ paddingHorizontal: 16 }}>
             <SalonCard item={item} favorite={favorites.has(item.id)} onToggleFavorite={() => favorites.toggle(item.id)}
               onOpen={() => openBusiness(item.slug)} />
           </View>
@@ -350,14 +351,14 @@ const styles = StyleSheet.create({
   filter: {
     width: 46, height: 46, borderRadius: radius.md, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center',
   },
-  section: { paddingHorizontal: 16, marginTop: 8, marginBottom: 10 },
+  section: { paddingHorizontal: 16, marginTop: 4, marginBottom: 8, fontSize: 17 },
   banner: {
-    width: BANNER_WIDTH, height: 136, borderRadius: radius.lg, padding: 16, justifyContent: 'flex-end', overflow: 'hidden',
+    width: BANNER_WIDTH, height: 104, borderRadius: radius.md, padding: 12, justifyContent: 'flex-end', overflow: 'hidden',
     backgroundColor: colors.navy,
   },
   bannerShade: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(1,13,73,0.45)' },
-  bannerTitle: { color: '#fff', fontSize: 20, fontWeight: '800', marginTop: 2 },
-  bannerSmall: { color: 'rgba(255,255,255,0.9)', fontSize: 13 },
+  bannerTitle: { color: '#fff', fontSize: 16, fontWeight: '800', marginTop: 2 },
+  bannerSmall: { color: 'rgba(255,255,255,0.9)', fontSize: 12 },
   sheetLabel: { fontWeight: '700', color: colors.text, marginBottom: 8, marginTop: 4 },
   wrap: { flexDirection: 'row', flexWrap: 'wrap' },
 });
