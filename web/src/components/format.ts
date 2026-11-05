@@ -56,7 +56,7 @@ export const MOVE_LABELS: Record<string, string> = {
   purchase: "Kirim",
   sale: "Sotuv",
   usage: "Ishlatildi",
-  to_staff: "Ustaga berildi",
+  to_staff: "Xodimga berildi",
   adjustment: "Sanoq",
   write_off: "Hisobdan chiqarildi",
 };
@@ -73,5 +73,5 @@ export const ROLE_LABELS: Record<string, string> = {
   owner: "Direktor",
   manager: "Menejer",
   receptionist: "Kassir",
-  staff: "Usta",
+  staff: "Mutaxassis",          // turli muassasalar aralash joyda (Super Admin). Panel ichida — roleLabel()
 };

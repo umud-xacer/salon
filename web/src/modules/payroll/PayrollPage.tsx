@@ -3,7 +3,8 @@ import { useState, type FormEvent } from "react";
 
 import { api, json } from "../../api/client";
 import type { Compensation, Membership, Payroll, PayrollList } from "../../api/types";
-import { formatDate, formatMoney, formatQty, ROLE_LABELS, todayIso } from "../../components/format";
+import { formatDate, formatMoney, formatQty, todayIso } from "../../components/format";
+import { roleLabel, useVocab } from "../vocab";
 import { Modal } from "../../components/Modal";
 import { Badge, Button, Card, Empty, ErrorNote, inputClass, PageTitle, Spinner, Tabs } from "../../components/ui";
 
@@ -188,6 +189,7 @@ function PayrollDialog({ businessId, payroll: p, month, onClose }: {
 }
 
 function Rates({ businessId }: { businessId: number }) {
+  const v = useVocab();
   const [editing, setEditing] = useState<Compensation | null>(null);
   const query = useQuery({
     queryKey: ["compensation", businessId],
@@ -205,7 +207,7 @@ function Rates({ businessId }: { businessId: number }) {
               className="flex w-full flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 text-left text-sm hover:bg-page">
               <span className="min-w-0 flex-1 basis-40">
                 <span className="block font-medium break-words">{c.full_name}</span>
-                <span className="block text-xs text-muted">{ROLE_LABELS[c.role] ?? c.role}{c.title ? ` · ${c.title}` : ""}</span>
+                <span className="block text-xs text-muted">{roleLabel(c.role, v)}{c.title ? ` · ${c.title}` : ""}</span>
               </span>
               <span className="tabular-nums">{formatMoney(c.base_salary)}</span>
               <span className="text-muted tabular-nums">{formatQty(c.commission_percent)}%</span>
