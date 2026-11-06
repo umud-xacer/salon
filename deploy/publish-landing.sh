@@ -10,7 +10,7 @@ KEY="${KEY:-$HOME/.chronix/asqar.pem}"
 KNOWN="${KNOWN:-$HOME/.chronix/known_hosts}"
 SSH="ssh -i $KEY -o UserKnownHostsFile=$KNOWN -o BatchMode=yes"
 
-(cd landing && npm ci --no-audit --no-fund >/dev/null && npm run build)
+(cd landing && { [ -d node_modules ] || npm ci --no-audit --no-fund; } && npm run build)
 
 tar -C landing/dist -czf - . | $SSH "$SERVER" '
   set -e
