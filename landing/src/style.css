@@ -94,6 +94,11 @@ main, .footer { position: relative; z-index: 2; }
 .nav a:hover, .nav a.active { color: #fff; }
 .nav a:hover::after, .nav a.active::after { transform: scaleX(1); transform-origin: left; }
 .header-actions { display: flex; align-items: center; gap: 10px; }
+.lang { display: inline-flex; padding: 3px; border: 1px solid var(--line-2); border-radius: 999px; }
+.lang button { border: 0; background: transparent; color: var(--muted); font: 600 0.74rem/1 var(--display); letter-spacing: 0.04em; padding: 7px 10px; border-radius: 999px; cursor: pointer; transition: color 0.3s, background 0.3s; }
+.lang button:hover { color: var(--ink); }
+.lang button.on { background: var(--ink); color: #0b0b0c; }
+body.switching main, body.switching .footer, body.switching .header { opacity: 0; transition: opacity 0.25s; }
 
 .btn {
   position: relative; display: inline-flex; align-items: center; justify-content: space-between; gap: 14px; overflow: hidden;
@@ -354,6 +359,14 @@ main, .footer { position: relative; z-index: 2; }
   .hero-stats { gap: 22px; }
   .section { padding: 90px var(--gutter); }
   .panel { padding-top: 90px; border-radius: 20px 20px 0 0; }
+}
+@media (max-width: 420px) {
+  .header { gap: 8px; padding-left: 14px; padding-right: 14px; }
+  .brand span { display: none; }
+  .header-actions { gap: 6px; }
+  .header .btn-sm { padding: 8px 13px; }
+  .header .btn-sm .arrow { display: none; }
+  .lang button { padding: 6px 8px; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }

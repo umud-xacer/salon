@@ -3,10 +3,41 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Lenis from "lenis";
 import { LINKS, PLANS } from "./config.js";
+import { applyLang, currentLang, PLAN_TEXT, saveLang, t } from "./i18n.js";
 
 gsap.registerPlugin(ScrollTrigger);
 document.documentElement.classList.add("js");
+if ("scrollRestoration" in history) history.scrollRestoration = "manual";
 document.body.classList.add("loading");
+
+// ── Til (UZ / RU): matnlar so'zlarga bo'linishidan OLDIN qo'yiladi ──
+const LANG = currentLang();
+applyLang(LANG);
+const tr = (k) => t(LANG, k);
+const planText = (x) => (LANG === "uz" ? x : PLAN_TEXT[LANG]?.[x] ?? x);
+// Til almashganda sahifa yuklanish ekranisiz qayta ochiladi va scroll joyi saqlanadi
+let skipLoader = false;
+try {
+  skipLoader = sessionStorage.getItem("chronix-lang-switch") === "1";
+  sessionStorage.removeItem("chronix-lang-switch");
+} catch { /* xususiy oyna */ }
+document.querySelectorAll("[data-lang]").forEach((btn) => {
+  const on = btn.dataset.lang === LANG;
+  btn.classList.toggle("on", on);
+  btn.setAttribute("aria-pressed", String(on));
+  btn.addEventListener("click", () => {
+    if (btn.dataset.lang === LANG) return;
+    saveLang(btn.dataset.lang);
+    try {
+      sessionStorage.setItem("chronix-lang-switch", "1");
+      sessionStorage.setItem("chronix-scroll", String(Math.round(window.scrollY)));
+    } catch { /* xususiy oyna */ }
+    const url = new URL(location.href);
+    url.searchParams.delete("lang");
+    document.body.classList.add("switching");
+    setTimeout(() => { location.replace(url.toString()); }, 260);
+  });
+});
 
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const finePointer = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
@@ -52,16 +83,16 @@ function toast(msg) {
 // ── Tariflar (config.js) ──
 $("#prices").innerHTML = PLANS.map((p) => `
   <article class="price${p.featured ? " featured" : ""}">
-    <span class="tag">${p.note}</span>
+    <span class="tag">${planText(p.note)}</span>
     <h3>${p.name}</h3>
-    <div class="amount">${p.price}</div>
-    <div class="per">${p.period}</div>
-    <ul>${p.features.map((f) => `<li>${f}</li>`).join("")}</ul>
-    <a class="btn ${p.featured ? "btn-light" : "btn-line"}" href="#aloqa"><span>Ulanish</span><i class="arrow" aria-hidden="true">→</i></a>
+    <div class="amount">${planText(p.price)}</div>
+    <div class="per">${p.period ? (LANG === "uz" ? p.period : PLAN_TEXT[LANG].period) : ""}</div>
+    <ul>${p.features.map((f) => `<li>${planText(f)}</li>`).join("")}</ul>
+    <a class="btn ${p.featured ? "btn-light" : "btn-line"}" href="#aloqa"><span>${tr("prices.cta")}</span><i class="arrow" aria-hidden="true">→</i></a>
   </article>`).join("");
 
 // ── Havolalar ──
-const SOON = { play: "Google Play'da tez orada!", appstore: "App Store'da tez orada!" };
+const SOON = { play: tr("toast.play"), appstore: tr("toast.appstore") };
 $$("[data-link]").forEach((a) => {
   const k = a.dataset.link;
   let href = LINKS[k];
@@ -70,7 +101,7 @@ $$("[data-link]").forEach((a) => {
     a.href = href;
     if (/^https?:/.test(href) && k !== "panel") { a.target = "_blank"; a.rel = "noopener"; }
   } else {
-    a.addEventListener("click", (e) => { e.preventDefault(); toast(SOON[k] ?? "Tez orada!"); });
+    a.addEventListener("click", (e) => { e.preventDefault(); toast(SOON[k] ?? tr("toast.soon")); });
   }
 });
 $$("[data-text='phone']").forEach((el) => {
@@ -130,7 +161,7 @@ function runLoader(ready) {
   const o = { v: 0 };
   return new Promise((resolve) => {
     gsap.to(o, {
-      v: 100, duration: reducedMotion ? 0.3 : 1.8, ease: "power2.inOut",
+      v: 100, duration: reducedMotion || skipLoader ? 0.15 : 1.8, ease: "power2.inOut",
       onUpdate: () => {
         num.textContent = String(Math.round(o.v)).padStart(3, "0");
         gsap.set("#loadBar", { scaleX: o.v / 100 });
@@ -347,4 +378,14 @@ runLoader(sceneReady).then(async () => {
   sections();
   pointerFx();
   ScrollTrigger.refresh();
+  if (skipLoader) {
+    // Til almashgandan keyin o'sha joyga qaytish
+    let y = 0;
+    try { y = Number(sessionStorage.getItem("chronix-scroll")) || 0; sessionStorage.removeItem("chronix-scroll"); } catch { /* */ }
+    if (y > 0) {
+      window.scrollTo(0, y);
+      lenis?.scrollTo(y, { immediate: true, force: true });
+      ScrollTrigger.update();
+    }
+  }
 });
