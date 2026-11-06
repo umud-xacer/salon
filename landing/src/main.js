@@ -6,33 +6,38 @@ import { LINKS, PLANS } from "./config.js";
 
 gsap.registerPlugin(ScrollTrigger);
 document.documentElement.classList.add("js");
+document.body.classList.add("loading");
 
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const finePointer = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const mobile = () => window.innerWidth < 860;
 
-// ── Silliq scroll (Lenis) — ScrollTrigger bilan bitta soatda ──
+// ── Silliq scroll (Lenis) ──
 let lenis = null;
 if (!reducedMotion) {
   lenis = new Lenis({ duration: 1.15, easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), smoothWheel: true });
   lenis.on("scroll", ScrollTrigger.update);
   gsap.ticker.add((time) => lenis.raf(time * 1000));
   gsap.ticker.lagSmoothing(0);
+  lenis.stop();
 }
 function scrollToHash(hash) {
   const target = hash === "#top" ? 0 : $(hash);
   if (target === null) return;
-  if (lenis) lenis.scrollTo(target, { offset: hash === "#top" ? 0 : -84, duration: 1.4 });
+  if (lenis) lenis.scrollTo(target, { offset: hash === "#top" ? 0 : -70, duration: 1.5 });
   else if (target === 0) window.scrollTo({ top: 0 });
   else target.scrollIntoView();
 }
-$$('a[href^="#"]').forEach((a) => a.addEventListener("click", (e) => {
+document.addEventListener("click", (e) => {
+  const a = e.target.closest('a[href^="#"]');
+  if (!a) return;
   const hash = a.getAttribute("href");
   if (hash.length < 2) return;
   e.preventDefault();
   scrollToHash(hash);
-}));
+});
 
 // ── Toast ──
 const toastEl = $("#toast");
@@ -44,7 +49,18 @@ function toast(msg) {
   toastTimer = setTimeout(() => toastEl.classList.remove("show"), 2600);
 }
 
-// ── Havolalar (config.js) ──
+// ── Tariflar (config.js) ──
+$("#prices").innerHTML = PLANS.map((p) => `
+  <article class="price${p.featured ? " featured" : ""}">
+    <span class="tag">${p.note}</span>
+    <h3>${p.name}</h3>
+    <div class="amount">${p.price}</div>
+    <div class="per">${p.period}</div>
+    <ul>${p.features.map((f) => `<li>${f}</li>`).join("")}</ul>
+    <a class="btn ${p.featured ? "btn-light" : "btn-line"}" href="#aloqa"><span>Ulanish</span><i class="arrow" aria-hidden="true">→</i></a>
+  </article>`).join("");
+
+// ── Havolalar ──
 const SOON = { play: "Google Play'da tez orada!", appstore: "App Store'da tez orada!" };
 $$("[data-link]").forEach((a) => {
   const k = a.dataset.link;
@@ -62,21 +78,9 @@ $$("[data-text='phone']").forEach((el) => {
 });
 $("#year").textContent = new Date().getFullYear();
 
-// ── Tariflar ──
-$("#prices").innerHTML = PLANS.map((p) => `
-  <article class="price glass tilt${p.featured ? " featured" : ""}">
-    <span class="tag">${p.note}</span>
-    <h3>${p.name}</h3>
-    <div class="amount">${p.price}</div>
-    <div class="per">${p.period}</div>
-    <ul>${p.features.map((f) => `<li>${f}</li>`).join("")}</ul>
-    <a class="btn ${p.featured ? "btn-primary" : "btn-ghost"}" href="#aloqa">Ulanish</a>
-  </article>`).join("");
-$$('#prices a[href^="#"]').forEach((a) => a.addEventListener("click", (e) => { e.preventDefault(); scrollToHash("#aloqa"); }));
-
-// ── Sarlavhalarni so'zlarga bo'lish (nbsp saqlanadi: "uchun — " bir qatorda) ──
-function splitWords(el) {
-  const walk = (node, inGrad) => {
+// ── So'zlarga bo'lish (nbsp saqlanadi; <em> ichidagi so'zlar ko'k qoladi) ──
+function splitWords(el, wrapClass = "w", innerClass = "wi") {
+  const walk = (node, inEm) => {
     [...node.childNodes].forEach((ch) => {
       if (ch.nodeType === 3) {
         const frag = document.createDocumentFragment();
@@ -84,26 +88,30 @@ function splitWords(el) {
           if (!w) return;
           if (/^[ \t\n\r]+$/.test(w)) { frag.append(" "); return; }
           const o = document.createElement("span");
-          o.className = "w";
-          const i = document.createElement("span");
-          i.className = inGrad ? "wi grad" : "wi";
-          i.textContent = w;
-          o.append(i);
+          o.className = wrapClass;
+          if (innerClass) {
+            const i = document.createElement(inEm ? "em" : "span");
+            i.className = innerClass;
+            i.textContent = w;
+            o.append(i);
+          } else o.textContent = w;
           frag.append(o);
         });
         ch.replaceWith(frag);
       } else if (ch.nodeType === 1 && ch.tagName !== "BR") {
-        const g = ch.classList.contains("grad");
-        if (g) ch.classList.replace("grad", "grad-host");
-        walk(ch, inGrad || g);
+        const isEm = ch.tagName === "EM";
+        walk(ch, inEm || isEm);
+        if (isEm) ch.replaceWith(...ch.childNodes);
       }
     });
   };
   walk(el, false);
 }
-$$(".split").forEach(splitWords);
+$$(".split").forEach((el) => splitWords(el));
+$$(".panel-title").forEach((el) => { el.classList.add("split"); splitWords(el); });
+splitWords($("#manifestText"), "mw", null);
 
-// ── Header, menyu, scroll ko'rsatkichi, yon navigatsiya ──
+// ── Menyu ──
 const header = $("#header");
 const nav = $("#nav");
 const burger = $("#burger");
@@ -113,118 +121,167 @@ burger.addEventListener("click", () => {
 });
 $$(".nav a").forEach((a) => a.addEventListener("click", () => { nav.classList.remove("open"); burger.setAttribute("aria-expanded", "false"); }));
 
+const words = (el) => (el ? el.querySelectorAll(".wi") : []);
+const showWords = (el, opts = {}) => gsap.to(words(el), { y: 0, duration: 1.1, stagger: 0.05, ease: "expo.out", ...opts });
+
+// ── Yuklanish: 000 → 100 ──
+function runLoader(ready) {
+  const num = $("#loadNum");
+  const o = { v: 0 };
+  return new Promise((resolve) => {
+    gsap.to(o, {
+      v: 100, duration: reducedMotion ? 0.3 : 1.8, ease: "power2.inOut",
+      onUpdate: () => {
+        num.textContent = String(Math.round(o.v)).padStart(3, "0");
+        gsap.set("#loadBar", { scaleX: o.v / 100 });
+      },
+      onComplete: async () => {
+        await ready;
+        gsap.timeline({ onComplete: resolve })
+          .to(".loader-count, .loader-top", { yPercent: -40, opacity: 0, duration: 0.6, ease: "power3.in" })
+          .to("#loader", { yPercent: -100, duration: 1, ease: "expo.inOut" }, "-=0.2")
+          .set("#loader", { display: "none" });
+      },
+    });
+  });
+}
+
 function chrome() {
   ScrollTrigger.create({ start: 40, end: "max", onToggle: (s) => header.classList.toggle("scrolled", s.isActive) });
   gsap.to("#progress", { scaleX: 1, ease: "none", scrollTrigger: { start: 0, end: "max", scrub: 0.3 } });
-  [["#imkoniyatlar", "imkoniyatlar"], ["#salon", "yonalishlar", "#spa"], ["#narxlar", "narxlar"], ["#biz-haqimizda", "biz-haqimizda"]]
+  [["#imkoniyatlar", "imkoniyatlar"], ["#salon", "salon", "#spa"], ["#narxlar", "narxlar"], ["#biz-haqimizda", "biz-haqimizda"]]
     .forEach(([sel, id, endSel]) => {
       const link = $(`.nav a[href="#${id}"]`);
-      ScrollTrigger.create({
-        trigger: sel, endTrigger: endSel ?? sel, start: "top 55%", end: "bottom 45%",
-        onToggle: (s) => link.classList.toggle("active", s.isActive),
-      });
+      ScrollTrigger.create({ trigger: sel, endTrigger: endSel ?? sel, start: "top 55%", end: "bottom 45%", onToggle: (s) => link.classList.toggle("active", s.isActive) });
     });
   const dots = $("#dots");
   ScrollTrigger.create({ trigger: "#salon", endTrigger: "#spa", start: "top 60%", end: "bottom 40%", onToggle: (s) => dots.classList.toggle("show", s.isActive) });
   ["#salon", "#dental", "#ent", "#spa"].forEach((sel, i) => {
-    ScrollTrigger.create({
-      trigger: sel, start: "top 50%", end: "bottom 50%",
-      onToggle: (s) => s.isActive && $$("#dots a").forEach((a, j) => a.classList.toggle("on", i === j)),
-    });
+    ScrollTrigger.create({ trigger: sel, start: "top 50%", end: "bottom 50%", onToggle: (s) => s.isActive && $$("#dots a").forEach((a, j) => a.classList.toggle("on", i === j)) });
   });
 }
-
-// ── Animatsiyalar ──
-const words = (el) => el.querySelectorAll(".wi");
 
 function intro() {
   const tl = gsap.timeline({ defaults: { ease: "expo.out", duration: 1.3 } });
-  tl.from(".header", { y: -40, opacity: 0, duration: 1 }, 0)
-    .to(words($(".hero h1")), { y: 0, rotate: 0, stagger: 0.06 }, 0.15)
-    .fromTo(".hero .reveal", { opacity: 0, y: 34, filter: "blur(8px)" }, { opacity: 1, y: 0, filter: "blur(0px)", stagger: 0.1 }, 0.35);
+  tl.from(".header", { yPercent: -100, opacity: 0, duration: 1 }, 0)
+    .add(showWords($(".hero h1"), { stagger: 0.06, duration: 1.4 }), 0.05)
+    .fromTo(".hero .reveal", { opacity: 0, y: 26 }, { opacity: 1, y: 0, stagger: 0.1 }, 0.4);
   $$("[data-count]").forEach((el) => {
     const o = { v: 0 };
-    gsap.to(o, {
-      v: +el.dataset.count, duration: 2, delay: 0.8, ease: "power3.out",
-      onUpdate: () => { el.textContent = Math.round(o.v) + (el.dataset.suffix ?? ""); },
-    });
+    gsap.to(o, { v: +el.dataset.count, duration: 2, delay: 0.7, ease: "power3.out", onUpdate: () => { el.textContent = Math.round(o.v) + (el.dataset.suffix ?? ""); } });
   });
 }
 
-function reveals() {
-  // 4 yo'nalish: matn 3D obyekt bilan bir vaqtda kiradi va orqaga scroll qilinganda qaytadi
+// ── Manifest: sochilgan so'zlar scroll bilan jumlaga yig'iladi ──
+function manifest() {
+  const ws = $$("#manifestText .mw");
+  const spread = mobile() ? 0.55 : 1;
+  ws.forEach((w) => gsap.set(w, {
+    x: gsap.utils.random(-0.42, 0.42) * window.innerWidth * spread,
+    y: gsap.utils.random(-0.38, 0.38) * window.innerHeight,
+    rotate: gsap.utils.random(-35, 35), scale: gsap.utils.random(0.55, 1.5), opacity: gsap.utils.random(0.08, 0.3),
+  }));
+  const tl = gsap.timeline({ scrollTrigger: { trigger: ".manifest", start: "top top", end: "bottom bottom", scrub: 1 } });
+  tl.to(ws, { x: 0, y: 0, rotate: 0, scale: 1, opacity: 1, ease: "power3.out", duration: 1, stagger: { each: 0.012, from: "random" } })
+    .to({}, { duration: 0.35 });
+  gsap.fromTo("#manifestText", { opacity: 0 }, { opacity: 1, ease: "none", scrollTrigger: { trigger: ".manifest", start: "top 85%", end: "top 20%", scrub: true } });
+  gsap.fromTo(".manifest .label", { opacity: 0 }, { opacity: 1, scrollTrigger: { trigger: ".manifest", start: "top 60%", end: "top top", scrub: true } });
+}
+
+function verticals() {
   $$(".vertical").forEach((sec) => {
-    const copy = sec.querySelector(".v-copy");
+    const c = sec.querySelector(".v-copy");
     const right = sec.classList.contains("right");
     const tl = gsap.timeline({ scrollTrigger: { trigger: sec, start: "top 62%", end: "bottom 38%", toggleActions: "play reverse play reverse" } });
-    tl.fromTo(copy.querySelector(".eyebrow"), { opacity: 0, x: right ? 30 : -30 }, { opacity: 1, x: 0, duration: 0.7, ease: "power3.out" })
-      .to(words(copy.querySelector("h2")), { y: 0, rotate: 0, duration: 1, stagger: 0.045, ease: "expo.out" }, 0.05)
-      .fromTo(copy.querySelector("h2"), { opacity: 0 }, { opacity: 1, duration: 0.01 }, 0)
-      .fromTo(copy.querySelector("p:not(.eyebrow)"), { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.8, ease: "power3.out" }, 0.3)
-      .fromTo(copy.querySelectorAll(".ticks li"), { opacity: 0, x: right ? 24 : -24 }, { opacity: 1, x: 0, duration: 0.6, stagger: 0.08, ease: "power3.out" }, 0.4)
-      .fromTo(copy.querySelector(".ticks"), { opacity: 0 }, { opacity: 1, duration: 0.01 }, 0.4)
-      .fromTo(copy.querySelector(".mini-ui"),
-        { opacity: 0, y: 40, rotateY: right ? -18 : 18, rotateX: 8, transformPerspective: 900 },
-        { opacity: 1, y: 0, rotateY: 0, rotateX: 0, duration: 1.1, ease: "expo.out" }, 0.5)
-      .fromTo(copy.querySelectorAll(".mu-row, .chips span, .wave"), { opacity: 0, x: 26 }, { opacity: 1, x: 0, duration: 0.5, stagger: 0.07, ease: "power2.out" }, 0.75)
-      .fromTo(copy.querySelector(".v-num"), { opacity: 0 }, { opacity: 1, duration: 0.8 }, 0);
-    // katta raqam scroll bilan suzadi
-    gsap.fromTo(copy.querySelector(".v-num"), { yPercent: 60 }, { yPercent: -60, ease: "none", scrollTrigger: { trigger: sec, scrub: true } });
+    tl.fromTo(c.querySelectorAll(".v-num, .eyebrow"), { opacity: 0, x: right ? 24 : -24 }, { opacity: 1, x: 0, duration: 0.7, stagger: 0.08, ease: "power3.out" })
+      .add(showWords(c.querySelector("h2"), { stagger: 0.04 }), 0.05)
+      .fromTo(c.querySelector("p:not(.eyebrow)"), { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.8, ease: "power3.out" }, 0.3)
+      .fromTo(c.querySelector(".ticks"), { opacity: 0 }, { opacity: 1, duration: 0.01 }, 0.4)
+      .fromTo(c.querySelectorAll(".ticks li"), { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.6, stagger: 0.07, ease: "power3.out" }, 0.4)
+      .fromTo(c.querySelector(".mini-ui"), { opacity: 0, y: 40, rotateY: right ? -16 : 16, rotateX: 8, transformPerspective: 900 }, { opacity: 1, y: 0, rotateY: 0, rotateX: 0, duration: 1.1, ease: "expo.out" }, 0.5)
+      .fromTo(c.querySelectorAll(".mu-row, .chips span, .wave"), { opacity: 0, x: 22 }, { opacity: 1, x: 0, duration: 0.5, stagger: 0.07, ease: "power2.out" }, 0.75);
   });
-
-  $$(".section-head, .about-grid > div:first-child").forEach((h) => {
-    const tl = gsap.timeline({ scrollTrigger: { trigger: h, start: "top 82%" } });
-    tl.fromTo(h.querySelector(".eyebrow"), { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.6 })
-      .fromTo(h.querySelector("h2"), { opacity: 0 }, { opacity: 1, duration: 0.01 }, 0)
-      .to(words(h.querySelector("h2")), { y: 0, rotate: 0, duration: 1, stagger: 0.05, ease: "expo.out" }, 0.05)
-      .fromTo(h.querySelectorAll("p:not(.eyebrow)"), { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.8, stagger: 0.1 }, 0.3);
-  });
-
-  [".card", ".steps li", ".price", ".contact"].forEach((sel) => {
-    ScrollTrigger.batch(sel, {
-      start: "top 90%", once: true,
-      onEnter: (els) => gsap.fromTo(els, { opacity: 0, y: 70, scale: 0.96 }, {
-        opacity: 1, y: 0, scale: 1, duration: 1.1, stagger: 0.09, ease: "expo.out",
-        clearProps: "transform", onComplete() { els.forEach((e) => e.classList.add("ready")); },
-      }),
-    });
-  });
-  gsap.from(".bars i", { scaleY: 0, stagger: 0.07, duration: 1, ease: "back.out(1.7)", scrollTrigger: { trigger: ".bars", start: "top 92%" } });
-  gsap.from(".cal i", { scaleX: 0, transformOrigin: "left", stagger: 0.08, duration: 0.8, ease: "power3.out", scrollTrigger: { trigger: ".cal", start: "top 92%" } });
-
-  const cta = $(".cta");
-  gsap.timeline({ scrollTrigger: { trigger: cta, start: "top 72%" } })
-    .fromTo(cta.querySelector("h2"), { opacity: 0 }, { opacity: 1, duration: 0.01 })
-    .to(words(cta.querySelector("h2")), { y: 0, rotate: 0, duration: 1.1, stagger: 0.05, ease: "expo.out" })
-    .from(cta.querySelectorAll(".store"), { opacity: 0, y: 30, stagger: 0.1, duration: 0.8, ease: "power3.out" }, 0.4);
-
-  // Yugurik qator scroll tezligiga qarab qiyshayadi
-  const skew = gsap.quickTo(".marquee", "skewY", { duration: 0.5, ease: "power3.out" });
-  ScrollTrigger.create({ start: 0, end: "max", onUpdate: (s) => skew(gsap.utils.clamp(-1.6, 1.6, s.getVelocity() / -1500)) });
 }
 
-// ── Kartalarga 3D egilish va magnit tugmalar ──
+function mega() {
+  $$(".mega-row").forEach((row) => {
+    const dir = +row.dataset.dir;
+    gsap.fromTo(row, { xPercent: dir < 0 ? 0 : -30 }, { xPercent: dir < 0 ? -30 : 0, ease: "none", scrollTrigger: { trigger: ".mega", start: "top bottom", end: "bottom top", scrub: 0.6 } });
+  });
+}
+
+// ── Ustma-ust panellar: keyingisi kelganda oldingisi kichrayib, xiralashadi ──
+function panels() {
+  const ps = $$(".panel");
+  ps.forEach((p, i) => {
+    const tl = gsap.timeline({ scrollTrigger: { trigger: p, start: "top 65%" } });
+    tl.add(showWords(p.querySelector(".panel-title"), { duration: 1.2 }))
+      .from(p.querySelectorAll(".panel-grid > *"), { opacity: 0, y: 30, stagger: 0.1, duration: 0.9, ease: "power3.out" }, 0.3)
+      .from(p.querySelector(".panel-num"), { yPercent: 60, opacity: 0, duration: 1, ease: "expo.out" }, 0);
+    if (ps[i + 1]) {
+      gsap.to(p, { scale: 0.94, filter: "brightness(0.6)", transformOrigin: "50% 0%", ease: "none", scrollTrigger: { trigger: ps[i + 1], start: "top 70%", end: "top top", scrub: true } });
+    }
+  });
+  gsap.to(".pg-ring .fill", { strokeDashoffset: 314 * (1 - 0.87), duration: 1.6, ease: "power3.out", scrollTrigger: { trigger: ".pg-ring", start: "top 85%" } });
+  gsap.from(".pg-bars i", { scaleY: 0, stagger: 0.07, duration: 1, ease: "back.out(1.6)", scrollTrigger: { trigger: ".pg-bars", start: "top 90%" } });
+  gsap.from(".pg-cal i", { scaleX: 0, transformOrigin: "left", stagger: 0.08, duration: 0.8, ease: "power3.out", scrollTrigger: { trigger: ".pg-cal", start: "top 90%" } });
+}
+
+// ── Qadamlar: ekran mahkamlanadi, scroll bilan 01 → 02 → 03 ──
+function steps() {
+  const items = $$(".step");
+  const labels = $$(".steps-list li");
+  const now = $("#stepNow");
+  let cur = -1;
+  const go = (i) => {
+    if (i === cur) return;
+    const prev = items[cur];
+    const down = i > cur;
+    cur = i;
+    if (prev) gsap.to(prev, { opacity: 0, y: down ? -50 : 50, duration: 0.5, ease: "power2.in", overwrite: true });
+    const el = items[i];
+    gsap.fromTo(el, { opacity: 0, y: down ? 60 : -60 }, { opacity: 1, y: 0, duration: 0.9, ease: "expo.out", delay: prev ? 0.2 : 0, overwrite: true });
+    gsap.fromTo(el.querySelector(".step-big"), { yPercent: down ? 25 : -25 }, { yPercent: 0, duration: 1.2, ease: "expo.out", delay: prev ? 0.2 : 0 });
+    labels.forEach((l, j) => l.classList.toggle("on", j === i));
+    now.textContent = String(i + 1).padStart(2, "0");
+  };
+  gsap.set(items, { opacity: 0 });
+  go(0);
+  ScrollTrigger.create({
+    trigger: ".steps", start: "top top", end: "bottom bottom",
+    onUpdate: (s) => { go(Math.min(items.length - 1, Math.floor(s.progress * items.length))); gsap.set("#stepLine", { scaleX: s.progress }); },
+  });
+}
+
+function sections() {
+  $$(".section-head, .about-grid > div:first-child, .footer-cta").forEach((h) => {
+    const tl = gsap.timeline({ scrollTrigger: { trigger: h, start: "top 80%" } });
+    const label = h.querySelector(".label");
+    if (label) tl.fromTo(label, { opacity: 0 }, { opacity: 1, duration: 0.6 });
+    tl.add(showWords(h.querySelector("h2")), 0.05)
+      .fromTo(h.querySelectorAll(":scope > p:not(.label), :scope > .stores"), { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.8, stagger: 0.1 }, 0.3);
+  });
+  ScrollTrigger.batch(".price, .contact", {
+    start: "top 88%", once: true,
+    onEnter: (els) => gsap.fromTo(els, { opacity: 0, y: 60 }, { opacity: 1, y: 0, duration: 1.1, stagger: 0.1, ease: "expo.out" }),
+  });
+  // Ulkan "Chronix" yozuvi harflari pastdan ko'tariladi
+  gsap.fromTo(".wordmark span", { yPercent: 100 }, {
+    yPercent: 0, stagger: 0.06, ease: "power3.out",
+    scrollTrigger: { trigger: ".wordmark", start: "top bottom", end: "bottom bottom", scrub: 0.8 },
+  });
+}
+
+// ── Sichqoncha effektlari ──
 function pointerFx() {
   if (reducedMotion || !finePointer) return;
-  $$(".tilt").forEach((card) => {
-    card.addEventListener("pointermove", (e) => {
-      if (!card.classList.contains("ready")) return;
-      const r = card.getBoundingClientRect();
-      const x = (e.clientX - r.left) / r.width;
-      const y = (e.clientY - r.top) / r.height;
-      card.style.setProperty("--mx", `${x * 100}%`);
-      card.style.setProperty("--my", `${y * 100}%`);
-      gsap.to(card, { rotateY: (x - 0.5) * 9, rotateX: (0.5 - y) * 9, transformPerspective: 1000, duration: 0.4, ease: "power2.out", overwrite: "auto" });
-    });
-    card.addEventListener("pointerleave", () => gsap.to(card, { rotateX: 0, rotateY: 0, duration: 0.7, ease: "power3.out", overwrite: "auto" }));
-  });
   $$(".btn, .store").forEach((b) => {
     const xTo = gsap.quickTo(b, "x", { duration: 0.5, ease: "power3.out" });
     const yTo = gsap.quickTo(b, "y", { duration: 0.5, ease: "power3.out" });
     b.addEventListener("pointermove", (e) => {
       const r = b.getBoundingClientRect();
-      xTo((e.clientX - r.left - r.width / 2) * 0.25);
-      yTo((e.clientY - r.top - r.height / 2) * 0.35);
+      xTo((e.clientX - r.left - r.width / 2) * 0.22);
+      yTo((e.clientY - r.top - r.height / 2) * 0.32);
     });
     b.addEventListener("pointerleave", () => { xTo(0); yTo(0); });
   });
@@ -234,9 +291,9 @@ function pointerFx() {
   window.addEventListener("pointermove", (e) => { glow.classList.add("on"); gx(e.clientX); gy(e.clientY); }, { passive: true });
 }
 
-// ── Hero kartalari 3D halqa atrofida (ustiga chiqmaydi) ──
+// ── Hero kartalari 3D halqa atrofida ──
 const cards = $$(".float-card");
-const CARD_SPOTS = [[0.5, -1.04], [1.12, 0.62], [-0.5, 1.06]];   // halqa radiusiga nisbatan
+const CARD_SPOTS = [[0.3, -1.1], [0.92, 1.14], [1.22, -0.2]];
 function placeCards({ hero }) {
   if (window.innerWidth < 1024) return;
   cards.forEach((c, i) => {
@@ -251,18 +308,17 @@ function placeCards({ hero }) {
   });
 }
 
-// ── 3D sahna (WebGL bo'lmasa — sahifa baribir to'liq ishlaydi) ──
 async function initScene() {
   try {
     const probe = document.createElement("canvas");
     if (!(probe.getContext("webgl2") || probe.getContext("webgl"))) return false;
     const { createScene } = await import("./scene.js");
-    const accent = (sec, fallback) => getComputedStyle(sec).getPropertyValue("--accent").trim() || fallback;
-    const sections = [
-      { el: $(".hero"), group: "hero", side: 1, accent: "#1565f5" },
-      ...$$(".vertical").map((el) => ({ el, group: el.dataset.scene, side: el.classList.contains("right") ? -1 : 1, accent: accent(el, "#1565f5") })),
+    const tint = { salon: "#46464e", dental: "#3e434b", ent: "#24366a", spa: "#43464a" };
+    const list = [
+      { el: $(".hero"), group: "hero", side: 1, accent: "#22346a" },
+      ...$$(".vertical").map((el) => ({ el, group: el.dataset.scene, side: el.classList.contains("right") ? -1 : 1, accent: tint[el.dataset.scene] })),
     ];
-    createScene($("#scene"), { sections, reducedMotion, onFrame: placeCards });
+    createScene($("#scene"), { sections: list, reducedMotion, onFrame: placeCards });
     return true;
   } catch (err) {
     console.warn("3D sahna yuklanmadi", err);
@@ -270,13 +326,25 @@ async function initScene() {
   }
 }
 
-window.addEventListener("load", async () => {
-  const ok = await initScene();
+const sceneReady = new Promise((resolve) => {
+  const start = async () => resolve(await initScene());
+  if (document.readyState === "complete") start();
+  else window.addEventListener("load", start);
+});
+
+runLoader(sceneReady).then(async () => {
+  const ok = await sceneReady;
   if (!ok) cards.forEach((c) => { c.style.display = "none"; });
-  $("#loader").classList.add("done");
+  document.body.classList.remove("loading");
+  lenis?.start();
   chrome();
   intro();
-  reveals();
+  manifest();
+  verticals();
+  mega();
+  panels();
+  steps();
+  sections();
   pointerFx();
   ScrollTrigger.refresh();
 });

@@ -5,45 +5,48 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Chronix — vaqtingiz, bizning ustuvorligimiz</title>
   <meta name="description" content="Chronix — go'zallik salonlari, stomatologiyalar, Lor klinikalari va Wellness & Spa markazlari uchun onlayn bron va boshqaruv platformasi." />
-  <meta name="theme-color" content="#030a2b" />
+  <meta name="theme-color" content="#0a0a0b" />
   <meta property="og:title" content="Chronix — barcha xizmatlar bir joyda" />
   <meta property="og:description" content="Onlayn bron, kalendar, kassa, ombor va hisobotlar — bitta platformada." />
   <meta property="og:image" content="/logo-ring.png" />
   <link rel="icon" type="image/png" href="/favicon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Unbounded:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
 </head>
 <body>
-  <!-- 3D sahna: butun sahifa ortida, scroll bilan o'zgaradi -->
   <canvas id="scene" aria-hidden="true"></canvas>
-  <div class="noise" aria-hidden="true"></div>
+  <div class="grain" aria-hidden="true"></div>
   <div class="cursor-glow" id="glow" aria-hidden="true"></div>
   <div class="progress" aria-hidden="true"><i id="progress"></i></div>
+
+  <!-- Yuklanish: vaqt hisoblagichi -->
+  <div class="loader" id="loader" aria-hidden="true">
+    <div class="loader-top"><span>Chronix</span><span>Vaqtingiz — bizning ustuvorligimiz</span></div>
+    <div class="loader-count"><b id="loadNum">000</b><span>/ 100</span></div>
+    <div class="loader-bar"><i id="loadBar"></i></div>
+  </div>
+
   <nav class="dots" id="dots" aria-label="Yo'nalishlar">
-    <a href="#salon" data-i="0"><span>Salon</span><b>01</b></a>
-    <a href="#dental" data-i="1"><span>Stomatologiya</span><b>02</b></a>
-    <a href="#ent" data-i="2"><span>Lor</span><b>03</b></a>
-    <a href="#spa" data-i="3"><span>Spa</span><b>04</b></a>
+    <a href="#salon"><span>Salon</span><b>01</b></a>
+    <a href="#dental"><span>Stomatologiya</span><b>02</b></a>
+    <a href="#ent"><span>Lor</span><b>03</b></a>
+    <a href="#spa"><span>Spa</span><b>04</b></a>
   </nav>
-  <div class="loader" id="loader" aria-hidden="true"><img src="/logo-ring.png" alt="" /></div>
 
   <header class="header" id="header">
     <a href="#top" class="brand" aria-label="Chronix — bosh sahifa">
-      <img src="/logo-ring.png" alt="" width="36" height="36" />
+      <img src="/logo-ring.png" alt="" width="30" height="30" />
       <span>Chronix</span>
     </a>
     <nav class="nav" id="nav" aria-label="Asosiy menyu">
       <a href="#imkoniyatlar">Imkoniyatlar</a>
-      <a href="#yonalishlar">Yo'nalishlar</a>
+      <a href="#salon">Yo'nalishlar</a>
       <a href="#narxlar">Narxlar</a>
       <a href="#biz-haqimizda">Biz haqimizda</a>
     </nav>
     <div class="header-actions">
-      <a class="btn btn-primary btn-sm" data-link="panel" href="#">
-        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M10 17l1.4-1.4L8.8 13H20v-2H8.8l2.6-2.6L10 7l-5 5 5 5zm-6 4h8v-2H4V5h8V3H4a2 2 0 00-2 2v14a2 2 0 002 2z" transform="scale(-1 1) translate(-24 0)"/></svg>
-        Kirish
-      </a>
+      <a class="btn btn-light btn-sm" data-link="panel" href="#"><span>Kirish</span><i class="arrow" aria-hidden="true">→</i></a>
       <button class="burger" id="burger" aria-label="Menyu" aria-expanded="false" aria-controls="nav"><span></span><span></span></button>
     </div>
   </header>
@@ -51,62 +54,54 @@
   <main id="top">
     <!-- ═══════════ HERO ═══════════ -->
     <section class="hero" data-scene="hero">
+      <div class="hero-meta reveal">
+        <p><b>Bron va boshqaruv</b>Salon, stomatologiya, Lor va spa — bitta tizimda.</p>
+        <p><b>O'zbekistonda yaratilgan</b>O'zbek tilida, mahalliy xarita va to'lovlar bilan.</p>
+        <p class="hm-live"><span class="dot"></span>Hozir onlayn bron qabul qilinmoqda</p>
+      </div>
       <div class="hero-copy">
-        <p class="eyebrow reveal"><span class="dot"></span> O'zbekistonda xizmat sohasi uchun yagona platforma</p>
-        <h1 class="split">
-          Biznesingizni <span class="grad">Chronix</span> bilan<br />yangi bosqichga ko'taring
-        </h1>
-        <p class="lead reveal">
-          Salon, stomatologiya, Lor klinikasi va Wellness &amp; Spa — onlayn bron, kalendar, kassa, ombor
-          va hisobotlar bitta joyda. Mijozlaringiz esa navbatni telefondan bir necha soniyada band qiladi.
-        </p>
-        <div class="stores reveal">
-          <a class="store" data-link="play" href="#" aria-label="Google Play'dan yuklab olish">
-            <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">
-              <path fill="#00d7fe" d="M3.6 1.8L13.4 12 3.6 22.2c-.4-.2-.6-.6-.6-1.1V2.9c0-.5.2-.9.6-1.1z"/>
-              <path fill="#ffce00" d="M17 8.4L13.4 12l3.6 3.6 4-2.3c1.1-.6 1.1-2.1 0-2.7l-4-2.2z"/>
-              <path fill="#ff3a44" d="M17 15.6L13.4 12 3.6 22.2c.4.2.9.2 1.4-.1L17 15.6z"/>
-              <path fill="#00f076" d="M17 8.4L5 1.9c-.5-.3-1-.3-1.4-.1L13.4 12 17 8.4z"/>
-            </svg>
-            <span><small>Yuklab oling</small>Google Play</span>
-          </a>
-          <a class="store" data-link="appstore" href="#" aria-label="App Store'dan yuklab olish">
-            <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path fill="currentColor" d="M16.4 12.6c0-2.6 2.1-3.8 2.2-3.9-1.2-1.8-3.1-2-3.7-2-1.6-.2-3.1.9-3.9.9-.8 0-2-.9-3.4-.9-1.7 0-3.3 1-4.2 2.6-1.8 3.1-.5 7.7 1.3 10.2.9 1.2 1.9 2.6 3.2 2.6 1.3-.1 1.8-.8 3.3-.8 1.6 0 2 .8 3.4.8 1.4 0 2.3-1.3 3.1-2.5 1-1.4 1.4-2.8 1.4-2.9 0 0-2.7-1-2.7-4.1zM13.9 4.9c.7-.9 1.2-2 1-3.2-1 0-2.3.7-3 1.6-.7.8-1.2 2-1.1 3.1 1.2.1 2.3-.6 3.1-1.5z"/></svg>
-            <span><small>Yuklab oling</small>App Store</span>
-          </a>
+        <h1 class="split">Biznesingizni <em>Chronix</em> bilan yangi bosqichga ko'taring</h1>
+        <div class="hero-foot">
+          <p class="lead reveal">Onlayn bron, kalendar, kassa, ombor va hisobotlar — bitta joyda. Mijozlaringiz navbatni telefondan bir necha soniyada band qiladi.</p>
+          <div class="stores reveal">
+            <a class="store" data-link="play" href="#" aria-label="Google Play'dan yuklab olish">
+              <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M3.6 1.8L13.4 12 3.6 22.2c-.4-.2-.6-.6-.6-1.1V2.9c0-.5.2-.9.6-1.1zM17 8.4L13.4 12l3.6 3.6 4-2.3c1.1-.6 1.1-2.1 0-2.7l-4-2.2zM17 15.6L13.4 12 3.6 22.2c.4.2.9.2 1.4-.1L17 15.6zM17 8.4L5 1.9c-.5-.3-1-.3-1.4-.1L13.4 12 17 8.4z"/></svg>
+              <span><small>Yuklab oling</small>Google Play</span>
+            </a>
+            <a class="store" data-link="appstore" href="#" aria-label="App Store'dan yuklab olish">
+              <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M16.4 12.6c0-2.6 2.1-3.8 2.2-3.9-1.2-1.8-3.1-2-3.7-2-1.6-.2-3.1.9-3.9.9-.8 0-2-.9-3.4-.9-1.7 0-3.3 1-4.2 2.6-1.8 3.1-.5 7.7 1.3 10.2.9 1.2 1.9 2.6 3.2 2.6 1.3-.1 1.8-.8 3.3-.8 1.6 0 2 .8 3.4.8 1.4 0 2.3-1.3 3.1-2.5 1-1.4 1.4-2.8 1.4-2.9 0 0-2.7-1-2.7-4.1zM13.9 4.9c.7-.9 1.2-2 1-3.2-1 0-2.3.7-3 1.6-.7.8-1.2 2-1.1 3.1 1.2.1 2.3-.6 3.1-1.5z"/></svg>
+              <span><small>Yuklab oling</small>App Store</span>
+            </a>
+          </div>
         </div>
-        <ul class="hero-stats reveal">
-          <li><b data-count="4">0</b><span>yo'nalish</span></li>
-          <li><b data-count="24" data-suffix="/7">0</b><span>onlayn bron</span></li>
-          <li><b data-count="30" data-suffix=" daq">0</b><span>oldin eslatma</span></li>
-        </ul>
       </div>
+      <ul class="hero-stats reveal">
+        <li><b data-count="4">0</b><span>yo'nalish</span></li>
+        <li><b data-count="24" data-suffix="/7">0</b><span>onlayn bron</span></li>
+        <li><b data-count="30" data-suffix=" daq">0</b><span>oldin eslatma</span></li>
+      </ul>
       <div class="hero-float" aria-hidden="true">
-        <div class="float-card fc-1"><span class="ic ic-ok"></span><div><b>Bron tasdiqlandi</b><small>Bugun, 15:30 · Soch olish</small></div></div>
-        <div class="float-card fc-2"><span class="ic ic-bell"></span><div><b>Eslatma</b><small>Qabulingizga 30 daqiqa qoldi</small></div></div>
-        <div class="float-card fc-3"><span class="ic ic-star"></span><div><b>★ 4.9</b><small>Mijozlar bahosi</small></div></div>
+        <div class="float-card fc-1"><div><span class="ic">✓</span><p><b>Bron tasdiqlandi</b><small>Bugun, 15:30 · Soch olish</small></p></div></div>
+        <div class="float-card fc-2"><div><span class="ic">◔</span><p><b>Eslatma</b><small>Qabulingizga 30 daqiqa qoldi</small></p></div></div>
+        <div class="float-card fc-3"><div><span class="ic">★</span><p><b>4.9</b><small>Mijozlar bahosi</small></p></div></div>
       </div>
-      <a href="#yonalishlar" class="scroll-hint" aria-label="Pastga"><span></span></a>
+      <a href="#manifest" class="scroll-hint"><span>Pastga</span><i></i></a>
     </section>
 
-    <!-- ═══════════ MARQUEE ═══════════ -->
-    <div class="marquee" aria-hidden="true">
-      <div class="marquee-track">
-        <span>Onlayn bron</span><i></i><span>Kalendar</span><i></i><span>Kassa</span><i></i><span>Ombor</span><i></i>
-        <span>Oylik hisob</span><i></i><span>Hisobotlar</span><i></i><span>SMS eslatma</span><i></i><span>Xarita</span><i></i>
-        <span>Baholash</span><i></i><span>Onlayn bron</span><i></i><span>Kalendar</span><i></i><span>Kassa</span><i></i>
-        <span>Ombor</span><i></i><span>Oylik hisob</span><i></i><span>Hisobotlar</span><i></i><span>SMS eslatma</span><i></i>
-        <span>Xarita</span><i></i><span>Baholash</span><i></i>
+    <!-- ═══════════ MANIFEST: tarqalgan so'zlar scroll bilan yig'iladi ═══════════ -->
+    <section class="manifest" id="manifest">
+      <div class="manifest-pin">
+        <p class="label">( Chronix haqida )</p>
+        <p class="manifest-text" id="manifestText">Chronix — salonlar, klinikalar va spa markazlari uchun vaqtni boshqaradigan platforma. Mijoz navbatda kutmaydi, usta va shifokor kunini aniq biladi, tadbirkor esa qog'oz daftar o'rniga biznesini o'stiradi.</p>
       </div>
-    </div>
+    </section>
 
     <!-- ═══════════ 4 YO'NALISH (3D) ═══════════ -->
-    <div id="yonalishlar" class="anchor"></div>
-    <section class="vertical" id="salon" data-scene="salon" style="--accent:#ff7ac6">
+    <section class="vertical" id="salon" data-scene="salon">
       <div class="v-copy">
         <span class="v-num">01</span>
         <p class="eyebrow">Sartaroshxona va go'zallik salonlari</p>
-        <h2 class="split">Har bir usta jadvali&nbsp;—<br /><span class="grad">bir qarashda</span></h2>
+        <h2 class="split">Har bir usta jadvali&nbsp;— <em>bir qarashda</em></h2>
         <p>Soch turmaklari, tirnoq dizayni va estetik parvarish. Mijoz ustani va bo'sh vaqtni o'zi tanlaydi,
           siz esa kalendarda hamma bronlarni ko'rasiz — bir-biriga to'qnashmaydi.</p>
         <ul class="ticks">
@@ -114,20 +109,20 @@
           <li>Xizmat davomiyligi har bir ustaga alohida</li>
           <li>Kassa, ombor va ustalar oyligi avtomatik</li>
         </ul>
-        <div class="mini-ui glass">
+        <div class="mini-ui">
           <div class="mu-head"><b>Bugun</b><span>6 ta bron</span></div>
-          <div class="mu-row"><i style="--c:#ff7ac6"></i><span>10:00 · Ayollar soch turmagi</span><em>Nilufar</em></div>
-          <div class="mu-row"><i style="--c:#a78bfa"></i><span>11:30 · Manikyur</span><em>Madina</em></div>
-          <div class="mu-row"><i style="--c:#38bdf8"></i><span>13:00 · Soch va soqol</span><em>Jasur</em></div>
+          <div class="mu-row"><i></i><span>10:00 · Ayollar soch turmagi</span><em>Nilufar</em></div>
+          <div class="mu-row"><i></i><span>11:30 · Manikyur</span><em>Madina</em></div>
+          <div class="mu-row"><i></i><span>13:00 · Soch va soqol</span><em>Jasur</em></div>
         </div>
       </div>
     </section>
 
-    <section class="vertical right" id="dental" data-scene="dental" style="--accent:#5eead4">
+    <section class="vertical right" id="dental" data-scene="dental">
       <div class="v-copy">
         <span class="v-num">02</span>
         <p class="eyebrow">Stomatologiya klinikalari</p>
-        <h2 class="split">Tabassum uchun&nbsp;—<br /><span class="grad">tartibli qabul</span></h2>
+        <h2 class="split">Tabassum uchun&nbsp;— <em>tartibli qabul</em></h2>
         <p>Terapevtik davolash, ortodontiya, protezlash va jarrohlik — xizmatlar bo'limlarga ajratilgan.
           Bemor mutaxassislikni, shifokorni va vaqtni tanlab, qabulga o'zi yoziladi.</p>
         <ul class="ticks">
@@ -135,19 +130,19 @@
           <li>Stomatolog-terapevt, ortodont, implantolog…</li>
           <li>Tasdiqlanmagan bron vaqtida avtomatik bekor bo'ladi</li>
         </ul>
-        <div class="mini-ui glass">
+        <div class="mini-ui">
           <div class="mu-head"><b>Mutaxassislik</b><span>Ortodont · 2</span></div>
           <div class="chips"><span class="on">Terapevtik</span><span>Gigiyena</span><span>Ortodontiya</span><span>Implant</span></div>
-          <div class="mu-row"><i style="--c:#5eead4"></i><span>Breketni tuzatish · 30 daq</span><em>14:00</em></div>
+          <div class="mu-row"><i></i><span>Breketni tuzatish · 30 daq</span><em>14:00</em></div>
         </div>
       </div>
     </section>
 
-    <section class="vertical" id="ent" data-scene="ent" style="--accent:#60a5fa">
+    <section class="vertical" id="ent" data-scene="ent">
       <div class="v-copy">
         <span class="v-num">03</span>
         <p class="eyebrow">Lor (otorinolaringologiya)</p>
-        <h2 class="split">Quloq, burun, tomoq&nbsp;—<br /><span class="grad">aniq yo'naltirish</span></h2>
+        <h2 class="split">Quloq, burun, tomoq&nbsp;— <em>aniq yo'naltirish</em></h2>
         <p>Endoskopik ko'rik, audiometriya, burun va tomoq muolajalari. Bemor kerakli Lor-shifokorni tanlaydi,
           registrator esa barcha qabullarni bitta ekranda boshqaradi.</p>
         <ul class="ticks">
@@ -155,19 +150,19 @@
           <li>Lor-shifokor, bolalar Lor-shifokori, Lor-jarroh, audiolog</li>
           <li>Qabulga 30 daqiqa qolganda eslatma</li>
         </ul>
-        <div class="mini-ui glass">
+        <div class="mini-ui">
           <div class="mu-head"><b>Qabullar</b><span>Lor-shifokor</span></div>
-          <div class="wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-          <div class="mu-row"><i style="--c:#60a5fa"></i><span>Audiometriya · 30 daq</span><em>09:30</em></div>
+          <div class="wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          <div class="mu-row"><i></i><span>Audiometriya · 30 daq</span><em>09:30</em></div>
         </div>
       </div>
     </section>
 
-    <section class="vertical right" id="spa" data-scene="spa" style="--accent:#86efac">
+    <section class="vertical right" id="spa" data-scene="spa">
       <div class="v-copy">
         <span class="v-num">04</span>
         <p class="eyebrow">Wellness &amp; Spa markazlari</p>
-        <h2 class="split">Hordiq ham&nbsp;—<br /><span class="grad">o'z vaqtida</span></h2>
+        <h2 class="split">Hordiq ham&nbsp;— <em>o'z vaqtida</em></h2>
         <p>Massaj turlari, sauna va hammom, tana parvarishi hamda kompleks paketlar. Mijoz dam olishni
           rejalashtiradi, mutaxassislaringiz esa bandligini aniq biladi.</p>
         <ul class="ticks">
@@ -175,106 +170,111 @@
           <li>SPA-terapevt, massajchi, aromaterapevt</li>
           <li>Mijoz baholari va sharhlari</li>
         </ul>
-        <div class="mini-ui glass">
+        <div class="mini-ui">
           <div class="mu-head"><b>Paket</b><span>180 daq</span></div>
-          <div class="mu-row"><i style="--c:#86efac"></i><span>Massaj + hammom + skrab</span><em>750 000</em></div>
-          <div class="mu-row"><i style="--c:#fcd34d"></i><span>Detoks kuni</span><em>650 000</em></div>
+          <div class="mu-row"><i></i><span>Massaj + hammom + skrab</span><em>750 000</em></div>
+          <div class="mu-row"><i></i><span>Detoks kuni</span><em>650 000</em></div>
         </div>
       </div>
     </section>
 
-    <!-- ═══════════ IMKONIYATLAR (BENTO) ═══════════ -->
-    <section class="section" id="imkoniyatlar" data-scene="none">
-      <div class="section-head">
-        <p class="eyebrow">Imkoniyatlar</p>
-        <h2 class="split">Biznes uchun kerakli <span class="grad">hamma narsa</span></h2>
-        <p>Qog'oz daftar, Excel va telefon qo'ng'iroqlari o'rniga — bitta tizim.</p>
-      </div>
-      <div class="bento">
-        <article class="card glass big tilt">
-          <div class="card-ic">📅</div>
-          <h3>Aqlli kalendar</h3>
-          <p>Barcha xodimlar bronlari bitta ekranda. Sudrab ko'chirish, to'qnashuvdan himoya, tanaffuslar va ish soatlari hisobga olinadi.</p>
-          <div class="cal" aria-hidden="true">
-            <i style="--r:1;--s:1;--h:2;--c:#1565f5"></i><i style="--r:2;--s:3;--h:1;--c:#ff7ac6"></i>
-            <i style="--r:3;--s:2;--h:2;--c:#5eead4"></i><i style="--r:1;--s:5;--h:1;--c:#a78bfa"></i>
-            <i style="--r:4;--s:4;--h:2;--c:#60a5fa"></i><i style="--r:2;--s:6;--h:1;--c:#86efac"></i>
-          </div>
-        </article>
-        <article class="card glass tilt"><div class="card-ic">📱</div><h3>Mobil ilova</h3><p>Mijoz xaritadan yaqin muassasani topadi, xizmat va vaqtni tanlab bron qiladi.</p></article>
-        <article class="card glass tilt"><div class="card-ic">🔔</div><h3>Eslatmalar</h3><p>Qabulga 30 daqiqa qolganda — "Boraman / Bormayman". Kelmay qolishlar kamayadi.</p></article>
-        <article class="card glass tilt"><div class="card-ic">💳</div><h3>Kassa va xarajatlar</h3><p>Naqd, karta va o'tkazmalar, kunlik kassa yopish va xarajat toifalari.</p></article>
-        <article class="card glass tilt"><div class="card-ic">📦</div><h3>Ombor</h3><p>Mahsulot qoldig'i, kam qolganda ogohlantirish, kirim va chiqim tarixi.</p></article>
-        <article class="card glass wide tilt">
-          <div class="card-ic">📊</div>
-          <h3>Hisobotlar va oylik</h3>
-          <p>Daromad, xizmatlar, xodimlar samaradorligi — Excel'ga bir bosishda. Ustalar oyligi foiz yoki stavka bo'yicha avtomatik.</p>
-          <div class="bars" aria-hidden="true"><i style="--h:40%"></i><i style="--h:62%"></i><i style="--h:48%"></i><i style="--h:80%"></i><i style="--h:66%"></i><i style="--h:92%"></i><i style="--h:74%"></i></div>
-        </article>
-        <article class="card glass tilt"><div class="card-ic">🛡️</div><h3>Xavfsizlik</h3><p>Har bir xodimga o'z huquqi. Ma'lumotlar baza darajasida himoyalangan.</p></article>
-      </div>
+    <!-- ═══════════ ULKAN YUGURIK QATOR ═══════════ -->
+    <section class="mega" aria-hidden="true">
+      <div class="mega-row" data-dir="-1"><span>Onlayn bron · Kalendar · Kassa · Ombor · Hisobotlar ·&nbsp;</span><span>Onlayn bron · Kalendar · Kassa · Ombor · Hisobotlar ·&nbsp;</span></div>
+      <div class="mega-row outline" data-dir="1"><span>Salon · Stomatologiya · Lor · Wellness &amp; Spa ·&nbsp;</span><span>Salon · Stomatologiya · Lor · Wellness &amp; Spa ·&nbsp;</span></div>
     </section>
 
-    <!-- ═══════════ QANDAY ISHLAYDI ═══════════ -->
-    <section class="section steps-wrap" data-scene="none">
-      <div class="section-head">
-        <p class="eyebrow">Qanday boshlanadi</p>
-        <h2 class="split">Uch qadamda <span class="grad">ishga tushiring</span></h2>
+    <!-- ═══════════ IMKONIYATLAR: ustma-ust chiqadigan panellar ═══════════ -->
+    <section class="stack" id="imkoniyatlar">
+      <article class="panel p-light">
+        <div class="panel-top"><p class="label">( Imkoniyatlar )</p><span class="panel-num">01</span></div>
+        <h2 class="panel-title">Onlayn bron<br />va eslatmalar</h2>
+        <div class="panel-grid">
+          <p>Mijoz xaritadan yaqin muassasani topadi, xizmat, mutaxassis va vaqtni tanlab bron qiladi.</p>
+          <ul><li>Mobil ilova — iOS va Android</li><li>30 daqiqa oldin "Boraman / Bormayman"</li><li>Tasdiqlanmagan bron avtomatik bekor</li></ul>
+          <div class="pg-cal" aria-hidden="true"><i style="--r:1;--s:1;--h:2"></i><i style="--r:2;--s:3;--h:1"></i><i style="--r:3;--s:2;--h:2"></i><i style="--r:1;--s:4;--h:1"></i><i style="--r:4;--s:3;--h:2"></i><i style="--r:2;--s:5;--h:1"></i></div>
+        </div>
+      </article>
+      <article class="panel p-mid">
+        <div class="panel-top"><p class="label">( Imkoniyatlar )</p><span class="panel-num">02</span></div>
+        <h2 class="panel-title">Kalendar, kassa<br />va ombor</h2>
+        <div class="panel-grid">
+          <p>Barcha xodimlar bronlari bitta ekranda — to'qnashuvdan himoya, tanaffuslar va ish soatlari hisobga olinadi.</p>
+          <ul><li>Naqd, karta va o'tkazmalar, kassa yopish</li><li>Mahsulot qoldig'i va ogohlantirish</li><li>Har bir xodimga o'z huquqi</li></ul>
+          <div class="pg-ring" aria-hidden="true"><svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="50" /><circle class="fill" cx="60" cy="60" r="50" /></svg><b>87%</b><small>bandlik</small></div>
+        </div>
+      </article>
+      <article class="panel p-dark">
+        <div class="panel-top"><p class="label">( Imkoniyatlar )</p><span class="panel-num">03</span></div>
+        <h2 class="panel-title">Hisobotlar<br />va oylik</h2>
+        <div class="panel-grid">
+          <p>Daromad, xizmatlar va xodimlar samaradorligi — Excel'ga bir bosishda. Oylik foiz yoki stavka bo'yicha avtomatik.</p>
+          <ul><li>Kunlik, haftalik, oylik hisobot</li><li>Oldingi davr bilan solishtirish</li><li>Ma'lumotlar baza darajasida himoyalangan</li></ul>
+          <div class="pg-bars" aria-hidden="true"><i style="--h:38%"></i><i style="--h:56%"></i><i style="--h:47%"></i><i style="--h:72%"></i><i style="--h:64%"></i><i style="--h:88%"></i><i style="--h:79%"></i></div>
+        </div>
+      </article>
+    </section>
+
+    <!-- ═══════════ QADAMLAR: mahkamlangan, scroll bilan almashadi ═══════════ -->
+    <section class="steps" id="qadamlar">
+      <div class="steps-pin">
+        <div class="steps-head"><p class="label">( Qanday boshlanadi )</p><p class="steps-count"><b id="stepNow">01</b> / 03</p></div>
+        <div class="steps-stage">
+          <div class="step on"><span class="step-big">01</span><h3>Ariza qoldiring.</h3><p>Biz muassasangizni tizimga qo'shamiz va direktor loginini beramiz.</p></div>
+          <div class="step"><span class="step-big">02</span><h3>Sozlang.</h3><p>Tayyor tavsiya xizmatlarni bir bosishda qo'shing, xodimlar va ish vaqtini belgilang.</p></div>
+          <div class="step"><span class="step-big">03</span><h3>Bron qabul qiling.</h3><p>Muassasangiz ilovada va xaritada paydo bo'ladi — mijozlar yozila boshlaydi.</p></div>
+        </div>
+        <ol class="steps-list"><li class="on">Ariza</li><li>Sozlash</li><li>Bron</li></ol>
+        <div class="steps-line"><i id="stepLine"></i></div>
       </div>
-      <ol class="steps">
-        <li class="glass"><b>1</b><h3>Ariza qoldiring</h3><p>Biz muassasangizni tizimga qo'shamiz va direktor loginini beramiz.</p></li>
-        <li class="glass"><b>2</b><h3>Xizmatlarni qo'shing</h3><p>Tayyor tavsiya xizmatlarni bir bosishda qo'shing, xodimlar va ish vaqtini belgilang.</p></li>
-        <li class="glass"><b>3</b><h3>Bron qabul qiling</h3><p>Muassasangiz ilovada va xaritada paydo bo'ladi — mijozlar yozila boshlaydi.</p></li>
-      </ol>
     </section>
 
     <!-- ═══════════ NARXLAR ═══════════ -->
-    <section class="section" id="narxlar" data-scene="none">
+    <section class="section" id="narxlar">
       <div class="section-head">
-        <p class="eyebrow">Narxlar</p>
-        <h2 class="split">Biznesingiz hajmiga <span class="grad">mos tarif</span></h2>
+        <p class="label">( Narxlar )</p>
+        <h2 class="split">Biznesingiz hajmiga <em>mos tarif</em></h2>
         <p>Mijozlar uchun ilova bepul. Muassasa oylik obuna to'laydi.</p>
       </div>
       <div class="prices" id="prices"></div>
     </section>
 
-    <!-- ═══════════ BIZ HAQIMIZDA ═══════════ -->
-    <section class="section about" id="biz-haqimizda" data-scene="none">
+    <!-- ═══════════ BIZ HAQIMIZDA + ALOQA ═══════════ -->
+    <section class="section about" id="biz-haqimizda">
       <div class="about-grid">
         <div>
-          <p class="eyebrow">Biz haqimizda</p>
-          <h2 class="split">Vaqtingiz&nbsp;— <span class="grad">bizning ustuvorligimiz</span></h2>
+          <p class="label">( Biz haqimizda )</p>
+          <h2 class="split">Vaqtingiz&nbsp;— <em>bizning ustuvorligimiz</em></h2>
           <p>Chronix — O'zbekistonda yaratilgan bulutli platforma. Maqsadimiz oddiy: mijoz navbatda kutmasin,
             tadbirkor esa qog'oz daftar va cheksiz qo'ng'iroqlar o'rniga biznesini rivojlantirish bilan band bo'lsin.</p>
-          <p>Platforma o'zbek tilida, mahalliy to'lov usullari va O'zbekiston xaritasi bilan ishlaydi.
-            Har bir yo'nalish — salon, stomatologiya, Lor va spa — o'z atamalari va tayyor xizmatlari bilan keladi.</p>
+          <p>Har bir yo'nalish — salon, stomatologiya, Lor va spa — o'z atamalari va tayyor xizmatlari bilan keladi.</p>
         </div>
-        <div class="contact glass" id="aloqa">
+        <div class="contact" id="aloqa">
+          <p class="label">( Aloqa )</p>
           <h3>Biznesingizni ulang</h3>
           <p>Qo'ng'iroq qiling yoki Telegram'da yozing — muassasangizni bir kunda tizimga qo'shamiz.</p>
-          <a class="btn btn-primary" data-link="phone" href="#">📞 <span data-text="phone"></span></a>
-          <a class="btn btn-ghost" data-link="telegram" href="#" target="_blank" rel="noopener">✈️ Telegram'da yozish</a>
+          <a class="btn btn-light" data-link="phone" href="#"><span data-text="phone"></span><i class="arrow" aria-hidden="true">→</i></a>
+          <a class="btn btn-line" data-link="telegram" href="#"><span>Telegram'da yozish</span><i class="arrow" aria-hidden="true">↗</i></a>
         </div>
-      </div>
-    </section>
-
-    <!-- ═══════════ CTA ═══════════ -->
-    <section class="cta" data-scene="cta">
-      <h2 class="split">Bugun boshlang&nbsp;— <span class="grad">ertaga vaqtni yutasiz</span></h2>
-      <div class="stores center">
-        <a class="store" data-link="play" href="#"><span><small>Yuklab oling</small>Google Play</span></a>
-        <a class="store" data-link="appstore" href="#"><span><small>Yuklab oling</small>App Store</span></a>
-        <a class="store ghost" data-link="panel" href="#"><span><small>Muassasalar uchun</small>Panelga kirish</span></a>
       </div>
     </section>
   </main>
 
+  <!-- ═══════════ FOOTER: ulkan yozuv ═══════════ -->
   <footer class="footer">
-    <div class="footer-in">
-      <a href="#top" class="brand"><img src="/logo-ring.png" alt="" width="28" height="28" /><span>Chronix</span></a>
-      <p>© <span id="year"></span> Chronix. Vaqtingiz — bizning ustuvorligimiz.</p>
-      <nav><a href="#imkoniyatlar">Imkoniyatlar</a><a href="#narxlar">Narxlar</a><a href="#aloqa">Aloqa</a></nav>
+    <div class="footer-cta">
+      <h2 class="split">Bugun boshlang&nbsp;— <em>ertaga vaqtni yutasiz</em></h2>
+      <div class="stores">
+        <a class="store" data-link="play" href="#"><span><small>Yuklab oling</small>Google Play</span></a>
+        <a class="store" data-link="appstore" href="#"><span><small>Yuklab oling</small>App Store</span></a>
+        <a class="store line" data-link="panel" href="#"><span><small>Muassasalar uchun</small>Panelga kirish</span></a>
+      </div>
     </div>
+    <div class="footer-row">
+      <p>© <span id="year"></span> Chronix</p>
+      <nav><a href="#imkoniyatlar">Imkoniyatlar</a><a href="#narxlar">Narxlar</a><a href="#aloqa">Aloqa</a><a href="#top">Yuqoriga ↑</a></nav>
+    </div>
+    <div class="wordmark" aria-hidden="true"><span>C</span><span>h</span><span>r</span><span>o</span><span>n</span><span>i</span><span>x</span></div>
   </footer>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>

@@ -51,8 +51,8 @@ export function createScene(canvas, { sections, reducedMotion = false, onFrame }
   const bgCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
   const bgU = {
     uTime: { value: 0 }, uAspect: { value: 1 }, uMouse: { value: new THREE.Vector2() },
-    uBase: { value: new THREE.Color("#030a2b") }, uA: { value: new THREE.Color("#1565f5") },
-    uB: { value: new THREE.Color("#3b2a8f") }, uPulse: { value: 0 },
+    uBase: { value: new THREE.Color("#0a0a0b") }, uA: { value: new THREE.Color("#3a3a42") },
+    uB: { value: new THREE.Color("#1a2a55") }, uPulse: { value: 0 },
   };
   bgScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.ShaderMaterial({
     uniforms: bgU, depthTest: false, depthWrite: false,
@@ -91,13 +91,13 @@ export function createScene(canvas, { sections, reducedMotion = false, onFrame }
   const pmrem = new THREE.PMREMGenerator(renderer);
   scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
 
-  scene.add(new THREE.AmbientLight(0x6f8cff, 0.35));
+  scene.add(new THREE.AmbientLight(0xffffff, 0.3));
   const key = new THREE.DirectionalLight(0xffffff, 2.2);
   key.position.set(4, 6, 6);
   scene.add(key);
-  const rimA = new THREE.PointLight(0x38bdf8, 45, 30);
+  const rimA = new THREE.PointLight(0x9fbfff, 40, 30);
   rimA.position.set(-5, 2, 3);
-  const rimB = new THREE.PointLight(0x7c3aed, 30, 30);
+  const rimB = new THREE.PointLight(0xffffff, 18, 30);
   rimB.position.set(5, -3, 2);
   scene.add(rimA, rimB);
 
@@ -124,7 +124,7 @@ export function createScene(canvas, { sections, reducedMotion = false, onFrame }
   const COUNT = lowPower ? 700 : 1800;
   const pos = new Float32Array(COUNT * 3);
   const col = new Float32Array(COUNT * 3);
-  const pal = ["#5b9bff", "#38bdf8", "#a5f3fc", "#ffffff"].map((c) => new THREE.Color(c));
+  const pal = ["#ffffff", "#c9c9cf", "#8e8e96", "#7fb0ff"].map((c) => new THREE.Color(c));
   for (let i = 0; i < COUNT; i++) {
     const r = 6 + Math.random() * 20;
     const th = Math.random() * TAU;
@@ -142,20 +142,21 @@ export function createScene(canvas, { sections, reducedMotion = false, onFrame }
   scene.add(stars);
 
   // ── Materiallar ──
+  // Monoxrom palitra: xrom, oq keramika, grafit; yagona urg'u — Chronix ko'ki (faqat nurli detallar)
   const M = {
-    brand: new THREE.MeshPhysicalMaterial({ color: "#1f6bff", metalness: 0.2, roughness: 0.16, clearcoat: 1, clearcoatRoughness: 0.06, emissive: "#0a2a99", emissiveIntensity: 0.4, iridescence: 0.5 }),
-    glow: new THREE.MeshStandardMaterial({ color: "#ffffff", emissive: "#bff3ff", emissiveIntensity: 2.2 }),
-    dark: new THREE.MeshPhysicalMaterial({ color: "#061344", roughness: 0.3, metalness: 0.4, clearcoat: 1 }),
-    chrome: new THREE.MeshPhysicalMaterial({ color: "#e6ecff", metalness: 1, roughness: 0.1 }),
-    pink: new THREE.MeshPhysicalMaterial({ color: "#ff5fb4", roughness: 0.2, clearcoat: 1, emissive: "#6b0f45", emissiveIntensity: 0.5 }),
-    violet: new THREE.MeshPhysicalMaterial({ color: "#a78bfa", roughness: 0.25, clearcoat: 1, emissive: "#3b1d8a", emissiveIntensity: 0.3 }),
-    enamel: new THREE.MeshPhysicalMaterial({ color: "#c9d7ec", envMapIntensity: 0.55, roughness: 0.18, clearcoat: 1, clearcoatRoughness: 0.04, sheen: 0.6, sheenColor: "#bff3ff" }),
-    mint: new THREE.MeshPhysicalMaterial({ color: "#5eead4", roughness: 0.12, clearcoat: 1, emissive: "#0f766e", emissiveIntensity: 0.6 }),
-    blue: new THREE.MeshPhysicalMaterial({ color: "#60a5fa", roughness: 0.18, clearcoat: 1, emissive: "#1d4ed8", emissiveIntensity: 0.4 }),
-    waveGlow: new THREE.MeshStandardMaterial({ color: "#7dd3fc", emissive: "#7dd3fc", emissiveIntensity: 2.4 }),
-    stone: new THREE.MeshPhysicalMaterial({ color: "#2b3350", roughness: 0.5, clearcoat: 0.6, clearcoatRoughness: 0.3 }),
-    stoneLight: new THREE.MeshPhysicalMaterial({ color: "#9eaac2", envMapIntensity: 0.6, roughness: 0.55, clearcoat: 0.3 }),
-    leaf: new THREE.MeshPhysicalMaterial({ color: "#4ade80", roughness: 0.3, clearcoat: 1, side: THREE.DoubleSide, emissive: "#14532d", emissiveIntensity: 0.5 }),
+    brand: new THREE.MeshPhysicalMaterial({ color: "#2f6bff", metalness: 0.25, roughness: 0.14, clearcoat: 1, clearcoatRoughness: 0.05, emissive: "#0b2a8a", emissiveIntensity: 0.35 }),
+    glow: new THREE.MeshStandardMaterial({ color: "#ffffff", emissive: "#ffffff", emissiveIntensity: 1.8 }),
+    dark: new THREE.MeshPhysicalMaterial({ color: "#121214", roughness: 0.3, metalness: 0.5, clearcoat: 1 }),
+    chrome: new THREE.MeshPhysicalMaterial({ color: "#dcdce0", metalness: 1, roughness: 0.12 }),
+    pink: new THREE.MeshPhysicalMaterial({ color: "#e4e4e7", roughness: 0.22, clearcoat: 1, envMapIntensity: 0.8 }),
+    violet: new THREE.MeshPhysicalMaterial({ color: "#2a2a2f", roughness: 0.32, metalness: 0.3, clearcoat: 1 }),
+    enamel: new THREE.MeshPhysicalMaterial({ color: "#d6d6d9", envMapIntensity: 0.55, roughness: 0.2, clearcoat: 1, clearcoatRoughness: 0.05 }),
+    mint: new THREE.MeshPhysicalMaterial({ color: "#3d84ff", roughness: 0.12, clearcoat: 1, emissive: "#1d4ed8", emissiveIntensity: 0.5 }),
+    blue: new THREE.MeshPhysicalMaterial({ color: "#d9d9dc", roughness: 0.2, clearcoat: 1, envMapIntensity: 0.75 }),
+    waveGlow: new THREE.MeshStandardMaterial({ color: "#7fb0ff", emissive: "#5b9bff", emissiveIntensity: 2.2 }),
+    stone: new THREE.MeshPhysicalMaterial({ color: "#1d1d21", roughness: 0.45, clearcoat: 0.7, clearcoatRoughness: 0.25 }),
+    stoneLight: new THREE.MeshPhysicalMaterial({ color: "#8c8c92", envMapIntensity: 0.6, roughness: 0.5, clearcoat: 0.4 }),
+    leaf: new THREE.MeshPhysicalMaterial({ color: "#3d84ff", roughness: 0.25, clearcoat: 1, side: THREE.DoubleSide, emissive: "#1d4ed8", emissiveIntensity: 0.35 }),
   };
   const additive = (color, opacity = 0.7) => new THREE.MeshBasicMaterial({ color, transparent: true, opacity, depthWrite: false, blending: THREE.AdditiveBlending });
 
@@ -216,10 +217,10 @@ export function createScene(canvas, { sections, reducedMotion = false, onFrame }
     }
     const dg = new THREE.BufferGeometry();
     dg.setAttribute("position", new THREE.BufferAttribute(dust, 3));
-    const dustPts = part(new THREE.Points(dg, new THREE.PointsMaterial({ map: dot, size: 0.06, color: "#9fd8ff", transparent: true, opacity: 0.9, depthWrite: false, blending: THREE.AdditiveBlending })), new THREE.Vector3(1, 0.4, 0));
+    const dustPts = part(new THREE.Points(dg, new THREE.PointsMaterial({ map: dot, size: 0.06, color: "#e6e6ea", transparent: true, opacity: 0.8, depthWrite: false, blending: THREE.AdditiveBlending })), new THREE.Vector3(1, 0.4, 0));
     dustPts.rotation.x = 0.42;
     const orbit = new THREE.Group();
-    [M.pink, M.mint, M.blue, M.leaf].forEach((m, i) => {
+    [M.pink, M.mint, M.violet, M.chrome].forEach((m, i) => {
       const s = new THREE.Mesh(new THREE.SphereGeometry(0.13, 32, 32), m);
       const a = (i / 4) * TAU;
       s.position.set(Math.cos(a) * 2.25, 0, Math.sin(a) * 2.25);
@@ -388,7 +389,7 @@ export function createScene(canvas, { sections, reducedMotion = false, onFrame }
     const waves = [];
     const waveG = new THREE.Group();
     for (let i = 0; i < 4; i++) {
-      const w = new THREE.Mesh(new THREE.TorusGeometry(1, 0.025, 12, 120, Math.PI * 0.7), additive("#7dd3fc", 0.6));
+      const w = new THREE.Mesh(new THREE.TorusGeometry(1, 0.025, 12, 120, Math.PI * 0.7), additive("#cfd8ff", 0.55));
       w.rotation.z = -Math.PI * 0.35;
       waveG.add(w);
       waves.push(w);
@@ -453,7 +454,7 @@ export function createScene(canvas, { sections, reducedMotion = false, onFrame }
     const ripples = [];
     const rg = new THREE.Group();
     for (let i = 0; i < 3; i++) {
-      const r = new THREE.Mesh(new THREE.TorusGeometry(1, 0.02, 8, 140), additive("#86efac", 0.7));
+      const r = new THREE.Mesh(new THREE.TorusGeometry(1, 0.02, 8, 140), additive("#d8d8de", 0.6));
       r.rotation.x = Math.PI / 2;
       r.position.y = -1.35;
       rg.add(r);
@@ -467,7 +468,7 @@ export function createScene(canvas, { sections, reducedMotion = false, onFrame }
     for (let i = 0; i < S; i++) seeds.push({ x: (Math.random() - 0.5) * 1.4, z: (Math.random() - 0.5) * 0.8, o: Math.random() });
     const sg = new THREE.BufferGeometry();
     sg.setAttribute("position", new THREE.BufferAttribute(steamPos, 3));
-    const steam = part(new THREE.Points(sg, new THREE.PointsMaterial({ map: dot, size: 0.28, color: "#e0fff0", transparent: true, opacity: 0.35, depthWrite: false, blending: THREE.AdditiveBlending })), new THREE.Vector3(0, 1, 0.3));
+    const steam = part(new THREE.Points(sg, new THREE.PointsMaterial({ map: dot, size: 0.28, color: "#ffffff", transparent: true, opacity: 0.3, depthWrite: false, blending: THREE.AdditiveBlending })), new THREE.Vector3(0, 1, 0.3));
     tick((t) => {
       stones.forEach((s, i) => { s.rotation.y = i * 0.7 + Math.sin(t * 0.4 + i) * 0.15; });
       leaves.rotation.y = Math.sin(t * 0.9) * 0.25;
@@ -511,7 +512,7 @@ export function createScene(canvas, { sections, reducedMotion = false, onFrame }
   // ── Bo'limlar → har bir obyekt uchun ko'rinish (scroll bilan) ──
   const accentTarget = new THREE.Color();
   const tmpC = new THREE.Color();
-  const baseAccent = new THREE.Color("#1565f5");
+  const baseAccent = new THREE.Color("#3a3a42");
   let lastScroll = window.scrollY;
   let vel = 0;
 
