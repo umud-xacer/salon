@@ -193,8 +193,10 @@ def business_detail(slug: str, db: Session = Depends(get_public_db)):
                         {"b": bid}).all()
 
     services = db.execute(text("""
-        SELECT s.id, s.name, s.description, s.duration_min, s.price,
-               sc.id AS category_id, coalesce(sc.name, 'Boshqa') AS category_name, coalesce(sc.sort_order, 32767) AS cat_order
+        SELECT s.id, s.name, s.name_ru, s.description, s.duration_min, s.price,
+               sc.id AS category_id, coalesce(sc.name, 'Boshqa') AS category_name,
+               CASE WHEN sc.id IS NULL THEN 'Прочее' ELSE sc.name_ru END AS category_name_ru,
+               coalesce(sc.sort_order, 32767) AS cat_order
           FROM services s LEFT JOIN service_categories sc ON sc.id = s.category_id
          WHERE s.business_id = :b AND s.is_active
          ORDER BY cat_order, category_name, s.name
@@ -202,8 +204,9 @@ def business_detail(slug: str, db: Session = Depends(get_public_db)):
     groups: dict[int | None, ServiceGroupOut] = {}
     for s in services:
         g = groups.setdefault(s["category_id"], ServiceGroupOut(category_id=s["category_id"],
-                                                                category_name=s["category_name"], services=[]))
-        g.services.append(ServiceOut(**{k: s[k] for k in ("id", "name", "description", "duration_min", "price")}))
+                                                                category_name=s["category_name"],
+                                                                category_name_ru=s["category_name_ru"], services=[]))
+        g.services.append(ServiceOut(**{k: s[k] for k in ("id", "name", "name_ru", "description", "duration_min", "price")}))
 
     staff = db.execute(text("""
         SELECT ps.member_id, ps.full_name, ps.title, ps.bio, ps.photo_url, ps.rating_avg::float AS rating_avg,

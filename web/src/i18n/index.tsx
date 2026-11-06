@@ -31,6 +31,9 @@ export function t(uz: string, vars?: Record<string, string | number>): string {
   return s;
 }
 
+/** Server ma'lumoti: ruscha tilda ruscha nom (bo'lsa), aks holda o'zbekcha */
+export const pick = (uz: string, ru?: string | null) => (current === "ru" && ru?.trim()) || uz;
+
 /** Qiymatlari o'zbekcha bo'lgan lug'at/massivni o'qilganda tarjima qiladi (STATUS_LABELS, WEEKDAYS...) */
 export function localized<T extends object>(src: T): T {
   return new Proxy(src, {

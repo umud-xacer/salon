@@ -7,7 +7,7 @@ import type { Membership, Service, ServiceCategory, ServicePresets } from "../..
 import { formatDuration, formatMoney } from "../../components/format";
 import { Modal } from "../../components/Modal";
 import { vocabFor } from "../vocab";
-import { t } from "../../i18n";
+import { getLang, pick, t } from "../../i18n";
 import { Badge, Button, Card, Empty, ErrorNote, inputClass, PageTitle, Spinner } from "../../components/ui";
 
 export function ServicesPage({ membership }: { membership: Membership }) {
@@ -81,7 +81,7 @@ export function ServicesPage({ membership }: { membership: Membership }) {
             <section key={cat?.id ?? "other"}>
               <div className="mb-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
                 <h2 className="min-w-0 flex-1 text-sm font-medium break-words">
-                  {cat?.name ?? t("Boshqa")} <span className="font-normal text-muted">· {g.items.length}</span>
+                  {cat ? pick(cat.name, cat.name_ru) : t("Boshqa")} <span className="font-normal text-muted">· {g.items.length}</span>
                 </h2>
                 {cat && (
                   <div className="flex items-center gap-0.5" role="group" aria-label={t("{name} bo'limi", { name: cat.name })}>
@@ -118,7 +118,10 @@ export function ServicesPage({ membership }: { membership: Membership }) {
                         onClick={() => setEditing({ service: s })}
                         className="flex w-full flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3 text-left text-sm hover:bg-page"
                       >
-                        <span className="min-w-0 basis-full font-medium break-words sm:basis-auto sm:flex-1">{s.name}</span>
+                        <span className="min-w-0 basis-full break-words sm:basis-auto sm:flex-1">
+                          <span className="font-medium">{pick(s.name, s.name_ru)}</span>
+                          {getLang() === "uz" && s.name_ru && <span className="block text-xs text-muted" lang="ru">{s.name_ru}</span>}
+                        </span>
                         {!s.is_active && <Badge tone="gray">{t("Yashirilgan")}</Badge>}
                         <span className="text-muted tabular-nums">{formatDuration(s.duration_min)}</span>
                         <span className="tabular-nums sm:w-28 sm:text-right">{formatMoney(s.price)}</span>
@@ -186,12 +189,13 @@ function CategoryDialog({ businessId, category, onClose }: {
   onClose: () => void;
 }) {
   const [name, setName] = useState(category?.name ?? "");
+  const [nameRu, setNameRu] = useState(category?.name_ru ?? "");
   const refresh = useRefreshCategories(businessId);
   const url = `/businesses/${businessId}/service-categories`;
   const save = useMutation({
     mutationFn: () => (category
-      ? api(`${url}/${category.id}`, json("PATCH", { name: name.trim() }))
-      : api(url, json("POST", { name: name.trim() }))),
+      ? api(`${url}/${category.id}`, json("PATCH", { name: name.trim(), name_ru: nameRu.trim() }))
+      : api(url, json("POST", { name: name.trim(), name_ru: nameRu.trim() || null }))),
     onSuccess: async () => {
       await refresh();
       onClose();
@@ -207,6 +211,10 @@ function CategoryDialog({ businessId, category, onClose }: {
         <label className="block text-sm">{t("Bo'lim nomi")}
           <input data-autofocus className={inputClass} required maxLength={80} value={name}
             placeholder={t("Masalan: Quloq muolajalari")} onChange={(e) => setName(e.target.value)} />
+        </label>
+        <label className="block text-sm">{t("Ruscha nomi (ixtiyoriy)")}
+          <input className={inputClass} maxLength={80} value={nameRu} lang="ru" placeholder="Процедуры для уха"
+            onChange={(e) => setNameRu(e.target.value)} />
         </label>
         <p className="text-xs text-muted">{t("Mijozlar ilovada xizmatlarni shu bo'limlar bo'yicha, shu tartibda ko'radi.")}</p>
         {save.error && <ErrorNote error={save.error} />}
@@ -239,7 +247,7 @@ function DeleteCategoryDialog({ businessId, category, others, count, onClose }: 
   return (
     <Modal title={t("Bo'limni o'chirish")} onClose={onClose}>
       <div className="space-y-3 text-sm">
-        <p>{t("{name} bo'limi o'chiriladi.", { name: category.name })}</p>
+        <p>{t("{name} bo'limi o'chiriladi.", { name: pick(category.name, category.name_ru) })}</p>
         {count > 0 ? (
           <>
             <p className="rounded-lg bg-amber-50 px-3 py-2 text-amber-900">
@@ -248,7 +256,7 @@ function DeleteCategoryDialog({ businessId, category, others, count, onClose }: 
             <label className="block">{t("Xizmatlarni ko'chirish")}
               <select className={inputClass} value={target} onChange={(e) => setTarget(e.target.value)}>
                 <option value="">{t('"Boshqa" guruhiga')}</option>
-                {others.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                {others.map((c) => <option key={c.id} value={c.id}>{pick(c.name, c.name_ru)}</option>)}
               </select>
             </label>
           </>
@@ -274,6 +282,7 @@ function ServiceDialog({ businessId, service, defaultCategory = null, categories
 }) {
   const queryClient = useQueryClient();
   const [name, setName] = useState(service?.name ?? "");
+  const [nameRu, setNameRu] = useState(service?.name_ru ?? "");
   const [duration, setDuration] = useState(String(service?.duration_min ?? 60));   // yangi xizmat — 1 soat
   const [price, setPrice] = useState(String(service?.price ?? ""));
   const [category, setCategory] = useState(
@@ -292,6 +301,7 @@ function ServiceDialog({ businessId, service, defaultCategory = null, categories
     mutationFn: (extra: Record<string, unknown> = {}) => {
       const body = {
         name: name.trim(),
+        name_ru: nameRu.trim() || (service ? "" : null),
         duration_min: Number(duration),
         price: Number(price),
         category_id: category ? Number(category) : null,
@@ -319,6 +329,11 @@ function ServiceDialog({ businessId, service, defaultCategory = null, categories
           <input className={inputClass} required minLength={2} maxLength={120} value={name}
             onChange={(e) => setName(e.target.value)} />
         </label>
+        <label className="block text-sm">{t("Ruscha nomi (ixtiyoriy)")}
+          <input className={inputClass} maxLength={120} value={nameRu} lang="ru" placeholder="Стрижка"
+            onChange={(e) => setNameRu(e.target.value)} />
+          <span className="mt-0.5 block text-xs text-muted">{t("Ilova va panel rus tilida bo'lsa, shu nom ko'rinadi")}</span>
+        </label>
         <fieldset>
           <legend className="text-sm">{t("Davomiyligi")}: <b>{Number(duration) >= 5 ? formatDuration(Number(duration)) : "—"}</b></legend>
           <div className="mt-1 flex flex-wrap gap-1.5">
@@ -343,7 +358,7 @@ function ServiceDialog({ businessId, service, defaultCategory = null, categories
         <label className="block text-sm">{t("Bo'lim")}
           <select className={inputClass} value={category} onChange={(e) => setCategory(e.target.value)}>
             <option value="">{t("Boshqa")}</option>
-            {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            {categories.map((c) => <option key={c.id} value={c.id}>{pick(c.name, c.name_ru)}</option>)}
           </select>
         </label>
         <label className="block text-sm">{t("Tavsif")}
@@ -402,7 +417,7 @@ function PresetsCard({ businessId }: { businessId: number }) {
     <Card className="mb-4">
       <h2 className="flex items-center gap-2 text-sm font-medium">
         <Sparkles size={16} className="text-primary" aria-hidden />
-        {t("{name} uchun tavsiya xizmatlar", { name: presets.data.category_name })}
+        {t("{name} uchun tavsiya xizmatlar", { name: pick(presets.data.category_name, presets.data.category_name_ru) })}
       </h2>
       <p className="mb-3 text-xs text-muted">
         {t("Belgilab qo'shing.")} {groups.length > 1 && `${t("Xizmat o'z bo'limiga tushadi (bo'lim bo'lmasa, yaratiladi).")} `}
@@ -416,7 +431,7 @@ function PresetsCard({ businessId }: { businessId: number }) {
             <section key={section || "-"}>
               {groups.length > 1 && (
                 <div className="mb-1 flex items-center justify-between gap-2 px-2">
-                  <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">{section || t("Boshqa")}</h3>
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">{section ? pick(section, items[0]?.category_ru) : t("Boshqa")}</h3>
                   <button type="button" className="text-xs text-primary hover:underline"
                     onClick={() => setPicked(all ? picked.filter((n) => !names.includes(n)) : [...new Set([...picked, ...names])])}>
                     {all ? t("Belgini olish") : t("Bo'limni belgilash")}
@@ -429,7 +444,7 @@ function PresetsCard({ businessId }: { businessId: number }) {
                     <label className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-page">
                       <input type="checkbox" className="size-4 accent-primary" checked={picked.includes(p.name)}
                         onChange={(e) => toggle(p.name, e.target.checked)} />
-                      <span className="min-w-0 flex-1 break-words">{p.name}</span>
+                      <span className="min-w-0 flex-1 break-words">{pick(p.name, p.name_ru)}</span>
                       <span className="text-xs text-muted tabular-nums">{formatDuration(p.duration_min)} · {formatMoney(p.price)}</span>
                     </label>
                   </li>

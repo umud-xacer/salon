@@ -132,7 +132,7 @@ def delete_photo(photo_id: int = Path(ge=1), business_id: int = Depends(_busines
 
 
 # ─── Xizmat kategoriyalari ──────────────────────────────────────────────────
-_CAT_COLS = ("c.id, c.name, c.sort_order, (SELECT count(*) FROM services s WHERE s.category_id = c.id "
+_CAT_COLS = ("c.id, c.name, c.name_ru, c.sort_order, (SELECT count(*) FROM services s WHERE s.category_id = c.id "
              "AND s.business_id = c.business_id AND s.is_active) AS service_count")
 
 
@@ -166,8 +166,10 @@ def create_category(body: ServiceCategoryIn, business_id: int = Depends(_service
     if order is None:   # yangi bo'lim oxiriga
         order = db.scalar(text("SELECT coalesce(max(sort_order) + 1, 0) FROM service_categories WHERE business_id = :b"),
                           {"b": business_id})
-    new_id = db.scalar(text("INSERT INTO service_categories (business_id, name, sort_order) VALUES (:b, :n, :s) RETURNING id"),
-                       {"b": business_id, "n": body.name, "s": min(order, 1000)})
+    name_ru = " ".join((body.name_ru or "").split()) or None
+    new_id = db.scalar(text("INSERT INTO service_categories (business_id, name, name_ru, sort_order) "
+                            "VALUES (:b, :n, :r, :s) RETURNING id"),
+                       {"b": business_id, "n": body.name, "r": name_ru, "s": min(order, 1000)})
     audit.log(db, business_id, "create", "service_category", new_id, {"name": body.name})
     db.commit()
     return _category(db, business_id, new_id)
@@ -193,6 +195,8 @@ def reorder_categories(body: ServiceCategoryOrder, business_id: int = Depends(_s
 def update_category(body: ServiceCategoryUpdate, category_id: int = Path(ge=1),
                     business_id: int = Depends(_services), db: Session = Depends(get_db)):
     data = body.model_dump(exclude_none=True)
+    if "name_ru" in body.model_fields_set:      # bo'sh — ruscha nom o'chadi
+        data["name_ru"] = " ".join((body.name_ru or "").split()) or None
     _category(db, business_id, category_id)
     if "name" in data:
         _name_taken(db, business_id, data["name"], category_id)
@@ -222,7 +226,7 @@ def delete_category(category_id: int = Path(ge=1), move_to: int | None = Query(d
 
 
 # ─── Xizmatlar va narxlar ───────────────────────────────────────────────────
-_SERVICE_COLS = "id, name, description, category_id, duration_min, price, is_active"
+_SERVICE_COLS = "id, name, name_ru, description, category_id, duration_min, price, is_active"
 
 
 @router.get("/services", response_model=list[ServiceAdminOut])
@@ -236,8 +240,8 @@ def list_services(business_id: int = Depends(_services), db: Session = Depends(g
 @router.post("/services", response_model=ServiceAdminOut, status_code=201)
 def create_service(body: ServiceCreate, business_id: int = Depends(_services), db: Session = Depends(get_db)):
     row = db.execute(text(f"""
-        INSERT INTO services (business_id, category_id, name, description, duration_min, price)
-        VALUES (:b, :category_id, :name, :description, :duration_min, :price)
+        INSERT INTO services (business_id, category_id, name, name_ru, description, duration_min, price)
+        VALUES (:b, :category_id, :name, :name_ru, :description, :duration_min, :price)
         RETURNING {_SERVICE_COLS}
     """), {"b": business_id, **body.model_dump()}).mappings().one()
     audit.log(db, business_id, "create", "service", row["id"], body.model_dump())
@@ -247,13 +251,13 @@ def create_service(body: ServiceCreate, business_id: int = Depends(_services), d
 
 def _presets(db: Session, business_id: int) -> PresetsOut:
     row = db.execute(text("""
-        SELECT c.name_uz, c.service_presets FROM businesses b JOIN business_categories c ON c.id = b.category_id
+        SELECT c.name_uz, c.name_ru, c.service_presets FROM businesses b JOIN business_categories c ON c.id = b.category_id
          WHERE b.id = :b"""), {"b": business_id}).mappings().first()
     if row is None:
         raise _NOT_FOUND
     have = {n.lower() for n in db.scalars(text("SELECT lower(name) FROM services WHERE business_id = :b"),
                                           {"b": business_id})}
-    return PresetsOut(category_name=row["name_uz"],
+    return PresetsOut(category_name=row["name_uz"], category_name_ru=row["name_ru"],
                       presets=[PresetOut(**p, exists=p["name"].lower() in have) for p in row["service_presets"]])
 
 
@@ -274,24 +278,25 @@ def apply_presets(body: PresetsApply, business_id: int = Depends(_services), db:
     next_order = db.scalar(text("SELECT coalesce(max(sort_order), 0) FROM service_categories WHERE business_id = :b"),
                            {"b": business_id})
 
-    def category_id(name: str | None) -> int | None:
+    def category_id(name: str | None, name_ru: str | None = None) -> int | None:
         nonlocal next_order
         if not name:
             return None
         if name.lower() not in categories:
             next_order += 1
             categories[name.lower()] = db.scalar(text(
-                "INSERT INTO service_categories (business_id, name, sort_order) VALUES (:b, :n, :o) RETURNING id"),
-                {"b": business_id, "n": name, "o": next_order})
+                "INSERT INTO service_categories (business_id, name, name_ru, sort_order) VALUES (:b, :n, :r, :o) RETURNING id"),
+                {"b": business_id, "n": name, "r": name_ru or None, "o": next_order})
         return categories[name.lower()]
 
     for p in _presets(db, business_id).presets:
         if p.exists or p.name.lower() not in wanted:
             continue
         row = db.execute(text(f"""
-            INSERT INTO services (business_id, name, duration_min, price, category_id) VALUES (:b, :name, :d, :price, :c)
-            RETURNING {_SERVICE_COLS}"""), {"b": business_id, "name": p.name, "d": p.duration_min, "price": p.price,
-                                            "c": category_id(p.category)}
+            INSERT INTO services (business_id, name, name_ru, duration_min, price, category_id)
+            VALUES (:b, :name, :name_ru, :d, :price, :c)
+            RETURNING {_SERVICE_COLS}"""), {"b": business_id, "name": p.name, "name_ru": p.name_ru or None, "d": p.duration_min,
+                                            "price": p.price, "c": category_id(p.category, p.category_ru)}
         ).mappings().one()
         created.append(ServiceAdminOut(**row))
     if created:

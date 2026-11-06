@@ -17,6 +17,9 @@ export const RU_PAGES: Record<string, string> = {
   "Masalan: Oq Tabassum stomatologiyasi": "Например: Стоматология «Ок Табассум»",
   "Masalan: Sog'lom Quloq Lor klinikasi": "Например: ЛОР-клиника «Соглом Кулок»", "Masalan: Relax SPA": "Например: Relax SPA",
   "Muassasa nomi": "Название заведения", "Masalan: {a} nomi": "Например: название — {a}",
+  "Ruscha nomi (ixtiyoriy)": "Название на русском (необязательно)", "Ruscha nomi": "Название на русском",
+  "Bo'limning ruscha nomi": "Название раздела на русском",
+  "Ilova va panel rus tilida bo'lsa, shu nom ko'rinadi": "Показывается, когда приложение и панель на русском",
   // ── Umumiy komponentlar ──
   "Ogohlantirishlar": "Уведомления",
   "yana": "ещё",

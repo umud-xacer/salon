@@ -134,6 +134,7 @@ export interface MemberService {
 export interface Service {
   id: number;
   name: string;
+  name_ru?: string | null;
   description: string | null;
   category_id: number | null;
   duration_min: number;
@@ -144,6 +145,7 @@ export interface Service {
 export interface ServiceCategory {
   id: number;
   name: string;
+  name_ru?: string | null;
   sort_order: number;
   service_count?: number;   // faol xizmatlar soni
 }
@@ -219,6 +221,8 @@ export interface ServicePreset {
   duration_min: number;
   price: number;
   category?: string | null;
+  name_ru?: string | null;
+  category_ru?: string | null;
 }
 
 export interface BusinessType {
@@ -240,6 +244,7 @@ export interface BusinessType {
 
 export interface ServicePresets {
   category_name: string;
+  category_name_ru?: string | null;
   presets: (ServicePreset & { exists: boolean })[];
 }
 

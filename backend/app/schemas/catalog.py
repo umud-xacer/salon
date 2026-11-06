@@ -85,6 +85,7 @@ class ServiceOut(BaseModel):
 
     id: int
     name: str
+    name_ru: str | None = None          # ixtiyoriy ruscha nom (ilova va panel ruscha tilda)
     description: str | None
     duration_min: int
     price: int
@@ -93,6 +94,7 @@ class ServiceOut(BaseModel):
 class ServiceGroupOut(BaseModel):
     category_id: int | None
     category_name: str
+    category_name_ru: str | None = None
     services: list[ServiceOut]
 
 
@@ -245,6 +247,7 @@ class PhotoOut(BaseModel):
 # ─── Salon egasi: xizmatlar ─────────────────────────────────────────────────
 class ServiceCategoryIn(BaseModel):
     name: str = Field(min_length=1, max_length=80)
+    name_ru: str | None = Field(default=None, max_length=80)
     sort_order: int | None = Field(default=None, ge=0, le=1000)     # bo'sh — oxiriga qo'shiladi
 
     @field_validator("name")
@@ -259,6 +262,7 @@ class ServiceCategoryIn(BaseModel):
 class ServiceCategoryUpdate(BaseModel):
     """Qisman o'zgartirish: faqat nom yoki faqat tartib (nom o'zgarganda tartib 0 ga tushib ketmaydi)."""
     name: str | None = Field(default=None, min_length=1, max_length=80)
+    name_ru: str | None = Field(default=None, max_length=80)      # "" — ruscha nomni o'chirish
     sort_order: int | None = Field(default=None, ge=0, le=1000)
 
     @field_validator("name")
@@ -280,25 +284,44 @@ class ServiceCategoryOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
     name: str
+    name_ru: str | None = None
     sort_order: int
     service_count: int = 0
 
 
 class ServiceCreate(BaseModel):
     name: str = Field(min_length=2, max_length=120)
+    name_ru: str | None = Field(default=None, min_length=2, max_length=120)
     description: str | None = Field(default=None, max_length=2000)
     category_id: int | None = Field(default=None, ge=1)
     duration_min: int = Duration
     price: int = Price
 
+    @field_validator("name_ru", mode="before")
+    @classmethod
+    def _ru(cls, v):
+        if isinstance(v, str):
+            v = " ".join(v.split())
+            return v or None
+        return v
+
 
 class ServiceUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=2, max_length=120)
+    name_ru: str | None = Field(default=None, min_length=2, max_length=120)   # "" — o'chirish
     description: str | None = Field(default=None, max_length=2000)
     category_id: int | None = Field(default=None, ge=1)
     duration_min: int | None = Field(default=None, ge=5, le=720)
     price: int | None = Field(default=None, ge=0, le=100_000_000)
     is_active: bool | None = None
+
+    @field_validator("name_ru", mode="before")
+    @classmethod
+    def _ru(cls, v):
+        if isinstance(v, str):
+            v = " ".join(v.split())
+            return v or None
+        return v
 
 
 class ServiceAdminOut(ServiceOut):
@@ -312,6 +335,8 @@ class ServicePreset(BaseModel):
     duration_min: int = Field(ge=5, le=720)
     price: int = Field(ge=0, le=100_000_000)
     category: str | None = Field(default=None, max_length=80)    # bo'lim: "Ortodontiya (breketlar)"
+    name_ru: str | None = Field(default=None, max_length=120)    # ruscha nom (sql/036)
+    category_ru: str | None = Field(default=None, max_length=80)
 
     @field_validator("name")
     @classmethod
@@ -397,6 +422,7 @@ class PresetOut(ServicePreset):
 
 class PresetsOut(BaseModel):
     category_name: str
+    category_name_ru: str | None = None
     presets: list[PresetOut]
 
 

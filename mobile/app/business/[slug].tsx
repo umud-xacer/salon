@@ -95,9 +95,9 @@ export default function Business() {
                 if (list.length === 0) return null;
                 return (
                   <Card key={g.category_id ?? 0}>
-                    <Text style={shared.name}>{g.category_name}</Text>
+                    <Text style={shared.name}>{pick(g.category_name, g.category_name_ru)}</Text>
                     {list.map((sv) => (
-                      <Chip key={sv.id} label={t("{a} · {b} daq · {c}", { a: sv.name, b: sv.duration_min, c: money(sv.price) })}
+                      <Chip key={sv.id} label={t("{a} · {b} daq · {c}", { a: pick(sv.name, sv.name_ru), b: sv.duration_min, c: money(sv.price) })}
                         active={service?.id === sv.id} onPress={() => setService(sv)} />
                     ))}
                   </Card>
@@ -111,11 +111,11 @@ export default function Business() {
       <Text style={shared.heading}>{kind === 'pharmacy' ? t("Xizmatlar") : t("Xizmatni tanlang")}</Text>
       {business.service_groups.map((group) => (
         <Card key={group.category_id ?? 0}>
-          <Text style={shared.name}>{group.category_name}</Text>
+          <Text style={shared.name}>{pick(group.category_name, group.category_name_ru)}</Text>
           {group.services.map((s) => (
             <Chip
               key={s.id}
-              label={t("{a} · {b} daq · {c}", { a: s.name, b: s.duration_min, c: money(s.price) })}
+              label={t("{a} · {b} daq · {c}", { a: pick(s.name, s.name_ru), b: s.duration_min, c: money(s.price) })}
               active={service?.id === s.id}
               onPress={() => {
                 setService(s);

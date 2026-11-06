@@ -133,7 +133,7 @@ export type BusinessCard = {
 
 export type Category = { id: number; slug: string; name_uz: string; name_ru?: string | null };
 
-export type Service = { id: number; name: string; description: string | null; duration_min: number; price: number };
+export type Service = { id: number; name: string; name_ru?: string | null; description: string | null; duration_min: number; price: number };
 export type Staff = { member_id: number; full_name: string; title: string | null; rating_avg: number; rating_count: number; service_ids: number[] };
 export type BusinessDetail = {
   id: number;
@@ -149,7 +149,7 @@ export type BusinessDetail = {
   rating_avg: number;
   rating_count: number;
   is_open_now: boolean;
-  service_groups: { category_id: number | null; category_name: string; services: Service[] }[];
+  service_groups: { category_id: number | null; category_name: string; category_name_ru?: string | null; services: Service[] }[];
   staff: Staff[];
 };
 

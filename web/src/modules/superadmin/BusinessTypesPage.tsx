@@ -91,7 +91,8 @@ function TypeDialog({ type, onClose }: { type: BusinessType | null; onClose: () 
         kind, name_uz: nameUz.trim(), name_ru: nameRu.trim(), icon: icon.trim() || null, sort_order: Number(order) || 0,
         is_active: active, opens_at: opens, closes_at: closes,
         service_presets: presets.filter((p) => p.name.trim())
-          .map((p) => ({ ...p, name: p.name.trim(), category: p.category?.trim() || null })),
+          .map((p) => ({ ...p, name: p.name.trim(), category: p.category?.trim() || null,
+            name_ru: p.name_ru?.trim() || null, category_ru: p.category_ru?.trim() || null })),
         staff_titles: titles.split("\n").map((x) => x.trim()).filter(Boolean),
         staff_word: staffWord.trim() || null,
       };
@@ -179,6 +180,12 @@ function TypeDialog({ type, onClose }: { type: BusinessType | null; onClose: () 
                   onClick={() => setPresets(presets.filter((_, k) => k !== i))}>
                   <Trash2 size={16} aria-hidden />
                 </button>
+                <input className={`${inputClass} mt-0 col-span-3 sm:col-span-1`} aria-label={t("Ruscha nomi")} lang="ru"
+                  placeholder={t("Ruscha nomi (ixtiyoriy)")} maxLength={120} value={p.name_ru ?? ""}
+                  onChange={(e) => setPreset(i, { name_ru: e.target.value })} />
+                <input className={`${inputClass} mt-0 col-span-3 sm:col-span-1`} aria-label={t("Bo'limning ruscha nomi")} lang="ru"
+                  placeholder={t("Bo'limning ruscha nomi")} maxLength={80} value={p.category_ru ?? ""}
+                  onChange={(e) => setPreset(i, { category_ru: e.target.value })} />
               </li>
             ))}
           </ul>
