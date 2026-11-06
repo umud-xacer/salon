@@ -7,16 +7,17 @@ import { BookingList } from "../../components/BookingList";
 import { DURATION_CHOICES, formatDuration, formatMoney, WEEKDAYS } from "../../components/format";
 import { Card, Empty, ErrorNote, PageTitle, Spinner } from "../../components/ui";
 
+import { t } from "../../i18n";
 export function MyBookingsPage({ membership }: { membership: Membership }) {
   return (
     <>
-      <PageTitle title="Mening bronlarim" />
+      <PageTitle title={t("Mening bronlarim")} />
       <BookingList businessId={membership.business_id} showMaster={false} />
     </>
   );
 }
 
-const hhmm = (t: string) => t.slice(0, 5);
+const hhmm = (tx: string) => tx.slice(0, 5);
 
 export function MySchedulePage({ membership }: { membership: Membership }) {
   const { business_id: b, member_id: m } = membership;
@@ -27,11 +28,11 @@ export function MySchedulePage({ membership }: { membership: Membership }) {
 
   return (
     <>
-      <PageTitle title="Ish jadvalim" />
+      <PageTitle title={t("Ish jadvalim")} />
       <Card>
         {query.isPending && <Spinner />}
         {query.error && <ErrorNote error={query.error} />}
-        {query.data?.length === 0 && <Empty>Ish jadvali hali kiritilmagan</Empty>}
+        {query.data?.length === 0 && <Empty>{t("Ish jadvali hali kiritilmagan")}</Empty>}
         <ul className="divide-y divide-line">
           {query.data?.map((d) => (
             <li key={d.weekday} className="flex flex-wrap justify-between gap-2 py-3 text-sm">
@@ -40,7 +41,7 @@ export function MySchedulePage({ membership }: { membership: Membership }) {
                 {hhmm(d.start_time)}–{hhmm(d.end_time)}
                 {d.breaks.map((br) => (
                   <span key={br.start} className="ml-3 text-muted">
-                    tanaffus {hhmm(br.start)}–{hhmm(br.end)}
+                    {t("tanaffus")}{" "}{hhmm(br.start)}–{hhmm(br.end)}
                   </span>
                 ))}
               </span>
@@ -68,12 +69,12 @@ export function MyServicesPage({ membership }: { membership: Membership }) {
 
   return (
     <>
-      <PageTitle title="Xizmatlarim" hint="Har bir xizmatga qancha vaqt ketishini tanlang — mijozlar shunga qarab bron qiladi" />
+      <PageTitle title={t("Xizmatlarim")} hint={t("Har bir xizmatga qancha vaqt ketishini tanlang — mijozlar shunga qarab bron qiladi")} />
       <Card>
         {query.isPending && <Spinner />}
         {query.error && <ErrorNote error={query.error} />}
         {save.error && <div className="mb-2"><ErrorNote error={save.error} /></div>}
-        {query.data?.length === 0 && <Empty>Sizga hali xizmat biriktirilmagan. Direktorga murojaat qiling.</Empty>}
+        {query.data?.length === 0 && <Empty>{t("Sizga hali xizmat biriktirilmagan. Direktorga murojaat qiling.")}</Empty>}
         <ul className="divide-y divide-line">
           {query.data?.map((s) => (
             <li key={s.service_id} className="flex flex-wrap items-center gap-2 py-3 text-sm">
@@ -82,7 +83,7 @@ export function MyServicesPage({ membership }: { membership: Membership }) {
                 className="rounded-lg border border-line bg-white px-2 py-1.5"
                 value={s.custom_duration ?? ""}
                 onChange={(e) => save.mutate({ id: s.service_id, minutes: e.target.value ? Number(e.target.value) : null })}>
-                <option value="">{formatDuration(s.duration_min)} (umumiy)</option>
+                <option value="">{formatDuration(s.duration_min)}{" "}{t("(umumiy)")}</option>
                 {DURATION_CHOICES.filter((m) => m !== s.duration_min).map((m) => (
                   <option key={m} value={m}>{formatDuration(m)}</option>
                 ))}

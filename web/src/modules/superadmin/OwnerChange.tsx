@@ -11,6 +11,7 @@ import { PasswordInput } from "../../components/PasswordReveal";
 import { Button, ErrorNote, inputClass } from "../../components/ui";
 import { PhoneOwnerHint, usePhoneLookup } from "./PhoneOwnerHint";
 
+import { t } from "../../i18n";
 export function OwnerChange({ business: b }: { business: BusinessAdmin }) {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -66,71 +67,68 @@ export function OwnerChange({ business: b }: { business: BusinessAdmin }) {
     return (
       <div className="mb-3 flex flex-wrap gap-2">
         <Button variant="secondary" className="flex items-center gap-1" onClick={() => start("replace")}>
-          <UserCog size={15} aria-hidden /> Direktorni almashtirish
+          <UserCog size={15} aria-hidden />{" "}{t("Direktorni almashtirish")}
         </Button>
         {b.owner_phone && (
-          <Button variant="secondary" onClick={() => start("rename")}>Direktor ismini tuzatish</Button>
+          <Button variant="secondary" onClick={() => start("rename")}>{t("Direktor ismini tuzatish")}</Button>
         )}
-        {save.isSuccess && <span className="self-center text-sm text-success">Saqlandi</span>}
+        {save.isSuccess && <span className="self-center text-sm text-success">{t("Saqlandi")}</span>}
       </div>
     );
   }
 
   return (
     <form onSubmit={submit} className="mb-4 space-y-3 rounded-xl border border-line p-4 text-sm">
-      <p className="font-medium">{sameOwner ? "Direktor ma'lumotini tuzatish" : "Yangi direktor"}</p>
+      <p className="font-medium">{sameOwner ? t("Direktor ma'lumotini tuzatish") : t("Yangi direktor")}</p>
       <div className="grid gap-3 sm:grid-cols-2">
-        <label className="block">Telefon (login)
+        <label className="block">{t("Telefon (login)")}
           <input className={inputClass} type="tel" required placeholder="90 123 45 67" value={phone}
             onChange={(e) => { setPhone(e.target.value); setConfirming(false); }} />
         </label>
-        <label className="block">Ism familiya
+        <label className="block">{t("Ism familiya")}
           <input className={inputClass} required minLength={2} maxLength={120} value={name}
             onChange={(e) => setName(e.target.value)} />
         </label>
       </div>
       <PhoneOwnerHint lookup={lookup.data} businessId={b.id} mode={sameOwner ? "rename" : "assign"} />
-      <PasswordInput label={sameOwner ? "Yangi parol (ixtiyoriy)" : "Boshlang'ich parol (ixtiyoriy)"}
+      <PasswordInput label={sameOwner ? t("Yangi parol (ixtiyoriy)") : t("Boshlang'ich parol (ixtiyoriy)")}
         value={password} onChange={setPassword} />
       {!sameOwner && b.owner_phone && (
         <fieldset className="space-y-1">
-          <legend className="mb-1">Hozirgi direktor ({b.owner_name ?? b.owner_phone}):</legend>
+          <legend className="mb-1">{t("Hozirgi direktor (")}{b.owner_name ?? b.owner_phone}):</legend>
           <label className="flex items-center gap-2">
             <input type="radio" name="previous" className="accent-primary" checked={previous === "manager"}
               onChange={() => setPrevious("manager")} />
-            Menejer bo'lib qolsin
+            {t("Menejer bo'lib qolsin")}
           </label>
           <label className="flex items-center gap-2">
             <input type="radio" name="previous" className="accent-primary" checked={previous === "remove"}
               onChange={() => setPrevious("remove")} />
-            Muassasadan chiqarilsin (hisobi o'chmaydi, bu muassasaga kira olmaydi)
+            {t("Muassasadan chiqarilsin (hisobi o'chmaydi, bu muassasaga kira olmaydi)")}
           </label>
         </fieldset>
       )}
       {!sameOwner && (
         <p className="text-xs text-muted">
-          Bu odam muassasada xodim bo'lsa, o'sha a'zolik direktorga ko'tariladi. Yangi direktor www.ariqalqon.uz dan
-          shu telefon va parol bilan kiradi.
+          {t("Bu odam muassasada xodim bo'lsa, o'sha a'zolik direktorga ko'tariladi. Yangi direktor www.ariqalqon.uz dan shu telefon va parol bilan kiradi.")}
         </p>
       )}
       {confirming && sameOwner && (
         <p role="alert" className="rounded-lg bg-amber-50 px-3 py-2 text-amber-800">
-          Ism shu telefon egasining hamma muassasalarida "{name.trim()}" bo'ladi. Rozimisiz? Yana bir marta bosing.
+          {t("Ism shu telefon egasining hamma muassasalarida \"")}{name.trim()}{t("\" bo'ladi. Rozimisiz? Yana bir marta bosing.")}
         </p>
       )}
       {confirming && !sameOwner && (
         <p role="alert" className="rounded-lg bg-amber-50 px-3 py-2 text-amber-800">
-          {b.owner_name ?? b.owner_phone} o'rniga {name.trim() || normalized} direktor bo'ladi
-          ({previous === "manager" ? "eski direktor menejer bo'lib qoladi" : "eski direktor chiqariladi"}).
-          Tasdiqlash uchun yana bir marta bosing.
+          {b.owner_name ?? b.owner_phone}{" "}{t("o'rniga")}{" "}{name.trim() || normalized}{" "}{t("direktor bo'ladi (")}{previous === "manager" ? t("eski direktor menejer bo'lib qoladi") : t("eski direktor chiqariladi")}{t("). Tasdiqlash uchun yana bir marta bosing.")}
         </p>
       )}
       {save.error && <ErrorNote error={save.error} />}
       <div className="flex flex-wrap gap-2">
         <Button type="submit" variant={confirming ? "danger" : "primary"} disabled={save.isPending}>
-          {sameOwner ? (confirming ? "Ha, hammasida o'zgartirish" : "Saqlash") : confirming ? "Ha, almashtirish" : "Direktorni almashtirish"}
+          {sameOwner ? (confirming ? t("Ha, hammasida o'zgartirish") : t("Saqlash")) : confirming ? t("Ha, almashtirish") : t("Direktorni almashtirish")}
         </Button>
-        <Button type="button" variant="secondary" onClick={() => setOpen(false)}>Bekor</Button>
+        <Button type="button" variant="secondary" onClick={() => setOpen(false)}>{t("Bekor")}</Button>
       </div>
     </form>
   );

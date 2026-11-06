@@ -6,7 +6,7 @@ import { ApiError } from "../api/client";
 import type { PasswordStatus } from "../api/types";
 
 export function Logo({ size = 40 }: { size?: number }) {
-  return <img src="/logo.jpg" alt="Chronix" width={size} height={size} className="rounded-lg object-cover" />;
+  return <img src="/logo.jpg" alt={t("Chronix")} width={size} height={size} className="rounded-lg object-cover" />;
 }
 
 export function Button({
@@ -37,18 +37,18 @@ export function Tabs<T extends string>({ tabs, value, onChange }: {
 }) {
   return (
     <div role="tablist" className="mb-4 flex flex-wrap gap-x-1 border-b border-line">
-      {tabs.map((t) => (
+      {tabs.map((tx) => (
         <button
-          key={t.id}
+          key={tx.id}
           type="button"
           role="tab"
-          aria-selected={value === t.id}
-          onClick={() => onChange(t.id)}
+          aria-selected={value === tx.id}
+          onClick={() => onChange(tx.id)}
           className={`border-b-2 px-3 py-2 text-sm whitespace-nowrap ${
-            value === t.id ? "border-primary font-medium text-primary" : "border-transparent text-muted"
+            value === tx.id ? "border-primary font-medium text-primary" : "border-transparent text-muted"
           }`}
         >
-          {t.label}
+          {tx.label}
         </button>
       ))}
     </div>
@@ -115,7 +115,7 @@ export function ComingSoon({ title, plan }: { title: string; plan: string }) {
     <>
       <PageTitle title={title} />
       <Card>
-        <Empty>Bu bo'lim keyingi bosqichda ochiladi. {plan}</Empty>
+        <Empty>{t("Bu bo'lim keyingi bosqichda ochiladi.")}{" "}{plan}</Empty>
       </Card>
     </>
   );

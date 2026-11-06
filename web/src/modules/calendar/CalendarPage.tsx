@@ -21,6 +21,7 @@ import { BookingDialog, type BookingPreset } from "./BookingDialog";
 import { TimeGrid, type Column } from "./TimeGrid";
 import { useVocab } from "../vocab";
 
+import { t } from "../../i18n";
 type View = "day" | "week";
 
 export function CalendarPage({ membership }: { membership: Membership }) {
@@ -105,7 +106,7 @@ export function CalendarPage({ membership }: { membership: Membership }) {
       />
 
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        <div className="flex rounded-lg border border-line bg-white p-0.5 text-sm" role="group" aria-label="Ko'rinish">
+        <div className="flex rounded-lg border border-line bg-white p-0.5 text-sm" role="group" aria-label={t("Ko'rinish")}>
           {(["day", "week"] as const).map((v) => (
             <button
               key={v}
@@ -113,24 +114,24 @@ export function CalendarPage({ membership }: { membership: Membership }) {
               onClick={() => setView(v)}
               className={`rounded-md px-3 py-1 ${view === v ? "bg-primary text-white" : "text-muted"}`}
             >
-              {v === "day" ? "Kun" : "Hafta"}
+              {v === "day" ? t("Kun") : t("Hafta")}
             </button>
           ))}
         </div>
         <div className="flex items-center gap-1">
-          <Button variant="secondary" aria-label="Oldingi" onClick={() => step(-1)}>
+          <Button variant="secondary" aria-label={t("Oldingi")} onClick={() => step(-1)}>
             <ChevronLeft size={16} />
           </Button>
           <Button variant="secondary" onClick={() => setDay(todayIso())}>
-            Bugun
+            {t("Bugun")}
           </Button>
-          <Button variant="secondary" aria-label="Keyingi" onClick={() => step(1)}>
+          <Button variant="secondary" aria-label={t("Keyingi")} onClick={() => step(1)}>
             <ChevronRight size={16} />
           </Button>
         </div>
         <input
           type="date"
-          aria-label="Sana"
+          aria-label={t("Sana")}
           value={day}
           onChange={(e) => e.target.value && setDay(e.target.value)}
           className="rounded-lg border border-line bg-white px-2 py-1.5 text-sm"
@@ -142,7 +143,7 @@ export function CalendarPage({ membership }: { membership: Membership }) {
             onChange={(e) => setMemberFilter(e.target.value ? Number(e.target.value) : null)}
             className="rounded-lg border border-line bg-white px-2 py-1.5 text-sm"
           >
-            <option value="">Barcha {v.staffMany}</option>
+            <option value="">{t("Barcha")}{" "}{v.staffMany}</option>
             {data.staff.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.full_name}
@@ -154,7 +155,7 @@ export function CalendarPage({ membership }: { membership: Membership }) {
 
       {query.isPending && <Spinner />}
       {query.error && <ErrorNote error={query.error} />}
-      {data && data.staff.length === 0 && <Empty>Hali {v.staffMany} qo'shilmagan</Empty>}
+      {data && data.staff.length === 0 && <Empty>{t("Hali")}{" "}{v.staffMany}{" "}{t("qo'shilmagan")}</Empty>}
       {data && data.staff.length > 0 && (
         <TimeGrid
           columns={columns}

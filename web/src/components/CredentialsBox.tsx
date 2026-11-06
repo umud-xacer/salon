@@ -10,6 +10,7 @@ import { formatDate } from "./format";
 import { PasswordInput, PasswordReveal } from "./PasswordReveal";
 import { Button, ErrorNote, PasswordBadge } from "./ui";
 
+import { t } from "../i18n";
 export function CredentialsBox({ businessId, memberId, phone, status, changedAt, canView, onChanged, title }: {
   businessId: number;
   memberId: number | null;
@@ -42,26 +43,26 @@ export function CredentialsBox({ businessId, memberId, phone, status, changedAt,
     <section className="mb-3 rounded-lg border border-line bg-page px-3 py-2.5 text-sm" aria-label={title}>
       <p className="mb-1.5 text-xs font-medium text-muted">{title}</p>
       <dl className="grid grid-cols-[4.5rem_1fr] items-center gap-y-1.5">
-        <dt className="text-muted">Login</dt>
+        <dt className="text-muted">{t("Login")}</dt>
         <dd className="flex items-center gap-1">
           <span className="font-mono tabular-nums select-all">{phone ?? "—"}</span>
           {phone && (
-            <button type="button" aria-label="Loginni nusxalash" title="Nusxalash" onClick={() => copy(phone)}
+            <button type="button" aria-label={t("Loginni nusxalash")} title={t("Nusxalash")} onClick={() => copy(phone)}
               className="rounded p-1 text-muted hover:bg-white hover:text-ink">
               <Copy size={14} aria-hidden />
             </button>
           )}
         </dd>
-        <dt className="text-muted">Parol</dt>
+        <dt className="text-muted">{t("Parol")}</dt>
         <dd className="flex flex-wrap items-center gap-2">
           {justSet ? (
             <>
               <code className="rounded bg-white px-1.5 py-0.5 font-mono select-all">{justSet}</code>
-              <button type="button" aria-label="Parolni nusxalash" title="Nusxalash" onClick={() => copy(justSet)}
+              <button type="button" aria-label={t("Parolni nusxalash")} title={t("Nusxalash")} onClick={() => copy(justSet)}
                 className="rounded p-1 text-muted hover:bg-white hover:text-ink">
                 <Copy size={14} aria-hidden />
               </button>
-              <span className="text-xs text-success">Yangi parol berildi</span>
+              <span className="text-xs text-success">{t("Yangi parol berildi")}</span>
             </>
           ) : (
             <>
@@ -74,18 +75,18 @@ export function CredentialsBox({ businessId, memberId, phone, status, changedAt,
       </dl>
       {memberId !== null && (editing ? (
         <form onSubmit={submit} className="mt-2 space-y-2 border-t border-line pt-2">
-          <PasswordInput label="Yangi parol" required value={password} onChange={(v) => { setPassword(v); save.reset(); }} />
+          <PasswordInput label={t("Yangi parol")} required value={password} onChange={(v) => { setPassword(v); save.reset(); }} />
           {save.error && <ErrorNote error={save.error} />}
           <div className="flex gap-2">
-            <Button type="submit" disabled={save.isPending}>Saqlash</Button>
-            <Button type="button" variant="secondary" onClick={() => { setEditing(false); setPassword(""); }}>Bekor qilish</Button>
+            <Button type="submit" disabled={save.isPending}>{t("Saqlash")}</Button>
+            <Button type="button" variant="secondary" onClick={() => { setEditing(false); setPassword(""); }}>{t("Bekor qilish")}</Button>
           </div>
-          <p className="text-xs text-muted">Saqlangach eski parol ishlamaydi va barcha qurilmalardagi kirishlar yopiladi.</p>
+          <p className="text-xs text-muted">{t("Saqlangach eski parol ishlamaydi va barcha qurilmalardagi kirishlar yopiladi.")}</p>
         </form>
       ) : (
         <button type="button" onClick={() => { setEditing(true); setJustSet(null); }}
           className="mt-2 flex items-center gap-1 text-xs font-medium text-primary hover:underline">
-          <KeyRound size={14} aria-hidden /> {status === "none" ? "Parol berish" : "Yangi parol berish"}
+          <KeyRound size={14} aria-hidden /> {status === "none" ? t("Parol berish") : t("Yangi parol berish")}
         </button>
       ))}
     </section>

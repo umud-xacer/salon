@@ -1,6 +1,11 @@
 // Muassasa turiga qarab forma yozuvlari va havola (slug) qoidalari.
 // Super Admin yangi tur qo'shsa (masalan, "Veterinariya"), turning o'z nomi ishlatiladi.
 import type { BusinessType } from "../../api/types";
+import { getLang, t } from "../../i18n";
+
+/** Turning panelda ko'rinadigan nomi: ruscha tilda name_ru (bo'lsa) */
+export const typeName = (c: Pick<BusinessType, "name_uz" | "name_ru">) =>
+  (getLang() === "ru" && c.name_ru?.trim()) || c.name_uz;
 
 interface Wording {
   noun: string;          // "Dorixona" -> "Dorixona nomi"
@@ -21,10 +26,12 @@ const KNOWN: Record<string, Wording> = {
 const GENERIC: Wording = { noun: "Muassasa", example: "Muassasa nomi", slugWord: "" };
 
 export function wordingFor(type: BusinessType | undefined): Wording {
-  if (!type) return GENERIC;
-  return KNOWN[type.slug] ?? {
-    noun: type.name_uz,
-    example: `Masalan: ${type.name_uz} nomi`,
+  if (!type) return { ...GENERIC, noun: t(GENERIC.noun), example: t(GENERIC.example) };
+  const k = KNOWN[type.slug];
+  if (k) return { ...k, noun: t(k.noun), example: t(k.example) };
+  return {
+    noun: typeName(type),
+    example: t("Masalan: {a} nomi", { a: typeName(type) }),
     slugWord: type.slug.replaceAll("_", "-"),
   };
 }

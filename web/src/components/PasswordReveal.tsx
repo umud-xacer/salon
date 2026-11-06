@@ -6,6 +6,7 @@ import { useState } from "react";
 import { api } from "../api/client";
 import type { PasswordStatus } from "../api/types";
 
+import { t } from "../i18n";
 // Tasodifiy vaqtinchalik parol: crypto, chalkashtiradigan belgilarsiz (l/1, O/0)
 export function generatePassword() {
   const letters = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ";
@@ -36,9 +37,9 @@ export function PasswordReveal({ businessId, memberId, status }: {
     try {
       const r = await api<{ password: string | null }>(`/businesses/${businessId}/members/${memberId}/password`);
       if (r.password) setShown(r.password);
-      else setNote("Parol saqlanmagan — yangisini bering");
+      else setNote(t("Parol saqlanmagan — yangisini bering"));
     } catch {
-      setNote("Ko'rib bo'lmadi");
+      setNote(t("Ko'rib bo'lmadi"));
     } finally {
       setBusy(false);
     }
@@ -49,12 +50,12 @@ export function PasswordReveal({ businessId, memberId, status }: {
       {shown && <code className="rounded bg-page px-1.5 py-0.5 font-mono text-ink select-all">{shown}</code>}
       {note && <span className="text-muted">{note}</span>}
       <button type="button" onClick={() => void toggle()} disabled={busy}
-        aria-label={shown ? "Parolni yashirish" : "Berilgan parolni ko'rsatish"} title={shown ? "Yashirish" : "Berilgan parol"}
+        aria-label={shown ? t("Parolni yashirish") : t("Berilgan parolni ko'rsatish")} title={shown ? t("Yashirish") : t("Berilgan parol")}
         className="rounded p-1 text-muted hover:bg-page hover:text-ink disabled:opacity-50">
         {shown ? <EyeOff size={15} aria-hidden /> : <Eye size={15} aria-hidden />}
       </button>
       {shown && (
-        <button type="button" aria-label="Parolni nusxalash" title="Nusxalash"
+        <button type="button" aria-label={t("Parolni nusxalash")} title={t("Nusxalash")}
           onClick={() => { void navigator.clipboard?.writeText(shown).catch(() => {}); }}
           className="rounded p-1 text-muted hover:bg-page hover:text-ink">
           <Copy size={14} aria-hidden />
@@ -76,14 +77,14 @@ export function PasswordInput({ value, onChange, required = false, label }: {
       <span className="mt-1 flex gap-2">
         <input className="w-full min-w-0 rounded-lg border border-line bg-white px-3 py-2 font-mono text-sm outline-none focus:border-primary"
           required={required} minLength={8} maxLength={128} autoComplete="off" spellCheck={false}
-          placeholder={required ? "" : "Bo'sh qolsa — keyin beriladi"} value={value} onChange={(e) => onChange(e.target.value)} />
+          placeholder={required ? "" : t("Bo'sh qolsa — keyin beriladi")} value={value} onChange={(e) => onChange(e.target.value)} />
         <button type="button" onClick={() => onChange(generatePassword())}
           className="shrink-0 rounded-lg border border-line bg-white px-3 py-2 text-sm font-medium hover:bg-page">
-          Yaratish
+          {t("Yaratish")}
         </button>
       </span>
       <span className="mt-1 block text-xs text-muted">
-        Kamida 8 belgi, harf va raqam. Parolni faqat siz o'zgartirasiz, u ko'z tugmasi bilan doim ko'rinadi.
+        {t("Kamida 8 belgi, harf va raqam. Parolni faqat siz o'zgartirasiz, u ko'z tugmasi bilan doim ko'rinadi.")}
       </span>
     </label>
   );

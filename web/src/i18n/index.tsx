@@ -1,9 +1,12 @@
 // Panel tili (UZ / RU). Kalit — asl o'zbekcha matn: t("Xizmat qo'shish"). Tarjima topilmasa o'zbekcha qoladi,
 // shuning uchun sahifalarni bosqichma-bosqich o'tkazish xavfsiz. Til localStorage'da saqlanadi.
-// Til almashganda butun ilova qayta chiziladi (LangProvider key) — t() oddiy funksiya, hook shart emas.
+// Til almashganda sahifa qayta yuklanadi — t() oddiy funksiya, hook shart emas, modul konstantalari ham yangilanadi.
 import { createContext, useContext, useState, type ReactNode } from "react";
 
-import { RU } from "./ru";
+import { RU as RU_BASE } from "./ru";
+import { RU_PAGES } from "./ru_pages";
+
+const RU: Record<string, string> = { ...RU_BASE, ...RU_PAGES };
 
 export type Lang = "uz" | "ru";
 const KEY = "chronix-lang";
@@ -47,7 +50,8 @@ export function LangProvider({ children }: { children: ReactNode }) {
     current = l;
     document.documentElement.lang = l;
     try { localStorage.setItem(KEY, l); } catch { /* xususiy oyna */ }
-    setState(l);
+    // Modul darajasidagi yorliqlar ham yangi tilda hisoblansin — sahifa qayta yuklanadi (kirish saqlanadi)
+    try { location.reload(); } catch { setState(l); }
   };
   return (
     <LangContext.Provider value={{ lang, setLang }}>

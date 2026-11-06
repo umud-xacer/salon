@@ -6,6 +6,7 @@ import { useMembers } from "./MembersPanel";
 import { ScheduleEditor } from "./ScheduleEditor";
 import { useVocab } from "../vocab";
 
+import { t } from "../../i18n";
 export function WorkSchedulePage({ membership }: { membership: Membership }) {
   const b = membership.business_id;
   const v = useVocab();
@@ -16,10 +17,10 @@ export function WorkSchedulePage({ membership }: { membership: Membership }) {
 
   return (
     <>
-      <PageTitle title="Ish jadvali" hint={`Jadval kiritilmagan ${v.staffOne.toLowerCase()} ${v.place} ish soatlari bo'yicha ishlaydi`} />
+      <PageTitle title={t("Ish jadvali")} hint={t("Jadval kiritilmagan {a} {b} ish soatlari bo'yicha ishlaydi", { a: v.staffOne.toLowerCase(), b: v.place })} />
       {members.isPending && <Spinner />}
       {members.error && <ErrorNote error={members.error} />}
-      {members.data && masters.length === 0 && <Card><Empty>{v.clientOne} qabul qiladigan xodim yo'q</Empty></Card>}
+      {members.data && masters.length === 0 && <Card><Empty>{v.clientOne}{" "}{t("qabul qiladigan xodim yo'q")}</Empty></Card>}
       {memberId !== null && (
         <Card>
           <label className="mb-3 block max-w-xs text-sm">{v.staffOne}

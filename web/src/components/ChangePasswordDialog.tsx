@@ -7,6 +7,7 @@ import { Modal } from "./Modal";
 import { Button, ErrorNote, inputClass } from "./ui";
 import { PasswordField } from "./PasswordField";
 
+import { t } from "../i18n";
 export function ChangePasswordForm({ forced = false }: { forced?: boolean }) {
   const { signOut } = useAuth();
   const [oldPassword, setOldPassword] = useState("");
@@ -26,7 +27,7 @@ export function ChangePasswordForm({ forced = false }: { forced?: boolean }) {
   return (
     <form onSubmit={submit} className="space-y-3 text-left">
       <label className="block text-sm">
-        {forced ? "Sizga berilgan parol" : "Hozirgi parol"}
+        {forced ? t("Sizga berilgan parol") : t("Hozirgi parol")}
         <PasswordField
           className={inputClass}
           autoComplete="current-password"
@@ -35,11 +36,11 @@ export function ChangePasswordForm({ forced = false }: { forced?: boolean }) {
           onChange={(e) => setOldPassword(e.target.value)}
         />
         {!forced && (
-          <span className="mt-1 block text-xs text-muted">Hali parol qo'ymagan bo'lsangiz, bo'sh qoldiring.</span>
+          <span className="mt-1 block text-xs text-muted">{t("Hali parol qo'ymagan bo'lsangiz, bo'sh qoldiring.")}</span>
         )}
       </label>
       <label className="block text-sm">
-        Yangi parol
+        {t("Yangi parol")}
         <PasswordField
           className={inputClass}
           autoComplete="new-password"
@@ -48,11 +49,11 @@ export function ChangePasswordForm({ forced = false }: { forced?: boolean }) {
           value={newPassword}
           onChange={(e) => setNewPassword(e.target.value)}
         />
-        <span className="mt-1 block text-xs text-muted">Kamida 8 belgi, harf va raqam bilan.</span>
+        <span className="mt-1 block text-xs text-muted">{t("Kamida 8 belgi, harf va raqam bilan.")}</span>
       </label>
       {change.error && <ErrorNote error={change.error} />}
       <Button type="submit" disabled={change.isPending} className="w-full">
-        Saqlash va qayta kirish
+        {t("Saqlash va qayta kirish")}
       </Button>
     </form>
   );
@@ -61,7 +62,7 @@ export function ChangePasswordForm({ forced = false }: { forced?: boolean }) {
 /** O'z parolini o'zgartirish */
 export function ChangePasswordDialog({ onClose }: { onClose: () => void }) {
   return (
-    <Modal title="Parolni o'zgartirish" onClose={onClose}>
+    <Modal title={t("Parolni o'zgartirish")} onClose={onClose}>
       <ChangePasswordForm />
     </Modal>
   );

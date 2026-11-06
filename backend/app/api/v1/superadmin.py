@@ -282,7 +282,7 @@ def platform_stats(db: Session = Depends(get_db)):
          ORDER BY b.subscription_ends_at LIMIT 20""").mappings().all()
 
     by_type = q("""
-        SELECT c.slug AS key, c.name_uz AS label, count(b.id) AS count
+        SELECT c.slug AS key, c.name_uz AS label, c.name_ru AS label_ru, count(b.id) AS count
           FROM business_categories c LEFT JOIN businesses b ON b.category_id = c.id
          GROUP BY c.id HAVING c.is_active OR count(b.id) > 0
          ORDER BY c.sort_order, c.id""").mappings().all()
@@ -330,7 +330,7 @@ def platform_stats(db: Session = Depends(get_db)):
                round(avg(rating), 2)::float AS avg
           FROM reviews WHERE NOT is_hidden""").mappings().one()
     rated = """
-        SELECT b.id, b.name, c.name_uz AS category, b.rating_avg::float AS rating_avg, b.rating_count
+        SELECT b.id, b.name, c.name_uz AS category, c.name_ru AS category_ru, b.rating_avg::float AS rating_avg, b.rating_count
           FROM businesses b JOIN business_categories c ON c.id = b.category_id
          WHERE b.rating_count > 0"""
     top = q(f"{rated} ORDER BY b.rating_avg DESC, b.rating_count DESC, b.id LIMIT 5").mappings().all()

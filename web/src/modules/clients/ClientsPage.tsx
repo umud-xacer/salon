@@ -10,6 +10,7 @@ import { Badge, Button, Card, Empty, ErrorNote, inputClass, PageTitle, Spinner }
 import { vocabFor } from "../vocab";
 import { useVocab } from "../vocab";
 
+import { t } from "../../i18n";
 const PAGE = 50;
 
 export function ClientsPage({ membership }: { membership: Membership }) {
@@ -20,8 +21,8 @@ export function ClientsPage({ membership }: { membership: Membership }) {
   const [editing, setEditing] = useState<ClientRecord | "new" | null>(null);
 
   useEffect(() => {
-    const t = setTimeout(() => setQ(text.trim()), 300);
-    return () => clearTimeout(t);
+    const tx = setTimeout(() => setQ(text.trim()), 300);
+    return () => clearTimeout(tx);
   }, [text]);
 
   const query = useInfiniteQuery({
@@ -38,19 +39,19 @@ export function ClientsPage({ membership }: { membership: Membership }) {
     <>
       <PageTitle
         title={vocabFor(membership.business_kind).clients}
-        hint="Tashriflar yakunlangan bronlardan hisoblanadi"
+        hint={t("Tashriflar yakunlangan bronlardan hisoblanadi")}
         action={
           <Button className="flex items-center gap-1" onClick={() => setEditing("new")}>
-            <Plus size={16} aria-hidden /> {v.clientOne} qo'shish
+            <Plus size={16} aria-hidden /> {v.clientOne}{" "}{t("qo'shish")}
           </Button>
         }
       />
       <label className="relative mb-3 block">
-        <span className="sr-only">Qidirish</span>
+        <span className="sr-only">{t("Qidirish")}</span>
         <Search size={16} className="absolute top-2.5 left-3 text-muted" aria-hidden />
         <input
           className="w-full rounded-lg border border-line bg-white py-2 pr-3 pl-9 text-sm outline-none focus:border-primary"
-          placeholder="Ism yoki telefon"
+          placeholder={t("Ism yoki telefon")}
           maxLength={60}
           value={text}
           onChange={(e) => setText(e.target.value)}
@@ -58,7 +59,7 @@ export function ClientsPage({ membership }: { membership: Membership }) {
       </label>
       {query.isPending && <Spinner />}
       {query.error && <ErrorNote error={query.error} />}
-      {clients?.length === 0 && <Card><Empty>{q ? "Topilmadi" : `Hali ${v.clientOne.toLowerCase()} yo'q`}</Empty></Card>}
+      {clients?.length === 0 && <Card><Empty>{q ? t("Topilmadi") : t("Hali {a} yo'q", { a: v.clientOne.toLowerCase() })}</Empty></Card>}
       {clients && clients.length > 0 && (
         <ul className="divide-y divide-line rounded-xl border border-line bg-white">
           {clients.map((c) => (
@@ -71,8 +72,8 @@ export function ClientsPage({ membership }: { membership: Membership }) {
                   <span className="block font-medium break-words">{c.full_name}</span>
                   <span className="block text-muted tabular-nums">{c.phone}</span>
                 </span>
-                {c.has_account && <Badge tone="green">Ilovada</Badge>}
-                <span className="text-muted">{c.visits} tashrif</span>
+                {c.has_account && <Badge tone="green">{t("Ilovada")}</Badge>}
+                <span className="text-muted">{c.visits}{" "}{t("tashrif")}</span>
                 <span className="tabular-nums sm:w-28 sm:text-right">{formatMoney(c.total_spent)}</span>
               </button>
             </li>
@@ -82,7 +83,7 @@ export function ClientsPage({ membership }: { membership: Membership }) {
       {query.hasNextPage && (
         <div className="mt-3 text-center">
           <Button variant="secondary" disabled={query.isFetchingNextPage} onClick={() => void query.fetchNextPage()}>
-            Yana ko'rsatish
+            {t("Yana ko'rsatish")}
           </Button>
         </div>
       )}
@@ -129,35 +130,35 @@ function ClientDialog({ businessId, client, onClose }: {
   };
 
   return (
-    <Modal title={client ? client.full_name : `Yangi ${v.clientOne.toLowerCase()}`} onClose={onClose}>
+    <Modal title={client ? client.full_name : t("Yangi {a}", { a: v.clientOne.toLowerCase() })} onClose={onClose}>
       <form onSubmit={submit} className="space-y-3">
         <div className="grid gap-3 sm:grid-cols-2">
-          <label className="block text-sm">Ism familiya
+          <label className="block text-sm">{t("Ism familiya")}
             <input className={inputClass} required minLength={2} maxLength={120} value={name}
               onChange={(e) => setName(e.target.value)} />
           </label>
-          <label className="block text-sm">Telefon
+          <label className="block text-sm">{t("Telefon")}
             <input className={inputClass} type="tel" required disabled={client?.has_account} value={phone}
               onChange={(e) => setPhone(e.target.value)} />
           </label>
         </div>
         {client?.has_account && (
-          <p className="text-xs text-muted">{v.clientOne} ilovadan foydalanadi, telefonini faqat o'zi o'zgartiradi.</p>
+          <p className="text-xs text-muted">{v.clientOne}{" "}{t("ilovadan foydalanadi, telefonini faqat o'zi o'zgartiradi.")}</p>
         )}
-        <label className="block text-sm">Izoh
-          <textarea className={inputClass} rows={2} maxLength={2000} placeholder="Allergiya, afzalliklar" value={notes}
+        <label className="block text-sm">{t("Izoh")}
+          <textarea className={inputClass} rows={2} maxLength={2000} placeholder={t("Allergiya, afzalliklar")} value={notes}
             onChange={(e) => setNotes(e.target.value)} />
         </label>
         {save.error && <ErrorNote error={save.error} />}
-        <Button type="submit" disabled={save.isPending}>Saqlash</Button>
+        <Button type="submit" disabled={save.isPending}>{t("Saqlash")}</Button>
       </form>
 
       {client && (
         <section className="mt-5 border-t border-line pt-4">
-          <h3 className="mb-1 text-sm font-medium">Bronlar tarixi</h3>
+          <h3 className="mb-1 text-sm font-medium">{t("Bronlar tarixi")}</h3>
           {history.isPending && <Spinner />}
           {history.error && <ErrorNote error={history.error} />}
-          {history.data?.length === 0 && <Empty>Bron yo'q</Empty>}
+          {history.data?.length === 0 && <Empty>{t("Bron yo'q")}</Empty>}
           <ul className="max-h-56 divide-y divide-line overflow-y-auto text-sm">
             {history.data?.map((a) => (
               <li key={a.id} className="flex flex-wrap justify-between gap-2 py-2">

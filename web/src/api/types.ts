@@ -451,7 +451,7 @@ export interface PlatformStats {
   businesses_blocked: number;
   businesses_listed: number;
   expiring_soon: { id: number; name: string; subscription_ends_at: string; owner_phone: string | null }[];
-  by_type: { key: string; label: string; count: number }[];
+  by_type: { key: string; label: string; label_ru?: string | null; count: number }[];
   users_total: number;
   clients_total: number;
   staff_total: number;
@@ -533,4 +533,4 @@ export interface ReviewsPage {
   total?: number;
 }
 
-export interface RatingRow { id: number; name: string; category: string; rating_avg: number; rating_count: number }
+export interface RatingRow { id: number; name: string; category: string; category_ru?: string | null; rating_avg: number; rating_count: number }

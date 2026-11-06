@@ -7,6 +7,7 @@ import { useAuth } from "../auth/AuthProvider";
 import { Modal } from "./Modal";
 import { Button, ErrorNote, inputClass } from "./ui";
 
+import { t } from "../i18n";
 export function ProfileNameDialog({ onClose }: { onClose: () => void }) {
   const { me } = useAuth();
   const queryClient = useQueryClient();
@@ -26,18 +27,18 @@ export function ProfileNameDialog({ onClose }: { onClose: () => void }) {
   const shared = (me?.memberships.length ?? 0) > 1;
 
   return (
-    <Modal title="Mening ismim" onClose={onClose}>
+    <Modal title={t("Mening ismim")} onClose={onClose}>
       <form onSubmit={submit} className="space-y-3">
-        <label className="block text-sm">Ism familiya
+        <label className="block text-sm">{t("Ism familiya")}
           <input className={inputClass} required minLength={2} maxLength={120} value={name} data-autofocus
             onChange={(e) => setName(e.target.value)} />
         </label>
         <p className="text-xs text-muted">
-          Telefon (login): <span className="tabular-nums">{me?.user.phone}</span>
-          {shared && ". Ism siz ishlaydigan barcha muassasalarda o'zgaradi."}
+          {t("Telefon (login):")}{" "}<span className="tabular-nums">{me?.user.phone}</span>
+          {shared && t(". Ism siz ishlaydigan barcha muassasalarda o'zgaradi.")}
         </p>
         {save.error && <ErrorNote error={save.error} />}
-        <Button type="submit" disabled={save.isPending || name.trim().length < 2} className="w-full">Saqlash</Button>
+        <Button type="submit" disabled={save.isPending || name.trim().length < 2} className="w-full">{t("Saqlash")}</Button>
       </form>
     </Modal>
   );

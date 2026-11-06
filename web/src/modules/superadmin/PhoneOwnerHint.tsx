@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { api } from "../../api/client";
 import { normalizePhone } from "../../components/format";
 
+import { t } from "../../i18n";
 export interface PhoneLookup {
   phone: string;
   exists: boolean;
@@ -41,17 +42,14 @@ export function PhoneOwnerHint({ lookup, businessId, mode }: {
     if (others.length === 0) return null;
     return (
       <p role="alert" className="rounded-lg bg-amber-50 px-3 py-2 text-amber-800">
-        Diqqat: bu telefon bitta odamniki va u yana {others.length} ta muassasada bor: {where}. Ism hammasida birdan
-        o'zgaradi. Agar ular boshqa-boshqa odamlar bo'lsa, ismni tuzatmang — "Direktorni almashtirish" orqali
-        boshqa odamning o'z telefon raqamini kiriting.
+        {t("Diqqat: bu telefon bitta odamniki va u yana")}{" "}{others.length}{" "}{t("ta muassasada bor:")}{" "}{where}{t(". Ism hammasida birdan o'zgaradi. Agar ular boshqa-boshqa odamlar bo'lsa, ismni tuzatmang — \"Direktorni almashtirish\" orqali boshqa odamning o'z telefon raqamini kiriting.")}
       </p>
     );
   }
   return (
     <p role="alert" className="rounded-lg bg-amber-50 px-3 py-2 text-amber-800">
-      Bu raqam allaqachon ro'yxatda: <b>{lookup.full_name || "ismsiz"}</b>
-      {others.length > 0 ? `, u yana ${others.length} ta muassasada bor: ${where}` : ""}.
-      Bitta telefon — bitta odam: ismi va paroli hamma muassasada bir xil bo'ladi. Boshqa odam bo'lsa, uning o'z raqamini kiriting.
+      {t("Bu raqam allaqachon ro'yxatda:")}{" "}<b>{lookup.full_name || "ismsiz"}</b>
+      {others.length > 0 ? t(", u yana {a} ta muassasada bor: {b}", { a: others.length, b: where }) : ""}{t(". Bitta telefon — bitta odam: ismi va paroli hamma muassasada bir xil bo'ladi. Boshqa odam bo'lsa, uning o'z raqamini kiriting.")}
     </p>
   );
 }

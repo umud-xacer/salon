@@ -9,6 +9,7 @@ import { formatQty } from "../../components/format";
 import { roleLabel, vocabFor } from "../vocab";
 import { Card, PageTitle } from "../../components/ui";
 
+import { t } from "../../i18n";
 function LowStockCard({ businessId, kind, slug }: { businessId: number; kind: string; slug: string }) {
   const query = useQuery({
     queryKey: ["inventory-summary", businessId],
@@ -20,7 +21,7 @@ function LowStockCard({ businessId, kind, slug }: { businessId: number; kind: st
   return (
     <Card className="mb-4">
       <h2 className="flex items-center gap-2 text-sm font-medium text-warning">
-        <AlertTriangle size={16} aria-hidden /> Omborda kam qoldi: {count} ta
+        <AlertTriangle size={16} aria-hidden />{" "}{t("Omborda kam qoldi:")}{" "}{count}{" "}{t("ta")}
       </h2>
       <ul className="mt-2 divide-y divide-line text-sm">
         {low.map((p) => (
@@ -30,7 +31,7 @@ function LowStockCard({ businessId, kind, slug }: { businessId: number; kind: st
           </li>
         ))}
       </ul>
-      <Link to={`/${slug}/${kind === "pharmacy" ? "dorilar" : "ombor"}`} className="mt-2 inline-block text-sm text-primary">Omborga o'tish</Link>
+      <Link to={`/${slug}/${kind === "pharmacy" ? "dorilar" : "ombor"}`} className="mt-2 inline-block text-sm text-primary">{t("Omborga o'tish")}</Link>
     </Card>
   );
 }

@@ -7,6 +7,7 @@ import { ChangePasswordForm } from "../components/ChangePasswordDialog";
 import { formatDate } from "../components/format";
 import { Button } from "../components/ui";
 
+import { t } from "../i18n";
 function Notice({ title, children }: { title: string; children: ReactNode }) {
   const { signOut } = useAuth();
   return (
@@ -16,7 +17,7 @@ function Notice({ title, children }: { title: string; children: ReactNode }) {
         <h1 className="text-lg font-semibold text-navy">{title}</h1>
         <div className="mt-2 space-y-2 text-sm text-muted">{children}</div>
         <Button variant="secondary" className="mt-5" onClick={() => void signOut()}>
-          Chiqish
+          {t("Chiqish")}
         </Button>
       </div>
     </div>
@@ -27,27 +28,27 @@ function Notice({ title, children }: { title: string; children: ReactNode }) {
 export function SuspendedPage({ membership: m }: { membership: Membership }) {
   if (m.business_status === "blocked") {
     return (
-      <Notice title={`${m.business_name} bloklangan`}>
-        <p>Ma'lumotlaringiz saqlangan. Sababini bilish uchun Chronix bilan bog'laning.</p>
+      <Notice title={t("{a} bloklangan", { a: m.business_name })}>
+        <p>{t("Ma'lumotlaringiz saqlangan. Sababini bilish uchun Chronix bilan bog'laning.")}</p>
       </Notice>
     );
   }
   const expired = m.subscription_ends_at !== null && new Date(m.subscription_ends_at) <= new Date();
   return (
-    <Notice title="Obuna to'xtatilgan">
+    <Notice title={t("Obuna to'xtatilgan")}>
       <p>
         {m.business_name}
-        {expired ? ` obunasi ${formatDate(m.subscription_ends_at!)} kuni tugagan.` : " obunasi to'xtatilgan."}
+        {expired ? t(" obunasi {a} kuni tugagan.", { a: formatDate(m.subscription_ends_at!) }) : t(" obunasi to'xtatilgan.")}
       </p>
-      <p>Barcha ma'lumotlaringiz saqlangan. To'lovdan keyin ish shu joyidan davom etadi.</p>
+      <p>{t("Barcha ma'lumotlaringiz saqlangan. To'lovdan keyin ish shu joyidan davom etadi.")}</p>
     </Notice>
   );
 }
 
 export function ForcePasswordPage() {
   return (
-    <Notice title="Parolni almashtiring">
-      <p>Sizga vaqtinchalik parol berilgan. Davom etish uchun o'zingiz bilgan yangi parol qo'ying.</p>
+    <Notice title={t("Parolni almashtiring")}>
+      <p>{t("Sizga vaqtinchalik parol berilgan. Davom etish uchun o'zingiz bilgan yangi parol qo'ying.")}</p>
       <div className="mt-4">
         <ChangePasswordForm forced />
       </div>
@@ -57,8 +58,8 @@ export function ForcePasswordPage() {
 
 export function ClientOnlyPage() {
   return (
-    <Notice title="Panel xodimlar uchun">
-      <p>Bu raqam hech qaysi muassasaga xodim sifatida ulanmagan. Mijozlar Chronix mobil ilovasidan foydalanadi.</p>
+    <Notice title={t("Panel xodimlar uchun")}>
+      <p>{t("Bu raqam hech qaysi muassasaga xodim sifatida ulanmagan. Mijozlar Chronix mobil ilovasidan foydalanadi.")}</p>
     </Notice>
   );
 }

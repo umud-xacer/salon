@@ -11,6 +11,7 @@ import { ratingText, Stars } from "../../components/Stars";
 import { Badge, Button, Card, Empty, ErrorNote, inputClass, PageTitle, Spinner, Tabs } from "../../components/ui";
 import { useVocab } from "../vocab";
 
+import { t } from "../../i18n";
 type Filter = "all" | "unanswered" | "low";
 
 export function ReviewsPage({ membership }: { membership: Membership }) {
@@ -27,13 +28,13 @@ export function ReviewsPage({ membership }: { membership: Membership }) {
 
   return (
     <div className="space-y-4">
-      <PageTitle title="Baholar" hint={`Faqat xizmatdan foydalangan (yakunlangan tashrif) ${v.clients.toLowerCase()} baho qo'ya oladi.`} />
+      <PageTitle title={t("Baholar")} hint={t("Faqat xizmatdan foydalangan (yakunlangan tashrif) {a} baho qo'ya oladi.", { a: v.clients.toLowerCase() })} />
       {q.isLoading ? <Spinner /> : q.error ? <ErrorNote error={q.error} /> : (
         <>
           <SummaryCard s={q.data!.summary} criteria />
-          <Tabs tabs={[{ id: "all", label: "Hammasi" }, { id: "unanswered", label: "Javobsiz" }, { id: "low", label: "3 va past" }]}
+          <Tabs tabs={[{ id: "all", label: t("Hammasi") }, { id: "unanswered", label: t("Javobsiz") }, { id: "low", label: t("3 va past") }]}
             value={filter} onChange={setFilter} />
-          {items.length === 0 ? <Empty>Hozircha baho yo'q</Empty> : (
+          {items.length === 0 ? <Empty>{t("Hozircha baho yo'q")}</Empty> : (
             <ul className="space-y-3">
               {items.map((r) => <ReviewItem key={r.id} r={r} businessId={b} staffWord={v.staffOne} />)}
             </ul>
@@ -50,11 +51,11 @@ export function MyReviewsPage({ membership }: { membership: Membership }) {
   const q = useQuery({ queryKey: ["reviews", b, "mine"], queryFn: () => api<ReviewsData>(`/businesses/${b}/reviews/mine`) });
   return (
     <div className="space-y-4">
-      <PageTitle title="Baholarim" hint={`${v.clients} sizning ishingizga qo'ygan baholar. Bu reyting ilovada profilingizda ko'rinadi.`} />
+      <PageTitle title={t("Baholarim")} hint={t("{a} sizning ishingizga qo'ygan baholar. Bu reyting ilovada profilingizda ko'rinadi.", { a: v.clients })} />
       {q.isLoading ? <Spinner /> : q.error ? <ErrorNote error={q.error} /> : (
         <>
           <SummaryCard s={q.data!.summary} />
-          {q.data!.items.length === 0 ? <Empty>Hozircha baho yo'q</Empty> : (
+          {q.data!.items.length === 0 ? <Empty>{t("Hozircha baho yo'q")}</Empty> : (
             <ul className="space-y-3">
               {q.data!.items.map((r) => (
                 <li key={r.id}>
@@ -82,11 +83,11 @@ function SummaryCard({ s, criteria = false }: { s: ReviewSummary; criteria?: boo
       <div className="min-w-40">
         <p className="text-3xl font-semibold tabular-nums text-navy">{s.rating_avg ? s.rating_avg.toFixed(1) : "—"}</p>
         <Stars value={s.rating_avg} size={18} />
-        <p className="mt-1 text-xs text-muted">{s.count} ta baho</p>
+        <p className="mt-1 text-xs text-muted">{s.count}{" "}{t("ta baho")}</p>
         {criteria && s.count > 0 && (
           <dl className="mt-3 grid grid-cols-[auto_auto] gap-x-3 gap-y-1 text-xs">
-            <dt className="text-muted">Tozalik</dt><dd className="tabular-nums">{ratingText(s.cleanliness_avg)}</dd>
-            <dt className="text-muted">Qabul va xizmat</dt><dd className="tabular-nums">{ratingText(s.quality_avg)}</dd>
+            <dt className="text-muted">{t("Tozalik")}</dt><dd className="tabular-nums">{ratingText(s.cleanliness_avg)}</dd>
+            <dt className="text-muted">{t("Qabul va xizmat")}</dt><dd className="tabular-nums">{ratingText(s.quality_avg)}</dd>
           </dl>
         )}
       </div>
@@ -129,15 +130,15 @@ function ReviewItem({ r, businessId, staffWord }: { r: BusinessReview; businessI
             <p className="flex flex-wrap items-center gap-2">
               <Stars value={r.rating} />
               <span className="font-medium break-words">{r.client_name ?? r.author}</span>
-              {r.is_hidden && <Badge tone="gray">Super Admin yashirgan</Badge>}
+              {r.is_hidden && <Badge tone="gray">{t("Super Admin yashirgan")}</Badge>}
             </p>
             <p className="text-xs text-muted">
               {formatDate(r.created_at)}
-              {r.appointment_starts_at && ` · tashrif ${formatDate(r.appointment_starts_at)}`}
+              {r.appointment_starts_at && t(" · tashrif {a}", { a: formatDate(r.appointment_starts_at) })}
               {r.client_phone && <> · <a className="hover:underline" href={`tel:${r.client_phone}`}>{r.client_phone}</a></>}
             </p>
           </div>
-          <p className="text-xs text-muted">Tozalik {r.cleanliness ?? "—"} · Xizmat {r.service_quality ?? "—"}</p>
+          <p className="text-xs text-muted">{t("Tozalik")}{" "}{r.cleanliness ?? "—"}{" "}{t("· Xizmat")}{" "}{r.service_quality ?? "—"}</p>
         </div>
         {r.comment && <p className="break-words">{r.comment}</p>}
         {r.staff_rating && (
@@ -151,23 +152,23 @@ function ReviewItem({ r, businessId, staffWord }: { r: BusinessReview; businessI
         {editing ? (
           <form className="space-y-2" onSubmit={(e) => { e.preventDefault(); save.mutate(text.trim() || null); }}>
             <textarea className={`${inputClass} min-h-20`} maxLength={1000} value={text} autoFocus
-              placeholder={`${v.clientOne}ga javobingiz (ilovada hamma ko'radi)`} onChange={(e) => setText(e.target.value)} />
+              placeholder={t("{a}ga javobingiz (ilovada hamma ko'radi)", { a: v.clientOne })} onChange={(e) => setText(e.target.value)} />
             {save.error && <ErrorNote error={save.error} />}
             <div className="flex flex-wrap gap-2">
-              <Button type="submit" disabled={save.isPending || !text.trim()}>Javobni saqlash</Button>
-              {r.reply && <Button type="button" variant="danger" disabled={save.isPending} onClick={() => save.mutate(null)}>Javobni o'chirish</Button>}
-              <Button type="button" variant="secondary" onClick={() => { setEditing(false); setText(r.reply ?? ""); }}>Bekor</Button>
+              <Button type="submit" disabled={save.isPending || !text.trim()}>{t("Javobni saqlash")}</Button>
+              {r.reply && <Button type="button" variant="danger" disabled={save.isPending} onClick={() => save.mutate(null)}>{t("Javobni o'chirish")}</Button>}
+              <Button type="button" variant="secondary" onClick={() => { setEditing(false); setText(r.reply ?? ""); }}>{t("Bekor")}</Button>
             </div>
           </form>
         ) : r.reply ? (
           <div className="border-l-2 border-primary pl-3">
-            <p className="text-xs text-muted">Javobingiz{r.reply_at ? ` · ${formatDate(r.reply_at)}` : ""}{r.replied_by_name ? ` · ${r.replied_by_name}` : ""}</p>
+            <p className="text-xs text-muted">{t("Javobingiz")}{r.reply_at ? ` · ${formatDate(r.reply_at)}` : ""}{r.replied_by_name ? ` · ${r.replied_by_name}` : ""}</p>
             <p className="break-words">{r.reply}</p>
-            <button type="button" className="mt-1 text-xs text-primary hover:underline" onClick={() => setEditing(true)}>Tahrirlash</button>
+            <button type="button" className="mt-1 text-xs text-primary hover:underline" onClick={() => setEditing(true)}>{t("Tahrirlash")}</button>
           </div>
         ) : (
           <Button variant="secondary" className="flex items-center gap-1" onClick={() => setEditing(true)}>
-            <MessageSquareReply size={15} aria-hidden /> Javob yozish
+            <MessageSquareReply size={15} aria-hidden />{" "}{t("Javob yozish")}
           </Button>
         )}
       </Card>

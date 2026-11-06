@@ -57,7 +57,7 @@ export const useVocab = () => useContext(VocabContext);
 
 // Rol nomi: oddiy xodim — turga qarab (Usta / Shifokor / Farmatsevt)
 export const roleLabel = (role: string, v: Vocab) =>
-  ({ owner: "Direktor", manager: "Menejer", receptionist: v.receptionOne, staff: v.staffOne } as Record<string, string>)[role] ?? role;
+  ({ owner: t("Direktor"), manager: t("Menejer"), receptionist: v.receptionOne, staff: v.staffOne } as Record<string, string>)[role] ?? role;
 
 export const KIND_LABELS: Record<BusinessKind, string> = {
   salon: "Salon: ustalar, xizmatlar, vaqtga bron",

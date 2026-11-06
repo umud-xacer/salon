@@ -9,6 +9,7 @@ import { Button, Empty, ErrorNote, Spinner } from "../../components/ui";
 import { Modal } from "../../components/Modal";
 import { useVocab } from "../vocab";
 
+import { t } from "../../i18n";
 export interface BookingPreset {
   day: string;
   memberId?: number;
@@ -20,8 +21,8 @@ const field = "mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm outli
 function useDebounced(value: string, ms = 300) {
   const [debounced, setDebounced] = useState(value);
   useEffect(() => {
-    const t = setTimeout(() => setDebounced(value), ms);
-    return () => clearTimeout(t);
+    const tx = setTimeout(() => setDebounced(value), ms);
+    return () => clearTimeout(tx);
   }, [value, ms]);
   return debounced;
 }
@@ -129,16 +130,16 @@ export function BookingDialog({ membership, preset, onClose }: {
   const suggestions = (clients.data ?? []).filter((c) => c.phone !== normalizePhone(phone));
 
   return (
-    <Modal title="Yangi bron" onClose={onClose}>
+    <Modal title={t("Yangi bron")} onClose={onClose}>
       {options.isPending && <Spinner />}
       {options.error && <ErrorNote error={options.error} />}
-      {options.data && services.length === 0 && <Empty>Avval xizmat qo'shing, keyin bron qilish mumkin.</Empty>}
+      {options.data && services.length === 0 && <Empty>{t("Avval xizmat qo'shing, keyin bron qilish mumkin.")}</Empty>}
 
       {services.length > 0 && (
         <form onSubmit={submit} className="space-y-3">
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="block text-sm">
-              Telefon
+              {t("Telefon")}
               <input
                 className={field}
                 type="tel"
@@ -149,7 +150,7 @@ export function BookingDialog({ membership, preset, onClose }: {
               />
             </label>
             <label className="block text-sm">
-              {v.clientOne} ismi
+              {v.clientOne}{" "}{t("ismi")}
               <input
                 className={field}
                 required
@@ -162,7 +163,7 @@ export function BookingDialog({ membership, preset, onClose }: {
           </div>
 
           {suggestions.length > 0 && (
-            <ul className="rounded-lg border border-line text-sm" aria-label={`Topilgan ${v.clients.toLowerCase()}`}>
+            <ul className="rounded-lg border border-line text-sm" aria-label={t("Topilgan {a}", { a: v.clients.toLowerCase() })}>
               {suggestions.map((c) => (
                 <li key={c.id}>
                   <button
@@ -179,7 +180,7 @@ export function BookingDialog({ membership, preset, onClose }: {
           )}
 
           <label className="block text-sm">
-            Xizmat
+            {t("Xizmat")}
             <select
               className={field}
               value={selectedService ?? ""}
@@ -187,7 +188,7 @@ export function BookingDialog({ membership, preset, onClose }: {
             >
               {services.map((s) => (
                 <option key={s.id} value={s.id}>
-                  {s.name} · {s.duration_min} daqiqa · {formatMoney(s.price)}
+                  {s.name} · {s.duration_min}{" "}{t("daqiqa ·")}{" "}{formatMoney(s.price)}
                 </option>
               ))}
             </select>
@@ -212,7 +213,7 @@ export function BookingDialog({ membership, preset, onClose }: {
               </select>
             </label>
             <label className="block text-sm">
-              Sana
+              {t("Sana")}
               <input
                 className={field}
                 type="date"
@@ -225,10 +226,10 @@ export function BookingDialog({ membership, preset, onClose }: {
           </div>
 
           <div className="text-sm">
-            <p>Vaqt</p>
+            <p>{t("Vaqt")}</p>
             {slots.isFetching && !slots.data && <Spinner />}
             {slots.error && <ErrorNote error={slots.error} />}
-            {slots.data?.length === 0 && <Empty>Bu kunga bo'sh vaqt yo'q</Empty>}
+            {slots.data?.length === 0 && <Empty>{t("Bu kunga bo'sh vaqt yo'q")}</Empty>}
             <div className="mt-1 grid max-h-40 grid-cols-4 gap-2 overflow-y-auto sm:grid-cols-6">
               {slots.data?.map((s) => (
                 <button
@@ -247,7 +248,7 @@ export function BookingDialog({ membership, preset, onClose }: {
           </div>
 
           <label className="block text-sm">
-            Izoh
+            {t("Izoh")}
             <input className={field} maxLength={500} value={note} onChange={(e) => setNote(e.target.value)} />
           </label>
 
@@ -255,7 +256,7 @@ export function BookingDialog({ membership, preset, onClose }: {
           <div className="flex items-center justify-between gap-3 pt-1">
             <span className="text-sm text-muted">{service ? formatMoney(service.price) : ""}</span>
             <Button type="submit" disabled={!slot || book.isPending}>
-              Bron qilish
+              {t("Bron qilish")}
             </Button>
           </div>
         </form>

@@ -11,16 +11,17 @@ import { Badge, Button, Card, Empty, ErrorNote, PageTitle, PasswordBadge, Spinne
 import { PasswordReveal } from "../../components/PasswordReveal";
 import { BUSINESSES_KEY, BusinessDialog, CreateBusinessDialog, StatusBadge } from "./BusinessDialogs";
 import { useBusinessTypes } from "./BusinessTypesPage";
-import { typeUrl } from "./typeWording";
+import { typeUrl, typeName } from "./typeWording";
 import { BusinessesMap } from "./Maps";
 
+import { t } from "../../i18n";
 type View = "list" | "map";
 
 // Mijoz ilovasida ko'rinishi va bron qabul qilishi uchun yetishmayotganlar
 const missingFor = (b: BusinessAdmin) => [
-  b.lat === null ? "lokatsiya" : null,
-  b.service_count === 0 ? "xizmat" : null,
-  b.hours_count === 0 ? "ish vaqti" : null,
+  b.lat === null ? t("lokatsiya") : null,
+  b.service_count === 0 ? t("xizmat") : null,
+  b.hours_count === 0 ? t("ish vaqti") : null,
 ].filter((x): x is string => x !== null);
 
 export function BusinessesPage() {
@@ -33,11 +34,11 @@ export function BusinessesPage() {
   // Eski /superadmin/t/pharmacy manzili ham ishlaydi
   const { typeSlug, typePath } = useParams();
   const navigate = useNavigate();
-  const currentType = types.data?.find((t) => (typePath ? typeUrl(t) === typePath : t.slug === typeSlug));
+  const currentType = types.data?.find((tx) => (typePath ? typeUrl(tx) === typePath : tx.slug === typeSlug));
   const typeId = currentType ? String(currentType.id) : "";
   const setTypeId = (id: string) => {
-    const t = types.data?.find((x) => String(x.id) === id);
-    navigate(t ? `/superadmin/${typeUrl(t)}` : "/superadmin");
+    const tx = types.data?.find((x) => String(x.id) === id);
+    navigate(tx ? `/superadmin/${typeUrl(tx)}` : "/superadmin");
   };
   const [openedId, setOpenedId] = useState<number | null>(null);
   const [creating, setCreating] = useState(false);
@@ -62,32 +63,32 @@ export function BusinessesPage() {
   return (
     <>
       <PageTitle
-        title={currentType ? currentType.name_uz : "Muassasalar"}
-        hint={businesses.data ? (currentType ? `${filtered.length} ta` : `Jami ${businesses.data.length} ta`) : undefined}
+        title={currentType ? typeName(currentType) : t("Muassasalar")}
+        hint={businesses.data ? (currentType ? t("{a} ta", { a: filtered.length }) : t("Jami {a} ta", { a: businesses.data.length })) : undefined}
         action={
           <Button className="flex items-center gap-1" disabled={!modules.data} onClick={() => setCreating(true)}>
-            <Plus size={16} aria-hidden /> Yangi muassasa
+            <Plus size={16} aria-hidden />{" "}{t("Yangi muassasa")}
           </Button>
         }
       />
-      <Tabs tabs={[{ id: "list", label: "Ro'yxat" }, { id: "map", label: "Xarita" }]} value={view} onChange={setView} />
+      <Tabs tabs={[{ id: "list", label: t("Ro'yxat") }, { id: "map", label: t("Xarita") }]} value={view} onChange={setView} />
       <div className="mb-3 flex flex-col gap-2 sm:flex-row">
       <label className="relative block flex-1">
-        <span className="sr-only">Qidirish</span>
+        <span className="sr-only">{t("Qidirish")}</span>
         <Search size={16} className="absolute top-2.5 left-3 text-muted" aria-hidden />
         <input
           className="w-full rounded-lg border border-line bg-white py-2 pr-3 pl-9 text-sm outline-none focus:border-primary"
-          placeholder="Salon, shahar yoki direktor"
+          placeholder={t("Salon, shahar yoki direktor")}
           value={text}
           onChange={(e) => setText(e.target.value)}
         />
       </label>
       <label className="block sm:w-56">
-        <span className="sr-only">Muassasa turi</span>
+        <span className="sr-only">{t("Muassasa turi")}</span>
         <select className="w-full rounded-lg border border-line bg-white px-3 py-2 text-sm outline-none focus:border-primary"
           value={typeId} onChange={(e) => setTypeId(e.target.value)}>
-          <option value="">Barcha turlar</option>
-          {types.data?.map((t) => <option key={t.id} value={t.id}>{t.name_uz}</option>)}
+          <option value="">{t("Barcha turlar")}</option>
+          {types.data?.map((tx) => <option key={tx.id} value={tx.id}>{typeName(tx)}</option>)}
         </select>
       </label>
       </div>
@@ -99,15 +100,15 @@ export function BusinessesPage() {
         <>
           <BusinessesMap businesses={filtered} onSelect={(b) => setOpenedId(b.id)} />
           <p className="mt-2 text-xs text-muted">
-            Yashil: faol. Sariq: to'xtatilgan. Qizil: bloklangan.
-            {noLocation > 0 && ` Lokatsiyasi yo'q: ${noLocation} ta.`}
+            {t("Yashil: faol. Sariq: to'xtatilgan. Qizil: bloklangan.")}
+            {noLocation > 0 && t(" Lokatsiyasi yo'q: {a} ta.", { a: noLocation })}
           </p>
         </>
       )}
 
       {view === "list" && businesses.data && (
         filtered.length === 0 ? (
-          <Card><Empty>Topilmadi</Empty></Card>
+          <Card><Empty>{t("Topilmadi")}</Empty></Card>
         ) : (
           <ul className="divide-y divide-line rounded-xl border border-line bg-white">
             {filtered.map((b) => (
@@ -119,22 +120,22 @@ export function BusinessesPage() {
                   <span className="min-w-0 basis-full sm:basis-auto sm:flex-1">
                     <span className="block font-medium">{b.name} <StatusBadge b={b} /></span>
                     <span className="block text-muted">
-                      {b.owner_name ?? "Direktor yo'q"}{b.owner_phone ? ` · ${b.owner_phone}` : ""}
+                      {b.owner_name ?? t("Direktor yo'q")}{b.owner_phone ? ` · ${b.owner_phone}` : ""}
                     </span>
                   </span>
                   {missingFor(b).length > 0 && (
-                    <span title={`Ilovada ko'rinishi uchun: ${missingFor(b).join(", ")}`}>
-                      <Badge tone="amber">Tayyor emas: {missingFor(b).join(", ")}</Badge>
+                    <span title={t("Ilovada ko'rinishi uchun: {a}", { a: missingFor(b).join(", ") })}>
+                      <Badge tone="amber">{t("Tayyor emas:")}{" "}{missingFor(b).join(", ")}</Badge>
                     </span>
                   )}
                   <PasswordBadge status={b.owner_password_status} />
-                  <span className="text-muted">{b.staff_count} xodim</span>
-                  <span className="flex items-center gap-1 tabular-nums" title={`${b.rating_count} ta baho`}>
+                  <span className="text-muted">{b.staff_count}{" "}{t("xodim")}</span>
+                  <span className="flex items-center gap-1 tabular-nums" title={t("{a} ta baho", { a: b.rating_count })}>
                     <Star size={14} aria-hidden className={b.rating_count ? "fill-amber-400 text-amber-400" : "text-line"} />
                     {b.rating_count ? `${b.rating_avg.toFixed(1)} (${b.rating_count})` : "—"}
                   </span>
                   <span className="sm:w-32 sm:text-right">
-                    {b.subscription_ends_at ? `${formatDate(b.subscription_ends_at)} gacha` : "Muddatsiz"}
+                    {b.subscription_ends_at ? t("{a} gacha", { a: formatDate(b.subscription_ends_at) }) : t("Muddatsiz")}
                   </span>
                 </button>
                 <span className="shrink-0 pr-3">

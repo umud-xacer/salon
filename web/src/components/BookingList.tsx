@@ -7,6 +7,7 @@ import { formatMoney, formatTime, STATUS_LABELS, todayIso } from "./format";
 import { Badge, Card, Empty, ErrorNote, Spinner } from "./ui";
 import { useVocab } from "../modules/vocab";
 
+import { t } from "../i18n";
 const tone = (status: string) =>
   status === "completed" ? "green" : status === "cancelled" || status === "no_show" ? "red" : status === "pending" ? "amber" : "gray";
 
@@ -22,9 +23,9 @@ export function BookingList({ businessId, showMaster }: { businessId: number; sh
   return (
     <Card>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="font-medium">Bronlar</h2>
+        <h2 className="font-medium">{t("Bronlar")}</h2>
         <label className="text-sm text-muted">
-          <span className="sr-only">Sana</span>
+          <span className="sr-only">{t("Sana")}</span>
           <input
             type="date"
             value={day}
@@ -35,7 +36,7 @@ export function BookingList({ businessId, showMaster }: { businessId: number; sh
       </div>
       {query.isPending && <Spinner />}
       {query.error && <ErrorNote error={query.error} />}
-      {query.data?.length === 0 && <Empty>Bu kunga bron yo'q</Empty>}
+      {query.data?.length === 0 && <Empty>{t("Bu kunga bron yo'q")}</Empty>}
       <ul className="divide-y divide-line">
         {query.data?.map((a) => (
           <li key={a.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 py-3 text-sm">
@@ -43,7 +44,7 @@ export function BookingList({ businessId, showMaster }: { businessId: number; sh
               {formatTime(a.starts_at)}–{formatTime(a.ends_at)}
             </span>
             <span className="min-w-0 basis-full sm:basis-auto sm:flex-1">
-              {a.services.join(", ") || "Xizmat"}
+              {a.services.join(", ") || t("Xizmat")}
               <span className="block text-muted">
                 {a.client_name ?? v.clientOne}
                 {showMaster && a.member_name ? ` · ${a.member_name}` : ""}

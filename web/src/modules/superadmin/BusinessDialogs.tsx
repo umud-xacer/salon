@@ -12,23 +12,24 @@ import { PasswordInput } from "../../components/PasswordReveal";
 import { MembersPanel } from "../staff/MembersPanel";
 import { AddressFields, type AddressValue } from "./AddressFields";
 import { useBusinessTypes } from "./BusinessTypesPage";
-import { slugFor, wordingFor } from "./typeWording";
+import { slugFor, wordingFor, typeName } from "./typeWording";
 import { PaymentHistory, RenewForm } from "./SubscriptionPayments";
 import { OwnerChange } from "./OwnerChange";
 import { PhoneOwnerHint, usePhoneLookup } from "./PhoneOwnerHint";
 import { panelVocab, VocabContext } from "../vocab";
 
+import { t } from "../../i18n";
 export const BUSINESSES_KEY = ["superadmin", "businesses"];
 
 // Super Admin o'chirilgan turlarni ham ko'radi (eski salonni tahrirlash uchun)
 const useCategories = useBusinessTypes;
-const typeLabel = (c: BusinessType) => (c.is_active ? c.name_uz : `${c.name_uz} (o'chirilgan)`);
+const typeLabel = (c: BusinessType) => (c.is_active ? typeName(c) : t("{a} (o'chirilgan)", { a: typeName(c) }));
 
 
 export function StatusBadge({ b }: { b: BusinessAdmin }) {
-  if (b.status === "blocked") return <Badge tone="red">Bloklangan</Badge>;
-  if (!b.operational) return <Badge tone="amber">To'xtatilgan</Badge>;
-  return <Badge tone="green">Faol</Badge>;
+  if (b.status === "blocked") return <Badge tone="red">{t("Bloklangan")}</Badge>;
+  if (!b.operational) return <Badge tone="amber">{t("To'xtatilgan")}</Badge>;
+  return <Badge tone="green">{t("Faol")}</Badge>;
 }
 
 export function CreateBusinessDialog({ modules, onClose }: { modules: ModuleInfo[]; onClose: () => void }) {
@@ -84,11 +85,11 @@ export function CreateBusinessDialog({ modules, onClose }: { modules: ModuleInfo
   };
 
   return (
-    <Modal title={type ? `Yangi ${w.noun.toLowerCase()}` : "Yangi muassasa"} onClose={onClose}>
+    <Modal title={type ? t("Yangi {a}", { a: w.noun.toLowerCase() }) : t("Yangi muassasa")} onClose={onClose}>
       <form onSubmit={submit} className="space-y-3">
         <fieldset>
-          <legend className="text-sm">1. Muassasa turi</legend>
-          {categories.isPending && <p className="mt-1 text-sm text-muted">Yuklanmoqda...</p>}
+          <legend className="text-sm">{t("1. Muassasa turi")}</legend>
+          {categories.isPending && <p className="mt-1 text-sm text-muted">{t("Yuklanmoqda...")}</p>}
           {categories.error && <ErrorNote error={categories.error} />}
           <div className="mt-1 flex flex-wrap gap-2">
             {active.map((c) => {
@@ -99,50 +100,50 @@ export function CreateBusinessDialog({ modules, onClose }: { modules: ModuleInfo
                     on ? "border-primary bg-primary text-white" : "border-line bg-white hover:border-primary/60"}`}>
                   <input type="radio" name="business-type" value={c.id} checked={on} required className="sr-only"
                     onChange={() => chooseType(String(c.id))} />
-                  {c.name_uz}
+                  {typeName(c)}
                 </label>
               );
             })}
           </div>
         </fieldset>
         <fieldset disabled={!type} className="space-y-3 disabled:opacity-50">
-        <label className="block text-sm">2. {w.noun} nomi
+        <label className="block text-sm">2. {w.noun}{" "}{t("nomi")}
           <input className={inputClass} required minLength={2} maxLength={120} value={name} placeholder={w.example}
             onChange={(e) => {
               setName(e.target.value);
               if (!slugEdited) setSlug(slugFor(e.target.value, type));
             }} />
         </label>
-        <label className="block text-sm">Havola nomi (lotin harflari)
+        <label className="block text-sm">{t("Havola nomi (lotin harflari)")}
           <input className={inputClass} required pattern="[a-z0-9]+(-[a-z0-9]+)*" maxLength={140} value={slug}
             placeholder={slugFor("nomi", type)}
             onChange={(e) => { setSlug(e.target.value); setSlugEdited(true); }} />
           <span className="mt-1 block text-xs text-muted">
-            Avtomatik yasaladi, tur so'zi qo'shiladi. Kerak bo'lsa o'zgartiring.
+            {t("Avtomatik yasaladi, tur so'zi qo'shiladi. Kerak bo'lsa o'zgartiring.")}
             {slugEdited && name && (
               <button type="button" className="ml-2 text-primary underline"
-                onClick={() => { setSlugEdited(false); setSlug(slugFor(name, type)); }}>Nomdan qayta yasash</button>
+                onClick={() => { setSlugEdited(false); setSlug(slugFor(name, type)); }}>{t("Nomdan qayta yasash")}</button>
             )}
           </span>
         </label>
         <AddressFields value={place} onChange={setPlace} />
         <div className="grid gap-3 sm:grid-cols-2">
-          <label className="block text-sm">Direktor ismi
+          <label className="block text-sm">{t("Direktor ismi")}
             <input className={inputClass} required minLength={2} maxLength={120} value={ownerName}
               onChange={(e) => setOwnerName(e.target.value)} />
           </label>
-          <label className="block text-sm">Direktor telefoni (login)
+          <label className="block text-sm">{t("Direktor telefoni (login)")}
             <input className={inputClass} type="tel" required placeholder="90 123 45 67" value={ownerPhone}
               onChange={(e) => setOwnerPhone(e.target.value)} />
           </label>
         </div>
         <PhoneOwnerHint lookup={ownerLookup.data} mode="assign" />
-        <PasswordInput label="Direktorning boshlang'ich paroli" value={ownerPassword} onChange={setOwnerPassword} />
-        <label className="block text-sm">Obuna (kun, bo'sh qolsa muddatsiz)
+        <PasswordInput label={t("Direktorning boshlang'ich paroli")} value={ownerPassword} onChange={setOwnerPassword} />
+        <label className="block text-sm">{t("Obuna (kun, bo'sh qolsa muddatsiz)")}
           <input className={inputClass} type="number" min={1} max={3660} value={days} onChange={(e) => setDays(e.target.value)} />
         </label>
         <fieldset>
-          <legend className="text-sm">Modullar</legend>
+          <legend className="text-sm">{t("Modullar")}</legend>
           <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1">
             {modules.map((m) => (
               <label key={m.code} className="flex items-center gap-2 text-sm">
@@ -155,12 +156,12 @@ export function CreateBusinessDialog({ modules, onClose }: { modules: ModuleInfo
         </fieldset>
         {type && place.lat === null && (
           <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
-            Xaritada {w.noun.toLowerCase()} joyini belgilang — lokatsiyasiz ochib bo'lmaydi (mijoz ilovasida ko'rinmaydi).
+            {t("Xaritada")}{" "}{w.noun.toLowerCase()}{" "}{t("joyini belgilang — lokatsiyasiz ochib bo'lmaydi (mijoz ilovasida ko'rinmaydi).")}
           </p>
         )}
         {create.error && <ErrorNote error={create.error} />}
         <Button type="submit" disabled={create.isPending || !type || place.lat === null} className="w-full">
-          {type ? `${w.noun}ni yaratish` : "Avval turini tanlang"}
+          {type ? t("{a}ni yaratish", { a: w.noun }) : t("Avval turini tanlang")}
         </Button>
         </fieldset>
       </form>
@@ -171,10 +172,10 @@ export function CreateBusinessDialog({ modules, onClose }: { modules: ModuleInfo
 type Tab = "info" | "subscription" | "modules" | "staff";
 
 const TABS: { id: Tab; label: string }[] = [
-  { id: "info", label: "Ma'lumot" },
-  { id: "subscription", label: "Obuna" },
-  { id: "modules", label: "Modullar" },
-  { id: "staff", label: "Xodimlar" },
+  { id: "info", label: t("Ma'lumot") },
+  { id: "subscription", label: t("Obuna") },
+  { id: "modules", label: t("Modullar") },
+  { id: "staff", label: t("Xodimlar") },
 ];
 
 export function BusinessDialog({ business: b, modules, onClose }: {
@@ -183,7 +184,7 @@ export function BusinessDialog({ business: b, modules, onClose }: {
   onClose: () => void;
 }) {
   const [tab, setTab] = useState<Tab>("info");
-  const bizType = useCategories().data?.find((t) => t.id === b.category_id);
+  const bizType = useCategories().data?.find((tx) => tx.id === b.category_id);
   const queryClient = useQueryClient();
   const refreshAll = () => Promise.all([
     queryClient.invalidateQueries({ queryKey: ["superadmin"] }),
@@ -192,10 +193,10 @@ export function BusinessDialog({ business: b, modules, onClose }: {
   return (
     <Modal title={b.name} onClose={onClose}>
       <p className="mb-2 flex flex-wrap items-center gap-2 text-sm text-muted">
-        <span>Direktor: {b.owner_name ?? "yo'q"}</span>
+        <span>{t("Direktor:")}{" "}{b.owner_name ?? t("yo'q")}</span>
         <StatusBadge b={b} />
       </p>
-      <CredentialsBox title="Direktorning kirish ma'lumotlari (www.ariqalqon.uz)" businessId={b.id}
+      <CredentialsBox title={t("Direktorning kirish ma'lumotlari (www.ariqalqon.uz)")} businessId={b.id}
         memberId={b.owner_member_id} phone={b.owner_phone} status={b.owner_password_status}
         changedAt={b.owner_password_changed_at} canView onChanged={refreshAll} />
       <OwnerChange business={b} />
@@ -247,10 +248,10 @@ function InfoTab({ business: b }: { business: BusinessAdmin }) {
 
   return (
     <form onSubmit={submit} className="space-y-3">
-      <label className="block text-sm">Nomi
+      <label className="block text-sm">{t("Nomi")}
         <input className={inputClass} required minLength={2} maxLength={120} value={name} onChange={(e) => setName(e.target.value)} />
       </label>
-      <label className="block text-sm">Turi
+      <label className="block text-sm">{t("Turi")}
         <select className={inputClass} value={category} onChange={(e) => setCategory(e.target.value)}>
           {categories.data?.map((c) => <option key={c.id} value={c.id}>{typeLabel(c)}</option>)}
         </select>
@@ -258,8 +259,8 @@ function InfoTab({ business: b }: { business: BusinessAdmin }) {
       <AddressFields value={place} onChange={setPlace} />
       {save.error && <ErrorNote error={save.error} />}
       <div className="flex items-center gap-3">
-        <Button type="submit" disabled={save.isPending}>Saqlash</Button>
-        {save.isSuccess && <span className="text-sm text-success">Saqlandi</span>}
+        <Button type="submit" disabled={save.isPending}>{t("Saqlash")}</Button>
+        {save.isSuccess && <span className="text-sm text-success">{t("Saqlandi")}</span>}
       </div>
     </form>
   );
@@ -292,47 +293,47 @@ function SubscriptionTab({ business: b }: { business: BusinessAdmin }) {
   return (
     <div className="space-y-4 text-sm">
       <p>
-        Hozir: {b.subscription_ends_at ? `${formatDate(b.subscription_ends_at)} gacha` : "muddatsiz"}
-        {!b.is_active && " (to'xtatilgan)"}
+        {t("Hozir:")}{" "}{b.subscription_ends_at ? t("{a} gacha", { a: formatDate(b.subscription_ends_at) }) : "muddatsiz"}
+        {!b.is_active && t(" (to'xtatilgan)")}
       </p>
       <RenewForm business={b} onDone={renewed} />
-      <p className="text-xs text-muted">Quyidagilar pulsiz tuzatish uchun (to'lov tarixiga yozilmaydi):</p>
-      <label className="block max-w-xs">Aniq sana (kun oxirigacha)
+      <p className="text-xs text-muted">{t("Quyidagilar pulsiz tuzatish uchun (to'lov tarixiga yozilmaydi):")}</p>
+      <label className="block max-w-xs">{t("Aniq sana (kun oxirigacha)")}
         <input className={inputClass} type="date" min={todayIso()} value={date} onChange={(e) => setDate(e.target.value)} />
       </label>
       <div className="flex flex-wrap gap-2">
         <Button variant="secondary" disabled={!date || update.isPending}
           onClick={() => update.mutate({ subscription_ends_at: `${date}T23:59:59+05:00`, is_active: true })}>
-          Sanani saqlash
+          {t("Sanani saqlash")}
         </Button>
         <Button variant="secondary" disabled={update.isPending}
           onClick={() => { setDate(""); update.mutate({ subscription_ends_at: null, is_active: true }); }}>
-          Muddatsiz qilish
+          {t("Muddatsiz qilish")}
         </Button>
       </div>
       <div className="flex flex-wrap gap-2 border-t border-line pt-4">
         {b.is_active ? (
           confirming ? (
             <>
-              <Button variant="danger" onClick={() => update.mutate({ is_active: false })}>Ha, to'xtatish</Button>
-              <Button variant="secondary" onClick={() => setConfirming(false)}>Yo'q</Button>
+              <Button variant="danger" onClick={() => update.mutate({ is_active: false })}>{t("Ha, to'xtatish")}</Button>
+              <Button variant="secondary" onClick={() => setConfirming(false)}>{t("Yo'q")}</Button>
             </>
           ) : (
-            <Button variant="danger" onClick={() => setConfirming(true)}>Obunani to'xtatish</Button>
+            <Button variant="danger" onClick={() => setConfirming(true)}>{t("Obunani to'xtatish")}</Button>
           )
         ) : (
-          <Button onClick={() => update.mutate({ is_active: true })}>Obunani yoqish</Button>
+          <Button onClick={() => update.mutate({ is_active: true })}>{t("Obunani yoqish")}</Button>
         )}
         {b.status === "blocked" ? (
-          <Button variant="secondary" onClick={() => block.mutate("active")}>Blokdan chiqarish</Button>
+          <Button variant="secondary" onClick={() => block.mutate("active")}>{t("Blokdan chiqarish")}</Button>
         ) : (
-          <Button variant="danger" onClick={() => block.mutate("blocked")}>Bloklash</Button>
+          <Button variant="danger" onClick={() => block.mutate("blocked")}>{t("Bloklash")}</Button>
         )}
         <Button variant="danger" className="flex items-center gap-1" onClick={() => setDeleting(true)}>
-          <Trash2 size={15} aria-hidden /> O'chirish
+          <Trash2 size={15} aria-hidden />{" "}{t("O'chirish")}
         </Button>
       </div>
-      <p className="text-xs text-muted">To'xtatish yoki bloklash ma'lumotni o'chirmaydi. Blokni to'lov ochmaydi.</p>
+      <p className="text-xs text-muted">{t("To'xtatish yoki bloklash ma'lumotni o'chirmaydi. Blokni to'lov ochmaydi.")}</p>
       {deleting && <DeleteBox business={b} onCancel={() => setDeleting(false)} />}
       {error && <ErrorNote error={error} />}
       <div className="border-t border-line pt-4">
@@ -356,23 +357,21 @@ function DeleteBox({ business: b, onCancel }: { business: BusinessAdmin; onCance
     <div role="alertdialog" aria-labelledby="delete-title"
       className="space-y-3 rounded-xl border border-danger/40 bg-danger/5 p-4">
       <p id="delete-title" className="font-medium text-danger">
-        Haqiqatan ham ushbu muassasani o'chirmoqchimisiz? Bu amalni ortga qaytarib bo'lmaydi.
+        {t("Haqiqatan ham ushbu muassasani o'chirmoqchimisiz? Bu amalni ortga qaytarib bo'lmaydi.")}
       </p>
       <p className="text-muted">
-        Butunlay o'chadi: bronlar, to'lovlar, kassa va xarajatlar, ombor, oyliklar, xizmatlar, rasmlar, xodimlarning
-        shu salondagi a'zoligi ({b.staff_count} ta). Direktor va xodimlarning shaxsiy hisoblari qoladi.
-        Hisobot kerak bo'lsa, avval direktor panelidan Excel'ga yuklab oling.
+        {t("Butunlay o'chadi: bronlar, to'lovlar, kassa va xarajatlar, ombor, oyliklar, xizmatlar, rasmlar, xodimlarning shu salondagi a'zoligi (")}{b.staff_count}{" "}{t("ta). Direktor va xodimlarning shaxsiy hisoblari qoladi. Hisobot kerak bo'lsa, avval direktor panelidan Excel'ga yuklab oling.")}
       </p>
-      <label className="block">Tasdiqlash uchun nomini yozing: <b className="select-all">{b.name}</b>
+      <label className="block">{t("Tasdiqlash uchun nomini yozing:")}{" "}<b className="select-all">{b.name}</b>
         <input className={inputClass} value={typed} autoComplete="off" data-autofocus
           onChange={(e) => { setTyped(e.target.value); remove.reset(); }} />
       </label>
       {remove.error && <ErrorNote error={remove.error} />}
       <div className="flex flex-wrap gap-2">
         <Button variant="danger" disabled={!match || remove.isPending} onClick={() => remove.mutate()}>
-          {remove.isPending ? "O'chirilmoqda..." : "Ha, butunlay o'chirish"}
+          {remove.isPending ? t("O'chirilmoqda...") : t("Ha, butunlay o'chirish")}
         </Button>
-        <Button variant="secondary" disabled={remove.isPending} onClick={onCancel}>Bekor qilish</Button>
+        <Button variant="secondary" disabled={remove.isPending} onClick={onCancel}>{t("Bekor qilish")}</Button>
       </div>
     </div>
   );

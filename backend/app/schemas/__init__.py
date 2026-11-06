@@ -365,6 +365,7 @@ class CountRow(BaseModel):
     key: str
     label: str
     count: int
+    label_ru: str | None = None          # ruscha panel uchun (muassasa turi)
 
 
 class DailyPoint(BaseModel):
@@ -383,6 +384,7 @@ class RatingRow(BaseModel):
     id: int
     name: str
     category: str
+    category_ru: str | None = None
     rating_avg: float
     rating_count: int
 

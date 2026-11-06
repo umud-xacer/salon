@@ -9,6 +9,7 @@ import type { Region, ReverseAddress } from "../../api/types";
 import { Button, inputClass } from "../../components/ui";
 import { LocationPicker } from "./Maps";
 
+import { t } from "../../i18n";
 const OTHER = "__other";
 
 export interface AddressValue {
@@ -42,7 +43,7 @@ export function AddressFields({ value, onChange }: {
   const lookup = async (lat: number, lng: number) => {
     const id = ++request.current;
     onChange({ ...latest.current, lat, lng });
-    setStatus("Manzil aniqlanmoqda...");
+    setStatus(t("Manzil aniqlanmoqda..."));
     setSuggestion(null);
     try {
       const found = await api<ReverseAddress>(`/geo/address?lat=${lat}&lng=${lng}`);
@@ -58,21 +59,21 @@ export function AddressFields({ value, onChange }: {
         else next.address = found.address;
       }
       onChange(next);
-      setStatus(found.region ? "" : "Viloyat aniqlanmadi, ro'yxatdan tanlang");
+      setStatus(found.region ? "" : t("Viloyat aniqlanmadi, ro'yxatdan tanlang"));
     } catch (e) {
       if (id !== request.current) return;
       const down = e instanceof ApiError && e.status === 503;
-      setStatus(down ? "Manzil xizmati javob bermadi, qo'lda to'ldiring" : "Bu nuqta uchun manzil topilmadi, qo'lda to'ldiring");
+      setStatus(down ? t("Manzil xizmati javob bermadi, qo'lda to'ldiring") : t("Bu nuqta uchun manzil topilmadi, qo'lda to'ldiring"));
     }
   };
 
   const locate = () => {
     if (!navigator.geolocation) {
-      setStatus("Brauzer joylashuvni qo'llab-quvvatlamaydi");
+      setStatus(t("Brauzer joylashuvni qo'llab-quvvatlamaydi"));
       return;
     }
     setLocating(true);
-    setStatus("Joylashuvingiz aniqlanmoqda...");
+    setStatus(t("Joylashuvingiz aniqlanmoqda..."));
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         setLocating(false);
@@ -80,7 +81,7 @@ export function AddressFields({ value, onChange }: {
       },
       () => {
         setLocating(false);
-        setStatus("Joylashuvga ruxsat berilmadi. Xaritada bosing yoki qo'lda yozing");
+        setStatus(t("Joylashuvga ruxsat berilmadi. Xaritada bosing yoki qo'lda yozing"));
       },
       { enableHighAccuracy: true, timeout: 10_000 },
     );
@@ -98,29 +99,29 @@ export function AddressFields({ value, onChange }: {
   return (
     <fieldset className="space-y-3">
       <div className="grid gap-3 sm:grid-cols-2">
-        <label className="block text-sm">Viloyat
+        <label className="block text-sm">{t("Viloyat")}
           <select className={inputClass} value={value.region} onChange={(e) => pickRegion(e.target.value)}>
-            <option value="">Tanlang</option>
+            <option value="">{t("Tanlang")}</option>
             {regions.data?.map((r) => <option key={r.name} value={r.name}>{r.name}</option>)}
           </select>
         </label>
-        <label className="block text-sm">Tuman yoki shahar
+        <label className="block text-sm">{t("Tuman yoki shahar")}
           <select className={inputClass} disabled={!value.region}
             value={manualCity ? OTHER : known ? value.city : ""} onChange={(e) => pickDistrict(e.target.value)}>
-            <option value="">{value.region ? "Tanlang" : "Avval viloyatni tanlang"}</option>
+            <option value="">{value.region ? t("Tanlang") : t("Avval viloyatni tanlang")}</option>
             {districts.map((d) => <option key={d} value={d}>{d}</option>)}
-            <option value={OTHER}>Ro'yxatda yo'q</option>
+            <option value={OTHER}>{t("Ro'yxatda yo'q")}</option>
           </select>
         </label>
       </div>
       {manualCity || (value.city !== "" && !known) ? (
-        <label className="block text-sm">Tuman yoki shahar nomi
+        <label className="block text-sm">{t("Tuman yoki shahar nomi")}
           <input className={inputClass} maxLength={80} value={value.city}
             onChange={(e) => onChange({ ...value, city: e.target.value })} />
         </label>
       ) : null}
-      <label className="block text-sm">Manzil (ko'cha, uy)
-        <input className={inputClass} maxLength={300} placeholder="Qo'lda yozing yoki xaritadan tanlang"
+      <label className="block text-sm">{t("Manzil (ko'cha, uy)")}
+        <input className={inputClass} maxLength={300} placeholder={t("Qo'lda yozing yoki xaritadan tanlang")}
           value={value.address}
           onChange={(e) => {
             setTouched(e.target.value.trim() !== "");
@@ -130,23 +131,23 @@ export function AddressFields({ value, onChange }: {
       </label>
       {suggestion && (
         <p className="flex flex-wrap items-center gap-2 rounded-lg bg-page px-3 py-2 text-sm">
-          <span className="min-w-0 flex-1 break-words">Xaritadan: {suggestion}</span>
+          <span className="min-w-0 flex-1 break-words">{t("Xaritadan:")}{" "}{suggestion}</span>
           <Button type="button" variant="secondary" className="!px-2 !py-1 text-xs"
             onClick={() => {
               onChange({ ...value, address: suggestion });
               setSuggestion(null);
               setTouched(false);
             }}>
-            Shuni qo'yish
+            {t("Shuni qo'yish")}
           </Button>
         </p>
       )}
       <div className="text-sm">
         <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
-          <span>Lokatsiya</span>
+          <span>{t("Lokatsiya")}</span>
           <Button type="button" variant="secondary" disabled={locating} className="flex items-center gap-1 !px-2 !py-1 text-xs"
             onClick={locate}>
-            <LocateFixed size={14} aria-hidden /> Mening joyim
+            <LocateFixed size={14} aria-hidden />{" "}{t("Mening joyim")}
           </Button>
         </div>
         <LocationPicker lat={value.lat} lng={value.lng} onChange={(lat, lng) => void lookup(lat, lng)} />

@@ -8,10 +8,11 @@ import { roleLabel, useVocab } from "../vocab";
 import { Modal } from "../../components/Modal";
 import { Badge, Button, Card, Empty, ErrorNote, inputClass, PageTitle, Spinner, Tabs } from "../../components/ui";
 
+import { t } from "../../i18n";
 const STATUS: Record<string, { label: string; tone: "gray" | "amber" | "green" }> = {
-  draft: { label: "Qoralama", tone: "gray" },
-  approved: { label: "Tasdiqlangan", tone: "amber" },
-  paid: { label: "To'langan", tone: "green" },
+  draft: { label: t("Qoralama"), tone: "gray" },
+  approved: { label: t("Tasdiqlangan"), tone: "amber" },
+  paid: { label: t("To'langan"), tone: "green" },
 };
 
 const StatusBadge = ({ status }: { status: string }) => (
@@ -23,11 +24,11 @@ export function PayrollPage({ membership }: { membership: Membership }) {
   const [tab, setTab] = useState<"payroll" | "rates">("payroll");
   return (
     <>
-      <PageTitle title="Oylik" hint="Foiz haqiqatda tushgan puldan hisoblanadi" />
+      <PageTitle title={t("Oylik")} hint={t("Foiz haqiqatda tushgan puldan hisoblanadi")} />
       <Tabs
         value={tab}
         onChange={setTab}
-        tabs={[{ id: "payroll", label: "Oyliklar" }, { id: "rates", label: "Stavkalar" }]}
+        tabs={[{ id: "payroll", label: t("Oyliklar") }, { id: "rates", label: t("Stavkalar") }]}
       />
       {tab === "payroll" ? <Payrolls businessId={b} /> : <Rates businessId={b} />}
     </>
@@ -53,10 +54,10 @@ function Payrolls({ businessId }: { businessId: number }) {
   return (
     <>
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        <input type="month" aria-label="Oy" className="rounded-lg border border-line bg-white px-2 py-2 text-sm"
+        <input type="month" aria-label={t("Oy")} className="rounded-lg border border-line bg-white px-2 py-2 text-sm"
           value={month} onChange={(e) => e.target.value && setMonth(e.target.value)} />
         <Button disabled={generate.isPending} onClick={() => generate.mutate()}>
-          {items?.length ? "Qayta hisoblash" : "Hisoblash"}
+          {items?.length ? t("Qayta hisoblash") : t("Hisoblash")}
         </Button>
       </div>
       {generate.error && <div className="mb-3"><ErrorNote error={generate.error} /></div>}
@@ -65,11 +66,11 @@ function Payrolls({ businessId }: { businessId: number }) {
       {query.data && (
         <>
           <p className="mb-3 text-sm text-muted">
-            Jami: <b className="text-ink tabular-nums">{formatMoney(query.data.total)}</b>
-            {" · "}To'langan: <span className="tabular-nums">{formatMoney(query.data.paid)}</span>
+            {t("Jami:")}{" "}<b className="text-ink tabular-nums">{formatMoney(query.data.total)}</b>
+            {" · "}{t("To'langan:")}{" "}<span className="tabular-nums">{formatMoney(query.data.paid)}</span>
           </p>
           {items?.length === 0 ? (
-            <Card><Empty>Bu oy hisoblanmagan. Avval Stavkalarni kiriting, keyin Hisoblash ni bosing</Empty></Card>
+            <Card><Empty>{t("Bu oy hisoblanmagan. Avval Stavkalarni kiriting, keyin Hisoblash ni bosing")}</Empty></Card>
           ) : (
             <ul className="divide-y divide-line rounded-xl border border-line bg-white">
               {items?.map((p) => (
@@ -79,7 +80,7 @@ function Payrolls({ businessId }: { businessId: number }) {
                     <span className="min-w-0 flex-1 basis-40">
                       <span className="block font-medium break-words">{p.full_name}</span>
                       <span className="block text-xs text-muted tabular-nums">
-                        Stavka {formatMoney(p.base_salary)} · Foiz {formatMoney(p.commission)}
+                        {t("Stavka")}{" "}{formatMoney(p.base_salary)}{" "}{t("· Foiz")}{" "}{formatMoney(p.commission)}
                       </span>
                     </span>
                     <StatusBadge status={p.status} />
@@ -132,37 +133,37 @@ function PayrollDialog({ businessId, payroll: p, month, onClose }: {
   return (
     <Modal title={p.full_name} onClose={onClose}>
       <dl className="grid grid-cols-[1fr_auto] gap-y-1 text-sm">
-        <dt className="text-muted">Stavka</dt>
+        <dt className="text-muted">{t("Stavka")}</dt>
         <dd className="text-right tabular-nums">{formatMoney(p.base_salary)}</dd>
-        <dt className="text-muted">Tushum ({formatQty(p.commission_percent)}% foiz)</dt>
+        <dt className="text-muted">{t("Tushum (")}{formatQty(p.commission_percent)}{t("% foiz)")}</dt>
         <dd className="text-right tabular-nums">{formatMoney(p.revenue)}</dd>
-        <dt className="text-muted">Foiz</dt>
+        <dt className="text-muted">{t("Foiz")}</dt>
         <dd className="text-right tabular-nums">{formatMoney(p.commission)}</dd>
-        <dt className="font-medium">Jami</dt>
+        <dt className="font-medium">{t("Jami")}</dt>
         <dd className="text-right font-medium tabular-nums">{formatMoney(p.total)}</dd>
       </dl>
       {p.status === "draft" ? (
         <form onSubmit={submit} className="mt-4 space-y-3 border-t border-line pt-4">
           <div className="grid gap-3 sm:grid-cols-2">
-            <label className="block text-sm">Bonus
+            <label className="block text-sm">{t("Bonus")}
               <input className={inputClass} type="number" inputMode="numeric" required min={0} step={1} value={bonus}
                 onChange={(e) => setBonus(e.target.value)} />
             </label>
-            <label className="block text-sm">Ushlanma (avans, jarima)
+            <label className="block text-sm">{t("Ushlanma (avans, jarima)")}
               <input className={inputClass} type="number" inputMode="numeric" required min={0} step={1} value={deductions}
                 onChange={(e) => setDeductions(e.target.value)} />
             </label>
           </div>
-          <label className="block text-sm">Izoh
+          <label className="block text-sm">{t("Izoh")}
             <input className={inputClass} maxLength={500} value={note} onChange={(e) => setNote(e.target.value)} />
           </label>
-          <Button type="submit" variant="secondary" disabled={save.isPending || !dirty}>Saqlash</Button>
+          <Button type="submit" variant="secondary" disabled={save.isPending || !dirty}>{t("Saqlash")}</Button>
         </form>
       ) : (
         <div className="mt-4 border-t border-line pt-4 text-sm">
-          <p>Bonus: {formatMoney(p.bonus)} · Ushlanma: {formatMoney(p.deductions)}</p>
+          <p>{t("Bonus:")}{" "}{formatMoney(p.bonus)}{" "}{t("· Ushlanma:")}{" "}{formatMoney(p.deductions)}</p>
           {p.note && <p className="mt-1 text-muted break-words">{p.note}</p>}
-          {p.paid_at && <p className="mt-1 text-muted">To'langan: {formatDate(p.paid_at)}</p>}
+          {p.paid_at && <p className="mt-1 text-muted">{t("To'langan:")}{" "}{formatDate(p.paid_at)}</p>}
         </div>
       )}
       {(save.error || action.error) && <div className="mt-3"><ErrorNote error={save.error ?? action.error} /></div>}
@@ -170,20 +171,20 @@ function PayrollDialog({ businessId, payroll: p, month, onClose }: {
         <StatusBadge status={p.status} />
         {p.status === "draft" && (
           <Button type="button" disabled={action.isPending || dirty} onClick={() => action.mutate("approve")}>
-            Tasdiqlash
+            {t("Tasdiqlash")}
           </Button>
         )}
         {p.status === "approved" && (confirmPay ? (
           <Button type="button" disabled={action.isPending} onClick={() => action.mutate("pay")}>
-            Ha, {formatMoney(p.total)} to'landi
+            {t("Ha,")}{" "}{formatMoney(p.total)}{" "}{t("to'landi")}
           </Button>
         ) : (
-          <Button type="button" onClick={() => setConfirmPay(true)}>To'landi deb belgilash</Button>
+          <Button type="button" onClick={() => setConfirmPay(true)}>{t("To'landi deb belgilash")}</Button>
         ))}
       </div>
-      {p.status === "draft" && dirty && <p className="mt-2 text-xs text-muted">Tasdiqlashdan oldin saqlang.</p>}
-      {p.status === "draft" && !dirty && <p className="mt-2 text-xs text-muted">Tasdiqlangach, oylik o'zgartirilmaydi.</p>}
-      {p.status === "approved" && <p className="mt-2 text-xs text-muted">To'langan oylik Xarajatlarga tushadi.</p>}
+      {p.status === "draft" && dirty && <p className="mt-2 text-xs text-muted">{t("Tasdiqlashdan oldin saqlang.")}</p>}
+      {p.status === "draft" && !dirty && <p className="mt-2 text-xs text-muted">{t("Tasdiqlangach, oylik o'zgartirilmaydi.")}</p>}
+      {p.status === "approved" && <p className="mt-2 text-xs text-muted">{t("To'langan oylik Xarajatlarga tushadi.")}</p>}
     </Modal>
   );
 }
@@ -215,7 +216,7 @@ function Rates({ businessId }: { businessId: number }) {
           </li>
         ))}
       </ul>
-      <p className="mt-2 text-xs text-muted">Yangi stavka keyingi hisoblashda qo'llanadi, tasdiqlangan oylik o'zgarmaydi.</p>
+      <p className="mt-2 text-xs text-muted">{t("Yangi stavka keyingi hisoblashda qo'llanadi, tasdiqlangan oylik o'zgarmaydi.")}</p>
       {editing && <RateDialog businessId={businessId} rate={editing} onClose={() => setEditing(null)} />}
     </>
   );
@@ -242,17 +243,17 @@ function RateDialog({ businessId, rate, onClose }: { businessId: number; rate: C
     <Modal title={rate.full_name} onClose={onClose}>
       <form onSubmit={submit} className="space-y-3">
         <div className="grid gap-3 sm:grid-cols-2">
-          <label className="block text-sm">Oylik stavka (so'm)
+          <label className="block text-sm">{t("Oylik stavka (so'm)")}
             <input className={inputClass} type="number" inputMode="numeric" required data-autofocus min={0} step={1}
               value={base} onChange={(e) => setBase(e.target.value)} />
           </label>
-          <label className="block text-sm">Foiz (%)
+          <label className="block text-sm">{t("Foiz (%)")}
             <input className={inputClass} type="number" inputMode="decimal" required min={0} max={100} step={0.01}
               value={percent} onChange={(e) => setPercent(e.target.value)} />
           </label>
         </div>
         {save.error && <ErrorNote error={save.error} />}
-        <Button type="submit" disabled={save.isPending}>Saqlash</Button>
+        <Button type="submit" disabled={save.isPending}>{t("Saqlash")}</Button>
       </form>
     </Modal>
   );
@@ -265,10 +266,10 @@ export function MyPayrollPage({ membership }: { membership: Membership }) {
   });
   return (
     <>
-      <PageTitle title="Oyliklarim" hint="Tasdiqlangan oyliklar" />
+      <PageTitle title={t("Oyliklarim")} hint={t("Tasdiqlangan oyliklar")} />
       {query.isPending && <Spinner />}
       {query.error && <ErrorNote error={query.error} />}
-      {query.data?.length === 0 && <Card><Empty>Hali tasdiqlangan oylik yo'q</Empty></Card>}
+      {query.data?.length === 0 && <Card><Empty>{t("Hali tasdiqlangan oylik yo'q")}</Empty></Card>}
       {query.data && query.data.length > 0 && (
         <ul className="divide-y divide-line rounded-xl border border-line bg-white">
           {query.data.map((p) => (
@@ -276,7 +277,7 @@ export function MyPayrollPage({ membership }: { membership: Membership }) {
               <span className="min-w-0 flex-1 basis-40">
                 <span className="block font-medium tabular-nums">{p.period_start.slice(5, 7)}.{p.period_start.slice(0, 4)}</span>
                 <span className="block text-xs text-muted tabular-nums">
-                  Stavka {formatMoney(p.base_salary)} · Foiz {formatMoney(p.commission)} · Bonus {formatMoney(p.bonus)} · Ushlanma {formatMoney(p.deductions)}
+                  {t("Stavka")}{" "}{formatMoney(p.base_salary)}{" "}{t("· Foiz")}{" "}{formatMoney(p.commission)}{" "}{t("· Bonus")}{" "}{formatMoney(p.bonus)}{" "}{t("· Ushlanma")}{" "}{formatMoney(p.deductions)}
                 </span>
               </span>
               <StatusBadge status={p.status} />

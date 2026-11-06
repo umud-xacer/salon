@@ -9,6 +9,7 @@ import { Modal } from "../../components/Modal";
 import { PaymentPanel } from "../finance/PaymentPanel";
 import { useVocab } from "../vocab";
 
+import { t } from "../../i18n";
 const OPEN = ["pending", "confirmed"];
 
 export function AppointmentDialog({ membership, appointment: a, masterName, onClose }: {
@@ -45,19 +46,19 @@ export function AppointmentDialog({ membership, appointment: a, masterName, onCl
   return (
     <Modal title={a.client_name ?? v.clientOne} onClose={onClose}>
       <dl className="grid grid-cols-[6rem_1fr] gap-y-2 text-sm">
-        <dt className="text-muted">Vaqt</dt>
+        <dt className="text-muted">{t("Vaqt")}</dt>
         <dd className="tabular-nums">
           {formatDate(a.starts_at)}, {formatTime(a.starts_at)}–{formatTime(a.ends_at)}
         </dd>
-        <dt className="text-muted">Xizmat</dt>
+        <dt className="text-muted">{t("Xizmat")}</dt>
         <dd>{a.services.join(", ")}</dd>
         <dt className="text-muted">{v.staffOne}</dt>
         <dd>{masterName}</dd>
-        <dt className="text-muted">Narx</dt>
+        <dt className="text-muted">{t("Narx")}</dt>
         <dd>{formatMoney(a.total_price)}</dd>
         {a.client_phone && (
           <>
-            <dt className="text-muted">Telefon</dt>
+            <dt className="text-muted">{t("Telefon")}</dt>
             <dd>
               <a className="text-primary" href={`tel:${a.client_phone}`}>
                 {a.client_phone}
@@ -65,15 +66,14 @@ export function AppointmentDialog({ membership, appointment: a, masterName, onCl
             </dd>
           </>
         )}
-        <dt className="text-muted">Holat</dt>
+        <dt className="text-muted">{t("Holat")}</dt>
         <dd>{STATUS_LABELS[a.status] ?? a.status}</dd>
-        {a.cancel_reason && a.status === "cancelled" && <><dt className="text-muted">Sabab</dt><dd className="break-words">{a.cancel_reason}</dd></>}
+        {a.cancel_reason && a.status === "cancelled" && <><dt className="text-muted">{t("Sabab")}</dt><dd className="break-words">{a.cancel_reason}</dd></>}
       </dl>
 
       {a.status === "pending" && a.confirm_by && (
         <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
-          {v.clientOne} ilovadan bron qildi. {formatDate(a.confirm_by)} {formatTime(a.confirm_by)} gacha tasdiqlanmasa,
-          bron avtomatik bekor qilinadi va vaqt bo'shaydi.
+          {v.clientOne}{" "}{t("ilovadan bron qildi.")}{" "}{formatDate(a.confirm_by)} {formatTime(a.confirm_by)}{" "}{t("gacha tasdiqlanmasa, bron avtomatik bekor qilinadi va vaqt bo'shaydi.")}
         </p>
       )}
 
@@ -89,31 +89,31 @@ export function AppointmentDialog({ membership, appointment: a, masterName, onCl
         <div className="mt-5 flex flex-wrap gap-2 border-t border-line pt-4">
           {a.status === "pending" && (
             <Button disabled={busy} onClick={() => setStatus.mutate("confirmed")}>
-              Tasdiqlash
+              {t("Tasdiqlash")}
             </Button>
           )}
           {OPEN.includes(a.status) && (
             <>
               <Button disabled={busy} variant="secondary" onClick={() => setStatus.mutate("in_progress")}>
-                {v.clientOne} keldi
+                {v.clientOne}{" "}{t("keldi")}
               </Button>
               <Button disabled={busy} variant="secondary" onClick={() => setStatus.mutate("no_show")}>
-                Kelmadi
+                {t("Kelmadi")}
               </Button>
               {confirmCancel ? (
                 <Button disabled={busy} variant="danger" onClick={() => cancel.mutate()}>
-                  Ha, bekor qilish
+                  {t("Ha, bekor qilish")}
                 </Button>
               ) : (
                 <Button variant="danger" onClick={() => setConfirmCancel(true)}>
-                  Bekor qilish
+                  {t("Bekor qilish")}
                 </Button>
               )}
             </>
           )}
           {a.status === "in_progress" && (
             <Button disabled={busy} onClick={() => setStatus.mutate("completed")}>
-              Yakunlash
+              {t("Yakunlash")}
             </Button>
           )}
         </div>

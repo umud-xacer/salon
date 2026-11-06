@@ -55,7 +55,7 @@ export function LoginPage() {
       <div className="w-full max-w-sm rounded-2xl bg-white p-6">
         <div className="-mt-2 mb-2 flex justify-end"><LangSwitch /></div>
         <div className="mb-5 flex flex-col items-center text-center">
-          <img src="/logo.jpg" alt="Chronix" className="mb-3 size-24 rounded-2xl object-cover" />
+          <img src="/logo.jpg" alt={t("Chronix")} className="mb-3 size-24 rounded-2xl object-cover" />
           <h1 className="text-lg font-semibold text-navy">
             {isAdminHost ? t("Chronix — Super Admin paneli") : t("Chronix paneliga kirish")}
           </h1>

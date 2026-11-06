@@ -14,6 +14,7 @@ import { generatePassword, PasswordInput, PasswordReveal } from "../../component
 import { CredentialsBox } from "../../components/CredentialsBox";
 import { ScheduleEditor } from "./ScheduleEditor";
 
+import { t } from "../../i18n";
 const membersKey = (b: number) => ["members", b];
 
 export function useMembers(businessId: number) {
@@ -38,12 +39,12 @@ export function MembersPanel({ businessId, canManageManagers }: { businessId: nu
     <>
       <div className="mb-3 flex justify-end">
         <Button className="flex items-center gap-1" onClick={() => setAdding(true)}>
-          <Plus size={16} aria-hidden /> Xodim qo'shish
+          <Plus size={16} aria-hidden />{" "}{t("Xodim qo'shish")}
         </Button>
       </div>
       {members.isPending && <Spinner />}
       {members.error && <ErrorNote error={members.error} />}
-      {members.data?.length === 0 && <Empty>Hali xodim yo'q</Empty>}
+      {members.data?.length === 0 && <Empty>{t("Hali xodim yo'q")}</Empty>}
       <ul className="divide-y divide-line rounded-xl border border-line bg-white">
         {members.data?.map((m) => (
           <li key={m.id} className="flex items-center hover:bg-page">
@@ -57,7 +58,7 @@ export function MembersPanel({ businessId, canManageManagers }: { businessId: nu
               </span>
               <Badge tone={m.role === "owner" ? "green" : "gray"}>{roleLabel(m.role, v)}</Badge>
               <PasswordBadge status={m.password_status} />
-              {!m.is_active && <Badge tone="red">Faol emas</Badge>}
+              {!m.is_active && <Badge tone="red">{t("Faol emas")}</Badge>}
             </button>
             <span className="shrink-0 pr-3">
               {canView(m) && <PasswordReveal businessId={businessId} memberId={m.id} status={m.password_status} />}
@@ -88,7 +89,7 @@ function StaffTitles() {
   if (!v.titles?.length) return null;
   return (
     <datalist id="staff-titles">
-      {v.titles.map((t) => <option key={t} value={t} />)}
+      {v.titles.map((tx) => <option key={tx} value={tx} />)}
     </datalist>
   );
 }
@@ -133,29 +134,29 @@ function AddMember({ businessId, canManageManagers, onClose }: {
   };
 
   return (
-    <Modal title="Yangi xodim" onClose={onClose}>
+    <Modal title={t("Yangi xodim")} onClose={onClose}>
       <form onSubmit={submit} className="space-y-3">
-        <label className="block text-sm">Telefon (login)
+        <label className="block text-sm">{t("Telefon (login)")}
           <input className={inputClass} type="tel" required placeholder="90 123 45 67" value={phone}
             onChange={(e) => setPhone(e.target.value)} />
         </label>
-        <label className="block text-sm">Ism familiya
+        <label className="block text-sm">{t("Ism familiya")}
           <input className={inputClass} required minLength={2} maxLength={120} value={name}
             onChange={(e) => setName(e.target.value)} />
         </label>
-        <label className="block text-sm">Rol
+        <label className="block text-sm">{t("Rol")}
           <select className={inputClass} value={role} onChange={(e) => setRole(e.target.value)}>
             {roleOptions(canManageManagers, v).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
         </label>
-        <label className="block text-sm">Lavozim
-          <input className={inputClass} maxLength={80} list="staff-titles" placeholder={v.titles?.slice(0, 2).join(", ") || "Lavozim"} value={title}
+        <label className="block text-sm">{t("Lavozim")}
+          <input className={inputClass} maxLength={80} list="staff-titles" placeholder={v.titles?.slice(0, 2).join(", ") || t("Lavozim")} value={title}
             onChange={(e) => setTitle(e.target.value)} />
         </label>
-        <PasswordInput label="Boshlang'ich parol" value={password} onChange={setPassword} />
+        <PasswordInput label={t("Boshlang'ich parol")} value={password} onChange={setPassword} />
         <StaffTitles />
         {add.error && <ErrorNote error={add.error} />}
-        <Button type="submit" disabled={add.isPending} className="w-full">Qo'shish</Button>
+        <Button type="submit" disabled={add.isPending} className="w-full">{t("Qo'shish")}</Button>
       </form>
     </Modal>
   );
@@ -176,10 +177,10 @@ function MemberDialog({ businessId, member: m, canManageManagers, onClose }: {
   // Direktorni va o'zini tahrirlash taqiqlangan, menejerni faqat direktor boshqaradi: baza rad etadi, tugmani ham ko'rsatmaymiz
   const editable = !isSelf && !isOwner && (m.role !== "manager" || canManageManagers);
   const tabs: { id: Tab; label: string }[] = [
-    { id: "main", label: "Asosiy" },
-    ...(editable ? [{ id: "permissions" as const, label: "Huquqlar" }, { id: "services" as const, label: "Xizmatlar" }] : []),
-    { id: "schedule", label: "Ish jadvali" },
-    ...(m.password_block === "shared_account" ? [{ id: "password" as const, label: "Parol" }] : []),
+    { id: "main", label: t("Asosiy") },
+    ...(editable ? [{ id: "permissions" as const, label: t("Huquqlar") }, { id: "services" as const, label: t("Xizmatlar") }] : []),
+    { id: "schedule", label: t("Ish jadvali") },
+    ...(m.password_block === "shared_account" ? [{ id: "password" as const, label: t("Parol") }] : []),
   ];
   const [tab, setTab] = useState<Tab>("main");
 
@@ -187,7 +188,7 @@ function MemberDialog({ businessId, member: m, canManageManagers, onClose }: {
   return (
     <Modal title={m.full_name || m.phone} onClose={onClose}>
       {m.password_block === null && (
-        <CredentialsBox title="Kirish ma'lumotlari" businessId={businessId} memberId={m.id} phone={m.phone}
+        <CredentialsBox title={t("Kirish ma'lumotlari")} businessId={businessId} memberId={m.id} phone={m.phone}
           status={m.password_status} changedAt={m.password_changed_at} canView={canViewPassword}
           onChanged={() => queryClient.invalidateQueries({ queryKey: membersKey(businessId) })} />
       )}
@@ -221,9 +222,9 @@ function MainTab({ businessId, member: m, editable, canManageManagers }: {
   if (!editable) {
     return (
       <dl className="grid grid-cols-[6rem_1fr] gap-y-2 text-sm">
-        <dt className="text-muted">Telefon</dt><dd className="tabular-nums">{m.phone}</dd>
-        <dt className="text-muted">Rol</dt><dd>{roleLabel(m.role, v)}</dd>
-        {m.title && <><dt className="text-muted">Lavozim</dt><dd>{m.title}</dd></>}
+        <dt className="text-muted">{t("Telefon")}</dt><dd className="tabular-nums">{m.phone}</dd>
+        <dt className="text-muted">{t("Rol")}</dt><dd>{roleLabel(m.role, v)}</dd>
+        {m.title && <><dt className="text-muted">{t("Lavozim")}</dt><dd>{m.title}</dd></>}
       </dl>
     );
   }
@@ -236,29 +237,29 @@ function MainTab({ businessId, member: m, editable, canManageManagers }: {
   return (
     <form onSubmit={submit} className="space-y-3">
       <p className="text-sm text-muted tabular-nums">{m.phone}</p>
-      <label className="block text-sm">Rol
+      <label className="block text-sm">{t("Rol")}
         <select className={inputClass} value={role} onChange={(e) => setRole(e.target.value)}>
           {roleOptions(canManageManagers, v).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
       </label>
-      <label className="block text-sm">Lavozim
+      <label className="block text-sm">{t("Lavozim")}
         <input className={inputClass} maxLength={80} list="staff-titles" value={title} onChange={(e) => setTitle(e.target.value)} />
       </label>
       <StaffTitles />
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" className="size-4 accent-primary" checked={m.is_bookable}
           onChange={(e) => update.mutate({ is_bookable: e.target.checked })} />
-        {v.clientOne} qabul qiladi (kalendarda ko'rinadi)
+        {v.clientOne}{" "}{t("qabul qiladi (kalendarda ko'rinadi)")}
       </label>
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" className="size-4 accent-primary" checked={m.is_active}
           onChange={(e) => update.mutate({ is_active: e.target.checked })} />
-        Faol xodim (o'chirilsa, panelga kira olmaydi, ma'lumotlar saqlanadi)
+        {t("Faol xodim (o'chirilsa, panelga kira olmaydi, ma'lumotlar saqlanadi)")}
       </label>
       {update.error && <ErrorNote error={update.error} />}
       <div className="flex items-center gap-3">
-        <Button type="submit" disabled={update.isPending}>Saqlash</Button>
-        {update.isSuccess && <span className="text-sm text-success">Saqlandi</span>}
+        <Button type="submit" disabled={update.isPending}>{t("Saqlash")}</Button>
+        {update.isSuccess && <span className="text-sm text-success">{t("Saqlandi")}</span>}
       </div>
     </form>
   );
@@ -281,7 +282,7 @@ function PermissionsTab({ businessId, memberId }: { businessId: number; memberId
   return (
     <>
       <p className="mb-2 text-sm text-muted">
-        Rol standart huquqlarni beradi. Shu yerda alohida ruxsat berish yoki taqiqlash mumkin.
+        {t("Rol standart huquqlarni beradi. Shu yerda alohida ruxsat berish yoki taqiqlash mumkin.")}
       </p>
       {set.error && <div className="mb-2"><ErrorNote error={set.error} /></div>}
       <ul className="divide-y divide-line">
@@ -289,10 +290,10 @@ function PermissionsTab({ businessId, memberId }: { businessId: number; memberId
           <li key={p.code} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 py-2 text-sm">
             <span className="min-w-0 basis-full [overflow-wrap:anywhere] sm:basis-auto sm:flex-1">
               <span className="block">{p.description ?? p.code}</span>
-              {!p.module_enabled && <span className="block text-xs text-warning">Modul o'chiq</span>}
+              {!p.module_enabled && <span className="block text-xs text-warning">{t("Modul o'chiq")}</span>}
             </span>
             <span className="ml-auto flex shrink-0 items-center gap-2">
-              <Badge tone={p.effective ? "green" : "gray"}>{p.effective ? "Bor" : "Yo'q"}</Badge>
+              <Badge tone={p.effective ? "green" : "gray"}>{p.effective ? t("Bor") : t("Yo'q")}</Badge>
               <select
                 aria-label={p.description ?? p.code}
                 disabled={set.isPending || !p.module_enabled}
@@ -302,9 +303,9 @@ function PermissionsTab({ businessId, memberId }: { businessId: number; memberId
                 }
                 className="rounded-lg border border-line bg-white px-2 py-1 text-xs"
               >
-                <option value="">Rol bo'yicha</option>
-                <option value="true">Ruxsat</option>
-                <option value="false">Taqiq</option>
+                <option value="">{t("Rol bo'yicha")}</option>
+                <option value="true">{t("Ruxsat")}</option>
+                <option value="false">{t("Taqiq")}</option>
               </select>
             </span>
           </li>
@@ -334,7 +335,7 @@ function ServicesTab({ businessId, memberId }: { businessId: number; memberId: n
   if (services.isPending || assigned.isPending) return <Spinner />;
   if (services.error || assigned.error) return <ErrorNote error={services.error ?? assigned.error} />;
   const active = services.data.filter((s) => s.is_active);
-  if (active.length === 0) return <Empty>Avval "Xizmatlar" bo'limida xizmat qo'shing</Empty>;
+  if (active.length === 0) return <Empty>{t("Avval \"Xizmatlar\" bo'limida xizmat qo'shing")}</Empty>;
 
   const toggle = (id: number, on: boolean) =>
     save.mutate(on
@@ -345,7 +346,7 @@ function ServicesTab({ businessId, memberId }: { businessId: number; memberId: n
 
   return (
     <>
-      <p className="mb-2 text-sm text-muted">{v.staffOne} bajaradigan xizmatlar. Faqat shular uchun unga bron qilinadi.</p>
+      <p className="mb-2 text-sm text-muted">{v.staffOne}{" "}{t("bajaradigan xizmatlar. Faqat shular uchun unga bron qilinadi.")}</p>
       {save.error && <div className="mb-2"><ErrorNote error={save.error} /></div>}
       <ul className="divide-y divide-line">
         {active.map((s) => {
@@ -358,11 +359,11 @@ function ServicesTab({ businessId, memberId }: { businessId: number; memberId: n
                 <span className="min-w-0 flex-1 break-words">{s.name}</span>
               </label>
               {mine ? (
-                <select aria-label={`${s.name}: ${v.staffOne.toLowerCase()}ga xos davomiylik`} disabled={save.isPending}
+                <select aria-label={t("{a}: {b}ga xos davomiylik", { a: s.name, b: v.staffOne.toLowerCase() })} disabled={save.isPending}
                   className="rounded-lg border border-line bg-white px-2 py-1 text-xs"
                   value={mine.custom_duration ?? ""}
                   onChange={(e) => setDuration(s.id, e.target.value ? Number(e.target.value) : null)}>
-                  <option value="">{formatDuration(s.duration_min)} (umumiy)</option>
+                  <option value="">{formatDuration(s.duration_min)}{" "}{t("(umumiy)")}</option>
                   {DURATION_CHOICES.filter((m) => m !== s.duration_min).map((m) => (
                     <option key={m} value={m}>{formatDuration(m)}</option>
                   ))}
@@ -376,8 +377,8 @@ function ServicesTab({ businessId, memberId }: { businessId: number; memberId: n
         })}
       </ul>
       <p className="mt-2 text-xs text-muted">
-        Vaqt shu {v.staffOne.toLowerCase()}ga xos bo'lishi mumkin (masalan, tezroq ishlaydi). Bron vaqtlari shunga qarab hisoblanadi.
-        {v.staffOne} ham o'z panelidagi "Xizmatlarim" bo'limida o'zgartira oladi.
+        {t("Vaqt shu")}{" "}{v.staffOne.toLowerCase()}{t("ga xos bo'lishi mumkin (masalan, tezroq ishlaydi). Bron vaqtlari shunga qarab hisoblanadi.")}
+        {v.staffOne}{" "}{t("ham o'z panelidagi \"Xizmatlarim\" bo'limida o'zgartira oladi.")}
       </p>
     </>
   );
@@ -397,8 +398,7 @@ function PasswordTab({ businessId, member: m }: { businessId: number; member: Me
   if (m.password_block === "shared_account") {
     return (
       <p className="text-sm text-muted">
-        Bu odam boshqa muassasa yoki {v.clientOne.toLowerCase()} hisobiga ham bog'langan. Xavfsizlik uchun parolni o'zi o'zgartiradi
-        yoki Super Admin tiklaydi.
+        {t("Bu odam boshqa muassasa yoki")}{" "}{v.clientOne.toLowerCase()}{" "}{t("hisobiga ham bog'langan. Xavfsizlik uchun parolni o'zi o'zgartiradi yoki Super Admin tiklaydi.")}
       </p>
     );
   }
@@ -411,30 +411,29 @@ function PasswordTab({ businessId, member: m }: { businessId: number; member: Me
   return (
     <form onSubmit={submit} className="space-y-3">
       <p className="text-sm text-muted">
-        Xodim shu parol bilan kiradi. Uni faqat rahbar o'zgartiradi — xodimning o'zi almashtira olmaydi.
-        Yangi parol berilganda xodimning barcha kirishlari yopiladi. Parol ko'z tugmasi bilan doim ko'rinadi.
+        {t("Xodim shu parol bilan kiradi. Uni faqat rahbar o'zgartiradi — xodimning o'zi almashtira olmaydi. Yangi parol berilganda xodimning barcha kirishlari yopiladi. Parol ko'z tugmasi bilan doim ko'rinadi.")}
       </p>
       <p className="flex flex-wrap items-center gap-2 text-sm">
-        Hozirgi holat: <PasswordBadge status={m.password_status} />
+        {t("Hozirgi holat:")}{" "}<PasswordBadge status={m.password_status} />
         {m.password_changed_at && <span className="text-muted">{formatDate(m.password_changed_at)}</span>}
         {(me?.workspace !== "superadmin" || m.role === "owner") && (
           <PasswordReveal businessId={businessId} memberId={m.id} status={m.password_status} />
         )}
       </p>
-      <label className="block text-sm">Yangi parol
+      <label className="block text-sm">{t("Yangi parol")}
         <span className="mt-1 flex gap-2">
           <input className={`${inputClass} mt-0 min-w-0 font-mono`} required minLength={8} maxLength={128} autoComplete="off"
             value={password}
             onChange={(e) => { setPassword(e.target.value); save.reset(); }} />
           <Button type="button" variant="secondary" onClick={() => { setPassword(generatePassword()); save.reset(); }}>
-            Yaratish
+            {t("Yaratish")}
           </Button>
         </span>
       </label>
       {save.error && <ErrorNote error={save.error} />}
       <div className="flex items-center gap-3">
-        <Button type="submit" disabled={save.isPending}>Parolni o'rnatish</Button>
-        {save.isSuccess && <span className="text-sm text-success">O'rnatildi</span>}
+        <Button type="submit" disabled={save.isPending}>{t("Parolni o'rnatish")}</Button>
+        {save.isSuccess && <span className="text-sm text-success">{t("O'rnatildi")}</span>}
       </div>
     </form>
   );

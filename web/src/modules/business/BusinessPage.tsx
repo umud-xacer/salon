@@ -9,6 +9,7 @@ import { WEEKDAYS } from "../../components/format";
 import { Button, Card, ErrorNote, inputClass, PageTitle, Spinner } from "../../components/ui";
 import { useVocab } from "../vocab";
 
+import { t } from "../../i18n";
 export function BusinessPage({ membership }: { membership: Membership }) {
   const v = useVocab();
   const b = membership.business_id;
@@ -25,22 +26,22 @@ export function BusinessPage({ membership }: { membership: Membership }) {
   if (profile.error) return <ErrorNote error={profile.error} />;
 
   const checks = [
-    { ok: profile.data.lat !== null, label: "Xaritadagi joyi", hint: "Super Admin belgilaydi" },
-    { ok: (hours.data?.length ?? 0) > 0, label: "Ish vaqti", hint: "Pastda kiriting" },
-    { ok: services.data ? services.data.some((s) => s.is_active) : true, label: "Kamida bitta xizmat", hint: "Xizmatlar bo'limida" },
-    { ok: (photos.data?.length ?? 0) > 0, label: "Rasm", hint: "Pastda yuklang" },
-    { ok: profile.data.is_listed, label: "Ilovada ochiq", hint: "Ma'lumotlar bo'limida yoqing" },
+    { ok: profile.data.lat !== null, label: t("Xaritadagi joyi"), hint: t("Super Admin belgilaydi") },
+    { ok: (hours.data?.length ?? 0) > 0, label: t("Ish vaqti"), hint: t("Pastda kiriting") },
+    { ok: services.data ? services.data.some((s) => s.is_active) : true, label: t("Kamida bitta xizmat"), hint: t("Xizmatlar bo'limida") },
+    { ok: (photos.data?.length ?? 0) > 0, label: t("Rasm"), hint: t("Pastda yuklang") },
+    { ok: profile.data.is_listed, label: t("Ilovada ochiq"), hint: t("Ma'lumotlar bo'limida yoqing") },
   ];
   const ready = checks.every((c) => c.ok);
 
   return (
     <>
-      <PageTitle title={v.businessPage} hint={`${profile.data.category_name} · ${v.clients.toLowerCase()} ilovada ko'radigan ma'lumotlar`} />
+      <PageTitle title={v.businessPage} hint={t("{a} · {b} ilovada ko'radigan ma'lumotlar", { a: profile.data.category_name, b: v.clients.toLowerCase() })} />
       <div className="space-y-4">
         <Card>
           <h2 className="mb-2 flex items-center gap-2 text-sm font-medium">
             {ready ? <CheckCircle2 size={18} className="text-success" aria-hidden /> : <CircleAlert size={18} className="text-warning" aria-hidden />}
-            {ready ? `${v.businessPage} ilovada to'liq ko'rinadi` : "Ilovada to'liq ko'rinishi uchun"}
+            {ready ? t("{a} ilovada to'liq ko'rinadi", { a: v.businessPage }) : t("Ilovada to'liq ko'rinishi uchun")}
           </h2>
           <ul className="grid gap-1 text-sm sm:grid-cols-2">
             {checks.map((c) => (
@@ -81,24 +82,24 @@ function ProfileCard({ businessId, profile }: { businessId: number; profile: Bus
 
   return (
     <Card>
-      <h2 className="mb-3 text-sm font-medium">Ma'lumotlar</h2>
+      <h2 className="mb-3 text-sm font-medium">{t("Ma'lumotlar")}</h2>
       <form onSubmit={submit} className="space-y-3">
-        <label className="block text-sm">{v.businessPage} haqida
+        <label className="block text-sm">{v.businessPage}{" "}{t("haqida")}
           <textarea className={inputClass} rows={3} maxLength={2000} value={description}
-            placeholder="Xizmatlar, afzalliklar, mo'ljal" onChange={(e) => setDescription(e.target.value)} />
+            placeholder={t("Xizmatlar, afzalliklar, mo'ljal")} onChange={(e) => setDescription(e.target.value)} />
         </label>
-        <label className="block text-sm">Telefon ({v.clients.toLowerCase()} uchun)
+        <label className="block text-sm">{t("Telefon (")}{v.clients.toLowerCase()}{" "}{t("uchun)")}
           <input className={inputClass} type="tel" placeholder="+998 90 123 45 67" value={phone}
             onChange={(e) => setPhone(e.target.value)} />
         </label>
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" checked={listed} onChange={(e) => setListed(e.target.checked)} />
-          Ilovada ko'rinsin
+          {t("Ilovada ko'rinsin")}
         </label>
         {save.error && <ErrorNote error={save.error} />}
         <div className="flex items-center gap-3">
-          <Button type="submit" disabled={save.isPending}>Saqlash</Button>
-          {save.isSuccess && <span className="text-sm text-success">Saqlandi</span>}
+          <Button type="submit" disabled={save.isPending}>{t("Saqlash")}</Button>
+          {save.isSuccess && <span className="text-sm text-success">{t("Saqlandi")}</span>}
         </div>
       </form>
     </Card>
@@ -133,8 +134,8 @@ function HoursCard({ businessId, hours, defaults }: {
 
   return (
     <Card>
-      <h2 className="text-sm font-medium">Ish vaqti</h2>
-      <p className="mb-3 text-xs text-muted">Ish jadvali kiritilmagan {v.staffMany} shu vaqt bo'yicha bron qabul qiladi</p>
+      <h2 className="text-sm font-medium">{t("Ish vaqti")}</h2>
+      <p className="mb-3 text-xs text-muted">{t("Ish jadvali kiritilmagan")}{" "}{v.staffMany}{" "}{t("shu vaqt bo'yicha bron qabul qiladi")}</p>
       <form onSubmit={submit} className="space-y-2">
         {days.map((d, i) => (
           <div key={WEEKDAYS[i + 1]} className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
@@ -144,20 +145,20 @@ function HoursCard({ businessId, hours, defaults }: {
             </label>
             {d.open ? (
               <span className="flex items-center gap-2">
-                <input type="time" aria-label={`${WEEKDAYS[i + 1]} ochilish`} className="rounded-lg border border-line px-2 py-1.5"
+                <input type="time" aria-label={t("{a} ochilish", { a: WEEKDAYS[i + 1] })} className="rounded-lg border border-line px-2 py-1.5"
                   value={d.from} onChange={(e) => set(i, { from: e.target.value })} />
                 <span className="text-muted">–</span>
-                <input type="time" aria-label={`${WEEKDAYS[i + 1]} yopilish`} className="rounded-lg border border-line px-2 py-1.5"
+                <input type="time" aria-label={t("{a} yopilish", { a: WEEKDAYS[i + 1] })} className="rounded-lg border border-line px-2 py-1.5"
                   value={d.to} onChange={(e) => set(i, { to: e.target.value })} />
               </span>
-            ) : <span className="text-muted">Dam olish</span>}
+            ) : <span className="text-muted">{t("Dam olish")}</span>}
           </div>
         ))}
-        {invalid && <p className="text-sm text-danger">Yopilish vaqti ochilishdan keyin bo'lishi kerak</p>}
+        {invalid && <p className="text-sm text-danger">{t("Yopilish vaqti ochilishdan keyin bo'lishi kerak")}</p>}
         {save.error && <ErrorNote error={save.error} />}
         <div className="flex items-center gap-3 pt-1">
-          <Button type="submit" disabled={save.isPending || invalid}>Saqlash</Button>
-          {save.isSuccess && <span className="text-sm text-success">Saqlandi</span>}
+          <Button type="submit" disabled={save.isPending || invalid}>{t("Saqlash")}</Button>
+          {save.isSuccess && <span className="text-sm text-success">{t("Saqlandi")}</span>}
         </div>
       </form>
     </Card>
@@ -181,7 +182,7 @@ function PhotosCard({ businessId, photos }: { businessId: number; photos: Busine
         await uploadFile(`/businesses/${businessId}/photos/upload`, file);
       }
     } catch (e) {
-      setError(e instanceof ApiError ? e : new ApiError(0, "upload", "Yuklab bo'lmadi"));
+      setError(e instanceof ApiError ? e : new ApiError(0, "upload", t("Yuklab bo'lmadi")));
     } finally {
       setBusy(false);
       if (input.current) input.current.value = "";
@@ -197,26 +198,26 @@ function PhotosCard({ businessId, photos }: { businessId: number; photos: Busine
     <Card>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h2 className="text-sm font-medium">Rasmlar</h2>
-          <p className="text-xs text-muted">Birinchi rasm ilovadagi kartochkada chiqadi. 20 tagacha, JPG, PNG yoki WEBP</p>
+          <h2 className="text-sm font-medium">{t("Rasmlar")}</h2>
+          <p className="text-xs text-muted">{t("Birinchi rasm ilovadagi kartochkada chiqadi. 20 tagacha, JPG, PNG yoki WEBP")}</p>
         </div>
         <Button type="button" className="flex items-center gap-1" disabled={busy || photos.length >= 20}
           onClick={() => input.current?.click()}>
-          <ImagePlus size={16} aria-hidden /> {busy ? "Yuklanmoqda..." : "Rasm qo'shish"}
+          <ImagePlus size={16} aria-hidden /> {busy ? t("Yuklanmoqda...") : t("Rasm qo'shish")}
         </Button>
         <input ref={input} type="file" accept="image/jpeg,image/png,image/webp" multiple hidden
           onChange={(e) => void pick(e.target.files)} />
       </div>
       {(error || remove.error) && <div className="mb-3"><ErrorNote error={error ?? remove.error} /></div>}
       {photos.length === 0 ? (
-        <p className="py-6 text-center text-sm text-muted">Hali rasm yo'q</p>
+        <p className="py-6 text-center text-sm text-muted">{t("Hali rasm yo'q")}</p>
       ) : (
         <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {photos.map((p, i) => (
             <li key={p.id} className="relative overflow-hidden rounded-lg border border-line">
-              <img src={p.url} alt={`${v.businessPage} rasmi ${i + 1}`} className="aspect-[4/3] w-full object-cover" loading="lazy" />
-              {i === 0 && <span className="absolute top-1.5 left-1.5 rounded bg-navy/80 px-1.5 py-0.5 text-xs text-white">Asosiy</span>}
-              <button type="button" aria-label="Rasmni o'chirish" disabled={remove.isPending}
+              <img src={p.url} alt={t("{a} rasmi {b}", { a: v.businessPage, b: i + 1 })} className="aspect-[4/3] w-full object-cover" loading="lazy" />
+              {i === 0 && <span className="absolute top-1.5 left-1.5 rounded bg-navy/80 px-1.5 py-0.5 text-xs text-white">{t("Asosiy")}</span>}
+              <button type="button" aria-label={t("Rasmni o'chirish")} disabled={remove.isPending}
                 onClick={() => remove.mutate(p.id)}
                 className="absolute top-1.5 right-1.5 rounded-full bg-white/90 p-1.5 text-danger hover:bg-white">
                 <Trash2 size={14} aria-hidden />

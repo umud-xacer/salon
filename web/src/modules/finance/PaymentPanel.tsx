@@ -7,6 +7,7 @@ import type { AppointmentPayments, Membership, Payment } from "../../api/types";
 import { formatMoney, formatTime, METHOD_LABELS } from "../../components/format";
 import { Badge, Button, ErrorNote, inputClass, Spinner } from "../../components/ui";
 
+import { t } from "../../i18n";
 export function PaymentPanel({ membership, appointmentId, onPaid }: {
   membership: Membership;
   appointmentId: number;
@@ -31,9 +32,9 @@ export function PaymentPanel({ membership, appointmentId, onPaid }: {
   return (
     <section className="mt-5 border-t border-line pt-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-sm font-medium">To'lov</h3>
-        {data.due === 0 ? <Badge tone="green">To'langan</Badge> : (
-          <span className="text-sm">Qolgan: <b className="tabular-nums">{formatMoney(data.due)}</b></span>
+        <h3 className="text-sm font-medium">{t("To'lov")}</h3>
+        {data.due === 0 ? <Badge tone="green">{t("To'langan")}</Badge> : (
+          <span className="text-sm">{t("Qolgan:")}{" "}<b className="tabular-nums">{formatMoney(data.due)}</b></span>
         )}
       </div>
       {data.payments.length > 0 && (
@@ -66,18 +67,18 @@ function AcceptForm({ url, due, onDone }: { url: string; due: number; onDone: ()
   return (
     <form onSubmit={submit} className="mt-3 space-y-3">
       <div className="grid gap-3 sm:grid-cols-2">
-        <label className="block text-sm">Summa
+        <label className="block text-sm">{t("Summa")}
           <input className={inputClass} type="number" inputMode="numeric" required min={1} max={due} step={1}
             value={amount} onChange={(e) => setAmount(e.target.value)} />
         </label>
-        <label className="block text-sm">Usul
+        <label className="block text-sm">{t("Usul")}
           <select className={inputClass} value={method} onChange={(e) => setMethod(e.target.value)}>
             {Object.entries(METHOD_LABELS).map(([code, label]) => <option key={code} value={code}>{label}</option>)}
           </select>
         </label>
       </div>
       {accept.error && <ErrorNote error={accept.error} />}
-      <Button type="submit" disabled={accept.isPending}>To'lovni qabul qilish</Button>
+      <Button type="submit" disabled={accept.isPending}>{t("To'lovni qabul qilish")}</Button>
     </form>
   );
 }
@@ -109,25 +110,25 @@ export function PaymentRow({ businessId, payment: p, canRefund, showClient, onRe
         <span className={`ml-auto tabular-nums ${p.status === "refunded" ? "text-muted line-through" : ""}`}>
           {formatMoney(p.amount)}
         </span>
-        {p.status === "refunded" && <Badge tone="red">Qaytarilgan</Badge>}
+        {p.status === "refunded" && <Badge tone="red">{t("Qaytarilgan")}</Badge>}
         {p.status === "paid" && canRefund && !asking && (
-          <Button variant="danger" className="!px-2 !py-1 text-xs" onClick={() => setAsking(true)}>Qaytarish</Button>
+          <Button variant="danger" className="!px-2 !py-1 text-xs" onClick={() => setAsking(true)}>{t("Qaytarish")}</Button>
         )}
       </div>
       <p className="mt-0.5 text-xs text-muted">
-        {p.received_by_name ?? "Super Admin"}
-        {p.refund_reason && ` · Sabab: ${p.refund_reason}`}
+        {p.received_by_name ?? t("Super Admin")}
+        {p.refund_reason && t(" · Sabab: {a}", { a: p.refund_reason })}
       </p>
       {asking && p.status === "paid" && (
         <form onSubmit={submit} className="mt-2 space-y-2">
-          <label className="block text-sm">Qaytarish sababi
+          <label className="block text-sm">{t("Qaytarish sababi")}
             <input className={inputClass} required minLength={3} maxLength={500} autoFocus value={reason}
               onChange={(e) => setReason(e.target.value)} />
           </label>
           {refund.error && <ErrorNote error={refund.error} />}
           <div className="flex gap-2">
-            <Button type="submit" variant="danger" disabled={refund.isPending}>Qaytarishni tasdiqlash</Button>
-            <Button type="button" variant="secondary" onClick={() => setAsking(false)}>Yo'q</Button>
+            <Button type="submit" variant="danger" disabled={refund.isPending}>{t("Qaytarishni tasdiqlash")}</Button>
+            <Button type="button" variant="secondary" onClick={() => setAsking(false)}>{t("Yo'q")}</Button>
           </div>
         </form>
       )}

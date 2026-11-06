@@ -10,6 +10,7 @@ import { Button, Card, Empty, ErrorNote, inputClass, PageTitle, Spinner } from "
 import { PaymentPanel, PaymentRow } from "./PaymentPanel";
 import { useVocab } from "../vocab";
 
+import { t } from "../../i18n";
 function Tile({ label, value, strong }: { label: string; value: number; strong?: boolean }) {
   return (
     <Card>
@@ -38,16 +39,16 @@ export function CashPage({ membership }: { membership: Membership }) {
   return (
     <>
       <PageTitle
-        title="Kassa"
-        hint="Qaytarish qaytarilgan kunga yoziladi"
+        title={t("Kassa")}
+        hint={t("Qaytarish qaytarilgan kunga yoziladi")}
         action={
           <div className="flex items-center gap-1">
-            <Button variant="secondary" aria-label="Oldingi kun" onClick={() => setDay(addDays(day, -1))}>
+            <Button variant="secondary" aria-label={t("Oldingi kun")} onClick={() => setDay(addDays(day, -1))}>
               <ChevronLeft size={16} aria-hidden />
             </Button>
-            <input type="date" aria-label="Kun" className="rounded-lg border border-line bg-white px-2 py-2 text-sm"
+            <input type="date" aria-label={t("Kun")} className="rounded-lg border border-line bg-white px-2 py-2 text-sm"
               value={day} onChange={(e) => e.target.value && setDay(e.target.value)} />
-            <Button variant="secondary" aria-label="Keyingi kun" onClick={() => setDay(addDays(day, 1))}>
+            <Button variant="secondary" aria-label={t("Keyingi kun")} onClick={() => setDay(addDays(day, 1))}>
               <ChevronRight size={16} aria-hidden />
             </Button>
           </div>
@@ -58,15 +59,15 @@ export function CashPage({ membership }: { membership: Membership }) {
       {data && (
         <div className="space-y-4">
           <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 lg:grid-cols-4">
-            <Tile label="Kirim" value={data.income} />
-            <Tile label="Qaytarilgan" value={data.refunds} />
-            {data.expenses !== null && <Tile label="Xarajat" value={data.expenses} />}
-            {data.net !== null && <Tile label="Sof tushum" value={data.net} strong />}
+            <Tile label={t("Kirim")} value={data.income} />
+            <Tile label={t("Qaytarilgan")} value={data.refunds} />
+            {data.expenses !== null && <Tile label={t("Xarajat")} value={data.expenses} />}
+            {data.net !== null && <Tile label={t("Sof tushum")} value={data.net} strong />}
           </div>
 
           {data.methods.length > 0 && (
             <Card>
-              <h2 className="mb-2 text-sm font-medium">To'lov usullari</h2>
+              <h2 className="mb-2 text-sm font-medium">{t("To'lov usullari")}</h2>
               <ul className="divide-y divide-line text-sm">
                 {data.methods.map((m) => (
                   <li key={m.method} className="flex justify-between gap-3 py-1.5">
@@ -79,8 +80,8 @@ export function CashPage({ membership }: { membership: Membership }) {
           )}
 
           <Card>
-            <h2 className="mb-1 text-sm font-medium">To'lanmagan bronlar</h2>
-            {data.unpaid.length === 0 ? <Empty>Qarz yo'q</Empty> : (
+            <h2 className="mb-1 text-sm font-medium">{t("To'lanmagan bronlar")}</h2>
+            {data.unpaid.length === 0 ? <Empty>{t("Qarz yo'q")}</Empty> : (
               <ul className="divide-y divide-line text-sm">
                 {data.unpaid.map((u) => (
                   <li key={u.id}>
@@ -102,8 +103,8 @@ export function CashPage({ membership }: { membership: Membership }) {
           </Card>
 
           <Card>
-            <h2 className="mb-1 text-sm font-medium">Kun to'lovlari</h2>
-            {data.payments.length === 0 ? <Empty>To'lov yo'q</Empty> : (
+            <h2 className="mb-1 text-sm font-medium">{t("Kun to'lovlari")}</h2>
+            {data.payments.length === 0 ? <Empty>{t("To'lov yo'q")}</Empty> : (
               <ul className="divide-y divide-line text-sm">
                 {data.payments.map((p) => (
                   <PaymentRow key={p.id} businessId={b} payment={p} canRefund={canRefund} showClient
@@ -150,22 +151,22 @@ export function ExpensesPage({ membership }: { membership: Membership }) {
   return (
     <>
       <PageTitle
-        title="Xarajatlar"
-        hint={query.data ? `Jami: ${formatMoney(query.data.total)}` : undefined}
+        title={t("Xarajatlar")}
+        hint={query.data ? t("Jami: {a}", { a: formatMoney(query.data.total) }) : undefined}
         action={
           <div className="flex flex-wrap items-center gap-2">
-            <input type="month" aria-label="Oy" className="rounded-lg border border-line bg-white px-2 py-2 text-sm"
+            <input type="month" aria-label={t("Oy")} className="rounded-lg border border-line bg-white px-2 py-2 text-sm"
               value={month} onChange={(e) => e.target.value && setMonth(e.target.value)} />
-            <Button variant="secondary" onClick={() => setManaging(true)}>Toifalar</Button>
+            <Button variant="secondary" onClick={() => setManaging(true)}>{t("Toifalar")}</Button>
             <Button className="flex items-center gap-1" onClick={() => setEditing("new")}>
-              <Plus size={16} aria-hidden /> Xarajat
+              <Plus size={16} aria-hidden />{" "}{t("Xarajat")}
             </Button>
           </div>
         }
       />
       {query.isPending && <Spinner />}
       {query.error && <ErrorNote error={query.error} />}
-      {query.data?.items.length === 0 && <Card><Empty>Bu oyda xarajat yo'q</Empty></Card>}
+      {query.data?.items.length === 0 && <Card><Empty>{t("Bu oyda xarajat yo'q")}</Empty></Card>}
       {query.data && query.data.items.length > 0 && (
         <ul className="divide-y divide-line rounded-xl border border-line bg-white">
           {query.data.items.map((e) => (
@@ -174,7 +175,7 @@ export function ExpensesPage({ membership }: { membership: Membership }) {
                 className="flex w-full flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 text-left text-sm hover:bg-page">
                 <span className="text-muted tabular-nums">{formatDate(`${e.spent_at}T12:00:00Z`)}</span>
                 <span className="min-w-0 flex-1 basis-40">
-                  <span className="block font-medium break-words">{e.category_name ?? "Toifasiz"}</span>
+                  <span className="block font-medium break-words">{e.category_name ?? t("Toifasiz")}</span>
                   {e.note && <span className="block text-xs text-muted break-words">{e.note}</span>}
                 </span>
                 <span className="tabular-nums">{formatMoney(e.amount)}</span>
@@ -229,33 +230,33 @@ function ExpenseDialog({ businessId, expense, categories, onClose }: {
   };
 
   return (
-    <Modal title={expense ? "Xarajatni tahrirlash" : "Yangi xarajat"} onClose={onClose}>
+    <Modal title={expense ? t("Xarajatni tahrirlash") : t("Yangi xarajat")} onClose={onClose}>
       <form onSubmit={submit} className="space-y-3">
         <div className="grid gap-3 sm:grid-cols-2">
-          <label className="block text-sm">Summa
+          <label className="block text-sm">{t("Summa")}
             <input className={inputClass} type="number" inputMode="numeric" required min={1} step={1} data-autofocus
               value={amount} onChange={(e) => setAmount(e.target.value)} />
           </label>
-          <label className="block text-sm">Sana
+          <label className="block text-sm">{t("Sana")}
             <input className={inputClass} type="date" required value={day} onChange={(e) => setDay(e.target.value)} />
           </label>
         </div>
-        <label className="block text-sm">Toifa
+        <label className="block text-sm">{t("Toifa")}
           <select className={inputClass} value={category} onChange={(e) => setCategory(e.target.value)}>
-            <option value="">Toifasiz</option>
+            <option value="">{t("Toifasiz")}</option>
             {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
         </label>
-        <label className="block text-sm">Izoh
+        <label className="block text-sm">{t("Izoh")}
           <textarea className={inputClass} rows={2} maxLength={500} value={note} onChange={(e) => setNote(e.target.value)} />
         </label>
         {(save.error || remove.error) && <ErrorNote error={save.error ?? remove.error} />}
         <div className="flex flex-wrap gap-2">
-          <Button type="submit" disabled={save.isPending}>Saqlash</Button>
+          <Button type="submit" disabled={save.isPending}>{t("Saqlash")}</Button>
           {expense && (confirmDelete ? (
-            <Button type="button" variant="danger" disabled={remove.isPending} onClick={() => remove.mutate()}>Ha, o'chirish</Button>
+            <Button type="button" variant="danger" disabled={remove.isPending} onClick={() => remove.mutate()}>{t("Ha, o'chirish")}</Button>
           ) : (
-            <Button type="button" variant="danger" onClick={() => setConfirmDelete(true)}>O'chirish</Button>
+            <Button type="button" variant="danger" onClick={() => setConfirmDelete(true)}>{t("O'chirish")}</Button>
           ))}
         </div>
       </form>
@@ -293,21 +294,21 @@ function CategoriesDialog({ businessId, categories, onClose }: {
   };
 
   return (
-    <Modal title="Xarajat toifalari" onClose={onClose}>
+    <Modal title={t("Xarajat toifalari")} onClose={onClose}>
       <form onSubmit={submit} className="flex items-end gap-2">
-        <label className="block min-w-0 flex-1 text-sm">Yangi toifa
-          <input className={inputClass} required data-autofocus minLength={2} maxLength={80} placeholder="Ijara, kommunal"
+        <label className="block min-w-0 flex-1 text-sm">{t("Yangi toifa")}
+          <input className={inputClass} required data-autofocus minLength={2} maxLength={80} placeholder={t("Ijara, kommunal")}
             value={name} onChange={(e) => setName(e.target.value)} />
         </label>
-        <Button type="submit" disabled={add.isPending}>Qo'shish</Button>
+        <Button type="submit" disabled={add.isPending}>{t("Qo'shish")}</Button>
       </form>
       {(add.error || remove.error) && <div className="mt-3"><ErrorNote error={add.error ?? remove.error} /></div>}
-      {categories.length === 0 ? <Empty>Toifa yo'q</Empty> : (
+      {categories.length === 0 ? <Empty>{t("Toifa yo'q")}</Empty> : (
         <ul className="mt-3 divide-y divide-line text-sm">
           {categories.map((c) => (
             <li key={c.id} className="flex items-center justify-between gap-2 py-2">
               <span className="min-w-0 break-words">{c.name}</span>
-              <button aria-label={`${c.name} toifasini o'chirish`} className="text-muted hover:text-danger"
+              <button aria-label={t("{a} toifasini o'chirish", { a: c.name })} className="text-muted hover:text-danger"
                 disabled={remove.isPending} onClick={() => remove.mutate(c.id)}>
                 <Trash2 size={16} aria-hidden />
               </button>
@@ -315,7 +316,7 @@ function CategoriesDialog({ businessId, categories, onClose }: {
           ))}
         </ul>
       )}
-      <p className="mt-3 text-xs text-muted">Toifa o'chirilsa, xarajatlar saqlanadi va toifasiz bo'lib qoladi.</p>
+      <p className="mt-3 text-xs text-muted">{t("Toifa o'chirilsa, xarajatlar saqlanadi va toifasiz bo'lib qoladi.")}</p>
     </Modal>
   );
 }

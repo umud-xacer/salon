@@ -9,6 +9,7 @@ import { useVocab } from "../modules/vocab";
 import { formatTime } from "./format";
 import { Button } from "./ui";
 
+import { t } from "../i18n";
 interface Alert {
   id: number;
   type: string;
@@ -25,15 +26,15 @@ function beep() {
   try {
     const Ctx = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
     const ctx = new Ctx();
-    [0, 0.35, 0.7].forEach((t) => {
+    [0, 0.35, 0.7].forEach((tx) => {
       const o = ctx.createOscillator();
       const g = ctx.createGain();
       o.frequency.value = 880;
-      g.gain.setValueAtTime(0.25, ctx.currentTime + t);
-      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t + 0.25);
+      g.gain.setValueAtTime(0.25, ctx.currentTime + tx);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + tx + 0.25);
       o.connect(g).connect(ctx.destination);
-      o.start(ctx.currentTime + t);
-      o.stop(ctx.currentTime + t + 0.3);
+      o.start(ctx.currentTime + tx);
+      o.stop(ctx.currentTime + tx + 0.3);
     });
   } catch {
     // ovozsiz davom etadi
@@ -63,9 +64,9 @@ export function AttendanceAlerts() {
   if (list.length === 0) return null;
   return (
     <div className="fixed right-3 bottom-3 z-[1100] flex w-[min(24rem,calc(100vw-1.5rem))] flex-col gap-2" role="region"
-      aria-label="Ogohlantirishlar" aria-live="assertive">
+      aria-label={t("Ogohlantirishlar")} aria-live="assertive">
       {list.slice(0, 3).map((a) => <AlertCard key={a.id} alert={a} />)}
-      {list.length > 3 && <p className="rounded-lg bg-white px-3 py-1.5 text-center text-xs shadow">yana {list.length - 3} ta</p>}
+      {list.length > 3 && <p className="rounded-lg bg-white px-3 py-1.5 text-center text-xs shadow">{t("yana")}{" "}{list.length - 3}{" "}{t("ta")}</p>}
     </div>
   );
 }
@@ -81,12 +82,12 @@ function AlertCard({ alert: a }: { alert: Alert }) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: KEY }),
   });
   const cancel = useMutation({
-    mutationFn: () => api(`/appointments/${appointmentId}/cancel`, json("POST", { reason: `${v.clientOne} bilan bog'lanib bo'lmadi` })),
+    mutationFn: () => api(`/appointments/${appointmentId}/cancel`, json("POST", { reason: t("{a} bilan bog'lanib bo'lmadi", { a: v.clientOne }) })),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["calendar"] });
       close.mutate();
     },
-    onError: (e) => setError(e instanceof ApiError ? e.message : "Bekor qilib bo'lmadi"),
+    onError: (e) => setError(e instanceof ApiError ? e.message : t("Bekor qilib bo'lmadi")),
   });
   const showPhone = async () => {
     setError(null);
@@ -95,7 +96,7 @@ function AlertCard({ alert: a }: { alert: Alert }) {
       setPhone(r.phone);
     } catch (e) {
       // Mijoz shu orada tasdiqlagan yoki bron bekor bo'lgan
-      setError(e instanceof ApiError ? `Ogohlantirish yopilgan: ${v.clientOne.toLowerCase()} tasdiqlagan yoki bron o'zgargan` : "Xatolik");
+      setError(e instanceof ApiError ? t("Ogohlantirish yopilgan: {a} tasdiqlagan yoki bron o'zgargan", { a: v.clientOne.toLowerCase() }) : t("Xatolik"));
     }
   };
 
@@ -109,11 +110,11 @@ function AlertCard({ alert: a }: { alert: Alert }) {
           <p className="mt-0.5 break-words">{a.body}</p>
           {(a.data?.master || a.data?.starts_at) && (
             <p className="mt-0.5 text-xs text-muted">
-              {a.data?.starts_at && `Bron: ${formatTime(a.data.starts_at)}`}{a.data?.master && ` · ${v.staffOne}: ${a.data.master}`}
+              {a.data?.starts_at && t("Bron: {a}", { a: formatTime(a.data.starts_at) })}{a.data?.master && ` · ${v.staffOne}: ${a.data.master}`}
             </p>
           )}
         </div>
-        <button type="button" aria-label="Yopish" onClick={() => close.mutate()} className="text-muted hover:text-ink">
+        <button type="button" aria-label={t("Yopish")} onClick={() => close.mutate()} className="text-muted hover:text-ink">
           <X size={18} />
         </button>
       </div>
@@ -121,7 +122,7 @@ function AlertCard({ alert: a }: { alert: Alert }) {
         <p className="mt-2 flex items-center justify-between gap-2 rounded-lg bg-page px-3 py-2">
           <span className="font-mono tabular-nums select-all">{phone}</span>
           <a href={`tel:${phone}`} className="inline-flex items-center gap-1 rounded-lg bg-success px-3 py-1.5 font-medium text-white">
-            <Phone size={15} aria-hidden /> Qo'ng'iroq qilish
+            <Phone size={15} aria-hidden />{" "}{t("Qo'ng'iroq qilish")}
           </a>
         </p>
       )}
@@ -129,16 +130,16 @@ function AlertCard({ alert: a }: { alert: Alert }) {
       <div className="mt-2 flex flex-wrap gap-2">
         {!phone && (
           <Button className="flex items-center gap-1" onClick={() => void showPhone()} disabled={!appointmentId}>
-            <Phone size={15} aria-hidden /> Qo'ng'iroq qilish
+            <Phone size={15} aria-hidden />{" "}{t("Qo'ng'iroq qilish")}
           </Button>
         )}
         <Button variant="danger" disabled={!appointmentId || cancel.isPending} onClick={() => cancel.mutate()}>
-          Bronni bekor qilish
+          {t("Bronni bekor qilish")}
         </Button>
-        <Button variant="secondary" disabled={close.isPending} onClick={() => close.mutate()}>Yopish</Button>
+        <Button variant="secondary" disabled={close.isPending} onClick={() => close.mutate()}>{t("Yopish")}</Button>
       </div>
       <p className="mt-1.5 text-xs text-muted">
-        Bekor qilinsa, vaqt boshqa {v.clients.toLowerCase()} uchun darhol ochiladi. {v.clientOne} kelmasa — kalendarda "Kelmadi" deb belgilang.
+        {t("Bekor qilinsa, vaqt boshqa")}{" "}{v.clients.toLowerCase()}{" "}{t("uchun darhol ochiladi.")}{" "}{v.clientOne}{" "}{t("kelmasa — kalendarda \"Kelmadi\" deb belgilang.")}
       </p>
     </div>
   );

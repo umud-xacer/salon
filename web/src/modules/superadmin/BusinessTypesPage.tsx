@@ -11,6 +11,8 @@ import { Modal } from "../../components/Modal";
 import { KIND_LABELS, type BusinessKind } from "../vocab";
 import { Badge, Button, Card, Empty, ErrorNote, inputClass, PageTitle, Spinner } from "../../components/ui";
 
+import { t } from "../../i18n";
+import { typeName } from "./typeWording";
 export const TYPES_KEY = ["superadmin", "business-types"];
 
 export function useBusinessTypes() {
@@ -29,29 +31,29 @@ export function BusinessTypesPage() {
   return (
     <>
       <PageTitle
-        title="Muassasa turlari"
-        hint="Ilovadagi bo'limlar, standart ish vaqti va tavsiya xizmatlar"
+        title={t("Muassasa turlari")}
+        hint={t("Ilovadagi bo'limlar, standart ish vaqti va tavsiya xizmatlar")}
         action={
           <Button className="flex items-center gap-1" onClick={() => setEditing("new")}>
-            <Plus size={16} aria-hidden /> Yangi tur
+            <Plus size={16} aria-hidden />{" "}{t("Yangi tur")}
           </Button>
         }
       />
       {types.isPending && <Spinner />}
       {types.error && <ErrorNote error={types.error} />}
-      {types.data?.length === 0 && <Card><Empty>Turlar yo'q</Empty></Card>}
+      {types.data?.length === 0 && <Card><Empty>{t("Turlar yo'q")}</Empty></Card>}
       <ul className="divide-y divide-line rounded-xl border border-line bg-white">
-        {types.data?.map((t) => (
-          <li key={t.id}>
-            <button onClick={() => setEditing(t)}
+        {types.data?.map((tx) => (
+          <li key={tx.id}>
+            <button onClick={() => setEditing(tx)}
               className="flex w-full flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3 text-left text-sm hover:bg-page">
               <span className="min-w-0 basis-full font-medium sm:basis-auto sm:flex-1">
-                {t.name_uz} <span className="text-xs font-normal text-muted">({t.slug})</span>
+                {typeName(tx)} <span className="text-xs font-normal text-muted">({tx.slug})</span>
               </span>
-              {!t.is_active && <Badge tone="gray">O'chirilgan</Badge>}
-              <span className="text-muted tabular-nums">{t.opens_at.slice(0, 5)}–{t.closes_at.slice(0, 5)}</span>
-              <span className="text-muted">{t.service_presets.length} ta xizmat</span>
-              <span className="tabular-nums sm:w-24 sm:text-right">{t.business_count} ta salon</span>
+              {!tx.is_active && <Badge tone="gray">{t("O'chirilgan")}</Badge>}
+              <span className="text-muted tabular-nums">{tx.opens_at.slice(0, 5)}–{tx.closes_at.slice(0, 5)}</span>
+              <span className="text-muted">{tx.service_presets.length}{" "}{t("ta xizmat")}</span>
+              <span className="tabular-nums sm:w-24 sm:text-right">{tx.business_count}{" "}{t("ta salon")}</span>
             </button>
           </li>
         ))}
@@ -109,71 +111,71 @@ function TypeDialog({ type, onClose }: { type: BusinessType | null; onClose: () 
   };
 
   return (
-    <Modal title={type ? type.name_uz : "Yangi muassasa turi"} onClose={onClose}>
+    <Modal title={type ? typeName(type) : t("Yangi muassasa turi")} onClose={onClose}>
       <form onSubmit={submit} className="space-y-3">
-        <label className="block text-sm">Ish tartibi (panel va ilova shunga moslashadi)
+        <label className="block text-sm">{t("Ish tartibi (panel va ilova shunga moslashadi)")}
           <select className={inputClass} value={kind} onChange={(e) => setKind(e.target.value)}>
             {(Object.keys(KIND_LABELS) as BusinessKind[]).map((k) => <option key={k} value={k}>{KIND_LABELS[k]}</option>)}
           </select>
         </label>
         <div className="grid gap-3 sm:grid-cols-2">
-          <label className="block text-sm">Nomi (o'zbekcha)
+          <label className="block text-sm">{t("Nomi (o'zbekcha)")}
             <input className={inputClass} required minLength={2} maxLength={80} value={nameUz} data-autofocus
               onChange={(e) => setNameUz(e.target.value)} />
           </label>
-          <label className="block text-sm">Nomi (ruscha)
+          <label className="block text-sm">{t("Nomi (ruscha)")}
             <input className={inputClass} required minLength={2} maxLength={80} value={nameRu}
               onChange={(e) => setNameRu(e.target.value)} />
           </label>
-          <label className="block text-sm">Kod (lotin, keyin o'zgarmaydi)
+          <label className="block text-sm">{t("Kod (lotin, keyin o'zgarmaydi)")}
             <input className={inputClass} required pattern="[a-z0-9]+(_[a-z0-9]+)*" maxLength={40} value={slug}
-              disabled={!!type} placeholder="masalan: vet_clinic" onChange={(e) => setSlug(e.target.value)} />
+              disabled={!!type} placeholder={t("masalan: vet_clinic")} onChange={(e) => setSlug(e.target.value)} />
           </label>
-          <label className="block text-sm">Tartib raqami (ilovada)
+          <label className="block text-sm">{t("Tartib raqami (ilovada)")}
             <input className={inputClass} type="number" min={0} max={1000} value={order}
               onChange={(e) => setOrder(e.target.value)} />
           </label>
-          <label className="block text-sm">Standart ochilish
+          <label className="block text-sm">{t("Standart ochilish")}
             <input className={inputClass} type="time" required value={opens} onChange={(e) => setOpens(e.target.value)} />
           </label>
-          <label className="block text-sm">Standart yopilish
+          <label className="block text-sm">{t("Standart yopilish")}
             <input className={inputClass} type="time" required value={closes} onChange={(e) => setCloses(e.target.value)} />
           </label>
-          <label className="block text-sm">Belgi (ixtiyoriy)
+          <label className="block text-sm">{t("Belgi (ixtiyoriy)")}
             <input className={inputClass} pattern="[a-z0-9-]+" maxLength={40} value={icon} placeholder="pill"
               onChange={(e) => setIcon(e.target.value)} />
           </label>
           <label className="flex items-center gap-2 self-end pb-2 text-sm">
             <input type="checkbox" className="size-4 accent-primary" checked={active}
               onChange={(e) => setActive(e.target.checked)} />
-            Ilovada ko'rinsin
+            {t("Ilovada ko'rinsin")}
           </label>
         </div>
-        {badHours && <p className="text-sm text-danger">Yopilish vaqti ochilishdan keyin bo'lishi kerak</p>}
+        {badHours && <p className="text-sm text-danger">{t("Yopilish vaqti ochilishdan keyin bo'lishi kerak")}</p>}
         {!active && type && type.business_count > 0 && (
           <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
-            O'chirilsa, shu turdagi {type.business_count} ta salon mijoz ilovasida ko'rinmaydi.
+            {t("O'chirilsa, shu turdagi")}{" "}{type.business_count}{" "}{t("ta salon mijoz ilovasida ko'rinmaydi.")}
           </p>
         )}
 
         <fieldset>
-          <legend className="mb-1 text-sm font-medium">Tavsiya xizmatlar</legend>
+          <legend className="mb-1 text-sm font-medium">{t("Tavsiya xizmatlar")}</legend>
           <p className="mb-2 text-xs text-muted">
-            Direktor "Xizmatlar" bo'limida bir bosishda qo'shadi. Narx va davomiylikni keyin o'zi o'zgartiradi.
+            {t("Direktor \"Xizmatlar\" bo'limida bir bosishda qo'shadi. Narx va davomiylikni keyin o'zi o'zgartiradi.")}
           </p>
           <ul className="space-y-2">
             {presets.map((p, i) => (
               <li key={i} className="grid grid-cols-[1fr_1fr_auto] gap-2 sm:grid-cols-[1fr_10rem_5rem_7rem_auto]">
-                <input className={`${inputClass} mt-0 col-span-3 sm:col-span-1`} aria-label="Xizmat nomi"
-                  placeholder="Xizmat nomi" maxLength={120} value={p.name} onChange={(e) => setPreset(i, { name: e.target.value })} />
-                <input className={`${inputClass} mt-0 col-span-3 sm:col-span-1`} aria-label="Bo'lim" list="preset-sections"
-                  placeholder="Bo'lim (ixtiyoriy)" maxLength={80} value={p.category ?? ""}
+                <input className={`${inputClass} mt-0 col-span-3 sm:col-span-1`} aria-label={t("Xizmat nomi")}
+                  placeholder={t("Xizmat nomi")} maxLength={120} value={p.name} onChange={(e) => setPreset(i, { name: e.target.value })} />
+                <input className={`${inputClass} mt-0 col-span-3 sm:col-span-1`} aria-label={t("Bo'lim")} list="preset-sections"
+                  placeholder={t("Bo'lim (ixtiyoriy)")} maxLength={80} value={p.category ?? ""}
                   onChange={(e) => setPreset(i, { category: e.target.value })} />
-                <input className={`${inputClass} mt-0`} aria-label="Davomiyligi, daqiqa" type="number" min={5} max={720}
+                <input className={`${inputClass} mt-0`} aria-label={t("Davomiyligi, daqiqa")} type="number" min={5} max={720}
                   value={p.duration_min} onChange={(e) => setPreset(i, { duration_min: Number(e.target.value) })} />
-                <input className={`${inputClass} mt-0`} aria-label="Narxi, so'm" type="number" min={0} step={1000}
+                <input className={`${inputClass} mt-0`} aria-label={t("Narxi, so'm")} type="number" min={0} step={1000}
                   value={p.price} onChange={(e) => setPreset(i, { price: Number(e.target.value) })} />
-                <button type="button" aria-label="Xizmatni olib tashlash" className="px-2 text-danger"
+                <button type="button" aria-label={t("Xizmatni olib tashlash")} className="px-2 text-danger"
                   onClick={() => setPresets(presets.filter((_, k) => k !== i))}>
                   <Trash2 size={16} aria-hidden />
                 </button>
@@ -182,27 +184,27 @@ function TypeDialog({ type, onClose }: { type: BusinessType | null; onClose: () 
           </ul>
           <datalist id="preset-sections">{sections.map((s) => <option key={s} value={s} />)}</datalist>
           {presets.length > 0 && (
-            <p className="mt-1 text-xs text-muted">Daqiqa · so'm. Masalan: {presets[0].duration_min} daqiqa, {formatMoney(presets[0].price)}</p>
+            <p className="mt-1 text-xs text-muted">{t("Daqiqa · so'm. Masalan:")}{" "}{presets[0].duration_min}{" "}{t("daqiqa,")}{" "}{formatMoney(presets[0].price)}</p>
           )}
           <Button type="button" variant="secondary" className="mt-2 flex items-center gap-1" disabled={presets.length >= 50}
             onClick={() => setPresets([...presets, emptyPreset()])}>
-            <Plus size={15} aria-hidden /> Xizmat qo'shish
+            <Plus size={15} aria-hidden />{" "}{t("Xizmat qo'shish")}
           </Button>
         </fieldset>
 
-        <label className="block text-sm">Xodim nomi (rol ro'yxatida, kalendarda)
+        <label className="block text-sm">{t("Xodim nomi (rol ro'yxatida, kalendarda)")}
           <input className={inputClass} maxLength={40} value={staffWord} onChange={(e) => setStaffWord(e.target.value)}
-            placeholder={kind === "clinic" ? "Shifokor (standart)" : kind === "pharmacy" ? "Farmatsevt (standart)" : "Usta (standart)"} />
+            placeholder={kind === "clinic" ? t("Shifokor (standart)") : kind === "pharmacy" ? t("Farmatsevt (standart)") : t("Usta (standart)")} />
           <span className="mt-1 block text-xs text-muted">Bo'sh qolsa — ish tartibidagi standart so'z. Masalan, Wellness & Spa: Mutaxassis.</span>
         </label>
-        <label className="block text-sm">Lavozim / mutaxassislik tavsiyalari (har qatorda bittadan)
+        <label className="block text-sm">{t("Lavozim / mutaxassislik tavsiyalari (har qatorda bittadan)")}
           <textarea className={`${inputClass} min-h-24`} value={titles} onChange={(e) => setTitles(e.target.value)}
-            placeholder={"Stomatolog-terapevt\nOrtodont"} />
-          <span className="mt-1 block text-xs text-muted">Direktor xodim qo'shganda tanlaydi. Klinikada ilova shifokorlarni shu bo'yicha guruhlaydi.</span>
+            placeholder={t("Stomatolog-terapevt\nOrtodont")} />
+          <span className="mt-1 block text-xs text-muted">{t("Direktor xodim qo'shganda tanlaydi. Klinikada ilova shifokorlarni shu bo'yicha guruhlaydi.")}</span>
         </label>
 
         {save.error && <ErrorNote error={save.error} />}
-        <Button type="submit" disabled={save.isPending || badHours} className="w-full">Saqlash</Button>
+        <Button type="submit" disabled={save.isPending || badHours} className="w-full">{t("Saqlash")}</Button>
       </form>
     </Modal>
   );

@@ -9,9 +9,10 @@ import { addDays, formatMoney, METHOD_LABELS, shortDate, STATUS_LABELS, todayIso
 import { Button, Card, Empty, ErrorNote, inputClass, PageTitle, Spinner, Tabs } from "../../components/ui";
 import { useVocab } from "../vocab";
 
+import { t } from "../../i18n";
 type Preset = "today" | "week" | "month" | "last_month" | "custom";
 
-const SOURCE_LABELS: Record<string, string> = { app: "Ilova", admin: "Panel", walk_in: "O'zi kelgan", telegram: "Telegram" };
+const SOURCE_LABELS: Record<string, string> = { app: t("Ilova"), admin: t("Panel"), walk_in: t("O'zi kelgan"), telegram: "Telegram" };
 
 function presetRange(p: Exclude<Preset, "custom">): [string, string] {
   const today = todayIso();
@@ -24,8 +25,8 @@ function presetRange(p: Exclude<Preset, "custom">): [string, string] {
 }
 
 const compact = (v: number) =>
-  Math.abs(v) >= 1_000_000 ? `${(v / 1_000_000).toFixed(1).replace(".0", "")} mln`
-    : Math.abs(v) >= 1000 ? `${Math.round(v / 1000)} ming` : String(v);
+  Math.abs(v) >= 1_000_000 ? t("{a} mln", { a: (v / 1_000_000).toFixed(1).replace(".0", "") })
+    : Math.abs(v) >= 1000 ? t("{a} ming", { a: Math.round(v / 1000) }) : String(v);
 
 export function ReportsPage({ membership }: { membership: Membership }) {
   const b = membership.business_id;
@@ -57,20 +58,20 @@ export function ReportsPage({ membership }: { membership: Membership }) {
   return (
     <>
       <PageTitle
-        title="Hisobotlar"
-        hint="To'lov to'langan kuniga, qaytarish qaytarilgan kuniga yoziladi. Oyliklar xarajatlar ichida."
+        title={t("Hisobotlar")}
+        hint={t("To'lov to'langan kuniga, qaytarish qaytarilgan kuniga yoziladi. Oyliklar xarajatlar ichida.")}
         action={
           <Button variant="secondary" className="flex items-center gap-1" disabled={!report.data || exporting}
             onClick={() => void exportExcel()}>
-            <Download size={16} aria-hidden /> {exporting ? "Tayyorlanmoqda..." : "Excel"}
+            <Download size={16} aria-hidden /> {exporting ? t("Tayyorlanmoqda...") : t("Excel")}
           </Button>
         }
       />
       <div className="mb-4 flex flex-wrap items-end gap-3">
         <Tabs
           tabs={[
-            { id: "today", label: "Bugun" }, { id: "week", label: "7 kun" }, { id: "month", label: "Shu oy" },
-            { id: "last_month", label: "O'tgan oy" }, { id: "custom", label: "Tanlash" },
+            { id: "today", label: t("Bugun") }, { id: "week", label: t("7 kun") }, { id: "month", label: t("Shu oy") },
+            { id: "last_month", label: t("O'tgan oy") }, { id: "custom", label: t("Tanlash") },
           ]}
           value={preset}
           onChange={(p) => {
@@ -80,15 +81,15 @@ export function ReportsPage({ membership }: { membership: Membership }) {
         />
         {preset === "custom" && (
           <div className="mb-4 flex flex-wrap items-center gap-2 text-sm">
-            <input type="date" aria-label="Boshlanish sanasi" className={`${inputClass} mt-0 w-auto`} value={custom[0]}
+            <input type="date" aria-label={t("Boshlanish sanasi")} className={`${inputClass} mt-0 w-auto`} value={custom[0]}
               max={custom[1]} onChange={(e) => setCustom([e.target.value, custom[1]])} />
             <span className="text-muted">–</span>
-            <input type="date" aria-label="Tugash sanasi" className={`${inputClass} mt-0 w-auto`} value={custom[1]}
+            <input type="date" aria-label={t("Tugash sanasi")} className={`${inputClass} mt-0 w-auto`} value={custom[1]}
               min={custom[0]} onChange={(e) => setCustom([custom[0], e.target.value])} />
           </div>
         )}
       </div>
-      {!valid && <p className="mb-3 text-sm text-danger">Tugash sanasi boshlanishdan oldin bo'lmasin</p>}
+      {!valid && <p className="mb-3 text-sm text-danger">{t("Tugash sanasi boshlanishdan oldin bo'lmasin")}</p>}
       {exportError ? <div className="mb-3"><ErrorNote error={exportError} /></div> : null}
       {report.isPending && valid && <Spinner />}
       {report.error && <ErrorNote error={report.error} />}
@@ -99,13 +100,13 @@ export function ReportsPage({ membership }: { membership: Membership }) {
 
 function Delta({ now, prev }: { now: number; prev: number }) {
   if (prev === 0 && now === 0) return null;
-  if (prev === 0) return <span className="text-xs text-muted">oldingi davrda 0</span>;
+  if (prev === 0) return <span className="text-xs text-muted">{t("oldingi davrda 0")}</span>;
   const pct = Math.round(((now - prev) / Math.abs(prev)) * 100);
   const up = pct >= 0;
   const Icon = up ? TrendingUp : TrendingDown;
   return (
     <span className={`inline-flex items-center gap-1 text-xs ${up ? "text-success" : "text-danger"}`}>
-      <Icon size={13} aria-hidden /> {up ? "+" : ""}{pct}% <span className="text-muted">oldingi davrga</span>
+      <Icon size={13} aria-hidden /> {up ? "+" : ""}{pct}% <span className="text-muted">{t("oldingi davrga")}</span>
     </span>
   );
 }
@@ -127,69 +128,69 @@ function ReportView({ r }: { r: Report }) {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat label="Sof tushum" value={formatMoney(m.net_income)}
+        <Stat label={t("Sof tushum")} value={formatMoney(m.net_income)}
           sub={<Delta now={m.net_income} prev={m.prev_net_income} />} />
-        <Stat label="Xarajatlar" value={formatMoney(m.expenses)}
-          sub={m.refunds > 0 ? <span className="text-xs text-muted">Qaytarilgan: {formatMoney(m.refunds)}</span> : undefined} />
-        <Stat label="Foyda" value={formatMoney(m.profit)} sub={<Delta now={m.profit} prev={m.prev_profit} />} />
-        <Stat label="O'rtacha chek" value={formatMoney(bk.avg_check)}
-          sub={<span className="text-xs text-muted">{bk.completed} ta bajarilgan bron</span>} />
+        <Stat label={t("Xarajatlar")} value={formatMoney(m.expenses)}
+          sub={m.refunds > 0 ? <span className="text-xs text-muted">{t("Qaytarilgan:")}{" "}{formatMoney(m.refunds)}</span> : undefined} />
+        <Stat label={t("Foyda")} value={formatMoney(m.profit)} sub={<Delta now={m.profit} prev={m.prev_profit} />} />
+        <Stat label={t("O'rtacha chek")} value={formatMoney(bk.avg_check)}
+          sub={<span className="text-xs text-muted">{bk.completed}{" "}{t("ta bajarilgan bron")}</span>} />
       </div>
 
       <Card>
-        <h2 className="mb-3 text-sm font-medium">Kunlik sof tushum</h2>
+        <h2 className="mb-3 text-sm font-medium">{t("Kunlik sof tushum")}</h2>
         <DailyChart days={r.daily} />
       </Card>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
-          <h2 className="mb-3 text-sm font-medium">To'lov usullari</h2>
+          <h2 className="mb-3 text-sm font-medium">{t("To'lov usullari")}</h2>
           <BarList rows={r.methods.map((x) => ({ label: METHOD_LABELS[x.method] ?? x.method, value: x.income - x.refunds }))}
-            empty="Bu davrda to'lov yo'q" />
+            empty={t("Bu davrda to'lov yo'q")} />
         </Card>
         <Card>
-          <h2 className="mb-3 text-sm font-medium">Xarajatlar toifasi bo'yicha</h2>
+          <h2 className="mb-3 text-sm font-medium">{t("Xarajatlar toifasi bo'yicha")}</h2>
           <BarList rows={r.expenses_by_category.map((x) => ({ label: x.name, value: x.amount }))}
-            empty="Bu davrda xarajat yo'q" />
+            empty={t("Bu davrda xarajat yo'q")} />
         </Card>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
-          <h2 className="mb-3 text-sm font-medium">Bronlar</h2>
-          {bk.total === 0 ? <Empty>Bu davrda bron yo'q</Empty> : (
+          <h2 className="mb-3 text-sm font-medium">{t("Bronlar")}</h2>
+          {bk.total === 0 ? <Empty>{t("Bu davrda bron yo'q")}</Empty> : (
             <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-              <dt className="text-muted">Jami</dt><dd className="text-right tabular-nums">{bk.total}</dd>
+              <dt className="text-muted">{t("Jami")}</dt><dd className="text-right tabular-nums">{bk.total}</dd>
               {Object.entries(bk.by_status).map(([k, v]) => (
                 <Row key={k} label={STATUS_LABELS[k] ?? k} value={v} />
               ))}
-              <dt className="text-muted">Bekor qilish ulushi</dt><dd className="text-right tabular-nums">{bk.cancel_rate}%</dd>
+              <dt className="text-muted">{t("Bekor qilish ulushi")}</dt><dd className="text-right tabular-nums">{bk.cancel_rate}%</dd>
               {Object.entries(bk.by_source).map(([k, v]) => (
-                <Row key={k} label={`Manba: ${SOURCE_LABELS[k] ?? k}`} value={v} />
+                <Row key={k} label={t("Manba: {a}", { a: SOURCE_LABELS[k] ?? k })} value={v} />
               ))}
             </dl>
           )}
         </Card>
         <Card>
           <h2 className="mb-3 text-sm font-medium">{v.clients}</h2>
-          {r.clients.total === 0 ? <Empty>Bu davrda {v.clientOne.toLowerCase()} yo'q</Empty> : (
+          {r.clients.total === 0 ? <Empty>{t("Bu davrda")}{" "}{v.clientOne.toLowerCase()}{" "}{t("yo'q")}</Empty> : (
             <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-              <Row label="Jami (bekor qilinmagan bron bilan)" value={r.clients.total} />
-              <Row label="Yangi" value={r.clients.new} />
-              <Row label="Qaytgan" value={r.clients.returning} />
+              <Row label={t("Jami (bekor qilinmagan bron bilan)")} value={r.clients.total} />
+              <Row label={t("Yangi")} value={r.clients.new} />
+              <Row label={t("Qaytgan")} value={r.clients.returning} />
             </dl>
           )}
         </Card>
       </div>
 
       <Card>
-        <h2 className="mb-3 text-sm font-medium">Xizmatlar (bajarilgan bronlar)</h2>
-        <Table empty="Bu davrda bajarilgan xizmat yo'q" head={["Xizmat", "Soni", "Summa"]}
+        <h2 className="mb-3 text-sm font-medium">{t("Xizmatlar (bajarilgan bronlar)")}</h2>
+        <Table empty={t("Bu davrda bajarilgan xizmat yo'q")} head={[t("Xizmat"), t("Soni"), t("Summa")]}
           rows={r.services.map((s) => [s.name, s.count, formatMoney(s.revenue)])} />
       </Card>
       <Card>
-        <h2 className="mb-3 text-sm font-medium">Xodimlar</h2>
-        <Table empty="Bu davrda bron yo'q" head={["Xodim", "Bronlar", "Bajarilgan", "Kelmagan", "Summa"]}
+        <h2 className="mb-3 text-sm font-medium">{t("Xodimlar")}</h2>
+        <Table empty={t("Bu davrda bron yo'q")} head={[t("Xodim"), t("Bronlar"), t("Bajarilgan"), t("Kelmagan"), t("Summa")]}
           rows={r.staff.map((s) => [s.name, s.bookings, s.completed, s.no_show, formatMoney(s.revenue)])} />
       </Card>
     </div>
@@ -296,15 +297,15 @@ function DailyChart({ days }: { days: ReportDay[] }) {
   return (
     <>
       <div className="mb-2 flex justify-end">
-        <Tabs tabs={[{ id: "chart", label: "Grafik" }, { id: "table", label: "Jadval" }]} value={view} onChange={setView} />
+        <Tabs tabs={[{ id: "chart", label: t("Grafik") }, { id: "table", label: t("Jadval") }]} value={view} onChange={setView} />
       </div>
       {view === "table" ? (
-        <Table empty="Ma'lumot yo'q" head={["Sana", "Tushum", "Qaytarilgan", "Xarajat", "Bronlar"]}
+        <Table empty={t("Ma'lumot yo'q")} head={[t("Sana"), t("Tushum"), t("Qaytarilgan"), t("Xarajat"), t("Bronlar")]}
           rows={days.map((d) => [shortDate(d.date), formatMoney(d.income), formatMoney(d.refunds), formatMoney(d.expenses), d.bookings])} />
-      ) : empty ? <Empty>Bu davrda to'lov yo'q</Empty> : (
+      ) : empty ? <Empty>{t("Bu davrda to'lov yo'q")}</Empty> : (
         <div className="relative" ref={box}>
           <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="block" role="img"
-            aria-label={`Kunlik sof tushum, eng ko'pi ${formatMoney(max)}`} onMouseLeave={() => setHover(null)}>
+            aria-label={t("Kunlik sof tushum, eng ko'pi {a}", { a: formatMoney(max) })} onMouseLeave={() => setHover(null)}>
             {[max, (max + min) / 2, min].map((v, i) => (
               <g key={i}>
                 <line x1={left} x2={W} y1={y(v)} y2={y(v)} stroke="var(--color-line)" strokeWidth={1} />
@@ -336,9 +337,9 @@ function DailyChart({ days }: { days: ReportDay[] }) {
             <div className="pointer-events-none absolute top-0 rounded-lg border border-line bg-white px-3 py-2 text-xs shadow-md"
               style={{ left: `${Math.min(((left + hover * step + step / 2) / W) * 100, 70)}%` }}>
               <p className="font-medium">{shortDate(h.date)}</p>
-              <p>Sof tushum: <span className="tabular-nums">{formatMoney(values[hover])}</span></p>
-              {h.refunds > 0 && <p className="text-muted">Qaytarilgan: {formatMoney(h.refunds)}</p>}
-              <p className="text-muted">Xarajat: {formatMoney(h.expenses)} · Bronlar: {h.bookings}</p>
+              <p>{t("Sof tushum:")}{" "}<span className="tabular-nums">{formatMoney(values[hover])}</span></p>
+              {h.refunds > 0 && <p className="text-muted">{t("Qaytarilgan:")}{" "}{formatMoney(h.refunds)}</p>}
+              <p className="text-muted">{t("Xarajat:")}{" "}{formatMoney(h.expenses)}{" "}{t("· Bronlar:")}{" "}{h.bookings}</p>
             </div>
           )}
         </div>

@@ -1,6 +1,7 @@
 import { X } from "lucide-react";
 import { useEffect, useRef, type ReactNode } from "react";
 
+import { t } from "../i18n";
 export function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
   const ref = useRef<HTMLDialogElement>(null);
 
@@ -21,7 +22,7 @@ export function Modal({ title, onClose, children }: { title: string; onClose: ()
     >
       <div className="sticky top-0 z-[1000] flex items-center justify-between gap-3 border-b border-line bg-white px-4 py-3 sm:px-5">
         <h2 className="min-w-0 truncate font-semibold text-navy">{title}</h2>
-        <button onClick={onClose} aria-label="Yopish" className="text-muted hover:text-ink">
+        <button onClick={onClose} aria-label={t("Yopish")} className="text-muted hover:text-ink">
           <X size={20} />
         </button>
       </div>

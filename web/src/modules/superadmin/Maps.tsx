@@ -8,6 +8,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "../../api/client";
 import type { BusinessAdmin } from "../../api/types";
 
+import { t } from "../../i18n";
 const TASHKENT: L.LatLngTuple = [41.3111, 69.2797];
 const color = (b: BusinessAdmin) => (b.status === "blocked" ? "#b3261e" : b.operational ? "#15803d" : "#b45309");
 const esc = (t: string) => t.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
@@ -101,7 +102,7 @@ function OsmBusinessesMap({ businesses, onSelect }: MapProps) {
     else if (points.length === 1) map.current.setView(points[0], 14);
   }, [businesses]);
 
-  return <div ref={el} aria-label="Salonlar xaritasi" className={MAP_CLASS} />;
+  return <div ref={el} aria-label={t("Salonlar xaritasi")} className={MAP_CLASS} />;
 }
 
 function YandexBusinessesMap({ businesses, onSelect, ymaps, onFail }: MapProps & { ymaps: Ymaps; onFail: () => void }) {
@@ -139,7 +140,7 @@ function YandexBusinessesMap({ businesses, onSelect, ymaps, onFail }: MapProps &
     else if (count === 1) map.current.setCenter(layer.current.get(0).geometry.getCoordinates(), 14);
   }, [businesses, ymaps]);
 
-  return <div ref={el} aria-label="Salonlar xaritasi" className={MAP_CLASS} />;
+  return <div ref={el} aria-label={t("Salonlar xaritasi")} className={MAP_CLASS} />;
 }
 
 // ─── Lokatsiya tanlash ───────────────────────────────────────────────────────
@@ -154,7 +155,7 @@ export function LocationPicker(props: PickerProps) {
       {provider === "yandex" && <YandexPicker {...props} ymaps={ymaps} onFail={fail} />}
       {provider === "osm" && <OsmPicker {...props} />}
       <p className="mt-1 text-xs text-muted tabular-nums">
-        {lat !== null && lng !== null ? `${lat.toFixed(5)}, ${lng.toFixed(5)}` : "Xaritada salon joyini bosing"}
+        {lat !== null && lng !== null ? `${lat.toFixed(5)}, ${lng.toFixed(5)}` : t("Xaritada salon joyini bosing")}
       </p>
     </div>
   );
@@ -187,7 +188,7 @@ function OsmPicker({ lat, lng, onChange }: PickerProps) {
     }
   }, [lat, lng]);
 
-  return <div ref={el} aria-label="Lokatsiyani tanlash" className="z-0 h-56 rounded-lg border border-line" />;
+  return <div ref={el} aria-label={t("Lokatsiyani tanlash")} className="z-0 h-56 rounded-lg border border-line" />;
 }
 
 function YandexPicker({ lat, lng, onChange, ymaps, onFail }: PickerProps & { ymaps: Ymaps; onFail: () => void }) {
@@ -228,5 +229,5 @@ function YandexPicker({ lat, lng, onChange, ymaps, onFail }: PickerProps & { yma
     }
   }, [lat, lng, ymaps]);
 
-  return <div ref={el} aria-label="Lokatsiyani tanlash" className="z-0 h-56 rounded-lg border border-line" />;
+  return <div ref={el} aria-label={t("Lokatsiyani tanlash")} className="z-0 h-56 rounded-lg border border-line" />;
 }
