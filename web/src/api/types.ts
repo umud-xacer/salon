@@ -20,6 +20,7 @@ export interface Membership {
   business_kind: string;
   staff_titles?: string[];
   business_type_name?: string | null;
+  business_type_name_ru?: string | null;
   staff_word?: string | null;
   business_status: "pending" | "active" | "blocked";
   business_active: boolean;

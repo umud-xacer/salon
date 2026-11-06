@@ -1,3 +1,5 @@
+import { localized, t } from "../i18n";
+
 const TZ = "Asia/Tashkent";
 
 const timeFmt = new Intl.DateTimeFormat("en-GB", { timeZone: TZ, hour: "2-digit", minute: "2-digit" });
@@ -7,7 +9,7 @@ const isoFmt = new Intl.DateTimeFormat("en-CA", { timeZone: TZ, year: "numeric",
 export const formatTime = (iso: string) => timeFmt.format(new Date(iso));
 export const formatDate = (iso: string) => dateFmt.format(new Date(iso)).replaceAll("/", ".");
 export const todayIso = () => isoFmt.format(new Date());
-export const formatMoney = (value: number) => `${value.toLocaleString("ru-RU").replaceAll(",", " ")} so'm`;
+export const formatMoney = (value: number) => `${value.toLocaleString("ru-RU").replaceAll(",", " ")} ${t("so'm")}`;
 
 export const dayOf = (iso: string) => isoFmt.format(new Date(iso));
 
@@ -38,49 +40,49 @@ export function normalizePhone(value: string) {
   return digits.length === 9 ? `+998${digits}` : `+${digits}`;
 }
 
-export const WEEKDAYS = ["", "Dushanba", "Seshanba", "Chorshanba", "Payshanba", "Juma", "Shanba", "Yakshanba"];
+export const WEEKDAYS = localized(["", "Dushanba", "Seshanba", "Chorshanba", "Payshanba", "Juma", "Shanba", "Yakshanba"]);
 
-export const STATUS_LABELS: Record<string, string> = {
+export const STATUS_LABELS: Record<string, string> = localized({
   pending: "Kutilmoqda",
   confirmed: "Tasdiqlangan",
   in_progress: "Jarayonda",
   completed: "Yakunlangan",
   cancelled: "Bekor qilingan",
   no_show: "Kelmadi",
-};
+});
 
 export const formatQty = (value: number) =>
   value.toLocaleString("ru-RU", { maximumFractionDigits: 3 }).replaceAll(",", ".");
 
-export const MOVE_LABELS: Record<string, string> = {
+export const MOVE_LABELS: Record<string, string> = localized({
   purchase: "Kirim",
   sale: "Sotuv",
   usage: "Ishlatildi",
   to_staff: "Xodimga berildi",
   adjustment: "Sanoq",
   write_off: "Hisobdan chiqarildi",
-};
+});
 
-export const METHOD_LABELS: Record<string, string> = {
+export const METHOD_LABELS: Record<string, string> = localized({
   cash: "Naqd",
   card: "Karta",
   click: "Click",
   payme: "Payme",
   uzum: "Uzum",
-};
+});
 
-export const ROLE_LABELS: Record<string, string> = {
+export const ROLE_LABELS: Record<string, string> = localized({
   owner: "Direktor",
   manager: "Menejer",
   receptionist: "Kassir",
   staff: "Mutaxassis",          // turli muassasalar aralash joyda (Super Admin). Panel ichida — roleLabel()
-};
+});
 
 /** 90 -> "1 soat 30 daq", 60 -> "1 soat", 45 -> "45 daq" */
 export function formatDuration(min: number) {
   const h = Math.floor(min / 60);
   const m = min % 60;
-  return [h ? `${h} soat` : "", m ? `${m} daq` : ""].filter(Boolean).join(" ") || "0 daq";
+  return [h ? `${h} ${t("soat")}` : "", m ? `${m} ${t("daq")}` : ""].filter(Boolean).join(" ") || `0 ${t("daq")}`;
 }
 
 /** Xizmat davomiyligi uchun tez tanlov */

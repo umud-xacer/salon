@@ -3,6 +3,7 @@
 import { createContext, useContext } from "react";
 
 import type { Membership } from "../api/types";
+import { getLang, localized, t } from "../i18n";
 
 export type BusinessKind = "salon" | "pharmacy" | "clinic";
 
@@ -45,7 +46,10 @@ const VOCAB: Record<BusinessKind, Vocab> = {
   },
 };
 
-export const vocabFor = (kind: string | undefined): Vocab => VOCAB[(kind as BusinessKind) ?? "salon"] ?? VOCAB.salon;
+export const vocabFor = (kind: string | undefined): Vocab => {
+  const v = VOCAB[(kind as BusinessKind) ?? "salon"] ?? VOCAB.salon;
+  return getLang() === "ru" ? { ...localized(v) } : v;     // ruscha: so'zlar lug'atdan (i18n/ru.ts)
+};
 
 // Panel ichidagi komponentlar uchun (BusinessPanel va Super Admin muassasa oynasi beradi)
 export const VocabContext = createContext<Vocab>(VOCAB.salon);
@@ -62,16 +66,17 @@ export const KIND_LABELS: Record<BusinessKind, string> = {
 };
 
 /** Panel lug'ati: turga mos so'zlar + muassasa turining o'z nomi ("Stomatologiya" bo'limi, "stomatologiya ish soatlari") */
-export function panelVocab(m: Pick<Membership, "business_kind" | "business_type_name" | "staff_titles" | "staff_word">): Vocab {
+export function panelVocab(m: Pick<Membership, "business_kind" | "business_type_name" | "business_type_name_ru" | "staff_titles" | "staff_word">): Vocab {
   const v = vocabFor(m.business_kind);
-  const own = m.business_type_name?.trim();
+  const ru = getLang() === "ru";
+  const own = (ru ? m.business_type_name_ru?.trim() || m.business_type_name : m.business_type_name)?.trim();
   // Turning o'z xodim nomi (Wellness & Spa: "Mutaxassis") — rol, kalendar, "Istalgan ..."
   const w = m.staff_word?.trim();
   const lw = w?.toLowerCase();
   return {
     ...v, titles: m.staff_titles ?? [],
     ...(own ? { businessPage: own, place: own.toLowerCase() } : {}),
-    ...(w && lw ? { staffOne: w, staffMany: `${lw}lar`, staffAny: `Istalgan ${lw}`, staffDative: `${lw}ga`, staff: `${w}lar` } : {}),
+    ...(w && lw ? { staffOne: t(w), staffMany: t(`${lw}lar`), staffAny: t(`Istalgan ${lw}`), staffDative: t(`${lw}ga`), staff: t(`${w}lar`) } : {}),
   };
 }
 

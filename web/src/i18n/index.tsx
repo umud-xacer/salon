@@ -1,0 +1,75 @@
+// Panel tili (UZ / RU). Kalit — asl o'zbekcha matn: t("Xizmat qo'shish"). Tarjima topilmasa o'zbekcha qoladi,
+// shuning uchun sahifalarni bosqichma-bosqich o'tkazish xavfsiz. Til localStorage'da saqlanadi.
+// Til almashganda butun ilova qayta chiziladi (LangProvider key) — t() oddiy funksiya, hook shart emas.
+import { createContext, useContext, useState, type ReactNode } from "react";
+
+import { RU } from "./ru";
+
+export type Lang = "uz" | "ru";
+const KEY = "chronix-lang";
+
+function initial(): Lang {
+  try {
+    const saved = localStorage.getItem(KEY);
+    if (saved === "uz" || saved === "ru") return saved;
+  } catch { /* xususiy oyna */ }
+  return navigator.language?.toLowerCase().startsWith("ru") ? "ru" : "uz";
+}
+
+let current: Lang = initial();
+document.documentElement.lang = current;
+
+export const getLang = () => current;
+
+/** Matnni joriy tilga o'giradi. {n} kabi o'rinlar vars'dan to'ldiriladi: t("{n} ta xizmat", { n: 3 }) */
+export function t(uz: string, vars?: Record<string, string | number>): string {
+  let s = current === "ru" ? RU[uz] ?? uz : uz;
+  if (vars) for (const [k, v] of Object.entries(vars)) s = s.replaceAll(`{${k}}`, String(v));
+  return s;
+}
+
+/** Qiymatlari o'zbekcha bo'lgan lug'at/massivni o'qilganda tarjima qiladi (STATUS_LABELS, WEEKDAYS...) */
+export function localized<T extends object>(src: T): T {
+  return new Proxy(src, {
+    get(target, prop, receiver) {
+      const v = Reflect.get(target, prop, receiver);
+      return typeof v === "string" ? t(v) : v;
+    },
+  });
+}
+
+const LangContext = createContext<{ lang: Lang; setLang: (l: Lang) => void }>({ lang: current, setLang: () => {} });
+export const useLang = () => useContext(LangContext);
+
+export function LangProvider({ children }: { children: ReactNode }) {
+  const [lang, setState] = useState<Lang>(current);
+  const setLang = (l: Lang) => {
+    current = l;
+    document.documentElement.lang = l;
+    try { localStorage.setItem(KEY, l); } catch { /* xususiy oyna */ }
+    setState(l);
+  };
+  return (
+    <LangContext.Provider value={{ lang, setLang }}>
+      {/* key — til almashganda hamma komponent yangi tilda qayta chiziladi */}
+      <div key={lang} className="contents">{children}</div>
+    </LangContext.Provider>
+  );
+}
+
+export function LangSwitch({ dark = false }: { dark?: boolean }) {
+  const { lang, setLang } = useLang();
+  return (
+    <div role="group" aria-label="Til / Язык"
+      className={`inline-flex rounded-full p-0.5 text-xs font-semibold ${dark ? "bg-white/10" : "bg-page"}`}>
+      {(["uz", "ru"] as const).map((l) => (
+        <button key={l} type="button" aria-pressed={lang === l} onClick={() => setLang(l)}
+          className={`rounded-full px-2.5 py-1 uppercase transition ${lang === l
+            ? dark ? "bg-white text-navy" : "bg-white text-navy shadow-sm"
+            : dark ? "text-white/70 hover:text-white" : "text-muted hover:text-ink"}`}>
+          {l}
+        </button>
+      ))}
+    </div>
+  );
+}

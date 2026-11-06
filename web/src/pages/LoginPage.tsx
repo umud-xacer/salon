@@ -6,6 +6,7 @@ import { normalizePhone } from "../components/format";
 import { Button, ErrorNote } from "../components/ui";
 import { isAdminHost } from "../panelHost";
 import { PasswordField } from "../components/PasswordField";
+import { LangSwitch, t } from "../i18n";
 
 const input = "w-full rounded-lg border border-line px-3 py-2 outline-none focus:border-primary";
 
@@ -52,14 +53,15 @@ export function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-navy p-4">
       <div className="w-full max-w-sm rounded-2xl bg-white p-6">
+        <div className="-mt-2 mb-2 flex justify-end"><LangSwitch /></div>
         <div className="mb-5 flex flex-col items-center text-center">
           <img src="/logo.jpg" alt="Chronix" className="mb-3 size-24 rounded-2xl object-cover" />
           <h1 className="text-lg font-semibold text-navy">
-            {isAdminHost ? "Chronix — Super Admin paneli" : "Chronix paneliga kirish"}
+            {isAdminHost ? t("Chronix — Super Admin paneli") : t("Chronix paneliga kirish")}
           </h1>
           <p className="mt-1 text-xs text-muted">
-            {isAdminHost ? "Faqat platforma boshqaruvchisi uchun"
-              : "Salon, sartaroshxona va go'zallik markazlari rahbarlari va xodimlari uchun"}
+            {isAdminHost ? t("Faqat platforma boshqaruvchisi uchun")
+              : t("Salon, klinika va spa markazlari rahbarlari va xodimlari uchun")}
           </p>
         </div>
 
@@ -71,14 +73,14 @@ export function LoginPage() {
               onClick={() => switchMode(m)}
               className={`rounded-md py-1.5 ${mode === m ? "bg-white font-medium shadow-sm" : "text-muted"}`}
             >
-              {m === "password" ? "Parol" : "SMS kod"}
+              {m === "password" ? t("Parol") : t("SMS kod")}
             </button>
           ))}
         </div>
 
         <form onSubmit={submit} className="space-y-3">
           <label className="block text-sm">
-            Telefon
+            {t("Telefon")}
             <input
               className={`${input} mt-1`}
               type="tel"
@@ -92,7 +94,7 @@ export function LoginPage() {
 
           {mode === "password" && (
             <label className="block text-sm">
-              Parol
+              {t("Parol")}
               <PasswordField
                 className={input}
                 autoComplete="current-password"
@@ -105,7 +107,7 @@ export function LoginPage() {
 
           {mode === "sms" && codeSent && (
             <label className="block text-sm">
-              SMS kod
+              {t("SMS kod")}
               <input
                 className={`${input} mt-1`}
                 inputMode="numeric"
@@ -114,13 +116,13 @@ export function LoginPage() {
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
               />
-              {devCode && <span className="mt-1 block text-xs text-muted">Sinov kodi: {devCode}</span>}
+              {devCode && <span className="mt-1 block text-xs text-muted">{t("Sinov kodi: {code}", { code: devCode })}</span>}
             </label>
           )}
 
           {error != null && <ErrorNote error={error} />}
           <Button type="submit" disabled={busy} className="w-full">
-            {mode === "sms" && !codeSent ? "Kod yuborish" : "Kirish"}
+            {mode === "sms" && !codeSent ? t("Kod yuborish") : t("Kirish")}
           </Button>
         </form>
       </div>

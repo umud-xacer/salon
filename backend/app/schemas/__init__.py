@@ -136,6 +136,7 @@ class MembershipOut(BaseModel):
     business_kind: str = "salon"                          # salon | pharmacy | clinic — panel yozuvlari
     staff_titles: list[str] = []                          # turga mos lavozim/mutaxassislik tavsiyalari
     business_type_name: str | None = None                 # "Stomatologiya", "Sartaroshxona" — panel bo'lim nomi
+    business_type_name_ru: str | None = None              # ruscha panel uchun ("Стоматология")
     staff_word: str | None = None                         # turning xodim nomi ("Mutaxassis"), yo'q bo'lsa — standart
     business_status: str
     business_active: bool                                 # obuna bayrog'i

@@ -1,4 +1,5 @@
 import { Loader2 } from "lucide-react";
+import { t } from "../i18n";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 
 import { ApiError } from "../api/client";
@@ -82,22 +83,22 @@ export function Badge({ tone, children }: { tone: "green" | "red" | "amber" | "g
 
 /** Parolning o'zi hech kimga ko'rinmaydi, faqat holati */
 export function PasswordBadge({ status }: { status: PasswordStatus | null }) {
-  if (status === "issued") return <Badge tone="green">Parol berilgan</Badge>;
-  if (status === "temporary") return <Badge tone="amber">Vaqtinchalik parol</Badge>;
-  if (status === "own") return <Badge tone="green">O'z paroli</Badge>;
-  return <Badge tone="gray">Parol yo'q</Badge>;
+  if (status === "issued") return <Badge tone="green">{t("Parol berilgan")}</Badge>;
+  if (status === "temporary") return <Badge tone="amber">{t("Vaqtinchalik parol")}</Badge>;
+  if (status === "own") return <Badge tone="green">{t("O'z paroli")}</Badge>;
+  return <Badge tone="gray">{t("Parol yo'q")}</Badge>;
 }
 
 export function Spinner() {
   return (
-    <div className="flex justify-center p-8 text-muted" role="status" aria-label="Yuklanmoqda">
+    <div className="flex justify-center p-8 text-muted" role="status" aria-label={t("Yuklanmoqda")}>
       <Loader2 className="animate-spin" size={22} />
     </div>
   );
 }
 
 export function ErrorNote({ error }: { error: unknown }) {
-  const message = error instanceof ApiError ? error.message : "Serverga ulanib bo'lmadi. Qayta urinib ko'ring.";
+  const message = error instanceof ApiError ? t(error.message) : t("Serverga ulanib bo'lmadi. Qayta urinib ko'ring.");
   return (
     <p role="alert" className="rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">
       {message}

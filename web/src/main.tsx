@@ -6,6 +6,7 @@ import { BrowserRouter } from "react-router-dom";
 import { ApiError } from "./api/client";
 import { App } from "./App";
 import { AuthProvider } from "./auth/AuthProvider";
+import { LangProvider } from "./i18n";
 import "./index.css";
 
 const queryClient = new QueryClient({
@@ -23,7 +24,9 @@ createRoot(document.getElementById("root")!).render(
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <AuthProvider>
-          <App />
+          <LangProvider>
+            <App />
+          </LangProvider>
         </AuthProvider>
       </BrowserRouter>
     </QueryClientProvider>

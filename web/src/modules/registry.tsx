@@ -27,6 +27,7 @@ import type { ComponentType } from "react";
 import type { Membership, Panel } from "../api/types";
 import { panelVocab, type BusinessKind, type Vocab } from "./vocab";
 export { panelVocab } from "./vocab";
+import { t } from "../i18n";
 import { BusinessPage } from "./business/BusinessPage";
 import { CalendarPage } from "./calendar/CalendarPage";
 import { ClientsPage } from "./clients/ClientsPage";
@@ -115,5 +116,5 @@ export function sectionsFor(m: Membership): Section[] {
       s.panel === m.panel &&
       (!s.module || m.modules.includes(s.module)) &&
       (!s.anyPermission || s.anyPermission.some((p) => m.permissions.includes(p))),
-  ).map((s) => ({ ...s, ...(s.term ? { label: v[s.term] } : {}), icon: s.iconByKind?.[m.business_kind as BusinessKind] ?? s.icon }));
+  ).map((s) => ({ ...s, label: s.term ? v[s.term] : t(s.label), icon: s.iconByKind?.[m.business_kind as BusinessKind] ?? s.icon }));
 }

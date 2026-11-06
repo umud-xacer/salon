@@ -6,6 +6,7 @@ import { useAuth } from "../auth/AuthProvider";
 import { ChangePasswordDialog } from "../components/ChangePasswordDialog";
 import { ProfileNameDialog } from "../components/ProfileNameDialog";
 import { Logo } from "../components/ui";
+import { LangSwitch, t } from "../i18n";
 
 export interface NavItem {
   to: string;
@@ -39,7 +40,7 @@ export function AppShell({ nav, title, header, children }: {
   return (
     <div className="min-h-dvh md:flex">
       {/* Telefon va kichik planshetda menyu ustma-ust ochiladi, kontentni surmaydi */}
-      {open && <button aria-label="Menyuni yopish" className="fixed inset-0 z-30 bg-navy/60 md:hidden" onClick={() => setOpen(false)} />}
+      {open && <button aria-label={t("Menyuni yopish")} className="fixed inset-0 z-30 bg-navy/60 md:hidden" onClick={() => setOpen(false)} />}
       <aside
         className={`fixed inset-y-0 left-0 z-40 flex h-dvh w-64 max-w-[85vw] flex-col bg-navy text-white transition-transform md:sticky md:top-0 md:w-60 md:translate-x-0 ${
           open ? "translate-x-0" : "-translate-x-full"
@@ -48,7 +49,7 @@ export function AppShell({ nav, title, header, children }: {
         <div className="flex items-center gap-3 p-4">
           <Logo />
           <span className="min-w-0 flex-1 truncate font-semibold">{title}</span>
-          <button className="md:hidden" onClick={() => setOpen(false)} aria-label="Menyuni yopish">
+          <button className="md:hidden" onClick={() => setOpen(false)} aria-label={t("Menyuni yopish")}>
             <X size={22} />
           </button>
         </div>
@@ -72,32 +73,34 @@ export function AppShell({ nav, title, header, children }: {
           ))}
         </nav>
         <div className="border-t border-white/10 p-3">
-          <button onClick={() => { setOpen(false); setEditingName(true); }} title="Ismni tahrirlash"
+          <button onClick={() => { setOpen(false); setEditingName(true); }} title={t("Ismni tahrirlash")}
             className="flex w-full items-center gap-2 truncate rounded-lg px-3 pb-2 pt-1 text-left text-sm text-white/70 hover:bg-white/10">
             <span className="min-w-0 flex-1 truncate">{me?.user.full_name || me?.user.phone}</span>
             <Pencil size={14} aria-hidden className="shrink-0" />
-            <span className="sr-only">Ismni tahrirlash</span>
+            <span className="sr-only">{t("Ismni tahrirlash")}</span>
           </button>
           {me?.workspace === "superadmin" && (
             <button onClick={() => { setOpen(false); setChangingPassword(true); }} className={footerButton}>
               <KeyRound size={18} aria-hidden />
-              Parolni o'zgartirish
+              {t("Parolni o'zgartirish")}
             </button>
           )}
           <button onClick={() => void signOut()} className={footerButton}>
             <LogOut size={18} aria-hidden />
-            Chiqish
+            {t("Chiqish")}
           </button>
+          <div className="px-3 pt-2"><LangSwitch dark /></div>
         </div>
       </aside>
 
       <div className="min-w-0 flex-1">
         <div className="sticky top-0 z-20 flex items-center gap-3 border-b border-line bg-white px-4 py-3 md:hidden">
-          <button onClick={() => setOpen(true)} aria-label="Menyu" aria-expanded={open}>
+          <button onClick={() => setOpen(true)} aria-label={t("Menyu")} aria-expanded={open}>
             <Menu size={24} />
           </button>
           <Logo size={28} />
-          <span className="min-w-0 truncate font-semibold text-navy">{title}</span>
+          <span className="min-w-0 flex-1 truncate font-semibold text-navy">{title}</span>
+          <LangSwitch />
         </div>
         <main className="mx-auto max-w-5xl p-3 sm:p-4 md:p-6">{children}</main>
       </div>
