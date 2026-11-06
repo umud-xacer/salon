@@ -144,6 +144,7 @@ export interface ServiceCategory {
   id: number;
   name: string;
   sort_order: number;
+  service_count?: number;   // faol xizmatlar soni
 }
 
 export interface TimeOff {

@@ -243,12 +243,43 @@ class PhotoOut(BaseModel):
 # ─── Salon egasi: xizmatlar ─────────────────────────────────────────────────
 class ServiceCategoryIn(BaseModel):
     name: str = Field(min_length=1, max_length=80)
-    sort_order: int = Field(default=0, ge=0, le=1000)
+    sort_order: int | None = Field(default=None, ge=0, le=1000)     # bo'sh — oxiriga qo'shiladi
+
+    @field_validator("name")
+    @classmethod
+    def _clean(cls, v: str) -> str:
+        v = " ".join(v.split())
+        if not v:
+            raise ValueError("Bo'lim nomi bo'sh")
+        return v
 
 
-class ServiceCategoryOut(ServiceCategoryIn):
+class ServiceCategoryUpdate(BaseModel):
+    """Qisman o'zgartirish: faqat nom yoki faqat tartib (nom o'zgarganda tartib 0 ga tushib ketmaydi)."""
+    name: str | None = Field(default=None, min_length=1, max_length=80)
+    sort_order: int | None = Field(default=None, ge=0, le=1000)
+
+    @field_validator("name")
+    @classmethod
+    def _clean(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        v = " ".join(v.split())
+        if not v:
+            raise ValueError("Bo'lim nomi bo'sh")
+        return v
+
+
+class ServiceCategoryOrder(BaseModel):
+    ids: list[int] = Field(min_length=1, max_length=200)
+
+
+class ServiceCategoryOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
+    name: str
+    sort_order: int
+    service_count: int = 0
 
 
 class ServiceCreate(BaseModel):

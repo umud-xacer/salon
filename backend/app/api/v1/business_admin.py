@@ -4,14 +4,14 @@ Huquqlar: profil/soat/rasm — 'business.manage'; xizmatlar — 'services.manage
 Bazada ham xuddi shu qoida (RLS); status/reyting/egasi kabi maydonlarni triggerlar himoya qiladi.
 Har bir o'zgarish audit_logs ga yoziladi.
 """
-from fastapi import APIRouter, Depends, File, HTTPException, Path, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Path, Query, UploadFile, status
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, require_permission
 from app.schemas.catalog import (HoursOut, HoursReplace, PhotoIn, PhotoOut, PresetOut, PresetsApply, PresetsOut,
                                  ProfileOut, ProfileUpdate, ServiceAdminOut, ServiceCategoryIn,
-                                 ServiceCategoryOut, ServiceCreate, ServiceUpdate)
+                                 ServiceCategoryOrder, ServiceCategoryOut, ServiceCategoryUpdate, ServiceCreate, ServiceUpdate)
 from app.services import audit, media
 
 router = APIRouter(prefix="/businesses/{business_id}", tags=["business-admin"])
@@ -132,46 +132,92 @@ def delete_photo(photo_id: int = Path(ge=1), business_id: int = Depends(_busines
 
 
 # ─── Xizmat kategoriyalari ──────────────────────────────────────────────────
+_CAT_COLS = ("c.id, c.name, c.sort_order, (SELECT count(*) FROM services s WHERE s.category_id = c.id "
+             "AND s.business_id = c.business_id AND s.is_active) AS service_count")
+
+
+def _category(db: Session, business_id: int, category_id: int) -> ServiceCategoryOut:
+    row = db.execute(text(f"SELECT {_CAT_COLS} FROM service_categories c WHERE c.id = :id AND c.business_id = :b"),
+                     {"id": category_id, "b": business_id}).mappings().first()
+    if row is None:
+        raise _NOT_FOUND
+    return ServiceCategoryOut(**row)
+
+
+def _name_taken(db: Session, business_id: int, name: str, except_id: int | None = None) -> None:
+    taken = db.scalar(text("SELECT EXISTS (SELECT 1 FROM service_categories WHERE business_id = :b "
+                           "AND lower(name) = lower(:n) AND id IS DISTINCT FROM :x)"),
+                      {"b": business_id, "n": name, "x": except_id})
+    if taken:
+        raise HTTPException(status.HTTP_409_CONFLICT, {"code": "category_exists", "message": "Bunday nomli bo'lim bor"})
+
+
 @router.get("/service-categories", response_model=list[ServiceCategoryOut])
 def list_categories(business_id: int = Depends(_services), db: Session = Depends(get_db)):
-    rows = db.execute(text("SELECT id, name, sort_order FROM service_categories WHERE business_id = :b "
-                           "ORDER BY sort_order, name"), {"b": business_id}).mappings()
+    rows = db.execute(text(f"SELECT {_CAT_COLS} FROM service_categories c WHERE c.business_id = :b "
+                           "ORDER BY c.sort_order, c.name, c.id"), {"b": business_id}).mappings()
     return [ServiceCategoryOut(**r) for r in rows]
 
 
 @router.post("/service-categories", response_model=ServiceCategoryOut, status_code=201)
 def create_category(body: ServiceCategoryIn, business_id: int = Depends(_services), db: Session = Depends(get_db)):
-    row = db.execute(text("INSERT INTO service_categories (business_id, name, sort_order) VALUES (:b, :n, :s) "
-                          "RETURNING id, name, sort_order"), {"b": business_id, "n": body.name.strip(), "s": body.sort_order}
-                     ).mappings().one()
-    audit.log(db, business_id, "create", "service_category", row["id"], body.model_dump())
+    _name_taken(db, business_id, body.name)
+    order = body.sort_order
+    if order is None:   # yangi bo'lim oxiriga
+        order = db.scalar(text("SELECT coalesce(max(sort_order) + 1, 0) FROM service_categories WHERE business_id = :b"),
+                          {"b": business_id})
+    new_id = db.scalar(text("INSERT INTO service_categories (business_id, name, sort_order) VALUES (:b, :n, :s) RETURNING id"),
+                       {"b": business_id, "n": body.name, "s": min(order, 1000)})
+    audit.log(db, business_id, "create", "service_category", new_id, {"name": body.name})
     db.commit()
-    return ServiceCategoryOut(**row)
+    return _category(db, business_id, new_id)
+
+
+@router.put("/service-categories/order", response_model=list[ServiceCategoryOut])
+def reorder_categories(body: ServiceCategoryOrder, business_id: int = Depends(_services), db: Session = Depends(get_db)):
+    """Bo'limlar ketma-ketligi: ro'yxatdagi tartib bo'yicha 0, 1, 2... Ilovada ham shu tartibda chiqadi."""
+    ids = list(dict.fromkeys(body.ids))
+    own = set(db.scalars(text("SELECT id FROM service_categories WHERE business_id = :b"), {"b": business_id}))
+    if set(ids) != own:
+        raise HTTPException(422,
+                            {"code": "bad_order", "message": "Ro'yxatda muassasaning barcha bo'limlari bo'lishi kerak"})
+    for i, cid in enumerate(ids):
+        db.execute(text("UPDATE service_categories SET sort_order = :s WHERE id = :id AND business_id = :b"),
+                   {"s": i, "id": cid, "b": business_id})
+    audit.log(db, business_id, "update", "service_category_order", None, {"ids": ids})
+    db.commit()
+    return list_categories(business_id, db)
 
 
 @router.patch("/service-categories/{category_id}", response_model=ServiceCategoryOut)
-def update_category(body: ServiceCategoryIn, category_id: int = Path(ge=1),
+def update_category(body: ServiceCategoryUpdate, category_id: int = Path(ge=1),
                     business_id: int = Depends(_services), db: Session = Depends(get_db)):
-    row = db.execute(text("UPDATE service_categories SET name = :n, sort_order = :s WHERE id = :id AND business_id = :b "
-                          "RETURNING id, name, sort_order"),
-                     {"n": body.name.strip(), "s": body.sort_order, "id": category_id, "b": business_id}).mappings().first()
-    if row is None:
-        raise _NOT_FOUND
-    audit.log(db, business_id, "update", "service_category", category_id, body.model_dump())
-    db.commit()
-    return ServiceCategoryOut(**row)
+    data = body.model_dump(exclude_none=True)
+    _category(db, business_id, category_id)
+    if "name" in data:
+        _name_taken(db, business_id, data["name"], category_id)
+    if data:
+        sets = ", ".join(f"{k} = :{k}" for k in data)
+        db.execute(text(f"UPDATE service_categories SET {sets} WHERE id = :id AND business_id = :b"),
+                   {**data, "id": category_id, "b": business_id})
+        audit.log(db, business_id, "update", "service_category", category_id, data)
+        db.commit()
+    return _category(db, business_id, category_id)
 
 
 @router.delete("/service-categories/{category_id}", status_code=204)
-def delete_category(category_id: int = Path(ge=1), business_id: int = Depends(_services), db: Session = Depends(get_db)):
-    """Kategoriya o'chadi, undagi xizmatlar 'Boshqa' guruhiga o'tadi."""
-    db.execute(text("UPDATE services SET category_id = NULL WHERE category_id = :id AND business_id = :b"),
-               {"id": category_id, "b": business_id})
-    deleted = db.execute(text("DELETE FROM service_categories WHERE id = :id AND business_id = :b"),
-                         {"id": category_id, "b": business_id}).rowcount
-    if not deleted:
-        raise _NOT_FOUND
-    audit.log(db, business_id, "delete", "service_category", category_id)
+def delete_category(category_id: int = Path(ge=1), move_to: int | None = Query(default=None, ge=1),
+                    business_id: int = Depends(_services), db: Session = Depends(get_db)):
+    """Bo'lim o'chadi. Undagi xizmatlar o'chmaydi: move_to bo'limiga yoki 'Boshqa' guruhiga o'tadi."""
+    _category(db, business_id, category_id)
+    if move_to is not None:
+        if move_to == category_id:
+            raise HTTPException(422, {"code": "bad_target", "message": "Boshqa bo'limni tanlang"})
+        _category(db, business_id, move_to)
+    db.execute(text("UPDATE services SET category_id = :t WHERE category_id = :id AND business_id = :b"),
+               {"t": move_to, "id": category_id, "b": business_id})
+    db.execute(text("DELETE FROM service_categories WHERE id = :id AND business_id = :b"), {"id": category_id, "b": business_id})
+    audit.log(db, business_id, "delete", "service_category", category_id, {"move_to": move_to})
     db.commit()
 
 
