@@ -20,7 +20,7 @@ def type_by_slug(client, superadmin, slug):
 
 def test_public_categories_include_pharmacy_in_order(client):
     slugs = [c["slug"] for c in client.get("/api/v1/catalog/categories").json()]
-    assert slugs[:6] == ["beauty_salon", "barbershop", "pharmacy", "clinic", "dental", "spa"]
+    assert slugs[:7] == ["beauty_salon", "barbershop", "pharmacy", "clinic", "dental", "ent", "spa"]
 
 
 def test_superadmin_lists_presets_and_hours(client, superadmin):

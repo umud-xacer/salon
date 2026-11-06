@@ -1,5 +1,5 @@
 // Super Admin chap menyusi: "Salonlar" (hammasi), uning ostida har bir muassasa turi, keyin "Muassasa turlari".
-import { BarChart3, Building2, Layers, Leaf, Pill, Scissors, ScrollText, Smile, Sparkles, Stethoscope, Store, Users, type LucideIcon } from "lucide-react";
+import { BarChart3, Building2, Ear, Layers, Leaf, Pill, Scissors, ScrollText, Smile, Sparkles, Stethoscope, Store, Users, type LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { AppShell, type NavItem } from "../../layouts/AppShell";
@@ -7,7 +7,7 @@ import { useBusinessTypes } from "./BusinessTypesPage";
 import { typeUrl } from "./typeWording";
 
 const ICONS: Record<string, LucideIcon> = {
-  beauty_salon: Sparkles, barbershop: Scissors, pharmacy: Pill, clinic: Stethoscope, dental: Smile, spa: Leaf,
+  beauty_salon: Sparkles, barbershop: Scissors, pharmacy: Pill, clinic: Stethoscope, dental: Smile, ent: Ear, spa: Leaf,
 };
 
 export function SuperAdminShell({ children }: { children: ReactNode }) {
