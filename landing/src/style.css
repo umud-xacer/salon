@@ -20,7 +20,10 @@
 *::before,
 *::after { box-sizing: border-box; }
 
-html { scroll-behavior: smooth; scroll-padding-top: 90px; -webkit-text-size-adjust: 100%; }
+html.lenis, html.lenis body { height: auto; }
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+.lenis.lenis-stopped { overflow: hidden; }
+html { overflow-x: clip; scroll-behavior: smooth; scroll-padding-top: 90px; -webkit-text-size-adjust: 100%; }
 
 body {
   margin: 0;
@@ -136,18 +139,17 @@ main, .footer { position: relative; z-index: 2; }
 .hero-stats b { display: block; font-family: var(--display); font-size: clamp(1.5rem, 2.6vw, 2.1rem); font-weight: 600; }
 .hero-stats span { color: var(--muted); font-size: 0.9rem; }
 
-.hero-float { position: absolute; inset: 0; pointer-events: none; }
+.hero-float { position: fixed; inset: 0; pointer-events: none; z-index: 3; }
 .float-card {
-  position: absolute; display: flex; gap: 12px; align-items: center; padding: 12px 16px; border-radius: 16px;
+  position: absolute; left: 0; top: 0; opacity: 0; will-change: transform, opacity; display: flex; white-space: nowrap; gap: 12px; align-items: center; padding: 12px 16px; border-radius: 16px;
   background: rgba(10, 24, 80, 0.55); border: 1px solid var(--line); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-  box-shadow: var(--shadow); font-size: 0.85rem; animation: bob 6s ease-in-out infinite;
+  box-shadow: var(--shadow); font-size: 0.85rem;
 }
 .float-card b { display: block; font-size: 0.92rem; }
 .float-card small { color: var(--muted); }
-.fc-1 { right: 4%; top: 24%; }
-.fc-2 { right: 26%; bottom: 18%; animation-delay: -2s; }
-.fc-3 { right: 2%; bottom: 34%; animation-delay: -4s; }
-@keyframes bob { 50% { transform: translateY(-12px); } }
+.float-card > * { animation: bob 6s ease-in-out infinite; }
+.fc-2 > * { animation-delay: -2s; } .fc-3 > * { animation-delay: -4s; }
+@keyframes bob { 50% { transform: translateY(-8px); } }
 .ic { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; flex: none; }
 .ic::before { font-size: 16px; }
 .ic-ok { background: rgba(34, 197, 94, 0.18); } .ic-ok::before { content: "✓"; color: #4ade80; font-weight: 800; }
@@ -159,7 +161,7 @@ main, .footer { position: relative; z-index: 2; }
 @keyframes wheel { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(14px); } }
 
 /* ── Marquee ── */
-.marquee { position: relative; z-index: 2; overflow: hidden; border-block: 1px solid var(--line); background: rgba(4, 12, 48, 0.5); backdrop-filter: blur(6px); }
+.marquee { position: relative; z-index: 2; overflow: hidden; contain: paint; border-block: 1px solid var(--line); background: rgba(4, 12, 48, 0.5); backdrop-filter: blur(6px); }
 .marquee-track { display: flex; align-items: center; gap: 28px; width: max-content; padding: 18px 0; animation: marquee 40s linear infinite; }
 .marquee span { font-family: var(--display); font-size: clamp(1rem, 2vw, 1.4rem); color: #cfe0ff; white-space: nowrap; }
 .marquee i { width: 8px; height: 8px; border-radius: 50%; background: var(--grad); }
@@ -305,4 +307,54 @@ main, .footer { position: relative; z-index: 2; }
 /* Mobil: hero'da 3D obyekt tepada, matn pastda */
 @media (max-width: 860px) {
   .hero { align-items: end; padding-top: 44vh; padding-bottom: 90px; }
+}
+
+
+/* ── v2: so'zma-so'z sarlavhalar ── */
+.split .w { display: inline-block; overflow: hidden; vertical-align: top; padding: 0 0.02em 0.14em; margin-bottom: -0.14em; }
+.split .wi { display: inline-block; will-change: transform; }
+.js .split .wi { transform: translateY(115%) rotate(4deg); }
+
+/* Scroll ko'rsatkichi */
+.progress { position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 60; pointer-events: none; }
+.progress i { display: block; height: 100%; background: var(--grad); transform-origin: left; transform: scaleX(0); box-shadow: 0 0 12px rgba(56, 189, 248, 0.8); }
+
+/* Sichqoncha yorug'ligi */
+.cursor-glow {
+  position: fixed; left: 0; top: 0; width: 520px; height: 520px; margin: -260px 0 0 -260px; border-radius: 50%; z-index: 1;
+  pointer-events: none; background: radial-gradient(circle, rgba(56, 189, 248, 0.13), transparent 62%); mix-blend-mode: screen;
+  opacity: 0; transition: opacity 0.6s;
+}
+.cursor-glow.on { opacity: 1; }
+
+/* Yon navigatsiya 01-04 */
+.dots {
+  position: fixed; right: 22px; top: 50%; transform: translate(20px, -50%); z-index: 40; display: grid; gap: 14px;
+  opacity: 0; pointer-events: none; transition: opacity 0.5s, transform 0.5s;
+}
+.dots.show { opacity: 1; transform: translate(0, -50%); pointer-events: auto; }
+.dots a { display: flex; align-items: center; justify-content: flex-end; gap: 10px; color: var(--muted); font-size: 0.75rem; font-weight: 700; }
+.dots b { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; border: 1px solid var(--line); background: rgba(6, 16, 60, 0.5); backdrop-filter: blur(8px); transition: all 0.35s; }
+.dots span { opacity: 0; transform: translateX(8px); transition: all 0.3s; white-space: nowrap; }
+.dots a:hover span, .dots a.on span { opacity: 1; transform: none; }
+.dots a.on b { background: var(--grad); color: var(--bg); border-color: transparent; box-shadow: 0 0 20px rgba(56, 189, 248, 0.6); }
+@media (max-width: 1100px) { .dots { display: none; } }
+
+/* Mini UI: jonli bron qatorlari */
+.mini-ui { transform-style: preserve-3d; }
+.mu-row { position: relative; overflow: hidden; }
+.mu-row::after {
+  content: ""; position: absolute; inset: 0; transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent); animation: shine 4.5s ease-in-out infinite;
+}
+.mu-row:nth-child(3)::after { animation-delay: 0.6s; } .mu-row:nth-child(4)::after { animation-delay: 1.2s; }
+@keyframes shine { 0%, 60% { transform: translateX(-100%); } 85%, 100% { transform: translateX(100%); } }
+
+.marquee-track { will-change: transform; }
+.btn, .store { will-change: transform; }
+.v-num { will-change: transform; }
+
+@media (prefers-reduced-motion: reduce) {
+  .js .split .wi { transform: none; }
+  .cursor-glow { display: none; }
 }

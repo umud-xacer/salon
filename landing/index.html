@@ -18,6 +18,14 @@
   <!-- 3D sahna: butun sahifa ortida, scroll bilan o'zgaradi -->
   <canvas id="scene" aria-hidden="true"></canvas>
   <div class="noise" aria-hidden="true"></div>
+  <div class="cursor-glow" id="glow" aria-hidden="true"></div>
+  <div class="progress" aria-hidden="true"><i id="progress"></i></div>
+  <nav class="dots" id="dots" aria-label="Yo'nalishlar">
+    <a href="#salon" data-i="0"><span>Salon</span><b>01</b></a>
+    <a href="#dental" data-i="1"><span>Stomatologiya</span><b>02</b></a>
+    <a href="#ent" data-i="2"><span>Lor</span><b>03</b></a>
+    <a href="#spa" data-i="3"><span>Spa</span><b>04</b></a>
+  </nav>
   <div class="loader" id="loader" aria-hidden="true"><img src="/logo-ring.png" alt="" /></div>
 
   <header class="header" id="header">
@@ -45,7 +53,7 @@
     <section class="hero" data-scene="hero">
       <div class="hero-copy">
         <p class="eyebrow reveal"><span class="dot"></span> O'zbekistonda xizmat sohasi uchun yagona platforma</p>
-        <h1 class="reveal">
+        <h1 class="split">
           Biznesingizni <span class="grad">Chronix</span> bilan<br />yangi bosqichga ko'taring
         </h1>
         <p class="lead reveal">
@@ -94,11 +102,11 @@
 
     <!-- ═══════════ 4 YO'NALISH (3D) ═══════════ -->
     <div id="yonalishlar" class="anchor"></div>
-    <section class="vertical" data-scene="salon" style="--accent:#ff7ac6">
+    <section class="vertical" id="salon" data-scene="salon" style="--accent:#ff7ac6">
       <div class="v-copy">
         <span class="v-num">01</span>
         <p class="eyebrow">Sartaroshxona va go'zallik salonlari</p>
-        <h2>Har bir usta jadvali —<br /><span class="grad">bir qarashda</span></h2>
+        <h2 class="split">Har bir usta jadvali&nbsp;—<br /><span class="grad">bir qarashda</span></h2>
         <p>Soch turmaklari, tirnoq dizayni va estetik parvarish. Mijoz ustani va bo'sh vaqtni o'zi tanlaydi,
           siz esa kalendarda hamma bronlarni ko'rasiz — bir-biriga to'qnashmaydi.</p>
         <ul class="ticks">
@@ -115,11 +123,11 @@
       </div>
     </section>
 
-    <section class="vertical right" data-scene="dental" style="--accent:#5eead4">
+    <section class="vertical right" id="dental" data-scene="dental" style="--accent:#5eead4">
       <div class="v-copy">
         <span class="v-num">02</span>
         <p class="eyebrow">Stomatologiya klinikalari</p>
-        <h2>Tabassum uchun —<br /><span class="grad">tartibli qabul</span></h2>
+        <h2 class="split">Tabassum uchun&nbsp;—<br /><span class="grad">tartibli qabul</span></h2>
         <p>Terapevtik davolash, ortodontiya, protezlash va jarrohlik — xizmatlar bo'limlarga ajratilgan.
           Bemor mutaxassislikni, shifokorni va vaqtni tanlab, qabulga o'zi yoziladi.</p>
         <ul class="ticks">
@@ -135,11 +143,11 @@
       </div>
     </section>
 
-    <section class="vertical" data-scene="ent" style="--accent:#60a5fa">
+    <section class="vertical" id="ent" data-scene="ent" style="--accent:#60a5fa">
       <div class="v-copy">
         <span class="v-num">03</span>
         <p class="eyebrow">Lor (otorinolaringologiya)</p>
-        <h2>Quloq, burun, tomoq —<br /><span class="grad">aniq yo'naltirish</span></h2>
+        <h2 class="split">Quloq, burun, tomoq&nbsp;—<br /><span class="grad">aniq yo'naltirish</span></h2>
         <p>Endoskopik ko'rik, audiometriya, burun va tomoq muolajalari. Bemor kerakli Lor-shifokorni tanlaydi,
           registrator esa barcha qabullarni bitta ekranda boshqaradi.</p>
         <ul class="ticks">
@@ -155,11 +163,11 @@
       </div>
     </section>
 
-    <section class="vertical right" data-scene="spa" style="--accent:#86efac">
+    <section class="vertical right" id="spa" data-scene="spa" style="--accent:#86efac">
       <div class="v-copy">
         <span class="v-num">04</span>
         <p class="eyebrow">Wellness &amp; Spa markazlari</p>
-        <h2>Hordiq ham —<br /><span class="grad">o'z vaqtida</span></h2>
+        <h2 class="split">Hordiq ham&nbsp;—<br /><span class="grad">o'z vaqtida</span></h2>
         <p>Massaj turlari, sauna va hammom, tana parvarishi hamda kompleks paketlar. Mijoz dam olishni
           rejalashtiradi, mutaxassislaringiz esa bandligini aniq biladi.</p>
         <ul class="ticks">
@@ -179,7 +187,7 @@
     <section class="section" id="imkoniyatlar" data-scene="none">
       <div class="section-head">
         <p class="eyebrow">Imkoniyatlar</p>
-        <h2>Biznes uchun kerakli <span class="grad">hamma narsa</span></h2>
+        <h2 class="split">Biznes uchun kerakli <span class="grad">hamma narsa</span></h2>
         <p>Qog'oz daftar, Excel va telefon qo'ng'iroqlari o'rniga — bitta tizim.</p>
       </div>
       <div class="bento">
@@ -211,7 +219,7 @@
     <section class="section steps-wrap" data-scene="none">
       <div class="section-head">
         <p class="eyebrow">Qanday boshlanadi</p>
-        <h2>Uch qadamda <span class="grad">ishga tushiring</span></h2>
+        <h2 class="split">Uch qadamda <span class="grad">ishga tushiring</span></h2>
       </div>
       <ol class="steps">
         <li class="glass"><b>1</b><h3>Ariza qoldiring</h3><p>Biz muassasangizni tizimga qo'shamiz va direktor loginini beramiz.</p></li>
@@ -224,7 +232,7 @@
     <section class="section" id="narxlar" data-scene="none">
       <div class="section-head">
         <p class="eyebrow">Narxlar</p>
-        <h2>Biznesingiz hajmiga <span class="grad">mos tarif</span></h2>
+        <h2 class="split">Biznesingiz hajmiga <span class="grad">mos tarif</span></h2>
         <p>Mijozlar uchun ilova bepul. Muassasa oylik obuna to'laydi.</p>
       </div>
       <div class="prices" id="prices"></div>
@@ -235,7 +243,7 @@
       <div class="about-grid">
         <div>
           <p class="eyebrow">Biz haqimizda</p>
-          <h2>Vaqtingiz — <span class="grad">bizning ustuvorligimiz</span></h2>
+          <h2 class="split">Vaqtingiz&nbsp;— <span class="grad">bizning ustuvorligimiz</span></h2>
           <p>Chronix — O'zbekistonda yaratilgan bulutli platforma. Maqsadimiz oddiy: mijoz navbatda kutmasin,
             tadbirkor esa qog'oz daftar va cheksiz qo'ng'iroqlar o'rniga biznesini rivojlantirish bilan band bo'lsin.</p>
           <p>Platforma o'zbek tilida, mahalliy to'lov usullari va O'zbekiston xaritasi bilan ishlaydi.
@@ -252,7 +260,7 @@
 
     <!-- ═══════════ CTA ═══════════ -->
     <section class="cta" data-scene="cta">
-      <h2>Bugun boshlang — <span class="grad">ertaga vaqtni yutasiz</span></h2>
+      <h2 class="split">Bugun boshlang&nbsp;— <span class="grad">ertaga vaqtni yutasiz</span></h2>
       <div class="stores center">
         <a class="store" data-link="play" href="#"><span><small>Yuklab oling</small>Google Play</span></a>
         <a class="store" data-link="appstore" href="#"><span><small>Yuklab oling</small>App Store</span></a>
