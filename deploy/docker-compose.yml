@@ -60,6 +60,9 @@ services:
       # Domen almashganda eski manzil ham ishlab tursin (ixtiyoriy)
       API_ALIAS: ${API_ALIAS:-}
       WEB_DOMAIN: ${WEB_DOMAIN:?}
+      WEB_ALIAS: ${WEB_ALIAS:-}
+      LANDING_DOMAIN: ${LANDING_DOMAIN:?}
+      LANDING_ALIAS: ${LANDING_ALIAS:-}
       ADMIN_DOMAIN: ${ADMIN_DOMAIN:?}
       ADMIN_ALIAS: ${ADMIN_ALIAS:-}
     ports:
@@ -68,6 +71,7 @@ services:
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - ./web-dist:/srv/web:ro
+      - ./landing-dist:/srv/landing:ro
       - ./sites:/etc/caddy/sites:ro
       - media:/srv/media:ro
       - caddy_data:/data

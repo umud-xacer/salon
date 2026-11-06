@@ -45,8 +45,26 @@
 	}
 }
 
-# Salon rahbarlari va xodimlari
-{$WEB_DOMAIN} www.{$WEB_DOMAIN} {
+# Taqdimot sayti (landing/): statik fayllar, API yo'q. Kompyuterdan: sh deploy/publish-landing.sh
+{$LANDING_DOMAIN} {$LANDING_ALIAS:} {
+	encode gzip
+	header {
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy strict-origin-when-cross-origin
+		Strict-Transport-Security "max-age=63072000"
+	}
+	root * /srv/landing
+	@assets path /assets/*
+	header @assets Cache-Control "public, max-age=31536000, immutable"
+	@pages not path /assets/*
+	header @pages Cache-Control "no-cache"
+	try_files {path} /index.html
+	file_server
+}
+
+# Salon rahbarlari va xodimlari (admin.ariqalqon.uz; WEB_ALIAS — o'tish davrida eski manzil)
+{$WEB_DOMAIN} {$WEB_ALIAS:} {
 	import web_panel
 }
 
