@@ -1,5 +1,6 @@
 import * as SecureStore from './secure';
 
+import { t } from "./i18n";
 export const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://10.0.2.2:8001';
 const BASE = `${API_URL}/api/v1`;
 
@@ -87,14 +88,14 @@ export async function api<T = void>(path: string, { method = 'GET', body }: Opti
       }
     }
   } catch {
-    throw new ApiError(0, 'network', "Server bilan aloqa yo'q");
+    throw new ApiError(0, 'network', t("Server bilan aloqa yo'q"));
   }
 
   if (r.status === 204) return undefined as T;
   const data = await r.json().catch(() => null);
   if (!r.ok) {
     const detail = data?.detail;
-    const message = typeof detail?.message === 'string' ? detail.message : "Ma'lumot noto'g'ri";
+    const message = typeof detail?.message === 'string' ? detail.message : t("Ma'lumot noto'g'ri");
     throw new ApiError(r.status, detail?.code ?? 'error', message);
   }
   return data as T;
@@ -116,6 +117,7 @@ export type BusinessCard = {
   slug: string;
   name: string;
   category_name: string;
+  category_name_ru?: string | null;
   city: string | null;
   address: string | null;
   lat: number;
@@ -129,7 +131,7 @@ export type BusinessCard = {
   is_open_now: boolean;
 };
 
-export type Category = { id: number; slug: string; name_uz: string };
+export type Category = { id: number; slug: string; name_uz: string; name_ru?: string | null };
 
 export type Service = { id: number; name: string; description: string | null; duration_min: number; price: number };
 export type Staff = { member_id: number; full_name: string; title: string | null; rating_avg: number; rating_count: number; service_ids: number[] };
@@ -142,6 +144,7 @@ export type BusinessDetail = {
   phone: string | null;
   photos: string[];
   category_name: string;
+  category_name_ru?: string | null;
   kind?: 'salon' | 'pharmacy' | 'clinic';
   rating_avg: number;
   rating_count: number;

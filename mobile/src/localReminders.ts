@@ -10,6 +10,7 @@ import { Platform } from 'react-native';
 import { Appointment } from './api';
 import { BOOKING_CATEGORY } from './notifications';
 
+import { t } from "./i18n";
 const HOUR_MS = 60 * 60 * 1000;
 const ALARM_MS = 30 * 60 * 1000;
 const reminderId = (appointmentId: number) => `booking-${appointmentId}`;
@@ -29,8 +30,8 @@ export async function scheduleBookingReminder(appointmentId: number, startsAt: s
     await Notifications.scheduleNotificationAsync({
       identifier: reminderId(appointmentId),
       content: {
-        title: 'Broningizga 1 soat qoldi',
-        body: `${place}, soat ${time}. 30 daqiqa qolganda budilnik chalinadi.`,
+        title: t("Broningizga 1 soat qoldi"),
+        body: t("{a}, soat {b}. 30 daqiqa qolganda budilnik chalinadi.", { a: place, b: time }),
         data: { type: 'local_booking_reminder', appointment_id: appointmentId },
       },
       trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: remindAt, channelId: 'default' },
@@ -43,8 +44,8 @@ export async function scheduleBookingReminder(appointmentId: number, startsAt: s
     await Notifications.scheduleNotificationAsync({
       identifier: alarmId(appointmentId),
       content: {
-        title: `Broningizga 30 daqiqa qoldi — soat ${time}`,
-        body: `${place}. Borasizmi?`,
+        title: t("Broningizga 30 daqiqa qoldi — soat {a}", { a: time }),
+        body: t("{a}. Borasizmi?", { a: place }),
         sound: 'alarm.wav',
         vibrate: [0, 800, 400, 800, 400, 800],
         priority: Notifications.AndroidNotificationPriority.MAX,
@@ -83,7 +84,7 @@ export async function syncBookingAlarms(appointments: Appointment[]) {
   }
   for (const a of active) {
     if (!have.has(alarmId(a.id)) || !have.has(reminderId(a.id))) {
-      await scheduleBookingReminder(a.id, a.starts_at, a.business_name ?? 'Salon');
+      await scheduleBookingReminder(a.id, a.starts_at, a.business_name ?? t("Salon"));
     }
   }
 }
@@ -93,8 +94,8 @@ export async function scheduleTestAlarm(seconds = 10) {
   await Notifications.scheduleNotificationAsync({
     identifier: 'alarm-test',
     content: {
-      title: 'Budilnik sinovi',
-      body: 'Ovoz va tebranish ishlayapti. Bosing — budilnik ekrani ochiladi.',
+      title: t("Budilnik sinovi"),
+      body: t("Ovoz va tebranish ishlayapti. Bosing — budilnik ekrani ochiladi."),
       sound: 'alarm.wav',
       vibrate: [0, 800, 400, 800],
       priority: Notifications.AndroidNotificationPriority.MAX,

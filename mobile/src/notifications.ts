@@ -5,6 +5,7 @@ import { Platform } from 'react-native';
 
 import { api } from './api';
 
+import { t } from "./i18n";
 export const ALARM_TYPES = ['appointment_reminder', 'attendance_alert', 'test'];
 
 // Bildirishnomadagi tugmalar (Android va iOS)
@@ -38,7 +39,7 @@ export async function setupChannels() {
   if (Platform.OS !== 'android') return;
   // Android kanal sozlamasini yaratilgandan keyin o'zgartirmaydi: ovozni almashtirsangiz, kanal id ham almashsin
   await Notifications.setNotificationChannelAsync('alarm', {
-    name: 'Budilnik: bron eslatmalari',
+    name: t("Budilnik: bron eslatmalari"),
     importance: Notifications.AndroidImportance.MAX,
     sound: 'alarm.wav',
     enableVibrate: true,
@@ -51,7 +52,7 @@ export async function setupChannels() {
     },
   });
   await Notifications.setNotificationChannelAsync('default', {
-    name: 'Bron xabarlari',
+    name: t("Bron xabarlari"),
     importance: Notifications.AndroidImportance.DEFAULT,
   });
 }
@@ -60,8 +61,8 @@ export async function setupChannels() {
 export async function setupCategories() {
   if (Platform.OS === 'web') return;
   await Notifications.setNotificationCategoryAsync(BOOKING_CATEGORY, [
-    { identifier: ACTION_ATTEND, buttonTitle: 'Boraman', options: { opensAppToForeground: true } },
-    { identifier: ACTION_DECLINE, buttonTitle: 'Bormayman', options: { opensAppToForeground: true, isDestructive: true } },
+    { identifier: ACTION_ATTEND, buttonTitle: t("Boraman"), options: { opensAppToForeground: true } },
+    { identifier: ACTION_DECLINE, buttonTitle: t("Bormayman"), options: { opensAppToForeground: true, isDestructive: true } },
   ]).catch(() => {});
 }
 
@@ -84,7 +85,7 @@ export async function registerForPush() {
   const projectId = Constants.expoConfig?.extra?.eas?.projectId;
   if (!projectId) {
     pushStatus = 'unavailable';
-    pushError = 'EAS projectId yo\'q';
+    pushError = t("EAS projectId yo'q");
     return;
   }
   try {

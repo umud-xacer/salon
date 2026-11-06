@@ -6,6 +6,7 @@ import { api, ApiError, Appointment, Slot } from '../src/api';
 import { Button, Chip, Empty, ErrorText, nextDays, shared } from '../src/ui';
 import { scheduleBookingReminder } from '../src/localReminders';
 
+import { t } from "../src/i18n";
 const DAYS = nextDays(14);
 
 // Yangi bron ham, ko'chirish ham: appointmentId bo'lsa ko'chiriladi
@@ -24,7 +25,7 @@ export default function Book() {
     if (service || !appointmentId) return;
     api<Appointment>(`/appointments/${appointmentId}`)
       .then((a) => setService(String(a.service_ids[0])))
-      .catch(() => setError("Bronni o'qib bo'lmadi"));
+      .catch(() => setError(t("Bronni o'qib bo'lmadi")));
   }, [service, appointmentId]);
 
   const load = useCallback(async () => {
@@ -37,7 +38,7 @@ export default function Book() {
       setSlots((await api<{ slots: Slot[] }>(`/catalog/slots?${params}`)).slots);
     } catch (e) {
       setSlots([]);
-      setError(e instanceof ApiError ? e.message : 'Yuklab bo\'lmadi');
+      setError(e instanceof ApiError ? e.message : t("Yuklab bo'lmadi"));
     }
   }, [memberId, service, day]);
 
@@ -57,16 +58,16 @@ export default function Book() {
           body: { member_id: Number(memberId), service_id: Number(service), starts_at: selected.starts_at },
         });
       // Telefonning o'ziga eslatma (vaqt o'zgarsa — yangisi bilan almashadi)
-      void scheduleBookingReminder(saved.id, saved.starts_at, saved.business_name ?? 'Salon');
-      Alert.alert(appointmentId ? 'Vaqt o\'zgartirildi' : 'Bron qilindi',
+      void scheduleBookingReminder(saved.id, saved.starts_at, saved.business_name ?? t("Salon"));
+      Alert.alert(appointmentId ? t("Vaqt o'zgartirildi") : t("Bron qilindi"),
         saved.status === 'pending'
-          ? `${day} ${selected.time}. Salon tasdiqlashini kuting: tasdiqlanmasa, bron avtomatik bekor qilinadi.`
+          ? t("{a} {b}. Salon tasdiqlashini kuting: tasdiqlanmasa, bron avtomatik bekor qilinadi.", { a: day, b: selected.time })
           : `${day} ${selected.time}`);
       router.replace('/bookings');
     } catch (e) {
       // Vaqtni shu orada boshqa mijoz olgan bo'lishi mumkin: ro'yxat yangilanadi
       if (e instanceof ApiError && e.code === 'time_conflict') await load();
-      setError(e instanceof ApiError ? e.message : 'Bajarib bo\'lmadi');
+      setError(e instanceof ApiError ? e.message : t("Bajarib bo'lmadi"));
     } finally {
       setBusy(false);
     }
@@ -74,18 +75,18 @@ export default function Book() {
 
   return (
     <ScrollView style={shared.screen} contentContainerStyle={{ paddingBottom: 32 }}>
-      <Text style={shared.heading}>Kun</Text>
+      <Text style={shared.heading}>{t("Kun")}</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
         {DAYS.map((d) => (
           <Chip key={d} label={d.slice(8) + '.' + d.slice(5, 7)} active={d === day} onPress={() => setDay(d)} />
         ))}
       </ScrollView>
 
-      <Text style={shared.heading}>Bo'sh vaqtlar</Text>
+      <Text style={shared.heading}>{t("Bo'sh vaqtlar")}</Text>
       {slots === null ? (
         <ActivityIndicator style={{ marginTop: 16 }} />
       ) : slots.length === 0 ? (
-        <Empty text="Bu kunda bo'sh vaqt yo'q" />
+        <Empty text={t("Bu kunda bo'sh vaqt yo'q")} />
       ) : (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
           {slots.map((s) => (
@@ -97,7 +98,7 @@ export default function Book() {
       <ErrorText text={error} />
       <View style={{ marginTop: 12 }}>
         <Button
-          title={appointmentId ? 'Vaqtni o\'zgartirish' : 'Bron qilish'}
+          title={appointmentId ? t("Vaqtni o'zgartirish") : t("Bron qilish")}
           onPress={submit}
           busy={busy}
           disabled={!selected}

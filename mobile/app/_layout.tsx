@@ -16,6 +16,7 @@ import {
 import { colors } from '../src/ui';
 import { useOtaUpdates } from '../src/useOtaUpdates';
 
+import { t } from "../src/i18n";
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 const POLL_MS = 20_000;
@@ -47,14 +48,14 @@ async function handleAction(router: ReturnType<typeof useRouter>, r: Notificatio
     try {
       if (r.actionIdentifier === ACTION_ATTEND) {
         await api(`/appointments/${id}/attend`, { method: 'POST' });
-        Alert.alert('Rahmat!', 'Kelishingizni salonga bildirdik.');
+        Alert.alert(t("Rahmat!"), t("Kelishingizni salonga bildirdik."));
       } else {
-        await api(`/appointments/${id}/cancel`, { method: 'POST', body: { reason: 'Mijoz budilnikda "Bormayman" dedi' } });
+        await api(`/appointments/${id}/cancel`, { method: 'POST', body: { reason: t("Mijoz budilnikda \"Bormayman\" dedi") } });
         await cancelBookingReminder(id);
-        Alert.alert('Bron bekor qilindi', 'Vaqt boshqa mijozlar uchun ochildi.');
+        Alert.alert(t("Bron bekor qilindi"), t("Vaqt boshqa mijozlar uchun ochildi."));
       }
     } catch (e) {
-      Alert.alert('Xatolik', e instanceof ApiError ? e.message : 'Internetni tekshirib, qayta urinib ko\'ring');
+      Alert.alert(t("Xatolik"), e instanceof ApiError ? e.message : t("Internetni tekshirib, qayta urinib ko'ring"));
     }
     router.replace('/bookings');
     return;
@@ -152,16 +153,16 @@ function Navigator() {
       headerTintColor: colors.primary,
     }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="login" options={{ title: 'Kirish' }} />
-      <Stack.Screen name="password" options={{ title: 'Parol bilan kirish' }} />
-      <Stack.Screen name="register" options={{ title: 'Ro\'yxatdan o\'tish' }} />
-      <Stack.Screen name="profile-edit" options={{ title: 'Shaxsiy ma\'lumotlar' }} />
-      <Stack.Screen name="favorites" options={{ title: 'Sevimli salonlar' }} />
-      <Stack.Screen name="settings" options={{ title: 'Sozlamalar' }} />
-      <Stack.Screen name="change-password" options={{ title: 'Parolni almashtirish' }} />
-      <Stack.Screen name="business/[slug]" options={{ title: 'Salon' }} />
-      <Stack.Screen name="book" options={{ title: 'Vaqt tanlash' }} />
-      <Stack.Screen name="review" options={{ title: 'Xizmatni baholash' }} />
+      <Stack.Screen name="login" options={{ title: t("Kirish") }} />
+      <Stack.Screen name="password" options={{ title: t("Parol bilan kirish") }} />
+      <Stack.Screen name="register" options={{ title: t("Ro'yxatdan o'tish") }} />
+      <Stack.Screen name="profile-edit" options={{ title: t("Shaxsiy ma'lumotlar") }} />
+      <Stack.Screen name="favorites" options={{ title: t("Sevimli salonlar") }} />
+      <Stack.Screen name="settings" options={{ title: t("Sozlamalar") }} />
+      <Stack.Screen name="change-password" options={{ title: t("Parolni almashtirish") }} />
+      <Stack.Screen name="business/[slug]" options={{ title: t("Salon") }} />
+      <Stack.Screen name="book" options={{ title: t("Vaqt tanlash") }} />
+      <Stack.Screen name="review" options={{ title: t("Xizmatni baholash") }} />
       <Stack.Screen name="alarm" options={{ headerShown: false, presentation: 'fullScreenModal', gestureEnabled: false }} />
     </Stack>
   );

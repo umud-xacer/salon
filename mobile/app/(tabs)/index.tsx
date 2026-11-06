@@ -14,6 +14,7 @@ import {
 } from '../../src/ui';
 import { Bounds, OsmMap } from '../../src/OsmMap';
 
+import { pick, t } from "../../src/i18n";
 const TASHKENT = { latitude: 41.3111, longitude: 69.2797 };
 const MAX_BOUNDS_DEG = 1;          // backend chegarasi: bundan keng oynada so'rov rad etiladi
 // Keyingi banner chetdan ko'rinib tursin: ro'yxat davom etishi seziladi
@@ -37,9 +38,9 @@ type Sort = 'distance' | 'rating' | 'price';
 type Filters = { sort: Sort; openNow: boolean; maxPrice: number | null };
 const DEFAULT_FILTERS: Filters = { sort: 'distance', openNow: false, maxPrice: null };
 const SORTS: { id: Sort; label: string; icon: IconName }[] = [
-  { id: 'distance', label: 'Yaqin', icon: 'navigate-outline' },
-  { id: 'rating', label: 'Reyting', icon: 'star-outline' },
-  { id: 'price', label: 'Arzon', icon: 'pricetag-outline' },
+  { id: 'distance', label: t("Yaqin"), icon: 'navigate-outline' },
+  { id: 'rating', label: t("Reyting"), icon: 'star-outline' },
+  { id: 'price', label: t("Arzon"), icon: 'pricetag-outline' },
 ];
 const PRICES = [50_000, 100_000, 200_000, 500_000];
 
@@ -54,7 +55,7 @@ export default function Businesses() {
   const [query, setQuery] = useState('');
   const [coords, setCoords] = useState(TASHKENT);
   const [myPoint, setMyPoint] = useState<{ latitude: number; longitude: number } | null>(null);
-  const [place, setPlace] = useState('Toshkent');
+  const [place, setPlace] = useState(t("Toshkent"));
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [draft, setDraft] = useState(DEFAULT_FILTERS);
   const [sheet, setSheet] = useState(false);
@@ -81,7 +82,7 @@ export default function Businesses() {
       setMyPoint({ latitude: c.latitude, longitude: c.longitude });
       const found = await api<{ address: string; district: string | null; region: string | null }>(
         `/geo/address?lat=${c.latitude}&lng=${c.longitude}`).catch(() => null);
-      setPlace(found?.district ?? found?.region ?? 'Joylashuvingiz');
+      setPlace(found?.district ?? found?.region ?? t("Joylashuvingiz"));
     })().catch(() => {});                       // joylashuv yo'q bo'lsa Toshkent markazidan qidiriladi
   }, []);
 
@@ -89,7 +90,7 @@ export default function Businesses() {
   const locate = async () => {
     const { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== 'granted') {
-      setMapHint("Joylashuvga ruxsat berilmagan. Telefon sozlamalaridan yoqing");
+      setMapHint(t("Joylashuvga ruxsat berilmagan. Telefon sozlamalaridan yoqing"));
       return null;
     }
     const { coords: c } = await Location.getCurrentPositionAsync({});
@@ -123,7 +124,7 @@ export default function Businesses() {
       const b = await api<{ items: BusinessCard[] }>(`/catalog/businesses/nearby?${best}`);
       setTop(b.items.filter((x) => x.rating_count > 0));
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : 'Xatolik yuz berdi');
+      setError(e instanceof ApiError ? e.message : t("Xatolik yuz berdi"));
     } finally {
       setLoading(false);
     }
@@ -139,7 +140,7 @@ export default function Businesses() {
     clearTimeout(boundsTimer.current);
     boundsTimer.current = setTimeout(async () => {
       if (ne[0] - sw[0] > MAX_BOUNDS_DEG || ne[1] - sw[1] > MAX_BOUNDS_DEG) {
-        setMapHint('Salonlarni ko\'rish uchun xaritani yaqinlashtiring');
+        setMapHint(t("Salonlarni ko'rish uchun xaritani yaqinlashtiring"));
         return;
       }
       setMapHint(null);
@@ -149,7 +150,7 @@ export default function Businesses() {
         });
         setMapItems(await api<BusinessCard[]>(`/catalog/businesses/in-bounds?${params}`));
       } catch (e) {
-        setMapHint(e instanceof ApiError ? e.message : 'Yuklab bo\'lmadi');
+        setMapHint(e instanceof ApiError ? e.message : t("Yuklab bo'lmadi"));
       }
     }, 400);
   }, []);
@@ -161,17 +162,17 @@ export default function Businesses() {
     <View style={{ paddingTop: insets.top + 8, paddingHorizontal: 16, backgroundColor: colors.background }}>
       <View style={shared.row}>
         <View style={{ flex: 1 }}>
-          <Text style={type.small}>Sizning joylashuvingiz</Text>
+          <Text style={type.small}>{t("Sizning joylashuvingiz")}</Text>
           <View style={styles.place}>
             <Icon name="location" size={16} color={colors.primary} />
             <Text style={type.h3} numberOfLines={1}>{place}</Text>
           </View>
         </View>
         <Pressable onPress={() => setMapMode(!mapMode)} style={styles.round}
-          accessibilityLabel={mapMode ? 'Ro\'yxat' : 'Xarita'}>
+          accessibilityLabel={mapMode ? t("Ro'yxat") : t("Xarita")}>
           <Icon name={mapMode ? 'list-outline' : 'map-outline'} size={21} />
         </Pressable>
-        <Pressable onPress={() => router.push('/inbox')} style={[styles.round, { marginLeft: 8 }]} accessibilityLabel="Bildirishnomalar">
+        <Pressable onPress={() => router.push('/inbox')} style={[styles.round, { marginLeft: 8 }]} accessibilityLabel={t("Bildirishnomalar")}>
           <Icon name="notifications-outline" size={21} />
           {unread > 0 && (
             <View style={styles.unread}><Text style={styles.unreadText}>{unread > 9 ? '9+' : unread}</Text></View>
@@ -183,14 +184,14 @@ export default function Businesses() {
           <Icon name="search-outline" size={19} color={colors.muted} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Salon yoki xizmat"
+            placeholder={t("Salon yoki xizmat")}
             placeholderTextColor={colors.muted}
             value={query}
             onChangeText={setQuery}
             maxLength={60}
           />
         </View>
-        <Pressable onPress={() => { setDraft(filters); setSheet(true); }} style={styles.filter} accessibilityLabel="Filtrlar">
+        <Pressable onPress={() => { setDraft(filters); setSheet(true); }} style={styles.filter} accessibilityLabel={t("Filtrlar")}>
           <Icon name="options-outline" size={21} color="#fff" />
           {activeFilters > 0 && (
             <View style={styles.unread}><Text style={styles.unreadText}>{activeFilters}</Text></View>
@@ -201,29 +202,29 @@ export default function Businesses() {
   );
 
   const sheetView = (
-    <BottomSheet visible={sheet} title="Filtrlar" onClose={() => setSheet(false)}>
-      <Text style={styles.sheetLabel}>Saralash</Text>
+    <BottomSheet visible={sheet} title={t("Filtrlar")} onClose={() => setSheet(false)}>
+      <Text style={styles.sheetLabel}>{t("Saralash")}</Text>
       <View style={styles.wrap}>
         {SORTS.map((s) => (
           <Chip key={s.id} label={s.label} icon={s.icon} active={draft.sort === s.id}
             onPress={() => setDraft({ ...draft, sort: s.id })} />
         ))}
       </View>
-      <Text style={styles.sheetLabel}>Ish vaqti</Text>
+      <Text style={styles.sheetLabel}>{t("Ish vaqti")}</Text>
       <View style={styles.wrap}>
-        <Chip label="Hozir ochiq" icon="time-outline" active={draft.openNow}
+        <Chip label={t("Hozir ochiq")} icon="time-outline" active={draft.openNow}
           onPress={() => setDraft({ ...draft, openNow: !draft.openNow })} />
       </View>
-      <Text style={styles.sheetLabel}>Xizmat narxi</Text>
+      <Text style={styles.sheetLabel}>{t("Xizmat narxi")}</Text>
       <View style={styles.wrap}>
         {PRICES.map((p) => (
-          <Chip key={p} label={`${money(p)}gacha`} active={draft.maxPrice === p}
+          <Chip key={p} label={t("{a}gacha", { a: money(p) })} active={draft.maxPrice === p}
             onPress={() => setDraft({ ...draft, maxPrice: draft.maxPrice === p ? null : p })} />
         ))}
       </View>
       <View style={[shared.gap, { marginTop: 10 }]}>
-        <Button title="Qo'llash" onPress={() => { setFilters(draft); setSheet(false); }} />
-        <Button title="Tozalash" kind="outline" onPress={() => { setFilters(DEFAULT_FILTERS); setSheet(false); }} />
+        <Button title={t("Qo'llash")} onPress={() => { setFilters(draft); setSheet(false); }} />
+        <Button title={t("Tozalash")} kind="outline" onPress={() => { setFilters(DEFAULT_FILTERS); setSheet(false); }} />
       </View>
     </BottomSheet>
   );
@@ -247,7 +248,7 @@ export default function Businesses() {
               onError={() => {
                 // Yandex ishlamasa (kalit, limit, tarmoq) — jimgina OpenStreetMap ga o'tamiz
                 if (yandexKey) setYandexKey(null);
-                else setMapHint("Xaritani yuklab bo'lmadi. Internetni tekshiring");
+                else setMapHint(t("Xaritani yuklab bo'lmadi. Internetni tekshiring"));
               }}
             />
           </View>
@@ -257,9 +258,9 @@ export default function Businesses() {
               <Card>
                 <Text style={shared.name}>{selected.name}</Text>
                 <Text style={[shared.muted, { marginBottom: 10 }]}>
-                  {selected.category_name} · {selected.is_open_now ? 'Ochiq' : 'Yopiq'}
+                  {pick(selected.category_name, selected.category_name_ru)} · {selected.is_open_now ? t("Ochiq") : t("Yopiq")}
                 </Text>
-                <Button title="Ochish" onPress={() => openBusiness(selected.slug)} />
+                <Button title={t("Ochish")} onPress={() => openBusiness(selected.slug)} />
               </Card>
             </View>
           )}
@@ -273,7 +274,7 @@ export default function Businesses() {
     <View>
       {top.length > 0 && !query && (
         <>
-          <Text style={[type.h2, styles.section]}>Top salonlar</Text>
+          <Text style={[type.h2, styles.section]}>{t("Top salonlar")}</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} snapToInterval={BANNER_WIDTH + 10} decelerationRate="fast"
             contentContainerStyle={{ paddingHorizontal: 16, gap: 10 }}>
             {top.map((b) => (
@@ -286,7 +287,7 @@ export default function Businesses() {
                 </View>
                 <Text style={styles.bannerTitle} numberOfLines={1}>{b.name}</Text>
                 <Text style={styles.bannerSmall} numberOfLines={1}>
-                  {[b.category_name, distanceText(b.distance_m)].filter(Boolean).join(' · ')}
+                  {[pick(b.category_name, b.category_name_ru), distanceText(b.distance_m)].filter(Boolean).join(' · ')}
                 </Text>
               </Pressable>
             ))}
@@ -295,9 +296,9 @@ export default function Businesses() {
       )}
       {categories.length > 0 && (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 10, paddingBottom: 2 }}>
-          <Chip label="Hammasi" icon="apps-outline" active={category === null} onPress={() => setCategory(null)} />
+          <Chip label={t("Hammasi")} icon="apps-outline" active={category === null} onPress={() => setCategory(null)} />
           {categories.map((c) => (
-            <Chip key={c.id} label={c.name_uz} icon={categoryIcon(c)} active={category === c.slug}
+            <Chip key={c.id} label={pick(c.name_uz, c.name_ru)} icon={categoryIcon(c)} active={category === c.slug}
               onPress={() => setCategory(category === c.slug ? null : c.slug)} />
           ))}
         </ScrollView>
@@ -318,8 +319,8 @@ export default function Businesses() {
         refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}
         ListEmptyComponent={loading ? undefined : (
           activeFilters > 0 || category || query
-            ? <Empty text="Bu shartlarga mos salon topilmadi" />
-            : <EmptyState icon="storefront-outline" title="Yaqin atrofda salon yo'q" text="Hududingizdagi salonlar tez orada qo'shiladi" />
+            ? <Empty text={t("Bu shartlarga mos salon topilmadi")} />
+            : <EmptyState icon="storefront-outline" title={t("Yaqin atrofda salon yo'q")} text={t("Hududingizdagi salonlar tez orada qo'shiladi")} />
         )}
         renderItem={({ item }) => (
           <View style={{ paddingHorizontal: 16 }}>

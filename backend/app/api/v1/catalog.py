@@ -33,7 +33,7 @@ _IS_OPEN = """
 """
 
 _CARD_COLUMNS = f"""
-    b.id, b.slug, b.name, c.slug AS category, c.name_uz AS category_name, b.city, b.address,
+    b.id, b.slug, b.name, c.slug AS category, c.name_uz AS category_name, c.name_ru AS category_name_ru, b.city, b.address,
     ST_Y(b.location::geometry) AS lat, ST_X(b.location::geometry) AS lng,
     b.rating_avg::float AS rating_avg, b.rating_count, b.logo_url,
     (SELECT min(s.price) FROM services s WHERE s.business_id = b.id AND s.is_active) AS min_price,
@@ -176,7 +176,7 @@ def public_products(slug: str, q: str | None = Query(default=None, max_length=60
 def business_detail(slug: str, db: Session = Depends(get_public_db)):
     """Biznes sahifasi: ma'lumot, ish soatlari, rasmlar, xizmatlar (kategoriya bo'yicha), ustalar."""
     b = db.execute(text(f"""
-        SELECT b.id, b.slug, b.name, b.description, c.slug AS category, c.name_uz AS category_name,
+        SELECT b.id, b.slug, b.name, b.description, c.slug AS category, c.name_uz AS category_name, c.name_ru AS category_name_ru,
                c.kind, b.phone, b.city, b.address, b.logo_url, b.cover_url,
                ST_Y(b.location::geometry) AS lat, ST_X(b.location::geometry) AS lng,
                b.rating_avg::float AS rating_avg, b.rating_count, {_IS_OPEN} AS is_open_now

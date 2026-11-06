@@ -3,6 +3,7 @@ import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, 
 import { api, clearTokens, getRefreshToken, loadTokens, LoginOut, Me, saveTokens, setSessionLostHandler } from './api';
 import { registerForPush, unregisterPush } from './notifications';
 
+import { t } from "./i18n";
 type Auth = {
   me: Me | null;
   ready: boolean;
@@ -21,7 +22,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const load = useCallback(async () => {
     setMe(await api<Me>('/auth/me'));
-    registerForPush().catch((e) => console.warn('Push ro\'yxatdan o\'tmadi', e));
+    registerForPush().catch((e) => console.warn(t("Push ro'yxatdan o'tmadi"), e));
   }, []);
 
   useEffect(() => {

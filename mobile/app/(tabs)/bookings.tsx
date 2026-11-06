@@ -8,15 +8,16 @@ import {
   Button, Card, colors, dateTimeOf, EmptyState, Icon, money, radius, Segments, shared, type,
 } from '../../src/ui';
 
+import { t } from "../../src/i18n";
 type Tab = 'active' | 'history' | 'cancelled';
 
 const STATUS: Record<Appointment['status'], { label: string; color: string; bg: string }> = {
-  pending: { label: 'Tasdiq kutilmoqda', color: colors.warning, bg: '#FFF4E0' },
-  confirmed: { label: 'Tasdiqlangan', color: colors.primary, bg: colors.primarySoft },
-  in_progress: { label: 'Jarayonda', color: colors.primary, bg: colors.primarySoft },
-  completed: { label: 'Yakunlangan', color: colors.success, bg: colors.successSoft },
-  cancelled: { label: 'Bekor qilingan', color: colors.danger, bg: colors.dangerSoft },
-  no_show: { label: 'Kelinmadi', color: colors.danger, bg: colors.dangerSoft },
+  pending: { label: t("Tasdiq kutilmoqda"), color: colors.warning, bg: '#FFF4E0' },
+  confirmed: { label: t("Tasdiqlangan"), color: colors.primary, bg: colors.primarySoft },
+  in_progress: { label: t("Jarayonda"), color: colors.primary, bg: colors.primarySoft },
+  completed: { label: t("Yakunlangan"), color: colors.success, bg: colors.successSoft },
+  cancelled: { label: t("Bekor qilingan"), color: colors.danger, bg: colors.dangerSoft },
+  no_show: { label: t("Kelinmadi"), color: colors.danger, bg: colors.dangerSoft },
 };
 
 // Vaqti o'tib ketgan bron "Faol"da turmaydi: tasdiqlanmagani server tomonida avtomatik bekor bo'ladi,
@@ -29,9 +30,9 @@ const inTab = (a: Appointment, tab: Tab) => {
 };
 
 const EMPTY: Record<Tab, string> = {
-  active: "Hali bronlaringiz yo'q",
-  history: "Yakunlangan tashriflar yo'q",
-  cancelled: "Bekor qilingan bronlar yo'q",
+  active: t("Hali bronlaringiz yo'q"),
+  history: t("Yakunlangan tashriflar yo'q"),
+  cancelled: t("Bekor qilingan bronlar yo'q"),
 };
 
 export default function Bookings() {
@@ -45,7 +46,7 @@ export default function Bookings() {
     try {
       setItems(await api<Appointment[]>('/appointments/mine?upcoming=false'));
     } catch (e) {
-      Alert.alert('Xatolik', e instanceof ApiError ? e.message : 'Yuklab bo\'lmadi');
+      Alert.alert(t("Xatolik"), e instanceof ApiError ? e.message : t("Yuklab bo'lmadi"));
     } finally {
       setLoading(false);
     }
@@ -60,14 +61,14 @@ export default function Bookings() {
       await action();
       await load();
     } catch (e) {
-      Alert.alert('Xatolik', e instanceof ApiError ? e.message : 'Bajarib bo\'lmadi');
+      Alert.alert(t("Xatolik"), e instanceof ApiError ? e.message : t("Bajarib bo'lmadi"));
     }
   };
 
-  const cancel = (a: Appointment) => Alert.alert('Bronni bekor qilasizmi?', dateTimeOf(a.starts_at), [
-    { text: 'Yo\'q', style: 'cancel' },
+  const cancel = (a: Appointment) => Alert.alert(t("Bronni bekor qilasizmi?"), dateTimeOf(a.starts_at), [
+    { text: t("Yo'q"), style: 'cancel' },
     {
-      text: 'Ha, bekor qilish',
+      text: t("Ha, bekor qilish"),
       style: 'destructive',
       onPress: () => act(async () => {
         await api(`/appointments/${a.id}/cancel`, { method: 'POST', body: {} });
@@ -79,7 +80,7 @@ export default function Bookings() {
   const openMap = (a: Appointment, route: boolean) => {
     if (a.business_lat == null || a.business_lng == null) return;
     const point = `${a.business_lat},${a.business_lng}`;
-    const label = encodeURIComponent(a.business_name ?? 'Salon');
+    const label = encodeURIComponent(a.business_name ?? t("Salon"));
     // Telefonda o'rnatilgan xarita ilovasi ochiladi (Google, Yandex, 2GIS...). Bo'lmasa — brauzerda OSM
     const web = `https://www.openstreetmap.org/?mlat=${a.business_lat}&mlon=${a.business_lng}#map=17/${point.replace(',', '/')}`;
     const app = Platform.OS === 'ios'
@@ -95,7 +96,7 @@ export default function Bookings() {
   return (
     <View style={shared.screen}>
       <Segments value={tab} onChange={setTab} options={[
-        { id: 'active', label: 'Faol' }, { id: 'history', label: 'Tarix' }, { id: 'cancelled', label: 'Bekor qilingan' },
+        { id: 'active', label: t("Faol") }, { id: 'history', label: t("Tarix") }, { id: 'cancelled', label: t("Bekor qilingan") },
       ]} />
       <FlatList
         data={shown}
@@ -103,8 +104,8 @@ export default function Bookings() {
         refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}
         ListEmptyComponent={loading ? undefined : (
           <EmptyState icon="calendar-clear-outline" title={EMPTY[tab]}
-            text={tab === 'active' ? "O'zingizga qulay salon va vaqtni tanlang" : undefined}
-            action={tab === 'active' ? "Salonlarni ko'rish" : undefined} onAction={() => router.navigate('/')} />
+            text={tab === 'active' ? t("O'zingizga qulay salon va vaqtni tanlang") : undefined}
+            action={tab === 'active' ? t("Salonlarni ko'rish") : undefined} onAction={() => router.navigate('/')} />
         )}
         renderItem={({ item: a }) => {
           const open = (a.status === 'pending' || a.status === 'confirmed') && new Date(a.starts_at) > new Date();
@@ -113,7 +114,7 @@ export default function Bookings() {
           return (
             <Card>
               <View style={shared.row}>
-                <Text style={[type.h3, { flex: 1, paddingRight: 8 }]} numberOfLines={1}>{a.business_name ?? 'Salon'}</Text>
+                <Text style={[type.h3, { flex: 1, paddingRight: 8 }]} numberOfLines={1}>{a.business_name ?? t("Salon")}</Text>
                 <View style={[styles.status, { backgroundColor: status.bg }]}>
                   <Text style={{ color: status.color, fontSize: 12, fontWeight: '700' }}>{status.label}</Text>
                 </View>
@@ -137,7 +138,7 @@ export default function Bookings() {
                 <View style={styles.line}>
                   <Icon name="hourglass-outline" size={16} color={colors.warning} />
                   <Text style={[type.small, { flex: 1, color: colors.warning }]}>
-                    Salon {dateTimeOf(a.confirm_by)} gacha tasdiqlashi kerak. Tasdiqlanmasa, bron avtomatik bekor qilinadi.
+                    {t("Salon")}{" "}{dateTimeOf(a.confirm_by)}{" "}{t("gacha tasdiqlashi kerak. Tasdiqlanmasa, bron avtomatik bekor qilinadi.")}
                   </Text>
                 </View>
               )}
@@ -150,43 +151,43 @@ export default function Bookings() {
               {a.attendance === 'confirmed' && (
                 <View style={styles.line}>
                   <Icon name="checkmark-circle" size={16} color={colors.success} />
-                  <Text style={{ color: colors.success }}>Borishingiz tasdiqlangan</Text>
+                  <Text style={{ color: colors.success }}>{t("Borishingiz tasdiqlangan")}</Text>
                 </View>
               )}
               {hasMap && tab === 'active' && (
                 <View style={styles.actions}>
-                  <View style={{ flex: 1 }}><Button title="Xaritada" kind="soft" compact icon="map-outline" onPress={() => openMap(a, false)} /></View>
-                  <View style={{ flex: 1 }}><Button title="Yo'nalish" kind="soft" compact icon="navigate-outline" onPress={() => openMap(a, true)} /></View>
+                  <View style={{ flex: 1 }}><Button title={t("Xaritada")} kind="soft" compact icon="map-outline" onPress={() => openMap(a, false)} /></View>
+                  <View style={{ flex: 1 }}><Button title={t("Yo'nalish")} kind="soft" compact icon="navigate-outline" onPress={() => openMap(a, true)} /></View>
                 </View>
               )}
               {open && (
                 <View style={[shared.gap, { marginTop: 8 }]}>
                   {a.attendance !== 'confirmed' && (
-                    <Button title="Boraman" icon="checkmark" onPress={() => act(() => api(`/appointments/${a.id}/attend`, { method: 'POST' }))} />
+                    <Button title={t("Boraman")} icon="checkmark" onPress={() => act(() => api(`/appointments/${a.id}/attend`, { method: 'POST' }))} />
                   )}
                   <Button
-                    title="Vaqtni o'zgartirish"
+                    title={t("Vaqtni o'zgartirish")}
                     kind="outline"
                     onPress={() => router.push({ pathname: '/book', params: { appointmentId: String(a.id), memberId: String(a.member_id) } })}
                   />
-                  <Button title="Bekor qilish" kind="danger" onPress={() => cancel(a)} />
+                  <Button title={t("Bekor qilish")} kind="danger" onPress={() => cancel(a)} />
                 </View>
               )}
               {a.status === 'completed' && a.review_rating != null && (
                 <View style={styles.line}>
                   <Icon name="star" size={16} color={colors.star} />
-                  <Text style={type.body}>Bahoyingiz: {a.review_rating} / 5</Text>
+                  <Text style={type.body}>{t("Bahoyingiz:")}{" "}{a.review_rating} / 5</Text>
                 </View>
               )}
               {a.can_review && (
                 <View style={{ marginTop: 10 }}>
-                  <Button title="Xizmatni baholash" icon="star-outline"
+                  <Button title={t("Xizmatni baholash")} icon="star-outline"
                     onPress={() => router.push({ pathname: '/review', params: { appointmentId: String(a.id) } })} />
                 </View>
               )}
               {!open && tab !== 'active' && a.business_slug && (
                 <View style={{ marginTop: 10 }}>
-                  <Button title="Qayta bron qilish" kind="soft" compact
+                  <Button title={t("Qayta bron qilish")} kind="soft" compact
                     onPress={() => router.push({ pathname: '/business/[slug]', params: { slug: a.business_slug! } })} />
                 </View>
               )}

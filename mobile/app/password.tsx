@@ -5,6 +5,7 @@ import { api, ApiError, LoginOut } from '../src/api';
 import { useAuth } from '../src/auth';
 import { Button, ErrorText, Field, shared } from '../src/ui';
 
+import { t } from "../src/i18n";
 type Mode = 'login' | 'forgot' | 'reset';
 
 export default function Password() {
@@ -24,7 +25,7 @@ export default function Password() {
     try {
       await action();
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : 'Xatolik yuz berdi');
+      setError(e instanceof ApiError ? e.message : t("Xatolik yuz berdi"));
     } finally {
       setBusy(false);
     }
@@ -39,31 +40,31 @@ export default function Password() {
     if (r.dev_code) setCode(r.dev_code);
     setPassword('');
     setMode('reset');
-    setInfo("Raqam ro'yxatda bo'lsa, SMS kod yuborildi");
+    setInfo(t("Raqam ro'yxatda bo'lsa, SMS kod yuborildi"));
   });
 
   const reset = () => run(async () => {
     await api('/auth/password/reset', { method: 'POST', body: { phone, code, new_password: password } });
     setMode('login');
     setPassword('');
-    setInfo("Parol o'zgardi. Yangi parol bilan kiring");
+    setInfo(t("Parol o'zgardi. Yangi parol bilan kiring"));
   });
 
   return (
     <ScrollView style={shared.screen} keyboardShouldPersistTaps="handled">
-      <Field label="Telefon raqam" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
-      {mode === 'reset' && <Field label="SMS kod" value={code} onChangeText={setCode} keyboardType="number-pad" maxLength={6} />}
+      <Field label={t("Telefon raqam")} value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
+      {mode === 'reset' && <Field label={t("SMS kod")} value={code} onChangeText={setCode} keyboardType="number-pad" maxLength={6} />}
       {mode !== 'forgot' && (
-        <Field label={mode === 'reset' ? 'Yangi parol' : 'Parol'} value={password} onChangeText={setPassword} secureTextEntry />
+        <Field label={mode === 'reset' ? t("Yangi parol") : t("Parol")} value={password} onChangeText={setPassword} secureTextEntry />
       )}
       <ErrorText text={error} />
       {info && <Text style={[shared.muted, { marginBottom: 10 }]}>{info}</Text>}
       <View style={shared.gap}>
-        {mode === 'login' && <Button title="Kirish" onPress={login} busy={busy} />}
-        {mode === 'forgot' && <Button title="Kod olish" onPress={forgot} busy={busy} />}
-        {mode === 'reset' && <Button title="Parolni o'zgartirish" onPress={reset} busy={busy} />}
+        {mode === 'login' && <Button title={t("Kirish")} onPress={login} busy={busy} />}
+        {mode === 'forgot' && <Button title={t("Kod olish")} onPress={forgot} busy={busy} />}
+        {mode === 'reset' && <Button title={t("Parolni o'zgartirish")} onPress={reset} busy={busy} />}
         <Button
-          title={mode === 'login' ? 'Parolni unutdim' : 'Orqaga'}
+          title={mode === 'login' ? t("Parolni unutdim") : t("Orqaga")}
           kind="outline"
           onPress={() => setMode(mode === 'login' ? 'forgot' : 'login')}
         />

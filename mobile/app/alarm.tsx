@@ -9,6 +9,7 @@ import { alarmKey, openedAlarms } from '../src/notifications';
 import { Button, dateTimeOf, ErrorText } from '../src/ui';
 import { cancelBookingReminder } from '../src/localReminders';
 
+import { t } from "../src/i18n";
 const PATTERN = [0, 800, 400];
 
 // Budilnik ekrani: bir tugma bosilmaguncha ovoz va tebranish to'xtamaydi
@@ -57,14 +58,14 @@ export default function Alarm() {
       await action();
       stop();
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : 'Xatolik yuz berdi');
+      setError(e instanceof ApiError ? e.message : t("Xatolik yuz berdi"));
       setBusy(false);
     }
   };
 
   const attend = () => run(() => api(`/appointments/${appointmentId}/attend`, { method: 'POST' }));
   const cancel = () => run(async () => {
-    await api(`/appointments/${appointmentId}/cancel`, { method: 'POST', body: { reason: 'Mijoz budilnikda "Bormayman" dedi' } });
+    await api(`/appointments/${appointmentId}/cancel`, { method: 'POST', body: { reason: t("Mijoz budilnikda \"Bormayman\" dedi") } });
     await cancelBookingReminder(Number(appointmentId));
   });
   const call = () => run(async () => {
@@ -77,27 +78,27 @@ export default function Alarm() {
       <View style={styles.center}>
         <Text style={styles.time}>{appointment ? dateTimeOf(appointment.starts_at) : ''}</Text>
         <Text style={styles.title}>
-          {isTest ? 'Budilnik sinovi' : isClient ? 'Broningiz yaqinlashmoqda' : 'Mijoz javob bermayapti'}
+          {isTest ? t("Budilnik sinovi") : isClient ? t("Broningiz yaqinlashmoqda") : t("Mijoz javob bermayapti")}
         </Text>
         <Text style={styles.body}>
           {isTest
-            ? 'Ovoz va tebranish ishlayapti'
+            ? t("Ovoz va tebranish ishlayapti")
             : isClient
             ? `${appointment?.business_name ?? ''}\n${appointment?.services.join(', ') ?? ''}`
-            : "Mijoz bronni tasdiqlamadi, iltimos bog'laning"}
+            : t("Mijoz bronni tasdiqlamadi, iltimos bog'laning")}
         </Text>
       </View>
       <View style={{ gap: 12 }}>
         <ErrorText text={error} />
         {isClient ? (
           <>
-            <Button title="Tasdiqlayman, boraman" onPress={attend} busy={busy} />
-            <Button title="Bormayman (bronni bekor qilish)" kind="danger" onPress={cancel} disabled={busy} />
+            <Button title={t("Tasdiqlayman, boraman")} onPress={attend} busy={busy} />
+            <Button title={t("Bormayman (bronni bekor qilish)")} kind="danger" onPress={cancel} disabled={busy} />
           </>
         ) : !isTest && (
-          <Button title="Qo'ng'iroq qilish" onPress={call} busy={busy} />
+          <Button title={t("Qo'ng'iroq qilish")} onPress={call} busy={busy} />
         )}
-        <Button title="Ovozni o'chirish" kind="outline" onPress={stop} disabled={busy} />
+        <Button title={t("Ovozni o'chirish")} kind="outline" onPress={stop} disabled={busy} />
       </View>
     </View>
   );

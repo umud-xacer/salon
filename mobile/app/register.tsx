@@ -8,7 +8,8 @@ import {
   Button, colors, ErrorText, Field, Icon, IconName, maskBirthDate, parseBirthDate, radius, shared, type,
 } from '../src/ui';
 
-const STEPS = ["Ma'lumotlar", 'Shaxsiy', 'Parol', 'Tasdiqlash'];
+import { t } from "../src/i18n";
+const STEPS = [t("Ma'lumotlar"), t("Shaxsiy"), t("Parol"), t("Tasdiqlash")];
 type Gender = 'male' | 'female';
 
 const validPhone = (p: string) => /^\+998\d{9}$/.test(p.replace(/\s/g, ''));
@@ -48,7 +49,7 @@ export default function Register() {
     try {
       await action();
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : 'Xatolik yuz berdi');
+      setError(e instanceof ApiError ? e.message : t("Xatolik yuz berdi"));
     } finally {
       setBusy(false);
     }
@@ -57,16 +58,16 @@ export default function Register() {
   const next = () => {
     setError(null);
     if (step === 0) {
-      if (name.trim().length < 2) return setError('Ism va familiyani kiriting');
-      if (!validPhone(phone)) return setError('Telefon raqam +998 bilan 12 ta raqam bo\'lishi kerak');
+      if (name.trim().length < 2) return setError(t("Ism va familiyani kiriting"));
+      if (!validPhone(phone)) return setError(t("Telefon raqam +998 bilan 12 ta raqam bo'lishi kerak"));
     }
     if (step === 1) {
-      if (!birthDate) return setError('Tug\'ilgan sanani 03.02.1995 ko\'rinishida kiriting');
-      if (!gender) return setError('Jinsingizni tanlang');
+      if (!birthDate) return setError(t("Tug'ilgan sanani 03.02.1995 ko'rinishida kiriting"));
+      if (!gender) return setError(t("Jinsingizni tanlang"));
     }
     if (step === 2) {
-      if (!validPassword(password)) return setError('Parol kamida 8 belgi, harf va raqamdan iborat bo\'lsin');
-      if (password !== repeat) return setError('Parollar bir xil emas');
+      if (!validPassword(password)) return setError(t("Parol kamida 8 belgi, harf va raqamdan iborat bo'lsin"));
+      if (password !== repeat) return setError(t("Parollar bir xil emas"));
       return run(async () => {
         const r = await api<{ dev_code: string | null }>('/auth/otp/request', { method: 'POST', body: { phone: cleanPhone } });
         if (r.dev_code) setCode(r.dev_code);          // faqat dev rejimda keladi
@@ -88,45 +89,45 @@ export default function Register() {
       <View style={styles.progress}>
         {STEPS.map((title, i) => <View key={title} style={[styles.bar, i <= step && styles.barOn]} />)}
       </View>
-      <Text style={type.small}>{step + 1}-bosqich, {STEPS.length} tadan</Text>
+      <Text style={type.small}>{t("{a}-bosqich, {b} tadan", { a: step + 1, b: STEPS.length })}</Text>
       <Text style={[type.h1, { marginTop: 4, marginBottom: 20 }]}>{STEPS[step]}</Text>
 
       {step === 0 && (
         <>
-          <Field label="Ism va familiya" value={name} onChangeText={setName} autoCapitalize="words" maxLength={120} />
-          <Field label="Telefon raqam" value={phone} onChangeText={setPhone} keyboardType="phone-pad" maxLength={17} />
+          <Field label={t("Ism va familiya")} value={name} onChangeText={setName} autoCapitalize="words" maxLength={120} />
+          <Field label={t("Telefon raqam")} value={phone} onChangeText={setPhone} keyboardType="phone-pad" maxLength={17} />
         </>
       )}
       {step === 1 && (
         <>
-          <Field label="Tug'ilgan sana" hint="Kun, oy, yil" placeholder="03.02.1995" keyboardType="number-pad" maxLength={10}
-            value={birth} onChangeText={(t) => setBirth(maskBirthDate(t))} />
-          <Text style={{ color: colors.muted, marginBottom: 8, fontSize: 14 }}>Jinsi</Text>
+          <Field label={t("Tug'ilgan sana")} hint={t("Kun, oy, yil")} placeholder="03.02.1995" keyboardType="number-pad" maxLength={10}
+            value={birth} onChangeText={(tx) => setBirth(maskBirthDate(tx))} />
+          <Text style={{ color: colors.muted, marginBottom: 8, fontSize: 14 }}>{t("Jinsi")}</Text>
           <View style={{ flexDirection: 'row', gap: 12, marginBottom: 14 }}>
-            <GenderCard label="Erkak" icon="man-outline" active={gender === 'male'} onPress={() => setGender('male')} />
-            <GenderCard label="Ayol" icon="woman-outline" active={gender === 'female'} onPress={() => setGender('female')} />
+            <GenderCard label={t("Erkak")} icon="man-outline" active={gender === 'male'} onPress={() => setGender('male')} />
+            <GenderCard label={t("Ayol")} icon="woman-outline" active={gender === 'female'} onPress={() => setGender('female')} />
           </View>
         </>
       )}
       {step === 2 && (
         <>
-          <Field label="Parol" hint="Kamida 8 belgi, harf va raqam" value={password} onChangeText={setPassword} secureTextEntry />
-          <Field label="Parolni takrorlang" value={repeat} onChangeText={setRepeat} secureTextEntry />
+          <Field label={t("Parol")} hint={t("Kamida 8 belgi, harf va raqam")} value={password} onChangeText={setPassword} secureTextEntry />
+          <Field label={t("Parolni takrorlang")} value={repeat} onChangeText={setRepeat} secureTextEntry />
         </>
       )}
       {step === 3 && (
         <>
-          <Text style={[type.body, { marginBottom: 14 }]}>{cleanPhone} raqamiga SMS kod yuborildi.</Text>
-          <Field label="SMS kod" value={code} onChangeText={setCode} keyboardType="number-pad" maxLength={6} />
+          <Text style={[type.body, { marginBottom: 14 }]}>{t("{a} raqamiga SMS kod yuborildi.", { a: cleanPhone })}</Text>
+          <Field label={t("SMS kod")} value={code} onChangeText={setCode} keyboardType="number-pad" maxLength={6} />
         </>
       )}
 
       <ErrorText text={error} />
       <View style={shared.gap}>
         {step === 3
-          ? <Button title="Ro'yxatdan o'tish" onPress={finish} busy={busy} disabled={code.length !== 6} />
-          : <Button title="Davom etish" onPress={next} busy={busy} />}
-        <Button title="Orqaga" kind="outline" onPress={() => {
+          ? <Button title={t("Ro'yxatdan o'tish")} onPress={finish} busy={busy} disabled={code.length !== 6} />
+          : <Button title={t("Davom etish")} onPress={next} busy={busy} />}
+        <Button title={t("Orqaga")} kind="outline" onPress={() => {
           setError(null);
           if (step === 0) router.back();
           else setStep(step - 1);

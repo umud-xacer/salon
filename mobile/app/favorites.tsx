@@ -7,6 +7,7 @@ import { useFavorites } from '../src/favorites';
 import { SalonCard } from '../src/SalonCard';
 import { EmptyState, ErrorText, shared } from '../src/ui';
 
+import { t } from "../src/i18n";
 export default function Favorites() {
   const router = useRouter();
   const favorites = useFavorites();
@@ -20,7 +21,7 @@ export default function Favorites() {
     try {
       setItems(await api<BusinessCard[]>('/me/favorites'));
     } catch {
-      setError('Yuklab bo\'lmadi');
+      setError(t("Yuklab bo'lmadi"));
     } finally {
       setLoading(false);
     }
@@ -40,8 +41,8 @@ export default function Favorites() {
         keyExtractor={(b) => String(b.id)}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}
         ListEmptyComponent={loading ? undefined : (
-          <EmptyState icon="heart-outline" title="Sevimli salonlar yo'q" text="Yoqqan saloningizdagi yurakchani bosing"
-            action="Salonlarni ko'rish" onAction={() => router.navigate('/')} />
+          <EmptyState icon="heart-outline" title={t("Sevimli salonlar yo'q")} text={t("Yoqqan saloningizdagi yurakchani bosing")}
+            action={t("Salonlarni ko'rish")} onAction={() => router.navigate('/')} />
         )}
         renderItem={({ item }) => (
           <SalonCard item={item} favorite onToggleFavorite={() => favorites.toggle(item.id)}

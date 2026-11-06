@@ -5,13 +5,14 @@ import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, View } from
 import { api, ApiError } from './api';
 import { Chip, colors, ErrorText, Icon, money, radius, shared, type } from './ui';
 
+import { t } from "./i18n";
 type Product = { id: number; name: string; category: string | null; unit: string; price: number; stock: 'in' | 'low' | 'out' };
 type Catalog = { items: Product[]; categories: { category: string; count: number }[] };
 
 const STOCK = {
-  in: { label: 'Bor', color: colors.success, bg: colors.successSoft },
-  low: { label: 'Kam qoldi', color: colors.warning, bg: '#FFF4E0' },
-  out: { label: 'Tugagan', color: colors.danger, bg: colors.dangerSoft },
+  in: { label: t("Bor"), color: colors.success, bg: colors.successSoft },
+  low: { label: t("Kam qoldi"), color: colors.warning, bg: '#FFF4E0' },
+  out: { label: t("Tugagan"), color: colors.danger, bg: colors.dangerSoft },
 } as const;
 
 export function PharmacyCatalog({ slug }: { slug: string }) {
@@ -36,7 +37,7 @@ export function PharmacyCatalog({ slug }: { slug: string }) {
           if (!q.trim() && !category) setCategories(d.categories);
           setError(null);
         })
-        .catch((e) => setError(e instanceof ApiError ? e.message : "Katalogni yuklab bo'lmadi"))
+        .catch((e) => setError(e instanceof ApiError ? e.message : t("Katalogni yuklab bo'lmadi")))
         .finally(() => setLoading(false));
     }, 300);                                        // har harfda so'rov yubormaslik uchun
     return () => clearTimeout(timer.current);
@@ -44,15 +45,15 @@ export function PharmacyCatalog({ slug }: { slug: string }) {
 
   return (
     <View>
-      <Text style={shared.heading}>Dorilar va tibbiy buyumlar</Text>
+      <Text style={shared.heading}>{t("Dorilar va tibbiy buyumlar")}</Text>
       <View style={styles.search}>
         <Icon name="search-outline" size={18} color={colors.muted} />
-        <TextInput value={q} onChangeText={setQ} placeholder="Dori nomi yoki shtrix-kod" placeholderTextColor={colors.muted}
-          style={styles.input} autoCorrect={false} returnKeyType="search" accessibilityLabel="Dori qidirish" />
+        <TextInput value={q} onChangeText={setQ} placeholder={t("Dori nomi yoki shtrix-kod")} placeholderTextColor={colors.muted}
+          style={styles.input} autoCorrect={false} returnKeyType="search" accessibilityLabel={t("Dori qidirish")} />
       </View>
       {categories.length > 0 && (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 8 }}>
-          <Chip label="Hammasi" active={category === null} onPress={() => setCategory(null)} />
+          <Chip label={t("Hammasi")} active={category === null} onPress={() => setCategory(null)} />
           {categories.map((c) => (
             <Chip key={c.category} label={`${c.category} (${c.count})`} active={category === c.category}
               onPress={() => setCategory(category === c.category ? null : c.category)} />
@@ -62,7 +63,7 @@ export function PharmacyCatalog({ slug }: { slug: string }) {
       <ErrorText text={error} />
       {loading && !data && <ActivityIndicator style={{ marginTop: 12 }} />}
       {data && data.items.length === 0 && (
-        <Text style={[shared.muted, { marginVertical: 12 }]}>{q || category ? 'Hech narsa topilmadi' : "Katalog hali bo'sh"}</Text>
+        <Text style={[shared.muted, { marginVertical: 12 }]}>{q || category ? t("Hech narsa topilmadi") : t("Katalog hali bo'sh")}</Text>
       )}
       {data?.items.map((p) => {
         const s = STOCK[p.stock];
@@ -79,7 +80,7 @@ export function PharmacyCatalog({ slug }: { slug: string }) {
           </View>
         );
       })}
-      <Text style={[type.small, { marginTop: 8 }]}>Narx va mavjudlik dorixona ma'lumoti. Aniqlash uchun qo'ng'iroq qiling.</Text>
+      <Text style={[type.small, { marginTop: 8 }]}>{t("Narx va mavjudlik dorixona ma'lumoti. Aniqlash uchun qo'ng'iroq qiling.")}</Text>
     </View>
   );
 }

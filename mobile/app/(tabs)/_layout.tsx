@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, Icon, IconName } from '../../src/ui';
 
+import { t } from "../../src/i18n";
 function TabIcon({ name, focused, color }: { name: IconName; focused: boolean; color: string }) {
   const scale = useRef(new Animated.Value(1)).current;
 
@@ -39,10 +40,10 @@ export default function TabsLayout() {
         headerTitleStyle: { fontWeight: '700', color: colors.text },
       }}
     >
-      <Tabs.Screen name="index" options={{ title: 'Salonlar', headerShown: false, ...icon('storefront', 'storefront-outline') }} />
-      <Tabs.Screen name="bookings" options={{ title: 'Bronlarim', ...icon('calendar', 'calendar-outline') }} />
-      <Tabs.Screen name="inbox" options={{ title: 'Xabarlar', ...icon('notifications', 'notifications-outline') }} />
-      <Tabs.Screen name="profile" options={{ title: 'Profil', ...icon('person', 'person-outline') }} />
+      <Tabs.Screen name="index" options={{ title: t("Salonlar"), headerShown: false, ...icon('storefront', 'storefront-outline') }} />
+      <Tabs.Screen name="bookings" options={{ title: t("Bronlarim"), ...icon('calendar', 'calendar-outline') }} />
+      <Tabs.Screen name="inbox" options={{ title: t("Xabarlar"), ...icon('notifications', 'notifications-outline') }} />
+      <Tabs.Screen name="profile" options={{ title: t("Profil"), ...icon('person', 'person-outline') }} />
     </Tabs>
   );
 }

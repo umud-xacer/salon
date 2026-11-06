@@ -12,6 +12,8 @@ import { ensureNotificationPermission, pushStatus } from '../src/notifications';
 import { useAuth } from '../src/auth';
 import { Button, Card, colors, shared, type } from '../src/ui';
 
+import { t } from "../src/i18n";
+import { LangSwitch } from "../src/LangSwitch";
 export default function Settings() {
   const [fullScreen, setFullScreen] = useState(true);
   const [support, setSupport] = useState<{ support_phone: string | null; support_telegram: string | null } | null>(null);
@@ -30,7 +32,7 @@ export default function Settings() {
 
   const testAlarm = async () => {
     if (!(await ensureNotificationPermission())) {
-      Alert.alert('Ruxsat kerak', 'Telefon sozlamalarida Chronix uchun bildirishnomalarni yoqing.');
+      Alert.alert(t("Ruxsat kerak"), t("Telefon sozlamalarida Chronix uchun bildirishnomalarni yoqing."));
       return;
     }
     setTestSent(true);
@@ -49,66 +51,75 @@ export default function Settings() {
   return (
     <ScrollView style={shared.screen}>
       <Card>
-        <Text style={type.h3}>Bron eslatmalari</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <View style={{ flex: 1, paddingRight: 12 }}>
+            <Text style={type.h3}>{t("Ilova tili")}</Text>
+            <Text style={[type.small, { marginTop: 4 }]}>{t("Tanlangan til qurilmada saqlanadi")}</Text>
+          </View>
+          <LangSwitch />
+        </View>
+      </Card>
+      <Card>
+        <Text style={type.h3}>{t("Bron eslatmalari")}</Text>
         <Text style={[type.small, { marginTop: 4 }]}>
-          Bron vaqti yaqinlashganda ilova budilnik kabi eslatadi.
+          {t("Bron vaqti yaqinlashganda ilova budilnik kabi eslatadi.")}
         </Text>
         <Text style={[type.small, { marginTop: 4 }]}>
           {me?.workspace === 'business'
-            ? "Mijoz 20 daqiqa qolganda javob bermasa, ilova ovoz bilan ogohlantiradi va qo'ng'iroq tugmasini beradi."
-            : "30 daqiqa qolganda telefoningizda budilnik chalinadi: \"Boraman\" yoki \"Bormayman\" ni tanlang."}
+            ? t("Mijoz 20 daqiqa qolganda javob bermasa, ilova ovoz bilan ogohlantiradi va qo'ng'iroq tugmasini beradi.")
+            : t("30 daqiqa qolganda telefoningizda budilnik chalinadi: \"Boraman\" yoki \"Bormayman\" ni tanlang.")}
         </Text>
         <View style={[shared.gap, { marginTop: 12 }]}>
-          <Button title={testSent ? 'Budilnik 10 soniyada chalinadi…' : 'Budilnikni sinash (10 soniya)'} kind="soft" compact
+          <Button title={testSent ? t("Budilnik 10 soniyada chalinadi…") : t("Budilnikni sinash (10 soniya)")} kind="soft" compact
             icon="alarm-outline" disabled={testSent} onPress={testAlarm} />
           {!fullScreen && (
-            <Button title="To'liq ekranli eslatmaga ruxsat berish" kind="soft" compact
+            <Button title={t("To'liq ekranli eslatmaga ruxsat berish")} kind="soft" compact
               onPress={() => ChronixAlarmModule?.openFullScreenSettings()} />
           )}
           {!exact && (
-            <Button title="Aniq vaqtda chalinishiga ruxsat berish" kind="soft" compact
+            <Button title={t("Aniq vaqtda chalinishiga ruxsat berish")} kind="soft" compact
               onPress={() => { Notifications.requestExactAlarmPermissionsAsync().then((r) => setExact(r.granted)).catch(() => {}); }} />
           )}
         </View>
         <Text style={[type.small, { marginTop: 10, color: colors.muted }]}>
           {pushStatus === 'ok'
-            ? 'Server xabarlari ulangan: ilova yopiq bo\'lsa ham ogohlantirish keladi.'
-            : 'Server xabarlari (push) hali ulanmagan: budilnik telefonning o\'zida ishlaydi, salon ogohlantirishlari esa ilova ochiq bo\'lganda keladi.'}
+            ? t("Server xabarlari ulangan: ilova yopiq bo'lsa ham ogohlantirish keladi.")
+            : t("Server xabarlari (push) hali ulanmagan: budilnik telefonning o'zida ishlaydi, salon ogohlantirishlari esa ilova ochiq bo'lganda keladi.")}
         </Text>
       </Card>
       <Card>
-        <Text style={type.h3}>Qo'llab-quvvatlash</Text>
+        <Text style={type.h3}>{t("Qo'llab-quvvatlash")}</Text>
         <Text style={[type.small, { marginTop: 4 }]}>
-          Bron bo'yicha savol bo'lsa, salon sahifasidagi telefon orqali bog'laning. Ilova bo'yicha muammo bo'lsa — bizga yozing.
+          {t("Bron bo'yicha savol bo'lsa, salon sahifasidagi telefon orqali bog'laning. Ilova bo'yicha muammo bo'lsa — bizga yozing.")}
         </Text>
         {(phone || telegram) && (
           <View style={[shared.gap, { marginTop: 12 }]}>
-            {phone && <Button title={`Qo'ng'iroq: ${phone}`} kind="soft" compact icon="call-outline"
+            {phone && <Button title={t("Qo'ng'iroq: {a}", { a: phone })} kind="soft" compact icon="call-outline"
               onPress={() => { Linking.openURL(`tel:${phone.replace(/[^+\d]/g, '')}`).catch(() => {}); }} />}
-            {telegram && <Button title={`Telegram: @${telegram}`} kind="soft" compact icon="paper-plane-outline"
+            {telegram && <Button title={t("Telegram: @{a}", { a: telegram })} kind="soft" compact icon="paper-plane-outline"
               onPress={() => { Linking.openURL(`https://t.me/${encodeURIComponent(telegram)}`).catch(() => {}); }} />}
           </View>
         )}
       </Card>
       {me && (
         <Card>
-          <Text style={type.h3}>Xavfsizlik</Text>
+          <Text style={type.h3}>{t("Xavfsizlik")}</Text>
           {me.workspace === 'business' ? (
             <Text style={[type.small, { marginTop: 4 }]}>
-              Siz salon xodimisiz: parolingizni faqat rahbaringiz beradi va o'zgartiradi.
+              {t("Siz salon xodimisiz: parolingizni faqat rahbaringiz beradi va o'zgartiradi.")}
             </Text>
           ) : (
             <View style={{ marginTop: 12 }}>
-              <Button title="Parolni almashtirish" kind="soft" compact icon="lock-closed-outline"
+              <Button title={t("Parolni almashtirish")} kind="soft" compact icon="lock-closed-outline"
                 onPress={() => router.push('/change-password')} />
             </View>
           )}
         </Card>
       )}
       <Card>
-        <Text style={type.h3}>Ilova haqida</Text>
+        <Text style={type.h3}>{t("Ilova haqida")}</Text>
         <Text style={[type.small, { marginTop: 4, color: colors.muted }]}>
-          Versiya {Constants.expoConfig?.version ?? '1.0.0'}
+          {t("Versiya")}{" "}{Constants.expoConfig?.version ?? '1.0.0'}
           {Updates.updateId ? ` · ${Updates.updateId.slice(0, 8)}` : ''}
         </Text>
       </Card>

@@ -1,1 +1,1 @@
-export { deleteItemAsync, getItemAsync, setItemAsync } from 'expo-secure-store';
+export { deleteItemAsync, getItem, getItemAsync, setItem, setItemAsync } from 'expo-secure-store';

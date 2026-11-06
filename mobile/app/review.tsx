@@ -8,6 +8,7 @@ import { api, ApiError, Appointment } from '../src/api';
 import { StarsInput } from '../src/Reviews';
 import { Button, Card, ErrorText, Field, shared, type, dateTimeOf } from '../src/ui';
 
+import { t } from "../src/i18n";
 export default function Review() {
   const { appointmentId } = useLocalSearchParams<{ appointmentId: string }>();
   const router = useRouter();
@@ -24,7 +25,7 @@ export default function Review() {
   useEffect(() => {
     api<Appointment>(`/appointments/${appointmentId}`)
       .then(setA)
-      .catch((e) => setError(e instanceof ApiError ? e.message : 'Bronni yuklab bo\'lmadi'));
+      .catch((e) => setError(e instanceof ApiError ? e.message : t("Bronni yuklab bo'lmadi")));
   }, [appointmentId]);
 
   const ready = rating > 0 && cleanliness > 0 && quality > 0;
@@ -40,10 +41,10 @@ export default function Review() {
           staff_rating: staffRating || null, staff_comment: staffRating ? staffComment.trim() || null : null,
         },
       });
-      Alert.alert('Rahmat!', 'Bahoyingiz boshqa mijozlarga yaxshi joy tanlashda yordam beradi.');
+      Alert.alert(t("Rahmat!"), t("Bahoyingiz boshqa mijozlarga yaxshi joy tanlashda yordam beradi."));
       router.back();
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : 'Yuborib bo\'lmadi, qayta urinib ko\'ring');
+      setError(e instanceof ApiError ? e.message : t("Yuborib bo'lmadi, qayta urinib ko'ring"));
       setBusy(false);
     }
   };
@@ -56,11 +57,11 @@ export default function Review() {
     return (
       <ScrollView style={shared.screen}>
         <Card>
-          <Text style={type.h3}>{a.review_rating ? 'Siz bu tashrifni baholagansiz' : 'Bu tashrifni baholab bo\'lmaydi'}</Text>
+          <Text style={type.h3}>{a.review_rating ? t("Siz bu tashrifni baholagansiz") : t("Bu tashrifni baholab bo'lmaydi")}</Text>
           <Text style={[shared.muted, { marginTop: 6 }]}>
             {a.review_rating
-              ? `Bahoyingiz: ${'★'.repeat(a.review_rating)}`
-              : 'Baho faqat yakunlangan tashrifdan keyin, 30 kun ichida qo\'yiladi.'}
+              ? t("Bahoyingiz: {a}", { a: '★'.repeat(a.review_rating) })
+              : t("Baho faqat yakunlangan tashrifdan keyin, 30 kun ichida qo'yiladi.")}
           </Text>
         </Card>
       </ScrollView>
@@ -69,28 +70,28 @@ export default function Review() {
 
   return (
     <ScrollView style={shared.screen} contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
-      <Text style={type.h2}>{a.business_name ?? 'Muassasa'}</Text>
+      <Text style={type.h2}>{a.business_name ?? t("Muassasa")}</Text>
       <Text style={shared.muted}>{dateTimeOf(a.starts_at)} · {a.services.join(', ')}</Text>
 
       <Card>
-        <Text style={shared.name}>Muassasaga baho</Text>
-        <StarsInput label="Umumiy taassurot" value={rating} onChange={setRating} />
-        <StarsInput label="Tozalik" value={cleanliness} onChange={setCleanliness} />
-        <StarsInput label="Qabul va xizmat sifati" value={quality} onChange={setQuality} />
+        <Text style={shared.name}>{t("Muassasaga baho")}</Text>
+        <StarsInput label={t("Umumiy taassurot")} value={rating} onChange={setRating} />
+        <StarsInput label={t("Tozalik")} value={cleanliness} onChange={setCleanliness} />
+        <StarsInput label={t("Qabul va xizmat sifati")} value={quality} onChange={setQuality} />
         <View style={{ marginTop: 14 }}>
-          <Field label="Izoh (ixtiyoriy)" value={comment} onChangeText={setComment} multiline maxLength={2000}
-            placeholder="Nima yoqdi, nimani yaxshilash kerak?" style={{ minHeight: 80, textAlignVertical: 'top' }} />
+          <Field label={t("Izoh (ixtiyoriy)")} value={comment} onChangeText={setComment} multiline maxLength={2000}
+            placeholder={t("Nima yoqdi, nimani yaxshilash kerak?")} style={{ minHeight: 80, textAlignVertical: 'top' }} />
         </View>
       </Card>
 
       {a.member_name && (
         <Card>
-          <Text style={shared.name}>Sizga xizmat ko'rsatgan mutaxassis</Text>
+          <Text style={shared.name}>{t("Sizga xizmat ko'rsatgan mutaxassis")}</Text>
           <Text style={[type.h3, { marginTop: 4 }]}>{a.member_name}</Text>
-          <StarsInput label="Mutaxassis ishiga baho" value={staffRating} onChange={setStaffRating} />
+          <StarsInput label={t("Mutaxassis ishiga baho")} value={staffRating} onChange={setStaffRating} />
           {staffRating > 0 && (
             <View style={{ marginTop: 14 }}>
-              <Field label="Mutaxassis haqida (ixtiyoriy)" value={staffComment} onChangeText={setStaffComment} multiline
+              <Field label={t("Mutaxassis haqida (ixtiyoriy)")} value={staffComment} onChangeText={setStaffComment} multiline
                 maxLength={1000} style={{ minHeight: 70, textAlignVertical: 'top' }} />
             </View>
           )}
@@ -98,8 +99,8 @@ export default function Review() {
       )}
 
       <ErrorText text={error} />
-      {!ready && <Text style={[shared.muted, { marginBottom: 8 }]}>Muassasaga uchala bahoni qo'ying</Text>}
-      <Button title="Bahoni yuborish" onPress={submit} busy={busy} disabled={!ready} />
+      {!ready && <Text style={[shared.muted, { marginBottom: 8 }]}>{t("Muassasaga uchala bahoni qo'ying")}</Text>}
+      <Button title={t("Bahoni yuborish")} onPress={submit} busy={busy} disabled={!ready} />
     </ScrollView>
   );
 }

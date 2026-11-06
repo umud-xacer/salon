@@ -53,6 +53,7 @@ class BusinessCard(BaseModel):
     name: str
     category: str
     category_name: str
+    category_name_ru: str | None = None   # ruscha ilova uchun
     city: str | None
     address: str | None
     lat: float
@@ -113,6 +114,7 @@ class BusinessDetail(BaseModel):
     description: str | None
     category: str
     category_name: str
+    category_name_ru: str | None = None
     kind: str = "salon"
     phone: str | None
     city: str | None

@@ -4,6 +4,8 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { useAuth } from '../../src/auth';
 import { ageOf, colors, Icon, IconName, radius, shadow, shared, type } from '../../src/ui';
 
+import { getLang, t } from "../../src/i18n";
+import { chooseLanguage, LANG_NAMES } from "../../src/LangSwitch";
 const initials = (name: string) =>
   name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join('') || 'C';
 
@@ -32,13 +34,13 @@ export default function Profile() {
   const user = me?.user;
 
   const facts = [
-    user?.birth_date ? `${ageOf(user.birth_date)} yosh` : null,
-    user?.gender === 'male' ? 'Erkak' : user?.gender === 'female' ? 'Ayol' : null,
+    user?.birth_date ? t("{a} yosh", { a: ageOf(user.birth_date) }) : null,
+    user?.gender === 'male' ? t("Erkak") : user?.gender === 'female' ? t("Ayol") : null,
   ].filter(Boolean).join(' · ');
 
-  const logout = () => Alert.alert('Hisobdan chiqasizmi?', undefined, [
-    { text: 'Yo\'q', style: 'cancel' },
-    { text: 'Chiqish', style: 'destructive', onPress: () => { signOut(); } },
+  const logout = () => Alert.alert(t("Hisobdan chiqasizmi?"), undefined, [
+    { text: t("Yo'q"), style: 'cancel' },
+    { text: t("Chiqish"), style: 'destructive', onPress: () => { signOut(); } },
   ]);
 
   return (
@@ -46,29 +48,28 @@ export default function Profile() {
       <View style={styles.head}>
         <View style={styles.avatar}><Text style={styles.avatarText}>{initials(user?.full_name ?? '')}</Text></View>
         <View style={{ flex: 1 }}>
-          <Text style={type.h2} numberOfLines={1}>{user?.full_name || 'Foydalanuvchi'}</Text>
+          <Text style={type.h2} numberOfLines={1}>{user?.full_name || t("Foydalanuvchi")}</Text>
           <Text style={[type.small, { marginTop: 2 }]}>{user?.phone}</Text>
           {!!facts && <Text style={[type.small, { marginTop: 2 }]}>{facts}</Text>}
         </View>
       </View>
 
       <View style={styles.group}>
-        <Row icon="create-outline" label="Shaxsiy ma'lumotlar" onPress={() => router.push('/profile-edit')} />
-        <Row icon="heart-outline" label="Sevimli salonlar" onPress={() => router.push('/favorites')} />
+        <Row icon="create-outline" label={t("Shaxsiy ma'lumotlar")} onPress={() => router.push('/profile-edit')} />
+        <Row icon="heart-outline" label={t("Sevimli salonlar")} onPress={() => router.push('/favorites')} />
         {me?.workspace !== 'business' && (
-          <Row icon="lock-closed-outline" label="Parolni almashtirish" onPress={() => router.push('/change-password')} />
+          <Row icon="lock-closed-outline" label={t("Parolni almashtirish")} onPress={() => router.push('/change-password')} />
         )}
-        <Row icon="settings-outline" label="Sozlamalar" onPress={() => router.push('/settings')} />
+        <Row icon="settings-outline" label={t("Sozlamalar")} onPress={() => router.push('/settings')} />
       </View>
       <View style={styles.group}>
-        <Row icon="language-outline" label="Tilingiz" value="O'zbekcha"
-          onPress={() => Alert.alert('Til', 'Hozircha ilova o\'zbek tilida. Boshqa tillar keyinroq qo\'shiladi.')} />
-        <Row icon="help-circle-outline" label="Qo'llab-quvvatlash" onPress={() => router.push('/settings')} />
+        <Row icon="language-outline" label={t("Tilingiz")} value={LANG_NAMES[getLang()]} onPress={chooseLanguage} />
+        <Row icon="help-circle-outline" label={t("Qo'llab-quvvatlash")} onPress={() => router.push('/settings')} />
       </View>
       <View style={styles.group}>
-        <Row icon="log-out-outline" label="Chiqish" danger onPress={logout} />
+        <Row icon="log-out-outline" label={t("Chiqish")} danger onPress={logout} />
       </View>
-      <Text style={[type.small, { textAlign: 'center', marginTop: 8 }]}>Chronix · Vaqtingiz – bizning ustuvorligimiz</Text>
+      <Text style={[type.small, { textAlign: 'center', marginTop: 8 }]}>{t("Chronix · Vaqtingiz – bizning ustuvorligimiz")}</Text>
     </ScrollView>
   );
 }

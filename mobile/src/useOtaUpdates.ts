@@ -6,6 +6,7 @@ import * as Updates from 'expo-updates';
 import { useEffect, useRef } from 'react';
 import { Alert, AppState } from 'react-native';
 
+import { t } from "./i18n";
 const CHECK_EVERY_MS = 30 * 60 * 1000;
 const BUSY_SCREENS = ['/alarm', '/book'];
 
@@ -29,9 +30,9 @@ export function useOtaUpdates() {
         const { isNew } = await Updates.fetchUpdateAsync();
         if (!isNew || BUSY_SCREENS.includes(screen.current)) return;
         asked.current = true;
-        Alert.alert('Yangilanish tayyor', "Ilovaning yangi versiyasi yuklab olindi.", [
-          { text: 'Keyinroq', style: 'cancel' },
-          { text: 'Yangilash', onPress: () => { Updates.reloadAsync().catch(() => {}); } },
+        Alert.alert(t("Yangilanish tayyor"), t("Ilovaning yangi versiyasi yuklab olindi."), [
+          { text: t("Keyinroq"), style: 'cancel' },
+          { text: t("Yangilash"), onPress: () => { Updates.reloadAsync().catch(() => {}); } },
         ]);
       } catch {
         // Internet yo'q yoki server javob bermadi: keyingi safar yana tekshiriladi

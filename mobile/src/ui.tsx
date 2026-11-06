@@ -6,6 +6,7 @@ import {
   View,
 } from 'react-native';
 
+import { t } from "./i18n";
 export type IconName = ComponentProps<typeof Ionicons>['name'];
 
 export const colors = {
@@ -89,7 +90,7 @@ export function Field({ label, hint, ...props }: TextInputProps & { label: strin
           style={[styles.input, secret && { paddingRight: 48 }, props.editable === false && styles.inputOff]} />
         {secret && (
           <Pressable onPress={() => setShown(!shown)} hitSlop={8} accessibilityRole="button"
-            accessibilityLabel={shown ? 'Parolni yashirish' : "Parolni ko'rsatish"}
+            accessibilityLabel={shown ? t("Parolni yashirish") : t("Parolni ko'rsatish")}
             style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 48, alignItems: 'center', justifyContent: 'center' }}>
             <Icon name={shown ? 'eye-off-outline' : 'eye-outline'} size={20} color={colors.muted} />
           </Pressable>
@@ -182,7 +183,7 @@ export function BottomSheet({ visible, title, onClose, children }: {
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="Yopish" />
+      <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel={t("Yopish")} />
       <Animated.View style={[styles.sheet, { transform: [{ translateY: y }] }]}>
         <View style={styles.grabber} />
         <Text style={[type.h2, { marginBottom: 14 }]}>{title}</Text>
@@ -192,7 +193,7 @@ export function BottomSheet({ visible, title, onClose, children }: {
   );
 }
 
-export const money = (value: number) => `${value.toLocaleString('ru-RU').replace(/,/g, ' ')} so'm`;
+export const money = (value: number) => t("{a} so'm", { a: value.toLocaleString('ru-RU').replace(/,/g, ' ') });
 
 // Bizneslar hozircha faqat O'zbekistonda (UTC+5, yozgi vaqt yo'q)
 const TZ_MS = 5 * 3600 * 1000;

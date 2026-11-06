@@ -5,13 +5,14 @@ import { FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View
 import { api, Notification } from '../../src/api';
 import { Chip, colors, dateTimeOf, EmptyState, Icon, IconName, radius, shadow, shared, type } from '../../src/ui';
 
+import { notificationText, t } from "../../src/i18n";
 type Group = 'all' | 'booking' | 'promo' | 'system';
 
 const GROUPS: { id: Group; label: string }[] = [
-  { id: 'all', label: 'Hammasi' },
-  { id: 'booking', label: 'Bron eslatmalari' },
-  { id: 'promo', label: 'Aksiyalar' },
-  { id: 'system', label: 'Tizim xabarlari' },
+  { id: 'all', label: t("Hammasi") },
+  { id: 'booking', label: t("Bron eslatmalari") },
+  { id: 'promo', label: t("Aksiyalar") },
+  { id: 'system', label: t("Tizim xabarlari") },
 ];
 
 const groupOf = (type: string): Group => {
@@ -71,7 +72,7 @@ export default function Inbox() {
         keyExtractor={(n) => String(n.id)}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}
         ListEmptyComponent={loading ? undefined : (
-          <EmptyState icon="notifications-off-outline" title="Xabarlar yo'q" text="Yangi xabarlar shu yerda ko'rinadi" />
+          <EmptyState icon="notifications-off-outline" title={t("Xabarlar yo'q")} text={t("Yangi xabarlar shu yerda ko'rinadi")} />
         )}
         renderItem={({ item: n }) => {
           const kind = groupOf(n.type) as Exclude<Group, 'all'>;
@@ -83,11 +84,11 @@ export default function Inbox() {
               <View style={{ flex: 1 }}>
                 <View style={shared.row}>
                   <Text style={[type.h3, { flex: 1, paddingRight: 8, fontSize: 15 }, !!n.read_at && { fontWeight: '500' }]} numberOfLines={1}>
-                    {n.title}
+                    {notificationText(n.title, n.body).title}
                   </Text>
-                  {!n.read_at && <View style={styles.dot} accessibilityLabel="O'qilmagan" />}
+                  {!n.read_at && <View style={styles.dot} accessibilityLabel={t("O'qilmagan")} />}
                 </View>
-                {n.body && <Text style={[type.small, { marginTop: 2 }]}>{n.body}</Text>}
+                {n.body && <Text style={[type.small, { marginTop: 2 }]}>{notificationText(n.title, n.body).body}</Text>}
                 <Text style={[type.small, { marginTop: 4, fontSize: 12 }]}>{dateTimeOf(n.created_at)}</Text>
               </View>
             </Pressable>

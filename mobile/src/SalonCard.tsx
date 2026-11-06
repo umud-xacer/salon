@@ -5,11 +5,12 @@ import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { BusinessCard } from './api';
 import { colors, Icon, money, radius, shadow, type } from './ui';
 
+import { pick, t } from "./i18n";
 const PHOTO = 84;
 
 export const distanceText = (m: number | null) => {
   if (m === null) return null;
-  return m < 1000 ? `${m} m` : `${(m / 1000).toFixed(1)} km`;
+  return m < 1000 ? `${m} m` : t("{a} km", { a: (m / 1000).toFixed(1) });
 };
 
 export function SalonCard({ item: b, favorite, onToggleFavorite, onOpen }: {
@@ -18,7 +19,7 @@ export function SalonCard({ item: b, favorite, onToggleFavorite, onOpen }: {
   onToggleFavorite: () => void;
   onOpen: () => void;
 }) {
-  const meta = [b.category_name, distanceText(b.distance_m) ?? b.city].filter(Boolean).join(' · ');
+  const meta = [pick(b.category_name, b.category_name_ru), distanceText(b.distance_m) ?? b.city].filter(Boolean).join(' · ');
   const photo = b.photos?.[0];
 
   return (
@@ -36,7 +37,7 @@ export function SalonCard({ item: b, favorite, onToggleFavorite, onOpen }: {
         <View style={styles.row}>
           <Text style={[type.h3, styles.name]} numberOfLines={1}>{b.name}</Text>
           <Pressable onPress={onToggleFavorite} hitSlop={10} style={styles.heart}
-            accessibilityLabel={favorite ? 'Sevimlilardan olib tashlash' : 'Sevimlilarga qo\'shish'}>
+            accessibilityLabel={favorite ? t("Sevimlilardan olib tashlash") : t("Sevimlilarga qo'shish")}>
             <Icon name={favorite ? 'heart' : 'heart-outline'} size={19} color={favorite ? colors.danger : colors.muted} />
           </Pressable>
         </View>
@@ -51,18 +52,18 @@ export function SalonCard({ item: b, favorite, onToggleFavorite, onOpen }: {
                 <Text style={styles.ratingText}>{b.rating_avg.toFixed(1)}</Text>
                 <Text style={type.small}>({b.rating_count})</Text>
               </>
-            ) : <Text style={type.small}>Yangi</Text>}
+            ) : <Text style={type.small}>{t("Yangi")}</Text>}
           </View>
           <View style={[styles.badge, { backgroundColor: b.is_open_now ? colors.successSoft : colors.dangerSoft }]}>
             <Text style={[styles.badgeText, { color: b.is_open_now ? colors.success : colors.danger }]}>
-              {b.is_open_now ? 'Ochiq' : 'Yopiq'}
+              {b.is_open_now ? t("Ochiq") : t("Yopiq")}
             </Text>
           </View>
         </View>
 
         {b.min_price !== null && (
           <Text style={styles.price} numberOfLines={1}>
-            {money(b.min_price)}dan{b.top_service ? <Text style={type.small}>{`  ·  ${b.top_service}`}</Text> : null}
+            {t("{a}dan", { a: money(b.min_price) })}{b.top_service ? <Text style={type.small}>{`  ·  ${b.top_service}`}</Text> : null}
           </Text>
         )}
       </View>

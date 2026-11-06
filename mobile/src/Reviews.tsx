@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { api, PublicReview, ReviewsOut } from './api';
 import { Button, Card, colors, dayOf, Icon, shared, type } from './ui';
 
+import { t } from "./i18n";
 export function StarsView({ value, size = 14 }: { value: number | null | undefined; size?: number }) {
   const v = Math.round(value ?? 0);
   return (
@@ -18,14 +19,14 @@ export function StarsView({ value, size = 14 }: { value: number | null | undefin
 
 // Katta, bosiladigan yulduzchalar (barmoq uchun kamida 40px)
 export function StarsInput({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
-  const WORDS = ['', 'Juda yomon', 'Yomon', "O'rtacha", 'Yaxshi', "A'lo"];
+  const WORDS = ['', t("Juda yomon"), t("Yomon"), t("O'rtacha"), t("Yaxshi"), t("A'lo")];
   return (
     <View style={{ marginTop: 14 }}>
       <Text style={type.h3}>{label}</Text>
       <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 6 }}>
         {[1, 2, 3, 4, 5].map((i) => (
           <Pressable key={i} onPress={() => onChange(i)} hitSlop={4} style={styles.starBtn}
-            accessibilityRole="button" accessibilityLabel={`${label}: ${i} yulduz`} accessibilityState={{ selected: value === i }}>
+            accessibilityRole="button" accessibilityLabel={t("{a}: {b} yulduz", { a: label, b: i })} accessibilityState={{ selected: value === i }}>
             <Icon name={i <= value ? 'star' : 'star-outline'} size={34} color={i <= value ? colors.star : colors.muted} />
           </Pressable>
         ))}
@@ -64,19 +65,19 @@ export function BusinessReviews({ slug, staffWord }: { slug: string; staffWord: 
 
   return (
     <>
-      <Text style={shared.heading}>Baholar</Text>
+      <Text style={shared.heading}>{t("Baholar")}</Text>
       <Card>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <Text style={{ fontSize: 34, fontWeight: '800', color: colors.text }}>{s.rating_avg?.toFixed(1)}</Text>
           <View>
             <StarsView value={s.rating_avg} size={18} />
-            <Text style={shared.muted}>{s.count} ta baho</Text>
+            <Text style={shared.muted}>{t("{a} ta baho", { a: s.count })}</Text>
           </View>
         </View>
         <Text style={[shared.muted, { marginTop: 8 }]}>
-          Tozalik {s.cleanliness_avg?.toFixed(1) ?? '—'} · Qabul va xizmat {s.quality_avg?.toFixed(1) ?? '—'}
+          {t("Tozalik")}{" "}{s.cleanliness_avg?.toFixed(1) ?? '—'}{" "}{t("· Qabul va xizmat")}{" "}{s.quality_avg?.toFixed(1) ?? '—'}
         </Text>
-        <Text style={[type.small, { marginTop: 4, color: colors.muted }]}>Faqat xizmatdan foydalangan mijozlar baho qo'ya oladi</Text>
+        <Text style={[type.small, { marginTop: 4, color: colors.muted }]}>{t("Faqat xizmatdan foydalangan mijozlar baho qo'ya oladi")}</Text>
       </Card>
       {items.map((r) => (
         <Card key={r.id}>
@@ -97,14 +98,14 @@ export function BusinessReviews({ slug, staffWord }: { slug: string; staffWord: 
           )}
           {r.reply && (
             <View style={styles.reply}>
-              <Text style={[type.small, { fontWeight: '700' }]}>Muassasa javobi</Text>
+              <Text style={[type.small, { fontWeight: '700' }]}>{t("Muassasa javobi")}</Text>
               <Text style={[type.body, { marginTop: 2 }]}>{r.reply}</Text>
             </View>
           )}
         </Card>
       ))}
       {!done && items.length < s.count && (
-        <Button title="Yana baholar" kind="outline" compact busy={busy} onPress={loadMore} />
+        <Button title={t("Yana baholar")} kind="outline" compact busy={busy} onPress={loadMore} />
       )}
     </>
   );
