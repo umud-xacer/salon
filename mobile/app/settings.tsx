@@ -9,19 +9,28 @@ import { ChronixAlarmModule } from '../modules/chronix-alarm';
 import { api } from '../src/api';
 import { scheduleTestAlarm } from '../src/localReminders';
 import { ensureNotificationPermission, pushStatus } from '../src/notifications';
-import { playStartupSound, setStartupSoundEnabled, startupSoundEnabled, type StartupSoundResult } from '../src/startupSound';
+import {
+  playStartupSound, setStartupSoundEnabled, setStartupSoundKind, startupSoundEnabled, startupSoundKind,
+  type StartupSoundKind, type StartupSoundResult,
+} from '../src/startupSound';
 import { useAuth } from '../src/auth';
-import { Button, Card, colors, shared, type } from '../src/ui';
+import { Button, Card, colors, Segments, shared, type } from '../src/ui';
 
 import { t } from "../src/i18n";
 import { LangSwitch } from "../src/LangSwitch";
 export default function Settings() {
   const [fullScreen, setFullScreen] = useState(true);
   const [startSound, setStartSound] = useState(startupSoundEnabled);
+  const [soundKind, setSoundKind] = useState<StartupSoundKind>(startupSoundKind);
   const [soundCheck, setSoundCheck] = useState<StartupSoundResult | 'busy' | null>(null);
-  const checkSound = async () => {
+  const checkSound = async (kind: StartupSoundKind = soundKind) => {
     setSoundCheck('busy');
-    setSoundCheck(await playStartupSound(true));
+    setSoundCheck(await playStartupSound({ force: true, kind, check: true }));
+  };
+  const chooseSound = (kind: StartupSoundKind) => {
+    setSoundKind(kind);
+    void setStartupSoundKind(kind);
+    void checkSound(kind);                  // tanlanganda darhol eshittiriladi
   };
   const [support, setSupport] = useState<{ support_phone: string | null; support_telegram: string | null } | null>(null);
   const { me } = useAuth();
@@ -77,9 +86,15 @@ export default function Settings() {
           <Switch value={startSound} trackColor={{ true: colors.primary }}
             onValueChange={(on) => { setStartSound(on); void setStartupSoundEnabled(on); }} />
         </View>
+        <Text style={[type.small, { marginTop: 12, marginBottom: 6 }]}>{t("Ovoz turi")}</Text>
+        <Segments value={soundKind} onChange={chooseSound} options={[
+          { id: 'warm', label: t("Iliq") },
+          { id: 'soft', label: t("Yengil") },
+          { id: 'crystal', label: t("Kristall") },
+        ]} />
         <View style={{ marginTop: 12 }}>
           <Button title={soundCheck === 'busy' ? t("Tekshirilmoqda…") : t("Ovozni sinash")} kind="soft" compact
-            icon="volume-high-outline" disabled={soundCheck === 'busy'} onPress={checkSound} />
+            icon="volume-high-outline" disabled={soundCheck === 'busy'} onPress={() => { void checkSound(); }} />
         </View>
         {soundCheck !== null && soundCheck !== 'busy' && (
           <Text style={[type.small, { marginTop: 8, color: soundCheck === 'played' ? colors.success : colors.danger }]}>

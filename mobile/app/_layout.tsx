@@ -14,10 +14,13 @@ import {
   setupChannels,
 } from '../src/notifications';
 import { colors } from '../src/ui';
+import { prepareStartupSound } from '../src/startupSound';
 import { useOtaUpdates } from '../src/useOtaUpdates';
 
 import { t } from "../src/i18n";
 SplashScreen.preventAutoHideAsync().catch(() => {});
+// Ochilish ovozi fayli splash animatsiyasidan oldin yuklanib tursin (animatsiya paytida faqat play)
+prepareStartupSound();
 
 const POLL_MS = 20_000;
 
