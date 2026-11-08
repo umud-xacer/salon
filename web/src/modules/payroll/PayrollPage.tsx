@@ -80,7 +80,7 @@ function Payrolls({ businessId }: { businessId: number }) {
                     <span className="min-w-0 flex-1 basis-40">
                       <span className="block font-medium break-words">{p.full_name}</span>
                       <span className="block text-xs text-muted tabular-nums">
-                        {t("Stavka")}{" "}{formatMoney(p.base_salary)}{" "}{t("· Foiz")}{" "}{formatMoney(p.commission)}
+                        {t("Stavka {a} · Foiz {b}", { a: formatMoney(p.base_salary), b: formatMoney(p.commission) })}
                       </span>
                     </span>
                     <StatusBadge status={p.status} />
@@ -135,7 +135,7 @@ function PayrollDialog({ businessId, payroll: p, month, onClose }: {
       <dl className="grid grid-cols-[1fr_auto] gap-y-1 text-sm">
         <dt className="text-muted">{t("Stavka")}</dt>
         <dd className="text-right tabular-nums">{formatMoney(p.base_salary)}</dd>
-        <dt className="text-muted">{t("Tushum (")}{formatQty(p.commission_percent)}{t("% foiz)")}</dt>
+        <dt className="text-muted">{t("Tushum ({a}% foiz)", { a: formatQty(p.commission_percent) })}</dt>
         <dd className="text-right tabular-nums">{formatMoney(p.revenue)}</dd>
         <dt className="text-muted">{t("Foiz")}</dt>
         <dd className="text-right tabular-nums">{formatMoney(p.commission)}</dd>
@@ -161,9 +161,9 @@ function PayrollDialog({ businessId, payroll: p, month, onClose }: {
         </form>
       ) : (
         <div className="mt-4 border-t border-line pt-4 text-sm">
-          <p>{t("Bonus:")}{" "}{formatMoney(p.bonus)}{" "}{t("· Ushlanma:")}{" "}{formatMoney(p.deductions)}</p>
+          <p>{t("Bonus: {a} · Ushlanma: {b}", { a: formatMoney(p.bonus), b: formatMoney(p.deductions) })}</p>
           {p.note && <p className="mt-1 text-muted break-words">{p.note}</p>}
-          {p.paid_at && <p className="mt-1 text-muted">{t("To'langan:")}{" "}{formatDate(p.paid_at)}</p>}
+          {p.paid_at && <p className="mt-1 text-muted">{t("To'langan: {a}", { a: formatDate(p.paid_at) })}</p>}
         </div>
       )}
       {(save.error || action.error) && <div className="mt-3"><ErrorNote error={save.error ?? action.error} /></div>}
@@ -176,7 +176,7 @@ function PayrollDialog({ businessId, payroll: p, month, onClose }: {
         )}
         {p.status === "approved" && (confirmPay ? (
           <Button type="button" disabled={action.isPending} onClick={() => action.mutate("pay")}>
-            {t("Ha,")}{" "}{formatMoney(p.total)}{" "}{t("to'landi")}
+            {t("Ha, {a} to'landi", { a: formatMoney(p.total) })}
           </Button>
         ) : (
           <Button type="button" onClick={() => setConfirmPay(true)}>{t("To'landi deb belgilash")}</Button>
@@ -277,7 +277,7 @@ export function MyPayrollPage({ membership }: { membership: Membership }) {
               <span className="min-w-0 flex-1 basis-40">
                 <span className="block font-medium tabular-nums">{p.period_start.slice(5, 7)}.{p.period_start.slice(0, 4)}</span>
                 <span className="block text-xs text-muted tabular-nums">
-                  {t("Stavka")}{" "}{formatMoney(p.base_salary)}{" "}{t("· Foiz")}{" "}{formatMoney(p.commission)}{" "}{t("· Bonus")}{" "}{formatMoney(p.bonus)}{" "}{t("· Ushlanma")}{" "}{formatMoney(p.deductions)}
+                  {t("Stavka {a} · Foiz {b} · Bonus {c} · Ushlanma {d}", { a: formatMoney(p.base_salary), b: formatMoney(p.commission), c: formatMoney(p.bonus), d: formatMoney(p.deductions) })}
                 </span>
               </span>
               <StatusBadge status={p.status} />

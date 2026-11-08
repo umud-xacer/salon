@@ -143,7 +143,7 @@ export function CalendarPage({ membership }: { membership: Membership }) {
             onChange={(e) => setMemberFilter(e.target.value ? Number(e.target.value) : null)}
             className="rounded-lg border border-line bg-white px-2 py-1.5 text-sm"
           >
-            <option value="">{t("Barcha")}{" "}{v.staffMany}</option>
+            <option value="">{t("Barcha {a}", { a: v.staffMany })}</option>
             {data.staff.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.full_name}
@@ -155,7 +155,7 @@ export function CalendarPage({ membership }: { membership: Membership }) {
 
       {query.isPending && <Spinner />}
       {query.error && <ErrorNote error={query.error} />}
-      {data && data.staff.length === 0 && <Empty>{t("Hali")}{" "}{v.staffMany}{" "}{t("qo'shilmagan")}</Empty>}
+      {data && data.staff.length === 0 && <Empty>{t("Hali {a} qo'shilmagan", { a: v.staffMany })}</Empty>}
       {data && data.staff.length > 0 && (
         <TimeGrid
           columns={columns}

@@ -95,7 +95,7 @@ export function OwnerChange({ business: b }: { business: BusinessAdmin }) {
         value={password} onChange={setPassword} />
       {!sameOwner && b.owner_phone && (
         <fieldset className="space-y-1">
-          <legend className="mb-1">{t("Hozirgi direktor (")}{b.owner_name ?? b.owner_phone}):</legend>
+          <legend className="mb-1">{t("Hozirgi direktor ({a}):", { a: b.owner_name ?? b.owner_phone })}</legend>
           <label className="flex items-center gap-2">
             <input type="radio" name="previous" className="accent-primary" checked={previous === "manager"}
               onChange={() => setPrevious("manager")} />
@@ -115,12 +115,12 @@ export function OwnerChange({ business: b }: { business: BusinessAdmin }) {
       )}
       {confirming && sameOwner && (
         <p role="alert" className="rounded-lg bg-amber-50 px-3 py-2 text-amber-800">
-          {t("Ism shu telefon egasining hamma muassasalarida \"")}{name.trim()}{t("\" bo'ladi. Rozimisiz? Yana bir marta bosing.")}
+          {t("Ism shu telefon egasining hamma muassasalarida \"{a}\" bo'ladi. Rozimisiz? Yana bir marta bosing.", { a: name.trim() })}
         </p>
       )}
       {confirming && !sameOwner && (
         <p role="alert" className="rounded-lg bg-amber-50 px-3 py-2 text-amber-800">
-          {b.owner_name ?? b.owner_phone}{" "}{t("o'rniga")}{" "}{name.trim() || normalized}{" "}{t("direktor bo'ladi (")}{previous === "manager" ? t("eski direktor menejer bo'lib qoladi") : t("eski direktor chiqariladi")}{t("). Tasdiqlash uchun yana bir marta bosing.")}
+          {t("{a} o'rniga {b} direktor bo'ladi ({c}). Tasdiqlash uchun yana bir marta bosing.", { a: b.owner_name ?? b.owner_phone, b: name.trim() || normalized, c: previous === "manager" ? t("eski direktor menejer bo'lib qoladi") : t("eski direktor chiqariladi") })}
         </p>
       )}
       {save.error && <ErrorNote error={save.error} />}

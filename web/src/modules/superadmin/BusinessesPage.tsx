@@ -100,8 +100,7 @@ export function BusinessesPage() {
         <>
           <BusinessesMap businesses={filtered} onSelect={(b) => setOpenedId(b.id)} />
           <p className="mt-2 text-xs text-muted">
-            {t("Yashil: faol. Sariq: to'xtatilgan. Qizil: bloklangan.")}
-            {noLocation > 0 && t(" Lokatsiyasi yo'q: {a} ta.", { a: noLocation })}
+            {t("Yashil: faol. Sariq: to'xtatilgan. Qizil: bloklangan. {a}", { a: noLocation > 0 && t(" Lokatsiyasi yo'q: {a} ta.", { a: noLocation }) })}
           </p>
         </>
       )}
@@ -125,11 +124,11 @@ export function BusinessesPage() {
                   </span>
                   {missingFor(b).length > 0 && (
                     <span title={t("Ilovada ko'rinishi uchun: {a}", { a: missingFor(b).join(", ") })}>
-                      <Badge tone="amber">{t("Tayyor emas:")}{" "}{missingFor(b).join(", ")}</Badge>
+                      <Badge tone="amber">{t("Tayyor emas: {a}", { a: missingFor(b).join(", ") })}</Badge>
                     </span>
                   )}
                   <PasswordBadge status={b.owner_password_status} />
-                  <span className="text-muted">{b.staff_count}{" "}{t("xodim")}</span>
+                  <span className="text-muted">{t("{a} xodim", { a: b.staff_count })}</span>
                   <span className="flex items-center gap-1 tabular-nums" title={t("{a} ta baho", { a: b.rating_count })}>
                     <Star size={14} aria-hidden className={b.rating_count ? "fill-amber-400 text-amber-400" : "text-line"} />
                     {b.rating_count ? `${b.rating_avg.toFixed(1)} (${b.rating_count})` : "—"}

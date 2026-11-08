@@ -56,7 +56,7 @@ export function InventoryPage({ membership }: { membership: Membership }) {
         <button onClick={() => setView("low")}
           className="mb-3 flex w-full items-center gap-2 rounded-xl bg-warning/10 px-4 py-3 text-left text-sm text-warning">
           <AlertTriangle size={16} className="shrink-0" aria-hidden />
-          <span>{low}{" "}{t("ta mahsulot kam qoldi. Ko'rish")}</span>
+          <span>{t("{a} ta mahsulot kam qoldi. Ko'rish", { a: low })}</span>
         </button>
       )}
       <Tabs<View>
@@ -143,7 +143,7 @@ function ProductList({ businessId, show, q, canManage, onEdit, onMove }: {
               {p.is_low && <Badge tone="amber">{t("Kam qoldi")}</Badge>}
             </span>
             <span className="col-span-2 text-xs text-muted tabular-nums lg:hidden">
-              {t("Tan narx")}{" "}{formatMoney(p.cost_price)}{" "}{t("· Sotuv")}{" "}{formatMoney(p.sale_price)}
+              {t("Tan narx {a} · Sotuv {b}", { a: formatMoney(p.cost_price), b: formatMoney(p.sale_price) })}
             </span>
             <span className="hidden text-right tabular-nums lg:block">{formatMoney(p.cost_price)}</span>
             <span className="hidden text-right tabular-nums lg:block">{formatMoney(p.sale_price)}</span>
@@ -333,7 +333,7 @@ function MoveDialog({ businessId, product: p, onClose }: {
 
   return (
     <Modal title={p.name} onClose={onClose}>
-      <p className="mb-3 text-sm text-muted">{t("Hozirgi qoldiq:")}{" "}{formatQty(p.current_qty)} {p.unit}</p>
+      <p className="mb-3 text-sm text-muted">{t("Hozirgi qoldiq: {a} {b}", { a: formatQty(p.current_qty), b: p.unit })}</p>
       <Tabs<MoveKind>
         value={kind}
         onChange={setKind}

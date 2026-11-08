@@ -30,13 +30,13 @@ export function StatsPage() {
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label={t("Muassasalar")} value={String(s.businesses_total)}
-          sub={<span className="text-xs text-muted">{s.businesses_operational}{" "}{t("faol ·")}{" "}{s.businesses_listed}{" "}{t("ilovada")}</span>} />
+          sub={<span className="text-xs text-muted">{t("{a} faol · {b} ilovada", { a: s.businesses_operational, b: s.businesses_listed })}</span>} />
         <Stat label={t("Obuna daromadi (shu oy)")} value={formatMoney(s.revenue_this_month)}
           sub={<Delta now={s.revenue_this_month} prev={s.revenue_prev_month} what={t("o'tgan oyga")} />} />
         <Stat label={t("Bronlar (30 kun)")} value={String(s.bookings_30d)}
           sub={<Delta now={s.bookings_30d} prev={s.bookings_30d_prev} what={t("oldingi 30 kunga")} />} />
         <Stat label={t("Foydalanuvchilar")} value={String(s.users_total)}
-          sub={<span className="text-xs text-muted">{s.clients_total}{" "}{t("mijoz ·")}{" "}{s.staff_total}{" "}{t("xodim")}</span>} />
+          sub={<span className="text-xs text-muted">{t("{a} mijoz · {b} xodim", { a: s.clients_total, b: s.staff_total })}</span>} />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -62,7 +62,7 @@ export function StatsPage() {
           <span className="flex items-center gap-2 text-sm">
             <Stars value={s.rating_avg} />
             <span className="tabular-nums">{s.rating_avg ? s.rating_avg.toFixed(2) : "—"}</span>
-            <span className="text-xs text-muted">· {s.reviews_total}{" "}{t("ta baho, 30 kunda")}{" "}{s.reviews_30d}</span>
+            <span className="text-xs text-muted">{t("· {a} ta baho, 30 kunda {b}", { a: s.reviews_total, b: s.reviews_30d })}</span>
           </span>
         </div>
         {s.rating_top.length === 0 ? <Empty>{t("Hali baho qo'yilmagan")}</Empty> : (
@@ -118,7 +118,7 @@ export function StatsPage() {
                 <span className="min-w-0 break-words">
                   <span className="font-medium">{p.business_name}</span>
                   {p.business_id === null && <span className="text-xs text-muted">{" "}{t("(o'chirilgan)")}</span>}
-                  <span className="text-xs text-muted"> · +{p.days}{" "}{t("kun ·")}{" "}{formatDate(p.created_at)}</span>
+                  <span className="text-xs text-muted">{t("· +{a} kun · {b}", { a: p.days, b: formatDate(p.created_at) })}</span>
                 </span>
                 <span className="tabular-nums">
                   {p.method === "free" ? t("Bepul") : formatMoney(p.amount)}

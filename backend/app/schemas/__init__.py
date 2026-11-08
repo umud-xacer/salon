@@ -273,6 +273,7 @@ class BusinessAdminOut(BaseModel):
     is_active: bool
     subscription_ends_at: datetime | None
     operational: bool
+    monthly_fee: int = 0
     owner_name: str | None
     owner_phone: str | None
     owner_member_id: int | None = None
@@ -418,6 +419,7 @@ class PlatformStats(BaseModel):
 class SubscriptionUpdate(BaseModel):
     is_active: bool | None = None
     subscription_ends_at: datetime | None = None          # maydon yuborilib null bo'lsa: muddatsiz
+    monthly_fee: int | None = Field(default=None, ge=0, le=100_000_000)   # so'm/oy, onlayn to'lov narxi
 
 
 # ─── Xodimlar ───────────────────────────────────────────────────────────────

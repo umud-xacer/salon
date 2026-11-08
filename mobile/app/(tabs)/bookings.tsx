@@ -138,7 +138,7 @@ export default function Bookings() {
                 <View style={styles.line}>
                   <Icon name="hourglass-outline" size={16} color={colors.warning} />
                   <Text style={[type.small, { flex: 1, color: colors.warning }]}>
-                    {t("Salon")}{" "}{dateTimeOf(a.confirm_by)}{" "}{t("gacha tasdiqlashi kerak. Tasdiqlanmasa, bron avtomatik bekor qilinadi.")}
+                    {t("Salon {a} gacha tasdiqlashi kerak. Tasdiqlanmasa, bron avtomatik bekor qilinadi.", { a: dateTimeOf(a.confirm_by) })}
                   </Text>
                 </View>
               )}
@@ -176,7 +176,7 @@ export default function Bookings() {
               {a.status === 'completed' && a.review_rating != null && (
                 <View style={styles.line}>
                   <Icon name="star" size={16} color={colors.star} />
-                  <Text style={type.body}>{t("Bahoyingiz:")}{" "}{a.review_rating} / 5</Text>
+                  <Text style={type.body}>{t("Bahoyingiz: {a} / 5", { a: a.review_rating })}</Text>
                 </View>
               )}
               {a.can_review && (

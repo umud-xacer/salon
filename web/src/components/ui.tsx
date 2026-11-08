@@ -115,7 +115,7 @@ export function ComingSoon({ title, plan }: { title: string; plan: string }) {
     <>
       <PageTitle title={title} />
       <Card>
-        <Empty>{t("Bu bo'lim keyingi bosqichda ochiladi.")}{" "}{plan}</Empty>
+        <Empty>{t("Bu bo'lim keyingi bosqichda ochiladi. {a}", { a: plan })}</Empty>
       </Card>
     </>
   );

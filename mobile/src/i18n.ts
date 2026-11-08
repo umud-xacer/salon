@@ -24,10 +24,10 @@ function initial(): Lang {
 let current: Lang = initial();
 export const getLang = () => current;
 
-export function t(uz: string, vars?: Record<string, string | number>): string {
+export function t(uz: string, vars?: Record<string, unknown>): string {
   let s = current === 'ru' ? RU[uz] ?? uz : uz;
-  if (vars) for (const [k, v] of Object.entries(vars)) s = s.split(`{${k}}`).join(String(v));
-  return s;
+  if (vars) for (const [k, v] of Object.entries(vars)) s = s.split(`{${k}}`).join(v == null || v === false ? '' : String(v));
+  return vars ? s.replace(/ {2,}/g, ' ').replace(/ +$/, '') : s;
 }
 
 export function localized<T extends object>(src: T): T {

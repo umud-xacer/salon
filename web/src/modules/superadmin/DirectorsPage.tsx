@@ -22,8 +22,8 @@ function LeftBadge({ b }: { b: BusinessAdmin }) {
   const d = daysLeft(b);
   if (d === null) return <Badge tone="gray">{t("Muddatsiz")}</Badge>;
   if (d <= 0) return <Badge tone="red">{t("Muddati o'tgan")}</Badge>;
-  if (d <= SOON_DAYS) return <Badge tone="amber">{d}{" "}{t("kun qoldi")}</Badge>;
-  return <Badge tone="green">{d}{" "}{t("kun qoldi")}</Badge>;
+  if (d <= SOON_DAYS) return <Badge tone="amber">{t("{a} kun qoldi", { a: d })}</Badge>;
+  return <Badge tone="green">{t("{a} kun qoldi", { a: d })}</Badge>;
 }
 
 type Filter = "all" | "soon" | "blocked";
@@ -65,8 +65,8 @@ export function DirectorsPage() {
       <PageTitle title={t("Direktorlar")} hint={t("{a} ta muassasa direktori", { a: all.length })} />
 
       <Card className={soon.length ? "border-amber-300" : ""}>
-        <h2 className="mb-1 text-sm font-medium">{t("Obunasi tugashiga oz qolgan mijozlar (")}{soon.length})</h2>
-        <p className="mb-2 text-xs text-muted">{SOON_DAYS}{" "}{t("kun va undan kam qolgan yoki muddati o'tgan. Bossangiz — uzaytirish oynasi.")}</p>
+        <h2 className="mb-1 text-sm font-medium">{t("Obunasi tugashiga oz qolgan mijozlar ({a})", { a: soon.length })}</h2>
+        <p className="mb-2 text-xs text-muted">{t("{a} kun va undan kam qolgan yoki muddati o'tgan. Bossangiz — uzaytirish oynasi.", { a: SOON_DAYS })}</p>
         {soon.length === 0 ? <Empty>{t("Yaqin kunlarda tugaydigan obuna yo'q")}</Empty> : (
           <ul className="divide-y divide-line">
             {soon.map((b) => <Row key={b.id} b={b} shared={perOwner.get(b.owner_user_id ?? -b.id) ?? 1} onOpen={() => setOpenedId(b.id)} />)}
@@ -106,7 +106,7 @@ function Row({ b, shared, onOpen }: { b: BusinessAdmin; shared: number; onOpen: 
       <button type="button" onClick={onOpen} className="min-w-0 flex-1 text-left hover:underline">
         <span className="block font-medium break-words">{b.owner_name || t("Ismsiz")}</span>
         <span className="block text-xs text-muted break-words">
-          {b.name}{b.type_name ? ` · ${b.type_name}` : ""}{" "}{t("· oxirgi kirish:")}{" "}{b.owner_last_login_at ? formatDate(b.owner_last_login_at) : t("yo'q")}
+          {t("{a}{b} · oxirgi kirish: {c}", { a: b.name, b: b.type_name ? ` · ${b.type_name}` : "", c: b.owner_last_login_at ? formatDate(b.owner_last_login_at) : t("yo'q") })}
         </span>
       </button>
       {b.owner_phone && (
@@ -117,10 +117,10 @@ function Row({ b, shared, onOpen }: { b: BusinessAdmin; shared: number; onOpen: 
       <span className="flex flex-wrap items-center gap-1.5">
         <StatusBadge b={b} />
         {b.owner_status === "blocked" && <Badge tone="red">{t("Direktor bloklangan")}</Badge>}
-        {shared > 1 && <span title={t("Bitta telefon raqami bir necha muassasada direktor: ismi hammasida bir xil")}><Badge tone="amber">{t("Bitta raqam:")}{" "}{shared}{" "}{t("ta muassasa")}</Badge></span>}
+        {shared > 1 && <span title={t("Bitta telefon raqami bir necha muassasada direktor: ismi hammasida bir xil")}><Badge tone="amber">{t("Bitta raqam: {a} ta muassasa", { a: shared })}</Badge></span>}
         <PasswordBadge status={b.owner_password_status} />
         <LeftBadge b={b} />
-        {b.subscription_ends_at && <span className="text-xs text-muted">{formatDate(b.subscription_ends_at)}{" "}{t("gacha")}</span>}
+        {b.subscription_ends_at && <span className="text-xs text-muted">{t("{a} gacha", { a: formatDate(b.subscription_ends_at) })}</span>}
       </span>
     </li>
   );

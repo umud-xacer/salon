@@ -278,6 +278,7 @@ export interface BusinessAdmin {
   status: "pending" | "active" | "blocked";
   is_active: boolean;
   subscription_ends_at: string | null;
+  monthly_fee: number;
   operational: boolean;
   owner_name: string | null;
   owner_phone: string | null;
@@ -434,7 +435,41 @@ export interface ExpenseList {
 }
 
 // ─── Super Admin: obuna to'lovlari va platforma statistikasi (W7) ──────────
-export type SubscriptionMethod = "cash" | "card" | "transfer" | "free";
+export type ManualSubscriptionMethod = "cash" | "card" | "transfer" | "free";
+export type SubscriptionMethod = ManualSubscriptionMethod | "payme" | "click";
+
+// Onlayn obuna to'lovi (app/api/v1/billing.py)
+export type BillingProvider = "payme" | "click";
+
+export interface BillingPackage {
+  months: number;
+  discount_pct: number;
+  amount: number;
+  full_amount: number;
+}
+
+export interface BillingOrder {
+  id: number;
+  months: number;
+  amount: number;
+  provider: BillingProvider;
+  status: "created" | "paid" | "cancelled";
+  created_at: string;
+  paid_at: string | null;
+}
+
+export interface BillingInfo {
+  business_id: number;
+  business_name: string;
+  status: string;
+  monthly_fee: number;
+  subscription_ends_at: string | null;
+  operational: boolean;
+  days_left: number | null;
+  providers: Record<BillingProvider, boolean>;
+  packages: BillingPackage[];
+  orders: BillingOrder[];
+}
 
 export interface SubscriptionPayment {
   id: number;

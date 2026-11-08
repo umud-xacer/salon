@@ -131,10 +131,10 @@ function ReportView({ r }: { r: Report }) {
         <Stat label={t("Sof tushum")} value={formatMoney(m.net_income)}
           sub={<Delta now={m.net_income} prev={m.prev_net_income} />} />
         <Stat label={t("Xarajatlar")} value={formatMoney(m.expenses)}
-          sub={m.refunds > 0 ? <span className="text-xs text-muted">{t("Qaytarilgan:")}{" "}{formatMoney(m.refunds)}</span> : undefined} />
+          sub={m.refunds > 0 ? <span className="text-xs text-muted">{t("Qaytarilgan: {a}", { a: formatMoney(m.refunds) })}</span> : undefined} />
         <Stat label={t("Foyda")} value={formatMoney(m.profit)} sub={<Delta now={m.profit} prev={m.prev_profit} />} />
         <Stat label={t("O'rtacha chek")} value={formatMoney(bk.avg_check)}
-          sub={<span className="text-xs text-muted">{bk.completed}{" "}{t("ta bajarilgan bron")}</span>} />
+          sub={<span className="text-xs text-muted">{t("{a} ta bajarilgan bron", { a: bk.completed })}</span>} />
       </div>
 
       <Card>
@@ -173,7 +173,7 @@ function ReportView({ r }: { r: Report }) {
         </Card>
         <Card>
           <h2 className="mb-3 text-sm font-medium">{v.clients}</h2>
-          {r.clients.total === 0 ? <Empty>{t("Bu davrda")}{" "}{v.clientOne.toLowerCase()}{" "}{t("yo'q")}</Empty> : (
+          {r.clients.total === 0 ? <Empty>{t("Bu davrda {a} yo'q", { a: v.clientOne.toLowerCase() })}</Empty> : (
             <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
               <Row label={t("Jami (bekor qilinmagan bron bilan)")} value={r.clients.total} />
               <Row label={t("Yangi")} value={r.clients.new} />
@@ -338,8 +338,8 @@ function DailyChart({ days }: { days: ReportDay[] }) {
               style={{ left: `${Math.min(((left + hover * step + step / 2) / W) * 100, 70)}%` }}>
               <p className="font-medium">{shortDate(h.date)}</p>
               <p>{t("Sof tushum:")}{" "}<span className="tabular-nums">{formatMoney(values[hover])}</span></p>
-              {h.refunds > 0 && <p className="text-muted">{t("Qaytarilgan:")}{" "}{formatMoney(h.refunds)}</p>}
-              <p className="text-muted">{t("Xarajat:")}{" "}{formatMoney(h.expenses)}{" "}{t("· Bronlar:")}{" "}{h.bookings}</p>
+              {h.refunds > 0 && <p className="text-muted">{t("Qaytarilgan: {a}", { a: formatMoney(h.refunds) })}</p>}
+              <p className="text-muted">{t("Xarajat: {a} · Bronlar: {b}", { a: formatMoney(h.expenses), b: h.bookings })}</p>
             </div>
           )}
         </div>

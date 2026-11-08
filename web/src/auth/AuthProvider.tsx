@@ -9,6 +9,8 @@ interface AuthValue {
   loading: boolean;
   signIn: (tokens: LoginResponse) => Promise<void>;
   signOut: () => Promise<void>;
+  /** /auth/me ni qayta o'qish (masalan, obuna to'langandan keyin panel ochilishi uchun) */
+  refresh: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthValue | null>(null);
@@ -61,6 +63,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signOut: async () => {
         await apiLogout();
         resetSession(queryClient);
+      },
+      refresh: async () => {
+        await queryClient.refetchQueries({ queryKey: ME_KEY });
       },
     }),
     [query.data, query.isPending, queryClient],

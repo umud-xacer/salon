@@ -83,7 +83,7 @@ function SummaryCard({ s, criteria = false }: { s: ReviewSummary; criteria?: boo
       <div className="min-w-40">
         <p className="text-3xl font-semibold tabular-nums text-navy">{s.rating_avg ? s.rating_avg.toFixed(1) : "—"}</p>
         <Stars value={s.rating_avg} size={18} />
-        <p className="mt-1 text-xs text-muted">{s.count}{" "}{t("ta baho")}</p>
+        <p className="mt-1 text-xs text-muted">{t("{a} ta baho", { a: s.count })}</p>
         {criteria && s.count > 0 && (
           <dl className="mt-3 grid grid-cols-[auto_auto] gap-x-3 gap-y-1 text-xs">
             <dt className="text-muted">{t("Tozalik")}</dt><dd className="tabular-nums">{ratingText(s.cleanliness_avg)}</dd>
@@ -138,7 +138,7 @@ function ReviewItem({ r, businessId, staffWord }: { r: BusinessReview; businessI
               {r.client_phone && <> · <a className="hover:underline" href={`tel:${r.client_phone}`}>{r.client_phone}</a></>}
             </p>
           </div>
-          <p className="text-xs text-muted">{t("Tozalik")}{" "}{r.cleanliness ?? "—"}{" "}{t("· Xizmat")}{" "}{r.service_quality ?? "—"}</p>
+          <p className="text-xs text-muted">{t("Tozalik {a} · Xizmat {b}", { a: r.cleanliness ?? "—", b: r.service_quality ?? "—" })}</p>
         </div>
         {r.comment && <p className="break-words">{r.comment}</p>}
         {r.staff_rating && (
@@ -162,7 +162,7 @@ function ReviewItem({ r, businessId, staffWord }: { r: BusinessReview; businessI
           </form>
         ) : r.reply ? (
           <div className="border-l-2 border-primary pl-3">
-            <p className="text-xs text-muted">{t("Javobingiz")}{r.reply_at ? ` · ${formatDate(r.reply_at)}` : ""}{r.replied_by_name ? ` · ${r.replied_by_name}` : ""}</p>
+            <p className="text-xs text-muted">{t("Javobingiz{a}{b}", { a: r.reply_at ? ` · ${formatDate(r.reply_at)}` : "", b: r.replied_by_name ? ` · ${r.replied_by_name}` : "" })}</p>
             <p className="break-words">{r.reply}</p>
             <button type="button" className="mt-1 text-xs text-primary hover:underline" onClick={() => setEditing(true)}>{t("Tahrirlash")}</button>
           </div>

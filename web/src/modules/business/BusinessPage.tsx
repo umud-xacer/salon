@@ -135,7 +135,7 @@ function HoursCard({ businessId, hours, defaults }: {
   return (
     <Card>
       <h2 className="text-sm font-medium">{t("Ish vaqti")}</h2>
-      <p className="mb-3 text-xs text-muted">{t("Ish jadvali kiritilmagan")}{" "}{v.staffMany}{" "}{t("shu vaqt bo'yicha bron qabul qiladi")}</p>
+      <p className="mb-3 text-xs text-muted">{t("Ish jadvali kiritilmagan {a} shu vaqt bo'yicha bron qabul qiladi", { a: v.staffMany })}</p>
       <form onSubmit={submit} className="space-y-2">
         {days.map((d, i) => (
           <div key={WEEKDAYS[i + 1]} className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">

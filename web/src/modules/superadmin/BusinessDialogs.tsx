@@ -4,7 +4,7 @@ import { useState, type FormEvent } from "react";
 
 import { api, json } from "../../api/client";
 import type { BusinessAdmin, BusinessType, ModuleInfo } from "../../api/types";
-import { dayOf, formatDate, normalizePhone, todayIso } from "../../components/format";
+import { dayOf, formatDate, formatMoney, normalizePhone, todayIso } from "../../components/format";
 import { Modal } from "../../components/Modal";
 import { Badge, Button, ErrorNote, inputClass, Tabs } from "../../components/ui";
 import { CredentialsBox } from "../../components/CredentialsBox";
@@ -156,7 +156,7 @@ export function CreateBusinessDialog({ modules, onClose }: { modules: ModuleInfo
         </fieldset>
         {type && place.lat === null && (
           <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
-            {t("Xaritada")}{" "}{w.noun.toLowerCase()}{" "}{t("joyini belgilang — lokatsiyasiz ochib bo'lmaydi (mijoz ilovasida ko'rinmaydi).")}
+            {t("Xaritada {a} joyini belgilang — lokatsiyasiz ochib bo'lmaydi (mijoz ilovasida ko'rinmaydi).", { a: w.noun.toLowerCase() })}
           </p>
         )}
         {create.error && <ErrorNote error={create.error} />}
@@ -193,7 +193,7 @@ export function BusinessDialog({ business: b, modules, onClose }: {
   return (
     <Modal title={b.name} onClose={onClose}>
       <p className="mb-2 flex flex-wrap items-center gap-2 text-sm text-muted">
-        <span>{t("Direktor:")}{" "}{b.owner_name ?? t("yo'q")}</span>
+        <span>{t("Direktor: {a}", { a: b.owner_name ?? t("yo'q") })}</span>
         <StatusBadge b={b} />
       </p>
       <CredentialsBox title={t("Direktorning kirish ma'lumotlari (www.ariqalqon.uz)")} businessId={b.id}
@@ -266,6 +266,25 @@ function InfoTab({ business: b }: { business: BusinessAdmin }) {
   );
 }
 
+/** Onlayn to'lov narxi: direktor Payme/Click orqali shu narx x oylar (paket chegirmasi bilan) to'laydi */
+function MonthlyFeeForm({ business: b, onSave, saving }: { business: BusinessAdmin; onSave: (fee: number) => void; saving: boolean }) {
+  const [fee, setFee] = useState(String(b.monthly_fee));
+  const value = Number(fee.replace(/\s/g, ""));
+  const valid = fee.trim() !== "" && Number.isInteger(value) && value >= 0 && value <= 100_000_000;
+  return (
+    <div className="flex flex-wrap items-end gap-2 rounded-lg border border-line p-3">
+      <label className="block w-48">{t("Oylik narx (onlayn to'lov)")}
+        <input className={inputClass} inputMode="numeric" value={fee}
+          onChange={(e) => setFee(e.target.value.replace(/[^\d\s]/g, ""))} />
+      </label>
+      <Button variant="secondary" disabled={!valid || value === b.monthly_fee || saving} onClick={() => onSave(value)}>
+        {t("Saqlash")}
+      </Button>
+      <span className="text-xs text-muted">{t("Hozir: {a} / oy", { a: formatMoney(b.monthly_fee) })}</span>
+    </div>
+  );
+}
+
 function SubscriptionTab({ business: b }: { business: BusinessAdmin }) {
   const refresh = useRefresh();
   const [date, setDate] = useState(b.subscription_ends_at ? dayOf(b.subscription_ends_at) : "");
@@ -293,9 +312,9 @@ function SubscriptionTab({ business: b }: { business: BusinessAdmin }) {
   return (
     <div className="space-y-4 text-sm">
       <p>
-        {t("Hozir:")}{" "}{b.subscription_ends_at ? t("{a} gacha", { a: formatDate(b.subscription_ends_at) }) : "muddatsiz"}
-        {!b.is_active && t(" (to'xtatilgan)")}
+        {t("Hozir: {a} {b}", { a: b.subscription_ends_at ? t("{a} gacha", { a: formatDate(b.subscription_ends_at) }) : "muddatsiz", b: !b.is_active && t(" (to'xtatilgan)") })}
       </p>
+      <MonthlyFeeForm business={b} onSave={(fee) => update.mutate({ monthly_fee: fee })} saving={update.isPending} />
       <RenewForm business={b} onDone={renewed} />
       <p className="text-xs text-muted">{t("Quyidagilar pulsiz tuzatish uchun (to'lov tarixiga yozilmaydi):")}</p>
       <label className="block max-w-xs">{t("Aniq sana (kun oxirigacha)")}
@@ -360,7 +379,7 @@ function DeleteBox({ business: b, onCancel }: { business: BusinessAdmin; onCance
         {t("Haqiqatan ham ushbu muassasani o'chirmoqchimisiz? Bu amalni ortga qaytarib bo'lmaydi.")}
       </p>
       <p className="text-muted">
-        {t("Butunlay o'chadi: bronlar, to'lovlar, kassa va xarajatlar, ombor, oyliklar, xizmatlar, rasmlar, xodimlarning shu salondagi a'zoligi (")}{b.staff_count}{" "}{t("ta). Direktor va xodimlarning shaxsiy hisoblari qoladi. Hisobot kerak bo'lsa, avval direktor panelidan Excel'ga yuklab oling.")}
+        {t("Butunlay o'chadi: bronlar, to'lovlar, kassa va xarajatlar, ombor, oyliklar, xizmatlar, rasmlar, xodimlarning shu salondagi a'zoligi ({a} ta). Direktor va xodimlarning shaxsiy hisoblari qoladi. Hisobot kerak bo'lsa, avval direktor panelidan Excel'ga yuklab oling.", { a: b.staff_count })}
       </p>
       <label className="block">{t("Tasdiqlash uchun nomini yozing:")}{" "}<b className="select-all">{b.name}</b>
         <input className={inputClass} value={typed} autoComplete="off" data-autofocus

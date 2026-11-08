@@ -119,8 +119,7 @@ export default function Settings() {
       <Card>
         <Text style={type.h3}>{t("Ilova haqida")}</Text>
         <Text style={[type.small, { marginTop: 4, color: colors.muted }]}>
-          {t("Versiya")}{" "}{Constants.expoConfig?.version ?? '1.0.0'}
-          {Updates.updateId ? ` · ${Updates.updateId.slice(0, 8)}` : ''}
+          {t("Versiya {a} {b}", { a: Constants.expoConfig?.version ?? '1.0.0', b: Updates.updateId ? ` · ${Updates.updateId.slice(0, 8)}` : '' })}
         </Text>
       </Card>
     </ScrollView>

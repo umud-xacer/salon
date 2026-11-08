@@ -346,7 +346,7 @@ function ServicesTab({ businessId, memberId }: { businessId: number; memberId: n
 
   return (
     <>
-      <p className="mb-2 text-sm text-muted">{v.staffOne}{" "}{t("bajaradigan xizmatlar. Faqat shular uchun unga bron qilinadi.")}</p>
+      <p className="mb-2 text-sm text-muted">{t("{a} bajaradigan xizmatlar. Faqat shular uchun unga bron qilinadi.", { a: v.staffOne })}</p>
       {save.error && <div className="mb-2"><ErrorNote error={save.error} /></div>}
       <ul className="divide-y divide-line">
         {active.map((s) => {
@@ -363,7 +363,7 @@ function ServicesTab({ businessId, memberId }: { businessId: number; memberId: n
                   className="rounded-lg border border-line bg-white px-2 py-1 text-xs"
                   value={mine.custom_duration ?? ""}
                   onChange={(e) => setDuration(s.id, e.target.value ? Number(e.target.value) : null)}>
-                  <option value="">{formatDuration(s.duration_min)}{" "}{t("(umumiy)")}</option>
+                  <option value="">{t("{a} (umumiy)", { a: formatDuration(s.duration_min) })}</option>
                   {DURATION_CHOICES.filter((m) => m !== s.duration_min).map((m) => (
                     <option key={m} value={m}>{formatDuration(m)}</option>
                   ))}
@@ -377,8 +377,7 @@ function ServicesTab({ businessId, memberId }: { businessId: number; memberId: n
         })}
       </ul>
       <p className="mt-2 text-xs text-muted">
-        {t("Vaqt shu")}{" "}{v.staffOne.toLowerCase()}{t("ga xos bo'lishi mumkin (masalan, tezroq ishlaydi). Bron vaqtlari shunga qarab hisoblanadi.")}
-        {v.staffOne}{" "}{t("ham o'z panelidagi \"Xizmatlarim\" bo'limida o'zgartira oladi.")}
+        {t("Vaqt shu {a}ga xos bo'lishi mumkin (masalan, tezroq ishlaydi). Bron vaqtlari shunga qarab hisoblanadi. {b} ham o'z panelidagi \"Xizmatlarim\" bo'limida o'zgartira oladi.", { a: v.staffOne.toLowerCase(), b: v.staffOne })}
       </p>
     </>
   );
@@ -398,7 +397,7 @@ function PasswordTab({ businessId, member: m }: { businessId: number; member: Me
   if (m.password_block === "shared_account") {
     return (
       <p className="text-sm text-muted">
-        {t("Bu odam boshqa muassasa yoki")}{" "}{v.clientOne.toLowerCase()}{" "}{t("hisobiga ham bog'langan. Xavfsizlik uchun parolni o'zi o'zgartiradi yoki Super Admin tiklaydi.")}
+        {t("Bu odam boshqa muassasa yoki {a} hisobiga ham bog'langan. Xavfsizlik uchun parolni o'zi o'zgartiradi yoki Super Admin tiklaydi.", { a: v.clientOne.toLowerCase() })}
       </p>
     );
   }

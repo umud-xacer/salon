@@ -7,6 +7,7 @@ import {
   CalendarClock,
   ClipboardList,
   Clock3,
+  CreditCard,
   Contact,
   Hospital,
   LayoutDashboard,
@@ -28,6 +29,7 @@ import type { Membership, Panel } from "../api/types";
 import { panelVocab, type BusinessKind, type Vocab } from "./vocab";
 export { panelVocab } from "./vocab";
 import { t } from "../i18n";
+import { BillingPage } from "./billing/BillingPage";
 import { BusinessPage } from "./business/BusinessPage";
 import { CalendarPage } from "./calendar/CalendarPage";
 import { ClientsPage } from "./clients/ClientsPage";
@@ -49,6 +51,7 @@ export interface Section {
   panel: Panel;
   module?: string;                // yoqilgan bo'lishi shart bo'lgan modul
   anyPermission?: string[];       // shulardan biri bo'lsa kifoya
+  ownerOnly?: boolean;            // faqat direktor (masalan, obuna to'lovi)
   term?: Exclude<keyof Vocab, "titles">;   // nomi muassasa turiga qarab (Ustalar/Shifokorlar...)
   uz: string;                     // manzil: /b/1/kassa
   uzByKind?: Partial<Record<BusinessKind, string>>;   // turga qarab: dorixonada /farmatsevtlar
@@ -97,6 +100,7 @@ export const SECTIONS: Section[] = [
   },
   { path: "reviews", uz: "baholar", label: "Baholar", icon: Star, panel: "admin", anyPermission: ["business.manage"], page: ReviewsPage },
   { path: "business", uz: "salon", uzByKind: { pharmacy: "dorixona", clinic: "klinika" }, label: "Salon", term: "businessPage", icon: Store, iconByKind: { clinic: Hospital, pharmacy: Pill }, panel: "admin", anyPermission: ["business.manage"], page: BusinessPage },
+  { path: "billing", uz: "obuna", label: "Obuna", icon: CreditCard, panel: "admin", ownerOnly: true, page: BillingPage },
   { path: "bookings", uz: "bronlarim", label: "Mening bronlarim", icon: CalendarDays, panel: "staff", page: MyBookingsPage },
   { path: "schedule", uz: "jadvalim", label: "Ish jadvalim", icon: Clock3, panel: "staff", page: MySchedulePage },
   { path: "my-services", uz: "xizmatlarim", label: "Xizmatlarim", icon: Scissors, iconByKind: { clinic: Stethoscope }, panel: "staff", page: MyServicesPage },
@@ -115,6 +119,7 @@ export function sectionsFor(m: Membership): Section[] {
     (s) =>
       s.panel === m.panel &&
       (!s.module || m.modules.includes(s.module)) &&
+      (!s.ownerOnly || m.role === "owner") &&
       (!s.anyPermission || s.anyPermission.some((p) => m.permissions.includes(p))),
   ).map((s) => ({ ...s, label: s.term ? v[s.term] : t(s.label), icon: s.iconByKind?.[m.business_kind as BusinessKind] ?? s.icon }));
 }

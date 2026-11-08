@@ -52,8 +52,8 @@ export function BusinessTypesPage() {
               </span>
               {!tx.is_active && <Badge tone="gray">{t("O'chirilgan")}</Badge>}
               <span className="text-muted tabular-nums">{tx.opens_at.slice(0, 5)}–{tx.closes_at.slice(0, 5)}</span>
-              <span className="text-muted">{tx.service_presets.length}{" "}{t("ta xizmat")}</span>
-              <span className="tabular-nums sm:w-24 sm:text-right">{tx.business_count}{" "}{t("ta salon")}</span>
+              <span className="text-muted">{t("{a} ta xizmat", { a: tx.service_presets.length })}</span>
+              <span className="tabular-nums sm:w-24 sm:text-right">{t("{a} ta salon", { a: tx.business_count })}</span>
             </button>
           </li>
         ))}
@@ -155,7 +155,7 @@ function TypeDialog({ type, onClose }: { type: BusinessType | null; onClose: () 
         {badHours && <p className="text-sm text-danger">{t("Yopilish vaqti ochilishdan keyin bo'lishi kerak")}</p>}
         {!active && type && type.business_count > 0 && (
           <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
-            {t("O'chirilsa, shu turdagi")}{" "}{type.business_count}{" "}{t("ta salon mijoz ilovasida ko'rinmaydi.")}
+            {t("O'chirilsa, shu turdagi {a} ta salon mijoz ilovasida ko'rinmaydi.", { a: type.business_count })}
           </p>
         )}
 
@@ -191,7 +191,7 @@ function TypeDialog({ type, onClose }: { type: BusinessType | null; onClose: () 
           </ul>
           <datalist id="preset-sections">{sections.map((s) => <option key={s} value={s} />)}</datalist>
           {presets.length > 0 && (
-            <p className="mt-1 text-xs text-muted">{t("Daqiqa · so'm. Masalan:")}{" "}{presets[0].duration_min}{" "}{t("daqiqa,")}{" "}{formatMoney(presets[0].price)}</p>
+            <p className="mt-1 text-xs text-muted">{t("Daqiqa · so'm. Masalan: {a} daqiqa, {b}", { a: presets[0].duration_min, b: formatMoney(presets[0].price) })}</p>
           )}
           <Button type="button" variant="secondary" className="mt-2 flex items-center gap-1" disabled={presets.length >= 50}
             onClick={() => setPresets([...presets, emptyPreset()])}>

@@ -3,21 +3,23 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
 import { api, json } from "../../api/client";
-import type { BusinessAdmin, SubscriptionMethod, SubscriptionPayment } from "../../api/types";
+import type { BusinessAdmin, ManualSubscriptionMethod, SubscriptionMethod, SubscriptionPayment } from "../../api/types";
 import { formatDate, formatMoney } from "../../components/format";
 import { Button, Empty, ErrorNote, inputClass } from "../../components/ui";
 
 import { t } from "../../i18n";
-export const PAYMENT_METHODS: Record<SubscriptionMethod, string> = {
+const MANUAL_METHODS: Record<ManualSubscriptionMethod, string> = {
   cash: t("Naqd"), card: t("Karta"), transfer: t("Bank o'tkazmasi"), free: t("Bepul"),
 };
+// Payme va Click — direktor panelidan onlayn to'lov (qo'lda tanlanmaydi)
+export const PAYMENT_METHODS: Record<SubscriptionMethod, string> = { ...MANUAL_METHODS, payme: "Payme", click: "Click" };
 
 const DAY_PRESETS = [30, 90, 365];
 
 export function RenewForm({ business: b, onDone }: { business: BusinessAdmin; onDone: (r: BusinessAdmin) => void }) {
   const [days, setDays] = useState("30");
   const [amount, setAmount] = useState("");
-  const [method, setMethod] = useState<SubscriptionMethod>("cash");
+  const [method, setMethod] = useState<ManualSubscriptionMethod>("cash");
   const [note, setNote] = useState("");
   const free = method === "free";
   const sum = Number(amount.replace(/\s/g, "")) || 0;
@@ -41,7 +43,7 @@ export function RenewForm({ business: b, onDone }: { business: BusinessAdmin; on
       <div className="flex flex-wrap items-end gap-2">
         {DAY_PRESETS.map((d) => (
           <Button key={d} type="button" variant={days === String(d) ? "primary" : "secondary"} onClick={() => setDays(String(d))}>
-            {d}{" "}{t("kun")}
+            {t("{a} kun", { a: d })}
           </Button>
         ))}
         <label className="block w-24">{t("Kun")}
@@ -50,8 +52,8 @@ export function RenewForm({ business: b, onDone }: { business: BusinessAdmin; on
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="block">{t("To'lov usuli")}
-          <select className={inputClass} value={method} onChange={(e) => setMethod(e.target.value as SubscriptionMethod)}>
-            {Object.entries(PAYMENT_METHODS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+          <select className={inputClass} value={method} onChange={(e) => setMethod(e.target.value as ManualSubscriptionMethod)}>
+            {Object.entries(MANUAL_METHODS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </select>
         </label>
         <label className="block">{t("Summa, so'm")}
@@ -65,7 +67,7 @@ export function RenewForm({ business: b, onDone }: { business: BusinessAdmin; on
       {renew.error && <ErrorNote error={renew.error} />}
       <div className="flex flex-wrap items-center gap-3">
         <Button type="submit" disabled={!validDays || renew.isPending}>
-          +{validDays ? days : "?"}{" "}{t("kun")}{!free && sum > 0 ? `, ${formatMoney(sum)}` : ""}
+          {t("+ {a} kun{b}", { a: validDays ? days : "?", b: !free && sum > 0 ? `, ${formatMoney(sum)}` : "" })}
         </Button>
         {renew.isSuccess && <span className="text-success">{t("Uzaytirildi")}</span>}
       </div>
@@ -85,18 +87,18 @@ export function PaymentHistory({ businessId }: { businessId: number }) {
     <div>
       <p className="mb-1 flex flex-wrap justify-between gap-2 font-medium">
         <span>{t("To'lovlar tarixi")}</span>
-        {rows.length > 0 && <span className="font-normal text-muted">{t("Jami:")}{" "}{formatMoney(total)}</span>}
+        {rows.length > 0 && <span className="font-normal text-muted">{t("Jami: {a}", { a: formatMoney(total) })}</span>}
       </p>
       {q.isLoading ? null : rows.length === 0 ? <Empty>{t("Hali uzaytirilmagan")}</Empty> : (
         <ul className="divide-y divide-line">
           {rows.map((p) => (
             <li key={p.id} className="py-2">
               <div className="flex flex-wrap justify-between gap-x-3">
-                <span>{formatDate(p.created_at)} · +{p.days}{" "}{t("kun")}</span>
+                <span>{t("{a} · +{b} kun", { a: formatDate(p.created_at), b: p.days })}</span>
                 <span className="tabular-nums">{p.method === "free" ? t("Bepul") : `${formatMoney(p.amount)} · ${PAYMENT_METHODS[p.method]}`}</span>
               </div>
               <p className="text-xs text-muted">
-                {formatDate(p.ends_at)}{" "}{t("gacha")}{p.created_by_name ? ` · ${p.created_by_name}` : ""}{p.note ? ` · ${p.note}` : ""}
+                {t("{a} gacha{b}{c}", { a: formatDate(p.ends_at), b: p.created_by_name ? ` · ${p.created_by_name}` : "", c: p.note ? ` · ${p.note}` : "" })}
               </p>
             </li>
           ))}

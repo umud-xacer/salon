@@ -25,10 +25,11 @@ document.documentElement.lang = current;
 export const getLang = () => current;
 
 /** Matnni joriy tilga o'giradi. {n} kabi o'rinlar vars'dan to'ldiriladi: t("{n} ta xizmat", { n: 3 }) */
-export function t(uz: string, vars?: Record<string, string | number>): string {
+export function t(uz: string, vars?: Record<string, unknown>): string {
   let s = current === "ru" ? RU[uz] ?? uz : uz;
-  if (vars) for (const [k, v] of Object.entries(vars)) s = s.replaceAll(`{${k}}`, String(v));
-  return s;
+  // null / undefined / false — bo'sh (masalan {shart && matn})
+  if (vars) for (const [k, v] of Object.entries(vars)) s = s.replaceAll(`{${k}}`, v == null || v === false ? "" : String(v));
+  return vars ? s.replace(/ {2,}/g, " ").replace(/ +$/, "") : s;
 }
 
 /** Server ma'lumoti: ruscha tilda ruscha nom (bo'lsa), aks holda o'zbekcha */

@@ -7,7 +7,7 @@ from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from fastapi.exceptions import RequestValidationError
-from pydantic import ValidationError
+from pydantic import BaseModel, Field, ValidationError
 from sqlalchemy import select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -27,7 +27,7 @@ router = APIRouter(prefix="/superadmin", tags=["superadmin"], dependencies=[Depe
 _BUSINESS_SELECT = """
     SELECT b.id, b.name, b.slug, b.category_id, b.region, b.city, b.address, b.status::text AS status,
            ST_Y(b.location::geometry) AS lat, ST_X(b.location::geometry) AS lng,
-           b.is_active, b.subscription_ends_at, b.rating_avg::float AS rating_avg, b.rating_count,
+           b.is_active, b.subscription_ends_at, b.monthly_fee, b.rating_avg::float AS rating_avg, b.rating_count,
            app.business_operational(b.id) AS operational,
            u.full_name AS owner_name, u.phone AS owner_phone, o.id AS owner_member_id,
            u.id AS owner_user_id, u.status::text AS owner_status, u.last_login_at AS owner_last_login_at,
@@ -253,6 +253,31 @@ def subscription_payments(business_id: int = Path(ge=1), db: Session = Depends(g
     return [SubscriptionPaymentOut(**r) for r in rows]
 
 
+# ─── Onlayn to'lov paketlari ────────────────────────────────────────────────
+class BillingPackageAdmin(BaseModel):
+    months: int
+    discount_pct: int = Field(ge=0, le=90)
+    is_active: bool
+
+
+@router.get("/billing/packages", response_model=list[BillingPackageAdmin])
+def billing_packages(db: Session = Depends(get_db)):
+    rows = db.execute(text("SELECT months, discount_pct, is_active FROM billing_packages ORDER BY months")).mappings()
+    return [BillingPackageAdmin(**r) for r in rows]
+
+
+@router.put("/billing/packages/{months}", response_model=BillingPackageAdmin)
+def update_billing_package(body: BillingPackageAdmin, months: int = Path(ge=1, le=24), db: Session = Depends(get_db)):
+    row = db.execute(text("""UPDATE billing_packages SET discount_pct = :d, is_active = :a WHERE months = :m
+                             RETURNING months, discount_pct, is_active"""),
+                     {"d": body.discount_pct, "a": body.is_active, "m": months}).mappings().first()
+    if row is None:
+        raise HTTPException(404, detail={"code": "not_found", "message": "Paket topilmadi"})
+    audit.log(db, None, "update", "billing_package", months, {"discount_pct": body.discount_pct, "is_active": body.is_active})
+    db.commit()
+    return BillingPackageAdmin(**row)
+
+
 # ─── Platforma statistikasi ─────────────────────────────────────────────────
 _TZ = "Asia/Tashkent"
 
@@ -358,8 +383,9 @@ def update_subscription(body: SubscriptionUpdate, business_id: int = Path(ge=1),
     """Qo'lda to'xtatish/yoqish yoki muddatni aniq belgilash. Ma'lumotlarga tegilmaydi."""
     biz = _business_or_404(db, business_id)
     changes = body.model_dump(exclude_unset=True)
-    if "is_active" in changes and changes["is_active"] is None:
-        raise HTTPException(422, detail={"code": "invalid_value", "message": "is_active bo'sh bo'lishi mumkin emas"})
+    for required in ("is_active", "monthly_fee"):
+        if required in changes and changes[required] is None:
+            raise HTTPException(422, detail={"code": "invalid_value", "message": f"{required} bo'sh bo'lishi mumkin emas"})
     for field, value in changes.items():
         setattr(biz, field, value)
     audit.log(db, business_id, "update", "subscription", business_id, changes)

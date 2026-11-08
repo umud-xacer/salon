@@ -41,7 +41,7 @@ export function MySchedulePage({ membership }: { membership: Membership }) {
                 {hhmm(d.start_time)}–{hhmm(d.end_time)}
                 {d.breaks.map((br) => (
                   <span key={br.start} className="ml-3 text-muted">
-                    {t("tanaffus")}{" "}{hhmm(br.start)}–{hhmm(br.end)}
+                    {t("tanaffus {a}–{b}", { a: hhmm(br.start), b: hhmm(br.end) })}
                   </span>
                 ))}
               </span>
@@ -83,7 +83,7 @@ export function MyServicesPage({ membership }: { membership: Membership }) {
                 className="rounded-lg border border-line bg-white px-2 py-1.5"
                 value={s.custom_duration ?? ""}
                 onChange={(e) => save.mutate({ id: s.service_id, minutes: e.target.value ? Number(e.target.value) : null })}>
-                <option value="">{formatDuration(s.duration_min)}{" "}{t("(umumiy)")}</option>
+                <option value="">{t("{a} (umumiy)", { a: formatDuration(s.duration_min) })}</option>
                 {DURATION_CHOICES.filter((m) => m !== s.duration_min).map((m) => (
                   <option key={m} value={m}>{formatDuration(m)}</option>
                 ))}

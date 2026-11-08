@@ -34,13 +34,17 @@ export function SuspendedPage({ membership: m }: { membership: Membership }) {
     );
   }
   const expired = m.subscription_ends_at !== null && new Date(m.subscription_ends_at) <= new Date();
+  // Xodim, qabulxona, kassir: to'lovni faqat direktor qiladi
   return (
-    <Notice title={t("Obuna to'xtatilgan")}>
+    <Notice title={t("Vaqtincha cheklov")}>
+      <p className="font-medium text-navy">
+        {t("Muassasaning oylik to'lovi amalga oshirilmagani sababli vaqtincha cheklov kiritildi.")}
+      </p>
       <p>
         {m.business_name}
         {expired ? t(" obunasi {a} kuni tugagan.", { a: formatDate(m.subscription_ends_at!) }) : t(" obunasi to'xtatilgan.")}
       </p>
-      <p>{t("Barcha ma'lumotlaringiz saqlangan. To'lovdan keyin ish shu joyidan davom etadi.")}</p>
+      <p>{t("Direktor obunani to'lagach, panel avtomatik ochiladi. Barcha ma'lumotlar saqlangan.")}</p>
     </Notice>
   );
 }

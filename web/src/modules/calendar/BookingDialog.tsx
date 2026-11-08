@@ -188,7 +188,7 @@ export function BookingDialog({ membership, preset, onClose }: {
             >
               {services.map((s) => (
                 <option key={s.id} value={s.id}>
-                  {s.name} · {s.duration_min}{" "}{t("daqiqa ·")}{" "}{formatMoney(s.price)}
+                  {t("{a} · {b} daqiqa · {c}", { a: s.name, b: s.duration_min, c: formatMoney(s.price) })}
                 </option>
               ))}
             </select>

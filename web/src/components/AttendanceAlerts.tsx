@@ -66,7 +66,7 @@ export function AttendanceAlerts() {
     <div className="fixed right-3 bottom-3 z-[1100] flex w-[min(24rem,calc(100vw-1.5rem))] flex-col gap-2" role="region"
       aria-label={t("Ogohlantirishlar")} aria-live="assertive">
       {list.slice(0, 3).map((a) => <AlertCard key={a.id} alert={a} />)}
-      {list.length > 3 && <p className="rounded-lg bg-white px-3 py-1.5 text-center text-xs shadow">{t("yana")}{" "}{list.length - 3}{" "}{t("ta")}</p>}
+      {list.length > 3 && <p className="rounded-lg bg-white px-3 py-1.5 text-center text-xs shadow">{t("yana {a} ta", { a: list.length - 3 })}</p>}
     </div>
   );
 }
@@ -139,7 +139,7 @@ function AlertCard({ alert: a }: { alert: Alert }) {
         <Button variant="secondary" disabled={close.isPending} onClick={() => close.mutate()}>{t("Yopish")}</Button>
       </div>
       <p className="mt-1.5 text-xs text-muted">
-        {t("Bekor qilinsa, vaqt boshqa")}{" "}{v.clients.toLowerCase()}{" "}{t("uchun darhol ochiladi.")}{" "}{v.clientOne}{" "}{t("kelmasa — kalendarda \"Kelmadi\" deb belgilang.")}
+        {t("Bekor qilinsa, vaqt boshqa {a} uchun darhol ochiladi. {b} kelmasa — kalendarda \"Kelmadi\" deb belgilang.", { a: v.clients.toLowerCase(), b: v.clientOne })}
       </p>
     </div>
   );

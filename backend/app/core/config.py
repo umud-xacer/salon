@@ -69,6 +69,17 @@ class Settings(BaseSettings):
     yandex_maps_panel_key: str | None = None
     yandex_geocoder_lang: str = "ru_RU"
 
+    # Onlayn obuna to'lovi (app/api/v1/billing.py). Kalit bo'sh bo'lsa, o'sha tugma panelda o'chiq turadi.
+    # Payme: merchant kabinetidagi Merchant ID va kalit (test rejimida test kaliti). Webhook: POST /api/v1/billing/payme
+    payme_merchant_id: str | None = None
+    payme_key: SecretStr | None = None
+    payme_test_mode: bool = True              # True: test.paycom.uz sahifasi; prod kalitlari olingach False
+    # Click: SHOP API. Prepare/Complete manzillari: /api/v1/billing/click/prepare va /complete
+    click_service_id: int | None = None
+    click_merchant_id: int | None = None
+    click_secret_key: SecretStr | None = None
+    click_merchant_user_id: int | None = None
+
     @model_validator(mode="after")
     def _prod_checks(self):
         if self.env == "prod":

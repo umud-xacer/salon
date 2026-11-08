@@ -4,6 +4,7 @@ import { useAuth } from "../auth/AuthProvider";
 import { AttendanceAlerts } from "../components/AttendanceAlerts";
 import { AppShell } from "../layouts/AppShell";
 import { panelVocab, sectionsFor, sectionUrl } from "../modules/registry";
+import { BillingPaywall, ExpiryBanner } from "../modules/billing/BillingPage";
 import { VocabContext } from "../modules/vocab";
 import { SuspendedPage } from "./Notices";
 
@@ -23,7 +24,11 @@ export function BusinessPanel() {
   const membership = memberships.find((m) => m.business_slug === businessSlug);
 
   if (!membership) return <Navigate to="/" replace />;
-  if (!membership.operational) return <SuspendedPage membership={membership} />;
+  if (!membership.operational) {
+    // Obuna tugagan direktor faqat to'lov sahifasini ko'radi; bloklangan muassasa va xodimlar — xabarnoma
+    if (membership.role === "owner" && membership.business_status !== "blocked") return <BillingPaywall membership={membership} />;
+    return <SuspendedPage membership={membership} />;
+  }
 
   const sections = sectionsFor(membership);
   const base = `/${membership.business_slug}`;
@@ -38,6 +43,7 @@ export function BusinessPanel() {
       title={membership.business_name}
       nav={sections.map((s) => ({ to: `${base}/${url(s)}`, label: s.label, icon: s.icon }))}
     >
+      <ExpiryBanner membership={membership} billingUrl={`${base}/obuna`} />
       <Routes>
         {sections.map((s) => (
           <Route key={s.path} path={url(s)} element={<s.page membership={membership} />} />

@@ -615,4 +615,44 @@ export const RU_PAGES: Record<string, string> = {
   "Uzaytirildi": "Продлено",
   "To'lovlar tarixi": "История платежей",
   "Hali uzaytirilmagan": "Ещё не продлевалось",
+  // ── Onlayn obuna to'lovi (Payme / Click) ──
+  "{a} oy": "{a} мес.",
+  "To'lov qabul qilindi — obuna uzaytirildi": "Оплата получена — подписка продлена",
+  "To'lov tekshirilmoqda...": "Проверяем оплату...",
+  "Panel ochildi, ishni davom ettirishingiz mumkin.": "Панель открыта, можно продолжать работу.",
+  "To'lov tizimidan tasdiq kelishi bilan sahifa o'zi yangilanadi. Odatda bir necha soniya.":
+    "Страница обновится сама, как только платёжная система подтвердит оплату. Обычно это несколько секунд.",
+  "Obuna holati": "Статус подписки",
+  "{a} kuni tugagan": "истекла {a}",
+  "{a} kun qoldi": "осталось {a} дн.",
+  "Oylik narx": "Цена в месяц",
+  "Muddatni tanlang": "Выберите срок",
+  "Oldindan bir necha oyga to'lashingiz mumkin. Qolgan kunlaringiz kuymaydi — yangi muddat ularning ustiga qo'shiladi.":
+    "Можно оплатить сразу на несколько месяцев. Оставшиеся дни не сгорают — новый срок добавляется к ним.",
+  "{a} / oy": "{a} / мес.",
+  "To'lanadigan summa: {a} ({b})": "Сумма к оплате: {a} ({b})",
+  "Tez orada": "Скоро",
+  "Ochilmoqda...": "Открываем...",
+  "{a} orqali to'lash": "Оплатить через {a}",
+  "Onlayn to'lov hozircha ulanmoqda. Obunani uzaytirish uchun Chronix bilan bog'laning.":
+    "Онлайн-оплата подключается. Для продления подписки свяжитесь с Chronix.",
+  "To'lov Payme yoki Click sahifasida amalga oshiriladi. Karta ma'lumotlari Chronix'ga kelmaydi.":
+    "Оплата проходит на странице Payme или Click. Данные карты в Chronix не передаются.",
+  "Bekor qilingan": "Отменено",
+  "Obunani oldindan to'lash va uzaytirish": "Предоплата и продление подписки",
+  "{a}: obuna muddati tugagan": "{a}: срок подписки истёк",
+  "Panel vaqtincha yopildi va muassasa mobil ilovada ko'rinmayapti. Barcha ma'lumotlaringiz saqlangan — to'lovdan so'ng hammasi darhol shu joyidan davom etadi.":
+    "Панель временно закрыта, заведение не отображается в мобильном приложении. Все данные сохранены — после оплаты работа сразу продолжится с того же места.",
+  "Obuna bugun tugaydi ({a}). To'lanmasa panel yopiladi va muassasa ilovada ko'rinmay qoladi.":
+    "Подписка заканчивается сегодня ({a}). Без оплаты панель закроется, а заведение исчезнет из приложения.",
+  "Obuna tugashiga {a} kun qoldi ({b}). To'lanmasa panel yopiladi va muassasa ilovada ko'rinmay qoladi.":
+    "До окончания подписки осталось {a} дн. ({b}). Без оплаты панель закроется, а заведение исчезнет из приложения.",
+  "To'lash": "Оплатить",
+  "Vaqtincha cheklov": "Временное ограничение",
+  "Muassasaning oylik to'lovi amalga oshirilmagani sababli vaqtincha cheklov kiritildi.":
+    "Из-за неоплаты ежемесячной подписки заведения введено временное ограничение.",
+  "Direktor obunani to'lagach, panel avtomatik ochiladi. Barcha ma'lumotlar saqlangan.":
+    "После оплаты подписки директором панель откроется автоматически. Все данные сохранены.",
+  "Oylik narx (onlayn to'lov)": "Цена в месяц (онлайн-оплата)",
+  "Hozir: {a} / oy": "Сейчас: {a} / мес.",
 };

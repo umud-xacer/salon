@@ -420,8 +420,7 @@ function PresetsCard({ businessId }: { businessId: number }) {
         {t("{name} uchun tavsiya xizmatlar", { name: pick(presets.data.category_name, presets.data.category_name_ru) })}
       </h2>
       <p className="mb-3 text-xs text-muted">
-        {t("Belgilab qo'shing.")} {groups.length > 1 && `${t("Xizmat o'z bo'limiga tushadi (bo'lim bo'lmasa, yaratiladi).")} `}
-        {t("Narx va vaqtni keyin xizmatni bosib o'zgartirasiz.")}
+        {t("Belgilab qo'shing. {a} Narx va vaqtni keyin xizmatni bosib o'zgartirasiz.", { a: groups.length > 1 && `${t("Xizmat o'z bo'limiga tushadi (bo'lim bo'lmasa, yaratiladi).")} ` })}
       </p>
       <div className="space-y-3">
         {groups.map(([section, items]) => {

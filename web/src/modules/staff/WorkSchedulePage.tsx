@@ -20,7 +20,7 @@ export function WorkSchedulePage({ membership }: { membership: Membership }) {
       <PageTitle title={t("Ish jadvali")} hint={t("Jadval kiritilmagan {a} {b} ish soatlari bo'yicha ishlaydi", { a: v.staffOne.toLowerCase(), b: v.place })} />
       {members.isPending && <Spinner />}
       {members.error && <ErrorNote error={members.error} />}
-      {members.data && masters.length === 0 && <Card><Empty>{v.clientOne}{" "}{t("qabul qiladigan xodim yo'q")}</Empty></Card>}
+      {members.data && masters.length === 0 && <Card><Empty>{t("{a} qabul qiladigan xodim yo'q", { a: v.clientOne })}</Empty></Card>}
       {memberId !== null && (
         <Card>
           <label className="mb-3 block max-w-xs text-sm">{v.staffOne}

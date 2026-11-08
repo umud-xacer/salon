@@ -73,7 +73,7 @@ export function AppointmentDialog({ membership, appointment: a, masterName, onCl
 
       {a.status === "pending" && a.confirm_by && (
         <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
-          {v.clientOne}{" "}{t("ilovadan bron qildi.")}{" "}{formatDate(a.confirm_by)} {formatTime(a.confirm_by)}{" "}{t("gacha tasdiqlanmasa, bron avtomatik bekor qilinadi va vaqt bo'shaydi.")}
+          {t("{a} ilovadan bron qildi. {b} {c} gacha tasdiqlanmasa, bron avtomatik bekor qilinadi va vaqt bo'shaydi.", { a: v.clientOne, b: formatDate(a.confirm_by), c: formatTime(a.confirm_by) })}
         </p>
       )}
 
@@ -95,7 +95,7 @@ export function AppointmentDialog({ membership, appointment: a, masterName, onCl
           {OPEN.includes(a.status) && (
             <>
               <Button disabled={busy} variant="secondary" onClick={() => setStatus.mutate("in_progress")}>
-                {v.clientOne}{" "}{t("keldi")}
+                {t("{a} keldi", { a: v.clientOne })}
               </Button>
               <Button disabled={busy} variant="secondary" onClick={() => setStatus.mutate("no_show")}>
                 {t("Kelmadi")}

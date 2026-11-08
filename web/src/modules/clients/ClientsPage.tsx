@@ -73,7 +73,7 @@ export function ClientsPage({ membership }: { membership: Membership }) {
                   <span className="block text-muted tabular-nums">{c.phone}</span>
                 </span>
                 {c.has_account && <Badge tone="green">{t("Ilovada")}</Badge>}
-                <span className="text-muted">{c.visits}{" "}{t("tashrif")}</span>
+                <span className="text-muted">{t("{a} tashrif", { a: c.visits })}</span>
                 <span className="tabular-nums sm:w-28 sm:text-right">{formatMoney(c.total_spent)}</span>
               </button>
             </li>
@@ -143,7 +143,7 @@ function ClientDialog({ businessId, client, onClose }: {
           </label>
         </div>
         {client?.has_account && (
-          <p className="text-xs text-muted">{v.clientOne}{" "}{t("ilovadan foydalanadi, telefonini faqat o'zi o'zgartiradi.")}</p>
+          <p className="text-xs text-muted">{t("{a} ilovadan foydalanadi, telefonini faqat o'zi o'zgartiradi.", { a: v.clientOne })}</p>
         )}
         <label className="block text-sm">{t("Izoh")}
           <textarea className={inputClass} rows={2} maxLength={2000} placeholder={t("Allergiya, afzalliklar")} value={notes}

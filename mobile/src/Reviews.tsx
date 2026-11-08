@@ -75,7 +75,7 @@ export function BusinessReviews({ slug, staffWord }: { slug: string; staffWord: 
           </View>
         </View>
         <Text style={[shared.muted, { marginTop: 8 }]}>
-          {t("Tozalik")}{" "}{s.cleanliness_avg?.toFixed(1) ?? '—'}{" "}{t("· Qabul va xizmat")}{" "}{s.quality_avg?.toFixed(1) ?? '—'}
+          {t("Tozalik {a} · Qabul va xizmat {b}", { a: s.cleanliness_avg?.toFixed(1) ?? '—', b: s.quality_avg?.toFixed(1) ?? '—' })}
         </Text>
         <Text style={[type.small, { marginTop: 4, color: colors.muted }]}>{t("Faqat xizmatdan foydalangan mijozlar baho qo'ya oladi")}</Text>
       </Card>

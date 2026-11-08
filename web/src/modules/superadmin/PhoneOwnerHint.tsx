@@ -42,7 +42,7 @@ export function PhoneOwnerHint({ lookup, businessId, mode }: {
     if (others.length === 0) return null;
     return (
       <p role="alert" className="rounded-lg bg-amber-50 px-3 py-2 text-amber-800">
-        {t("Diqqat: bu telefon bitta odamniki va u yana")}{" "}{others.length}{" "}{t("ta muassasada bor:")}{" "}{where}{t(". Ism hammasida birdan o'zgaradi. Agar ular boshqa-boshqa odamlar bo'lsa, ismni tuzatmang — \"Direktorni almashtirish\" orqali boshqa odamning o'z telefon raqamini kiriting.")}
+        {t("Diqqat: bu telefon bitta odamniki va u yana {a} ta muassasada bor: {b}. Ism hammasida birdan o'zgaradi. Agar ular boshqa-boshqa odamlar bo'lsa, ismni tuzatmang — \"Direktorni almashtirish\" orqali boshqa odamning o'z telefon raqamini kiriting.", { a: others.length, b: where })}
       </p>
     );
   }

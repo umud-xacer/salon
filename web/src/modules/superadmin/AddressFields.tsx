@@ -131,7 +131,7 @@ export function AddressFields({ value, onChange }: {
       </label>
       {suggestion && (
         <p className="flex flex-wrap items-center gap-2 rounded-lg bg-page px-3 py-2 text-sm">
-          <span className="min-w-0 flex-1 break-words">{t("Xaritadan:")}{" "}{suggestion}</span>
+          <span className="min-w-0 flex-1 break-words">{t("Xaritadan: {a}", { a: suggestion })}</span>
           <Button type="button" variant="secondary" className="!px-2 !py-1 text-xs"
             onClick={() => {
               onChange({ ...value, address: suggestion });
