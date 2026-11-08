@@ -23,6 +23,9 @@ const DirectorsPage = lazy(() =>
 const AuditPage = lazy(() =>
   import("./modules/superadmin/AuditPage").then((m) => ({ default: m.AuditPage })),
 );
+const PricingPage = lazy(() =>
+  import("./modules/superadmin/PricingPage").then((m) => ({ default: m.PricingPage })),
+);
 const SuperAdminShell = lazy(() =>
   import("./modules/superadmin/SuperAdminShell").then((m) => ({ default: m.SuperAdminShell })),
 );
@@ -58,6 +61,7 @@ export function App() {
                   <Route path="foydalanuvchilar" element={<Navigate to="/superadmin/direktorlar" replace />} />
                   <Route path="jurnal" element={<AuditPage />} />
                   <Route path="turlar" element={<BusinessTypesPage />} />
+                  <Route path="narxlar" element={<PricingPage />} />
                   <Route path="types" element={<Navigate to="/superadmin/turlar" replace />} />
                   <Route path="t/:typeSlug" element={<BusinessesPage />} />
                   <Route path=":typePath" element={<BusinessesPage />} />

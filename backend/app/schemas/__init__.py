@@ -181,6 +181,7 @@ class BusinessCreate(BaseModel):
     owner_password: str | None = Field(default=None, max_length=128)   # direktorning boshlang'ich paroli
     modules: list[str] = ["booking"]
     subscription_days: int | None = Field(default=None, ge=1, le=3660)    # None = muddatsiz
+    plan_id: int | None = Field(default=None, ge=1)      # None = birinchi faol tarif (odatda Start)
 
     @field_validator("owner_phone")
     @classmethod
@@ -274,6 +275,8 @@ class BusinessAdminOut(BaseModel):
     subscription_ends_at: datetime | None
     operational: bool
     monthly_fee: int = 0
+    plan_id: int | None = None
+    plan_name: str | None = None
     owner_name: str | None
     owner_phone: str | None
     owner_member_id: int | None = None
@@ -419,7 +422,8 @@ class PlatformStats(BaseModel):
 class SubscriptionUpdate(BaseModel):
     is_active: bool | None = None
     subscription_ends_at: datetime | None = None          # maydon yuborilib null bo'lsa: muddatsiz
-    monthly_fee: int | None = Field(default=None, ge=0, le=100_000_000)   # so'm/oy, onlayn to'lov narxi
+    monthly_fee: int | None = Field(default=None, ge=0, le=100_000_000)   # so'm/oy; berilsa — maxsus narx (tarifsiz)
+    plan_id: int | None = Field(default=None, ge=1)       # tarif tanlansa, narx tarifdan olinadi
 
 
 # ─── Xodimlar ───────────────────────────────────────────────────────────────

@@ -655,4 +655,37 @@ export const RU_PAGES: Record<string, string> = {
     "После оплаты подписки директором панель откроется автоматически. Все данные сохранены.",
   "Oylik narx (onlayn to'lov)": "Цена в месяц (онлайн-оплата)",
   "Hozir: {a} / oy": "Сейчас: {a} / мес.",
+  // ── Narxlar (Super Admin) va oldindan to'lash ──
+  "Narxlar": "Цены",
+  "Tariflar va oldindan to'lash paketlari. Direktor Payme/Click orqali shu narxlarda to'laydi.":
+    "Тарифы и пакеты предоплаты. Директор оплачивает через Payme/Click по этим ценам.",
+  "Tariflar": "Тарифы",
+  "Muassasaga tarifni uning \"Obuna\" oynasida tanlaysiz yoki maxsus (kelishilgan) narx qo'yasiz.":
+    "Тариф заведению выбирается в его окне «Подписка», либо задаётся особая (договорная) цена.",
+  "Hali tarif yo'q": "Тарифов пока нет",
+  "Tarif nomi": "Название тарифа",
+  "Oylik narx (so'm)": "Цена в месяц (сум)",
+  "Saqlandi. {a} ta muassasa narxi yangilandi.": "Сохранено. Обновлена цена у заведений: {a}.",
+  "Yoqish": "Включить",
+  "{a} ta muassasa": "заведений: {a}",
+  "Yangi narxni shu tarifdagi {a} ta muassasaga ham qo'llash (keyingi to'lovdan boshlab)":
+    "Применить новую цену и к заведениям на этом тарифе ({a}) — со следующей оплаты",
+  "Yangi tarif": "Новый тариф",
+  "masalan, Premium": "например, Премиум",
+  "Oldindan to'lash paketlari": "Пакеты предоплаты",
+  "Direktor necha oyga to'lashni tanlaydi. Chegirma uzoq muddatga to'lashni rag'batlantiradi.":
+    "Директор выбирает, на сколько месяцев оплатить. Скидка мотивирует платить на долгий срок.",
+  "Chegirma, %": "Скидка, %",
+  "Yashirish": "Скрыть",
+  "Masalan, {a} tarifda: {b}": "Например, при тарифе {a}: {b}",
+  "Tarif": "Тариф",
+  "Maxsus narx (kelishilgan)": "Особая цена (договорная)",
+  "maxsus narx": "особая цена",
+  "Tariflar narxi \"Narxlar\" sahifasida.": "Цены тарифов — на странице «Цены».",
+  "Obuna {a} gacha": "Подписка до {a}",
+  "{a} kun qoldi. Keyingi oy(lar)ni muddat tugashini kutmasdan oldindan to'lashingiz mumkin — qolgan kunlar kuymaydi.":
+    "Осталось {a} дн. Следующие месяцы можно оплатить заранее, не дожидаясь окончания срока — оставшиеся дни не сгорают.",
+  "Oldindan to'lash": "Оплатить заранее",
+  "Keyingi oy(lar)ni oldindan to'lash": "Оплатить следующие месяцы заранее",
+  "To'lovdan keyin obuna {a} gacha uzayadi.": "После оплаты подписка продлится до {a}.",
 };

@@ -1,11 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, CreditCard } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import { api } from "../../api/client";
 import type { InventorySummary, Membership } from "../../api/types";
 import { BookingList } from "../../components/BookingList";
-import { formatQty } from "../../components/format";
+import { formatDate, formatQty } from "../../components/format";
 import { roleLabel, vocabFor } from "../vocab";
 import { Card, PageTitle } from "../../components/ui";
 
@@ -36,11 +36,34 @@ function LowStockCard({ businessId, kind, slug }: { businessId: number; kind: st
   );
 }
 
+/** Direktor uchun: obuna qachongacha va oldindan (keyingi oyga) to'lash tugmasi */
+function SubscriptionCard({ m }: { m: Membership }) {
+  if (m.role !== "owner" || !m.subscription_ends_at) return null;
+  const days = Math.floor((new Date(m.subscription_ends_at).getTime() - Date.now()) / 86_400_000);
+  return (
+    <Card className="mb-4">
+      <div className="flex flex-wrap items-center gap-3 text-sm">
+        <CreditCard size={20} className="text-primary" aria-hidden />
+        <div className="flex-1">
+          <p className="font-medium text-navy">{t("Obuna {a} gacha", { a: formatDate(m.subscription_ends_at) })}</p>
+          <p className="text-muted">
+            {t("{a} kun qoldi. Keyingi oy(lar)ni muddat tugashini kutmasdan oldindan to'lashingiz mumkin — qolgan kunlar kuymaydi.", { a: Math.max(0, days) })}
+          </p>
+        </div>
+        <Link to={`/${m.business_slug}/obuna`} className="rounded-lg bg-primary px-3 py-2 font-medium text-white hover:bg-primary-dark">
+          {t("Oldindan to'lash")}
+        </Link>
+      </div>
+    </Card>
+  );
+}
+
 export function DashboardPage({ membership }: { membership: Membership }) {
   const showStock = membership.modules.includes("inventory") && membership.permissions.includes("inventory.view");
   return (
     <>
       <PageTitle title={membership.business_name} hint={roleLabel(membership.role, vocabFor(membership.business_kind))} />
+      <SubscriptionCard m={membership} />
       {showStock && <LowStockCard businessId={membership.business_id} kind={membership.business_kind} slug={membership.business_slug} />}
       {membership.permissions.includes("appointments.view_all") && (
         <BookingList businessId={membership.business_id} showMaster />

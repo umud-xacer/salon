@@ -14,6 +14,7 @@ import { AddressFields, type AddressValue } from "./AddressFields";
 import { useBusinessTypes } from "./BusinessTypesPage";
 import { slugFor, wordingFor, typeName } from "./typeWording";
 import { PaymentHistory, RenewForm } from "./SubscriptionPayments";
+import { useBillingPlans } from "./PricingPage";
 import { OwnerChange } from "./OwnerChange";
 import { PhoneOwnerHint, usePhoneLookup } from "./PhoneOwnerHint";
 import { panelVocab, VocabContext } from "../vocab";
@@ -266,21 +267,42 @@ function InfoTab({ business: b }: { business: BusinessAdmin }) {
   );
 }
 
-/** Onlayn to'lov narxi: direktor Payme/Click orqali shu narx x oylar (paket chegirmasi bilan) to'laydi */
-function MonthlyFeeForm({ business: b, onSave, saving }: { business: BusinessAdmin; onSave: (fee: number) => void; saving: boolean }) {
+/** Tarif yoki maxsus narx: direktor Payme/Click orqali shu narx x oylar (paket chegirmasi bilan) to'laydi */
+function MonthlyFeeForm({ business: b, onSave, saving }: {
+  business: BusinessAdmin; onSave: (body: { plan_id: number } | { monthly_fee: number }) => void; saving: boolean;
+}) {
+  const plans = useBillingPlans();
+  const [choice, setChoice] = useState(b.plan_id ? String(b.plan_id) : "custom");
   const [fee, setFee] = useState(String(b.monthly_fee));
   const value = Number(fee.replace(/\s/g, ""));
   const valid = fee.trim() !== "" && Number.isInteger(value) && value >= 0 && value <= 100_000_000;
+  const custom = choice === "custom";
+  const unchanged = custom ? b.plan_id === null && value === b.monthly_fee : Number(choice) === b.plan_id;
+  const visible = (plans.data ?? []).filter((p) => p.is_active || p.id === b.plan_id);
   return (
-    <div className="flex flex-wrap items-end gap-2 rounded-lg border border-line p-3">
-      <label className="block w-48">{t("Oylik narx (onlayn to'lov)")}
-        <input className={inputClass} inputMode="numeric" value={fee}
-          onChange={(e) => setFee(e.target.value.replace(/[^\d\s]/g, ""))} />
-      </label>
-      <Button variant="secondary" disabled={!valid || value === b.monthly_fee || saving} onClick={() => onSave(value)}>
-        {t("Saqlash")}
-      </Button>
-      <span className="text-xs text-muted">{t("Hozir: {a} / oy", { a: formatMoney(b.monthly_fee) })}</span>
+    <div className="space-y-2 rounded-lg border border-line p-3">
+      <div className="flex flex-wrap items-end gap-2">
+        <label className="block w-56">{t("Tarif")}
+          <select className={inputClass} value={choice} onChange={(e) => setChoice(e.target.value)}>
+            {visible.map((p) => <option key={p.id} value={p.id}>{p.name} — {formatMoney(p.monthly_fee)}</option>)}
+            <option value="custom">{t("Maxsus narx (kelishilgan)")}</option>
+          </select>
+        </label>
+        {custom && (
+          <label className="block w-40">{t("Oylik narx (so'm)")}
+            <input className={inputClass} inputMode="numeric" value={fee}
+              onChange={(e) => setFee(e.target.value.replace(/[^\d\s]/g, ""))} />
+          </label>
+        )}
+        <Button variant="secondary" disabled={unchanged || (custom && !valid) || saving}
+          onClick={() => onSave(custom ? { monthly_fee: value } : { plan_id: Number(choice) })}>
+          {t("Saqlash")}
+        </Button>
+      </div>
+      <p className="text-xs text-muted">
+        {t("Hozir: {a} / oy", { a: formatMoney(b.monthly_fee) })} · {b.plan_name ?? t("maxsus narx")}.{" "}
+        {t("Tariflar narxi \"Narxlar\" sahifasida.")}
+      </p>
     </div>
   );
 }
@@ -314,7 +336,7 @@ function SubscriptionTab({ business: b }: { business: BusinessAdmin }) {
       <p>
         {t("Hozir: {a} {b}", { a: b.subscription_ends_at ? t("{a} gacha", { a: formatDate(b.subscription_ends_at) }) : "muddatsiz", b: !b.is_active && t(" (to'xtatilgan)") })}
       </p>
-      <MonthlyFeeForm business={b} onSave={(fee) => update.mutate({ monthly_fee: fee })} saving={update.isPending} />
+      <MonthlyFeeForm business={b} onSave={(body) => update.mutate(body)} saving={update.isPending} />
       <RenewForm business={b} onDone={renewed} />
       <p className="text-xs text-muted">{t("Quyidagilar pulsiz tuzatish uchun (to'lov tarixiga yozilmaydi):")}</p>
       <label className="block max-w-xs">{t("Aniq sana (kun oxirigacha)")}

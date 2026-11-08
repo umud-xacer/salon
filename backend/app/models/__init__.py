@@ -84,6 +84,7 @@ class Business(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, server_default="true")
     subscription_ends_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     monthly_fee: Mapped[int] = mapped_column(BigInteger, default=199000)   # obuna narxi (so'm/oy), sql/037
+    plan_id: Mapped[int | None] = mapped_column(BigInteger)   # billing_plans.id (sql/038), NULL = maxsus narx
     created_by: Mapped[int | None] = mapped_column(BigInteger)
 
 

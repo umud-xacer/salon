@@ -279,6 +279,8 @@ export interface BusinessAdmin {
   is_active: boolean;
   subscription_ends_at: string | null;
   monthly_fee: number;
+  plan_id: number | null;
+  plan_name: string | null;
   operational: boolean;
   owner_name: string | null;
   owner_phone: string | null;
@@ -456,6 +458,23 @@ export interface BillingOrder {
   status: "created" | "paid" | "cancelled";
   created_at: string;
   paid_at: string | null;
+}
+
+export interface BillingPlan {
+  id: number;
+  name: string;
+  name_ru: string | null;
+  monthly_fee: number;
+  is_active: boolean;
+  sort_order: number;
+  business_count: number;
+  updated_businesses?: number | null;
+}
+
+export interface BillingPackageAdmin {
+  months: number;
+  discount_pct: number;
+  is_active: boolean;
 }
 
 export interface BillingInfo {

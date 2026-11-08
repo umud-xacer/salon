@@ -307,3 +307,57 @@ def test_paid_business_appears_in_catalog_again(client, superadmin):
     client.post("/api/v1/billing/click/complete", data=click_form(o, 1, ext="click-cat", prepare_id=prep["merchant_prepare_id"]))
     with api_session(None) as db:
         assert db.scalar(text(visible), {"b": biz["id"]}) == 1
+
+
+# ─── Tariflar (Super Admin narxlarni boshqaradi) ─────────────────────────────
+def test_plans_seeded_and_new_business_gets_first_plan(client, superadmin):
+    plans = client.get("/api/v1/superadmin/billing/plans", headers=sa(superadmin)).json()
+    names = {p["name"]: p["monthly_fee"] for p in plans}
+    assert names["Start"] == 199000 and names["Biznes"] == 399000
+    biz = create_business(client, superadmin)
+    row = next(b for b in client.get("/api/v1/superadmin/businesses", headers=sa(superadmin)).json() if b["id"] == biz["id"])
+    assert row["plan_name"] == "Start" and row["monthly_fee"] == 199000
+
+
+def test_assign_plan_custom_price_and_apply_plan_change(client, superadmin):
+    r = client.post("/api/v1/superadmin/billing/plans", headers=sa(superadmin),
+                    json={"name": "Sinov tarif", "monthly_fee": 250000, "sort_order": 50})
+    assert r.status_code == 201, r.text
+    plan = r.json()
+    assert client.post("/api/v1/superadmin/billing/plans", headers=sa(superadmin),
+                       json={"name": "sinov TARIF", "monthly_fee": 1}).status_code == 409
+
+    a, b = create_business(client, superadmin), create_business(client, superadmin)
+    row = set_sub(client, superadmin, a, plan_id=plan["id"])
+    assert row["plan_id"] == plan["id"] and row["monthly_fee"] == 250000
+    set_sub(client, superadmin, b, plan_id=plan["id"])
+    row = set_sub(client, superadmin, b, monthly_fee=180000)          # maxsus narx — tarifdan chiqadi
+    assert row["plan_id"] is None and row["monthly_fee"] == 180000
+
+    # Narx o'zgarsa, qo'llanmaguncha muassasalar eski narxda qoladi
+    r = client.patch(f"/api/v1/superadmin/billing/plans/{plan['id']}", headers=sa(superadmin), json={"monthly_fee": 300000})
+    assert r.status_code == 200 and r.json()["monthly_fee"] == 300000 and r.json()["updated_businesses"] is None
+    info = client.get(f"/api/v1/businesses/{a['id']}/billing", headers=auth_header(a["owner"])).json()
+    assert info["monthly_fee"] == 250000
+    r = client.patch(f"/api/v1/superadmin/billing/plans/{plan['id']}", headers=sa(superadmin),
+                     json={"apply_to_businesses": True})
+    assert r.json()["updated_businesses"] == 1 and r.json()["business_count"] == 1
+    info = client.get(f"/api/v1/businesses/{a['id']}/billing", headers=auth_header(a["owner"])).json()
+    assert info["monthly_fee"] == 300000 and info["packages"][0]["amount"] == 300000
+    info = client.get(f"/api/v1/businesses/{b['id']}/billing", headers=auth_header(b["owner"])).json()
+    assert info["monthly_fee"] == 180000                               # maxsus narxga tegilmadi
+
+
+def test_only_superadmin_manages_plans(client, superadmin):
+    biz = create_business(client, superadmin)
+    owner = auth_header(biz["owner"])
+    assert client.get("/api/v1/superadmin/billing/plans", headers=owner).status_code == 403
+    assert client.post("/api/v1/superadmin/billing/plans", headers=owner, json={"name": "X", "monthly_fee": 1}).status_code == 403
+    from app.db.session import api_session
+    me = client.get("/api/v1/auth/me", headers=owner).json()["user"]["id"]
+    with api_session(me) as db:
+        assert db.execute(text("SELECT count(*) FROM billing_plans")).scalar() == 0      # RLS: ko'rinmaydi
+        with pytest.raises(Exception) as e:
+            db.execute(text("UPDATE businesses SET plan_id = NULL WHERE id = :b"), {"b": biz["id"]})
+        assert "business_field_forbidden" in str(e.value)
+        db.rollback()

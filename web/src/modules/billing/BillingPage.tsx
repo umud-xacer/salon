@@ -23,6 +23,13 @@ const PROVIDERS: { id: BillingProvider; name: string; color: string }[] = [
 
 const monthsLabel = (n: number) => t("{a} oy", { a: n });
 
+/** Server bilan bir xil: max(tugash, hozir) + N oy */
+function extendTo(endsAt: string, months: number): string {
+  const d = new Date(Math.max(new Date(endsAt).getTime(), Date.now()));
+  d.setMonth(d.getMonth() + months);
+  return d.toISOString();
+}
+
 /** Payme / Click rasmiy rangidagi tugma (logotip fayllari serverga keyin qo'yiladi — hozircha nomi bilan) */
 function ProviderMark({ id }: { id: BillingProvider }) {
   if (id === "payme") {
@@ -134,7 +141,7 @@ export function BillingView({ membership }: { membership: Membership }) {
       <StatusCard info={info} />
 
       <Card>
-        <h2 className="mb-1 font-semibold text-navy">{t("Muddatni tanlang")}</h2>
+        <h2 className="mb-1 font-semibold text-navy">{info.operational ? t("Keyingi oy(lar)ni oldindan to'lash") : t("Muddatni tanlang")}</h2>
         <p className="mb-3 text-sm text-muted">
           {t("Oldindan bir necha oyga to'lashingiz mumkin. Qolgan kunlaringiz kuymaydi — yangi muddat ularning ustiga qo'shiladi.")}
         </p>
@@ -161,6 +168,9 @@ export function BillingView({ membership }: { membership: Membership }) {
         <h2 className="mb-1 font-semibold text-navy">{t("To'lov usuli")}</h2>
         <p className="mb-3 text-sm text-muted">
           {selected ? t("To'lanadigan summa: {a} ({b})", { a: formatMoney(selected.amount), b: monthsLabel(selected.months) }) : ""}
+          {selected && info.subscription_ends_at !== null && (
+            <span className="block">{t("To'lovdan keyin obuna {a} gacha uzayadi.", { a: formatDate(extendTo(info.subscription_ends_at, selected.months)) })}</span>
+          )}
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
           {PROVIDERS.map((p) => {

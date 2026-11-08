@@ -27,7 +27,9 @@ router = APIRouter(prefix="/superadmin", tags=["superadmin"], dependencies=[Depe
 _BUSINESS_SELECT = """
     SELECT b.id, b.name, b.slug, b.category_id, b.region, b.city, b.address, b.status::text AS status,
            ST_Y(b.location::geometry) AS lat, ST_X(b.location::geometry) AS lng,
-           b.is_active, b.subscription_ends_at, b.monthly_fee, b.rating_avg::float AS rating_avg, b.rating_count,
+           b.is_active, b.subscription_ends_at, b.monthly_fee, b.plan_id,
+           (SELECT p.name FROM billing_plans p WHERE p.id = b.plan_id) AS plan_name,
+           b.rating_avg::float AS rating_avg, b.rating_count,
            app.business_operational(b.id) AS operational,
            u.full_name AS owner_name, u.phone AS owner_phone, o.id AS owner_member_id,
            u.id AS owner_user_id, u.status::text AS owner_status, u.last_login_at AS owner_last_login_at,
@@ -76,6 +78,11 @@ def create_business(body: BusinessCreate, db: Session = Depends(get_db)):
                    region=body.region, city=body.city, address=body.address, status="active", created_by=user.id)
     if body.subscription_days is not None:
         biz.subscription_ends_at = datetime.now(timezone.utc) + timedelta(days=body.subscription_days)
+    # Tarif: tanlanmasa — birinchi faol tarif (odatda Start). Narx tarifdan olinadi
+    plan = _plan(db, body.plan_id) if body.plan_id else db.execute(text(
+        "SELECT id, monthly_fee FROM billing_plans WHERE is_active ORDER BY sort_order, id LIMIT 1")).mappings().first()
+    if plan is not None:
+        biz.plan_id, biz.monthly_fee = plan["id"], plan["monthly_fee"]
     db.add(biz)
     db.flush()
     db.execute(text("UPDATE businesses SET location = ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography "
@@ -253,6 +260,105 @@ def subscription_payments(business_id: int = Path(ge=1), db: Session = Depends(g
     return [SubscriptionPaymentOut(**r) for r in rows]
 
 
+# ─── Tariflar ───────────────────────────────────────────────────────────────
+class BillingPlanIn(BaseModel):
+    name: str = Field(min_length=1, max_length=60)
+    name_ru: str | None = Field(default=None, max_length=60)
+    monthly_fee: int = Field(ge=0, le=100_000_000)
+    is_active: bool = True
+    sort_order: int = Field(default=0, ge=0, le=999)
+
+
+class BillingPlanUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=60)
+    name_ru: str | None = Field(default=None, max_length=60)
+    monthly_fee: int | None = Field(default=None, ge=0, le=100_000_000)
+    is_active: bool | None = None
+    sort_order: int | None = Field(default=None, ge=0, le=999)
+    apply_to_businesses: bool = False      # yangi narxni shu tarifdagi muassasalarga ham qo'llash
+
+
+class BillingPlanOut(BaseModel):
+    id: int
+    name: str
+    name_ru: str | None
+    monthly_fee: int
+    is_active: bool
+    sort_order: int
+    business_count: int
+    updated_businesses: int | None = None
+
+
+_PLAN_SELECT = """
+    SELECT p.id, p.name, p.name_ru, p.monthly_fee, p.is_active, p.sort_order,
+           (SELECT count(*) FROM businesses b WHERE b.plan_id = p.id) AS business_count
+      FROM billing_plans p
+"""
+
+
+def _plan(db: Session, plan_id: int):
+    row = db.execute(text(f"{_PLAN_SELECT} WHERE p.id = :id"), {"id": plan_id}).mappings().first()
+    if row is None:
+        raise HTTPException(404, detail={"code": "plan_not_found", "message": "Tarif topilmadi"})
+    return row
+
+
+def _plan_conflict(e: IntegrityError) -> HTTPException:
+    if "billing_plans_name_key" in str(e.orig):
+        return HTTPException(409, detail={"code": "plan_exists", "message": "Bunday nomli tarif bor"})
+    raise e
+
+
+@router.get("/billing/plans", response_model=list[BillingPlanOut])
+def billing_plans(db: Session = Depends(get_db)):
+    return [BillingPlanOut(**r) for r in db.execute(text(f"{_PLAN_SELECT} ORDER BY p.sort_order, p.id")).mappings()]
+
+
+@router.post("/billing/plans", response_model=BillingPlanOut, status_code=201)
+def create_billing_plan(body: BillingPlanIn, db: Session = Depends(get_db)):
+    try:
+        plan_id = db.scalar(text("""INSERT INTO billing_plans (name, name_ru, monthly_fee, is_active, sort_order)
+                                    VALUES (:n, :r, :f, :a, :s) RETURNING id"""),
+                            {"n": body.name.strip(), "r": (body.name_ru or "").strip() or None, "f": body.monthly_fee,
+                             "a": body.is_active, "s": body.sort_order})
+    except IntegrityError as e:
+        db.rollback()
+        raise _plan_conflict(e)
+    audit.log(db, None, "create", "billing_plan", plan_id, body.model_dump())
+    db.commit()
+    return BillingPlanOut(**_plan(db, plan_id))
+
+
+@router.patch("/billing/plans/{plan_id}", response_model=BillingPlanOut)
+def update_billing_plan(body: BillingPlanUpdate, plan_id: int = Path(ge=1), db: Session = Depends(get_db)):
+    """Tarifni tahrirlash. apply_to_businesses=true bo'lsa, shu tarifdagi muassasalarning oylik narxi ham
+    yangilanadi (keyingi to'lovdan boshlab; to'langan muddatga tegilmaydi)."""
+    _plan(db, plan_id)
+    data = body.model_dump(exclude_unset=True, exclude={"apply_to_businesses"})
+    for key in ("name", "monthly_fee", "is_active", "sort_order"):
+        if key in data and data[key] is None:
+            raise HTTPException(422, detail={"code": "invalid_value", "message": f"{key} bo'sh bo'lishi mumkin emas"})
+    if "name" in data:
+        data["name"] = data["name"].strip()
+    if "name_ru" in data:
+        data["name_ru"] = (data["name_ru"] or "").strip() or None
+    if data:
+        sets = ", ".join(f"{k} = :{k}" for k in data)
+        try:
+            db.execute(text(f"UPDATE billing_plans SET {sets} WHERE id = :id"), {**data, "id": plan_id})
+        except IntegrityError as e:
+            db.rollback()
+            raise _plan_conflict(e)
+    updated = None
+    if body.apply_to_businesses:
+        updated = db.execute(text("""UPDATE businesses b SET monthly_fee = p.monthly_fee
+                                       FROM billing_plans p WHERE p.id = :id AND b.plan_id = p.id"""),
+                             {"id": plan_id}).rowcount
+    audit.log(db, None, "update", "billing_plan", plan_id, {**data, "applied_to": updated})
+    db.commit()
+    return BillingPlanOut(**_plan(db, plan_id), updated_businesses=updated)
+
+
 # ─── Onlayn to'lov paketlari ────────────────────────────────────────────────
 class BillingPackageAdmin(BaseModel):
     months: int
@@ -386,8 +492,16 @@ def update_subscription(body: SubscriptionUpdate, business_id: int = Path(ge=1),
     for required in ("is_active", "monthly_fee"):
         if required in changes and changes[required] is None:
             raise HTTPException(422, detail={"code": "invalid_value", "message": f"{required} bo'sh bo'lishi mumkin emas"})
+    # Narx: tarif tanlansa — tarif narxi; faqat summa berilsa — maxsus (kelishilgan) narx, tarifsiz
+    if changes.get("plan_id") is not None:
+        plan = _plan(db, changes["plan_id"])
+        changes["monthly_fee"] = plan["monthly_fee"]
+        changes["plan_name"] = plan["name"]
+    elif "monthly_fee" in changes:
+        changes["plan_id"] = None
     for field, value in changes.items():
-        setattr(biz, field, value)
+        if field != "plan_name":
+            setattr(biz, field, value)
     audit.log(db, business_id, "update", "subscription", business_id, changes)
     db.commit()
     return _read_business(db, business_id)
