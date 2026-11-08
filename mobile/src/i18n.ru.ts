@@ -298,4 +298,6 @@ export const RU: Record<string, string> = {
   "Parolni ko'rsatish": "Показать пароль",
   "Yopish": "Закрыть",
   "{a} so'm": "{a} сум",
+  "Ochilish ovozi": "Звук при запуске",
+  "Ilova ochilganda qisqa Chronix ovozi. Telefon ovozsiz rejimda bo'lsa, baribir chalinmaydi.": "Короткий звук Chronix при открытии приложения. В беззвучном режиме телефона он не звучит.",
 };

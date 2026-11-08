@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { AccessibilityInfo, Animated, Easing, Image, StyleSheet, View, useWindowDimensions } from 'react-native';
 
+import { playStartupSound } from './startupSound';
 import { colors } from './ui';
 
 // Barcha o'lchamlar chroniximage.jpg (1254x1254) pikselida, oxirgi kadr rasmning o'zi bo'lishi uchun
@@ -52,6 +53,7 @@ export function AnimatedSplash({ onReady, onDone }: { onReady: () => void; onDon
       const reduced = await AccessibilityInfo.isReduceMotionEnabled().catch(() => false);
       if (cancelled) return;
       onReady();
+      void playStartupSound();         // animatsiya bilan bir vaqtda: strelkalar -> akkord (0.9 s)
       Animated.sequence([
         step(spin, reduced ? 0 : 900),
         Animated.parallel([step(move, reduced ? 0 : 480), step(word, 420)]),

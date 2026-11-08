@@ -3,12 +3,13 @@ import * as Updates from 'expo-updates';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import * as Notifications from 'expo-notifications';
-import { Alert, Linking, Platform, ScrollView, Text, View } from 'react-native';
+import { Alert, Linking, Platform, ScrollView, Switch, Text, View } from 'react-native';
 
 import { ChronixAlarmModule } from '../modules/chronix-alarm';
 import { api } from '../src/api';
 import { scheduleTestAlarm } from '../src/localReminders';
 import { ensureNotificationPermission, pushStatus } from '../src/notifications';
+import { playStartupSound, setStartupSoundEnabled, startupSoundEnabled } from '../src/startupSound';
 import { useAuth } from '../src/auth';
 import { Button, Card, colors, shared, type } from '../src/ui';
 
@@ -16,6 +17,7 @@ import { t } from "../src/i18n";
 import { LangSwitch } from "../src/LangSwitch";
 export default function Settings() {
   const [fullScreen, setFullScreen] = useState(true);
+  const [startSound, setStartSound] = useState(startupSoundEnabled);
   const [support, setSupport] = useState<{ support_phone: string | null; support_telegram: string | null } | null>(null);
   const { me } = useAuth();
   const router = useRouter();
@@ -57,6 +59,18 @@ export default function Settings() {
             <Text style={[type.small, { marginTop: 4 }]}>{t("Tanlangan til qurilmada saqlanadi")}</Text>
           </View>
           <LangSwitch />
+        </View>
+      </Card>
+      <Card>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <View style={{ flex: 1, paddingRight: 12 }}>
+            <Text style={type.h3}>{t("Ochilish ovozi")}</Text>
+            <Text style={[type.small, { marginTop: 4 }]}>
+              {t("Ilova ochilganda qisqa Chronix ovozi. Telefon ovozsiz rejimda bo'lsa, baribir chalinmaydi.")}
+            </Text>
+          </View>
+          <Switch value={startSound} trackColor={{ true: colors.primary }}
+            onValueChange={(on) => { setStartSound(on); void setStartupSoundEnabled(on); if (on) void playStartupSound(true); }} />
         </View>
       </Card>
       <Card>
