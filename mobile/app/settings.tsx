@@ -9,7 +9,7 @@ import { ChronixAlarmModule } from '../modules/chronix-alarm';
 import { api } from '../src/api';
 import { scheduleTestAlarm } from '../src/localReminders';
 import { ensureNotificationPermission, pushStatus } from '../src/notifications';
-import { playStartupSound, setStartupSoundEnabled, startupSoundEnabled } from '../src/startupSound';
+import { playStartupSound, setStartupSoundEnabled, startupSoundEnabled, type StartupSoundResult } from '../src/startupSound';
 import { useAuth } from '../src/auth';
 import { Button, Card, colors, shared, type } from '../src/ui';
 
@@ -18,6 +18,11 @@ import { LangSwitch } from "../src/LangSwitch";
 export default function Settings() {
   const [fullScreen, setFullScreen] = useState(true);
   const [startSound, setStartSound] = useState(startupSoundEnabled);
+  const [soundCheck, setSoundCheck] = useState<StartupSoundResult | 'busy' | null>(null);
+  const checkSound = async () => {
+    setSoundCheck('busy');
+    setSoundCheck(await playStartupSound(true));
+  };
   const [support, setSupport] = useState<{ support_phone: string | null; support_telegram: string | null } | null>(null);
   const { me } = useAuth();
   const router = useRouter();
@@ -66,12 +71,25 @@ export default function Settings() {
           <View style={{ flex: 1, paddingRight: 12 }}>
             <Text style={type.h3}>{t("Ochilish ovozi")}</Text>
             <Text style={[type.small, { marginTop: 4 }]}>
-              {t("Ilova ochilganda qisqa Chronix ovozi. Telefon ovozsiz rejimda bo'lsa, baribir chalinmaydi.")}
+              {t("Ilova to'liq yopilib, qayta ochilganda (logo animatsiyasi paytida) qisqa Chronix ovozi. Telefon tebranish yoki ovozsiz rejimda bo'lsa, chalinmaydi.")}
             </Text>
           </View>
           <Switch value={startSound} trackColor={{ true: colors.primary }}
-            onValueChange={(on) => { setStartSound(on); void setStartupSoundEnabled(on); if (on) void playStartupSound(true); }} />
+            onValueChange={(on) => { setStartSound(on); void setStartupSoundEnabled(on); }} />
         </View>
+        <View style={{ marginTop: 12 }}>
+          <Button title={soundCheck === 'busy' ? t("Tekshirilmoqda…") : t("Ovozni sinash")} kind="soft" compact
+            icon="volume-high-outline" disabled={soundCheck === 'busy'} onPress={checkSound} />
+        </View>
+        {soundCheck !== null && soundCheck !== 'busy' && (
+          <Text style={[type.small, { marginTop: 8, color: soundCheck === 'played' ? colors.success : colors.danger }]}>
+            {soundCheck === 'played'
+              ? t("Ovoz chalindi. Eshitilmagan bo'lsa, telefonning media ovozini (musiqa balandligini) oshiring.")
+              : soundCheck === 'silent'
+                ? t("Telefon tebranish yoki ovozsiz rejimda — tizim ovozga ruxsat bermadi. Qo'ng'iroq rejimini \"Ovoz\" ga o'tkazing.")
+                : t("Ovozni chalib bo'lmadi (audio xatosi). Ilovani qayta ochib ko'ring.")}
+          </Text>
+        )}
       </Card>
       <Card>
         <Text style={type.h3}>{t("Bron eslatmalari")}</Text>

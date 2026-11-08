@@ -299,5 +299,10 @@ export const RU: Record<string, string> = {
   "Yopish": "Закрыть",
   "{a} so'm": "{a} сум",
   "Ochilish ovozi": "Звук при запуске",
-  "Ilova ochilganda qisqa Chronix ovozi. Telefon ovozsiz rejimda bo'lsa, baribir chalinmaydi.": "Короткий звук Chronix при открытии приложения. В беззвучном режиме телефона он не звучит.",
+  "Ilova to'liq yopilib, qayta ochilganda (logo animatsiyasi paytida) qisqa Chronix ovozi. Telefon tebranish yoki ovozsiz rejimda bo'lsa, chalinmaydi.": "Короткий звук Chronix при полном перезапуске приложения (во время анимации логотипа). В режиме вибрации или без звука не воспроизводится.",
+  "Ovozni sinash": "Проверить звук",
+  "Tekshirilmoqda…": "Проверяем…",
+  "Ovoz chalindi. Eshitilmagan bo'lsa, telefonning media ovozini (musiqa balandligini) oshiring.": "Звук воспроизведён. Если не слышно — увеличьте громкость медиа (музыки) на телефоне.",
+  "Telefon tebranish yoki ovozsiz rejimda — tizim ovozga ruxsat bermadi. Qo'ng'iroq rejimini \"Ovoz\" ga o'tkazing.": "Телефон в режиме вибрации или без звука — система не разрешила звук. Включите режим звонка «Звук».",
+  "Ovozni chalib bo'lmadi (audio xatosi). Ilovani qayta ochib ko'ring.": "Не удалось воспроизвести звук (ошибка аудио). Перезапустите приложение.",
 };
