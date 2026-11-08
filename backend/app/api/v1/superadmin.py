@@ -29,6 +29,8 @@ _BUSINESS_SELECT = """
            ST_Y(b.location::geometry) AS lat, ST_X(b.location::geometry) AS lng,
            b.is_active, b.subscription_ends_at, b.monthly_fee, b.plan_id,
            (SELECT p.name FROM billing_plans p WHERE p.id = b.plan_id) AS plan_name,
+           lp.created_at AS last_payment_at, lp.amount AS last_payment_amount, lp.method AS last_payment_method,
+           coalesce((SELECT sum(sp.amount) FROM subscription_payments sp WHERE sp.business_id = b.id), 0) AS paid_total,
            b.rating_avg::float AS rating_avg, b.rating_count,
            app.business_operational(b.id) AS operational,
            u.full_name AS owner_name, u.phone AS owner_phone, o.id AS owner_member_id,
@@ -45,6 +47,8 @@ _BUSINESS_SELECT = """
       FROM businesses b
       LEFT JOIN business_members o ON o.business_id = b.id AND o.role = 'owner' AND o.is_active
       LEFT JOIN users u ON u.id = o.user_id
+      LEFT JOIN LATERAL (SELECT sp.created_at, sp.amount, sp.method FROM subscription_payments sp
+                          WHERE sp.business_id = b.id ORDER BY sp.created_at DESC, sp.id DESC LIMIT 1) lp ON TRUE
 """
 
 

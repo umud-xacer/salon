@@ -179,12 +179,13 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "staff", label: t("Xodimlar") },
 ];
 
-export function BusinessDialog({ business: b, modules, onClose }: {
+export function BusinessDialog({ business: b, modules, onClose, initialTab = "info" }: {
   business: BusinessAdmin;
   modules: ModuleInfo[];
   onClose: () => void;
+  initialTab?: Tab;
 }) {
-  const [tab, setTab] = useState<Tab>("info");
+  const [tab, setTab] = useState<Tab>(initialTab);
   const bizType = useCategories().data?.find((tx) => tx.id === b.category_id);
   const queryClient = useQueryClient();
   const refreshAll = () => Promise.all([

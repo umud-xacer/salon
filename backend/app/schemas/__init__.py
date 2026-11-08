@@ -277,6 +277,10 @@ class BusinessAdminOut(BaseModel):
     monthly_fee: int = 0
     plan_id: int | None = None
     plan_name: str | None = None
+    last_payment_at: datetime | None = None
+    last_payment_amount: int | None = None
+    last_payment_method: str | None = None
+    paid_total: int = 0
     owner_name: str | None
     owner_phone: str | None
     owner_member_id: int | None = None

@@ -361,3 +361,16 @@ def test_only_superadmin_manages_plans(client, superadmin):
             db.execute(text("UPDATE businesses SET plan_id = NULL WHERE id = :b"), {"b": biz["id"]})
         assert "business_field_forbidden" in str(e.value)
         db.rollback()
+
+
+def test_superadmin_list_shows_plan_and_last_payment(client, superadmin):
+    biz = create_business(client, superadmin)
+    r = client.post(f"/api/v1/superadmin/businesses/{biz['id']}/subscription/renew", headers=sa(superadmin),
+                    json={"days": 30, "amount": 150000, "method": "cash"})
+    assert r.status_code == 200, r.text
+    o = order(client, biz, provider="click")
+    prep = client.post("/api/v1/billing/click/prepare", data=click_form(o, 0, ext="click-sa")).json()
+    client.post("/api/v1/billing/click/complete", data=click_form(o, 1, ext="click-sa", prepare_id=prep["merchant_prepare_id"]))
+    row = next(b for b in client.get("/api/v1/superadmin/businesses", headers=sa(superadmin)).json() if b["id"] == biz["id"])
+    assert row["plan_name"] == "Start" and row["last_payment_method"] == "click"
+    assert row["last_payment_amount"] == o["amount"] and row["paid_total"] == 150000 + o["amount"]

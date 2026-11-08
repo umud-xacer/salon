@@ -281,6 +281,10 @@ export interface BusinessAdmin {
   monthly_fee: number;
   plan_id: number | null;
   plan_name: string | null;
+  last_payment_at: string | null;
+  last_payment_amount: number | null;
+  last_payment_method: string | null;
+  paid_total: number;
   operational: boolean;
   owner_name: string | null;
   owner_phone: string | null;
