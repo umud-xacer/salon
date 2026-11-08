@@ -1,0 +1,36 @@
+<!doctype html>
+<!-- Ijtimoiy tarmoq rasmi (og:image, 1200x630). Qayta yaratish — README dagi Chrome headless buyrug'i:
+     chrome --headless=new --window-size=1200,630 --screenshot=public/og-image.png scripts/og-image.html -->
+<html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; width: 1200px; height: 630px; overflow: hidden; }
+  body {
+    font-family: 'Inter', 'Segoe UI', Arial, sans-serif; color: #fff;
+    background:
+      radial-gradient(ellipse at 22% 50%, rgba(41, 110, 255, 0.38), transparent 55%),
+      radial-gradient(ellipse at 90% 10%, rgba(43, 210, 255, 0.16), transparent 50%),
+      linear-gradient(135deg, #071042 0%, #030a2b 60%, #02061c 100%);
+    display: flex; align-items: center; gap: 64px; padding: 0 96px; box-sizing: border-box;
+  }
+  img { width: 300px; height: 300px; flex: none; filter: drop-shadow(0 18px 40px rgba(20, 80, 255, 0.45)); }
+  h1 { margin: 0; font-size: 112px; font-weight: 800; letter-spacing: -4px; line-height: 1; }
+  h1 span { color: #3d8bff; }
+  .tag { margin-top: 18px; font-size: 32px; font-weight: 500; color: #b9c6ff; letter-spacing: 0.5px; }
+  .chips { margin-top: 40px; display: flex; flex-wrap: wrap; gap: 12px; max-width: 640px; }
+  .chip { font-size: 22px; font-weight: 500; padding: 10px 20px; border-radius: 999px; background: rgba(255, 255, 255, 0.08);
+          border: 1px solid rgba(255, 255, 255, 0.16); color: #e3e8ff; }
+  .url { position: absolute; right: 56px; bottom: 40px; font-size: 22px; color: #7f8fd6; font-weight: 500; }
+</style></head>
+<body>
+  <img src="../public/logo.svg" alt="">
+  <div>
+    <h1>Chron<span>ix</span></h1>
+    <div class="tag">Vaqtingiz — bizning ustuvorligimiz</div>
+    <div class="chips">
+      <span class="chip">Onlayn bron</span><span class="chip">Kalendar</span><span class="chip">Kassa</span>
+      <span class="chip">Hisobotlar</span><span class="chip">Mobil ilova</span>
+    </div>
+  </div>
+  <div class="url">ariqalqon.uz</div>
+</body></html>
