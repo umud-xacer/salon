@@ -39,8 +39,17 @@ export async function playStartupSound(force = false): Promise<StartupSoundResul
   if (Platform.OS === 'web' || (!force && !startupSoundEnabled())) return 'disabled';
   try {
     await setAudioModeAsync({ playsInSilentMode: false, interruptionMode: 'mixWithOthers', shouldPlayInBackground: false });
-    const player = createAudioPlayer(require('../assets/sounds/startup.wav'), { updateInterval: 100 });
+    // Fayl OTA bilan kelgan (APK ichida emas): avval telefonga yuklab olinadi (downloadFirst), so'ng
+    // pleer tayyor bo'lgach chalinadi. Yuklanmagan pleerda play() jimgina hech narsa qilmaydi.
+    const player = createAudioPlayer(require('../assets/sounds/startup.wav'), { updateInterval: 100, downloadFirst: true });
     player.volume = VOLUME;
+    for (let i = 0; i < 40 && !player.isLoaded; i++) {
+      await new Promise((r) => setTimeout(r, 75));       // ko'pi bilan 3 s
+    }
+    if (!player.isLoaded) {
+      try { player.remove(); } catch { /* bo'shatilgan */ }
+      return 'error';
+    }
     let released = false;
     let started = false;
     let failed = false;
