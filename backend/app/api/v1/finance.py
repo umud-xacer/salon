@@ -116,6 +116,9 @@ def cash_day(day: date = Query(alias="date"), business_id: int = Depends(_cash_v
         SELECT a.id, a.starts_at, a.status::text AS status, c.full_name AS client_name, u.full_name AS member_name,
                coalesce((SELECT array_agg(s.service_name ORDER BY s.id) FROM appointment_services s
                           WHERE s.appointment_id = a.id), '{{}}') AS services,
+               coalesce((SELECT array_agg(coalesce(nullif(btrim(sv.name_ru), ''), s.service_name) ORDER BY s.id)
+                         FROM appointment_services s LEFT JOIN services sv ON sv.id = s.service_id
+                        WHERE s.appointment_id = a.id), '{{}}') AS services_ru,
                a.total_price - a.discount - coalesce(
                    (SELECT sum(p.amount) FROM payments p WHERE p.appointment_id = a.id AND p.status = 'paid'), 0) AS due
           FROM appointments a

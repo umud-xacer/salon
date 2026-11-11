@@ -6,7 +6,7 @@ faol xizmatlarni va xodimlarning ochiq profilini (public_staff) beradi.
 from datetime import date
 from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -78,6 +78,15 @@ def app_info():
     return {"support_phone": s.support_phone, "support_telegram": s.support_telegram,
             "yandex_maps_key": s.yandex_maps_js_key or None,
             "yandex_maps_panel_key": s.yandex_maps_panel_key or None}
+
+
+@router.get("/plans")
+def public_plans(response: Response, db: Session = Depends(get_public_db)):
+    """Faol tariflar va narxlari — taqdimot sayti (boshqa domen) o'qiydi, shuning uchun hammaga ochiq CORS.
+    Faqat nom va narx: baza funksiyasi (app.public_billing_plans) boshqa hech narsa bermaydi."""
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    rows = db.execute(text("SELECT name, name_ru, monthly_fee FROM app.public_billing_plans()")).mappings()
+    return [dict(r) for r in rows]
 
 
 @router.get("/categories", response_model=list[CategoryOut])

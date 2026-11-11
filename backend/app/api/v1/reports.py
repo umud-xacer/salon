@@ -89,8 +89,10 @@ def build_report(db: Session, business_id: int, f: date, t: date) -> ReportOut:
     """), p).mappings().one()
 
     services = db.execute(text(f"""
-        SELECT s.service_name AS name, count(*) AS count, sum(s.price)::bigint AS revenue
-          FROM appointment_services s JOIN appointments a ON a.id = s.appointment_id CROSS JOIN {_TZ}
+        SELECT s.service_name AS name, max(nullif(btrim(sv.name_ru), '')) AS name_ru,
+               count(*) AS count, sum(s.price)::bigint AS revenue
+          FROM appointment_services s JOIN appointments a ON a.id = s.appointment_id
+          LEFT JOIN services sv ON sv.id = s.service_id CROSS JOIN {_TZ}
          WHERE a.business_id = :b AND {in_period} AND a.status = 'completed'
          GROUP BY s.service_name ORDER BY revenue DESC, count DESC, name LIMIT 20
     """), p).mappings()

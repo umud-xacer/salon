@@ -116,7 +116,7 @@ function TypeDialog({ type, onClose }: { type: BusinessType | null; onClose: () 
       <form onSubmit={submit} className="space-y-3">
         <label className="block text-sm">{t("Ish tartibi (panel va ilova shunga moslashadi)")}
           <select className={inputClass} value={kind} onChange={(e) => setKind(e.target.value)}>
-            {(Object.keys(KIND_LABELS) as BusinessKind[]).map((k) => <option key={k} value={k}>{KIND_LABELS[k]}</option>)}
+            {(Object.keys(KIND_LABELS) as BusinessKind[]).map((k) => <option key={k} value={k}>{t(KIND_LABELS[k])}</option>)}
           </select>
         </label>
         <div className="grid gap-3 sm:grid-cols-2">
@@ -202,7 +202,7 @@ function TypeDialog({ type, onClose }: { type: BusinessType | null; onClose: () 
         <label className="block text-sm">{t("Xodim nomi (rol ro'yxatida, kalendarda)")}
           <input className={inputClass} maxLength={40} value={staffWord} onChange={(e) => setStaffWord(e.target.value)}
             placeholder={kind === "clinic" ? t("Shifokor (standart)") : kind === "pharmacy" ? t("Farmatsevt (standart)") : t("Usta (standart)")} />
-          <span className="mt-1 block text-xs text-muted">Bo'sh qolsa — ish tartibidagi standart so'z. Masalan, Wellness & Spa: Mutaxassis.</span>
+          <span className="mt-1 block text-xs text-muted">{t("Bo'sh qolsa — ish tartibidagi standart so'z. Masalan, Wellness & Spa: Mutaxassis.")}</span>
         </label>
         <label className="block text-sm">{t("Lavozim / mutaxassislik tavsiyalari (har qatorda bittadan)")}
           <textarea className={`${inputClass} min-h-24`} value={titles} onChange={(e) => setTitles(e.target.value)}

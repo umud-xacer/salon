@@ -31,6 +31,9 @@ _SELECT = """
                     AND a.status IN ('pending', 'confirmed') AND a.ends_at > now(), false) AS needs_contact,
            coalesce((SELECT array_agg(s.service_name ORDER BY s.id) FROM appointment_services s
                       WHERE s.appointment_id = a.id), '{}') AS services,
+           coalesce((SELECT array_agg(coalesce(nullif(btrim(sv.name_ru), ''), s.service_name) ORDER BY s.id)
+                     FROM appointment_services s LEFT JOIN services sv ON sv.id = s.service_id
+                    WHERE s.appointment_id = a.id), '{}') AS services_ru,
            coalesce((SELECT array_agg(s.service_id ORDER BY s.id) FROM appointment_services s
                       WHERE s.appointment_id = a.id), '{}') AS service_ids,
            rv.rating AS review_rating, rv.staff_rating AS review_staff_rating,

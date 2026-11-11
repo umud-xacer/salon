@@ -169,6 +169,7 @@ export type Appointment = {
   ends_at: string;
   total_price: number;
   services: string[];
+  services_ru?: string[];
   service_ids: number[];
   attendance: 'reminded' | 'confirmed' | 'no_response' | null;
   needs_contact: boolean;

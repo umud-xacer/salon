@@ -14,7 +14,7 @@ import { generatePassword, PasswordInput, PasswordReveal } from "../../component
 import { CredentialsBox } from "../../components/CredentialsBox";
 import { ScheduleEditor } from "./ScheduleEditor";
 
-import { t } from "../../i18n";
+import { dyn, t } from "../../i18n";
 const membersKey = (b: number) => ["members", b];
 
 export function useMembers(businessId: number) {
@@ -54,7 +54,7 @@ export function MembersPanel({ businessId, canManageManagers }: { businessId: nu
             >
               <span className="min-w-0 basis-full sm:basis-auto sm:flex-1">
                 <span className="block font-medium break-words">{m.full_name || m.phone}</span>
-                <span className="block text-muted tabular-nums">{m.phone}{m.title ? ` · ${m.title}` : ""}</span>
+                <span className="block text-muted tabular-nums">{m.phone}{m.title ? ` · ${dyn(m.title)}` : ""}</span>
               </span>
               <Badge tone={m.role === "owner" ? "green" : "gray"}>{roleLabel(m.role, v)}</Badge>
               <PasswordBadge status={m.password_status} />
@@ -89,7 +89,7 @@ function StaffTitles() {
   if (!v.titles?.length) return null;
   return (
     <datalist id="staff-titles">
-      {v.titles.map((tx) => <option key={tx} value={tx} />)}
+      {v.titles.map((tx) => <option key={tx} value={tx} label={dyn(tx)} />)}
     </datalist>
   );
 }
@@ -224,7 +224,7 @@ function MainTab({ businessId, member: m, editable, canManageManagers }: {
       <dl className="grid grid-cols-[6rem_1fr] gap-y-2 text-sm">
         <dt className="text-muted">{t("Telefon")}</dt><dd className="tabular-nums">{m.phone}</dd>
         <dt className="text-muted">{t("Rol")}</dt><dd>{roleLabel(m.role, v)}</dd>
-        {m.title && <><dt className="text-muted">{t("Lavozim")}</dt><dd>{m.title}</dd></>}
+        {m.title && <><dt className="text-muted">{t("Lavozim")}</dt><dd>{dyn(m.title)}</dd></>}
       </dl>
     );
   }

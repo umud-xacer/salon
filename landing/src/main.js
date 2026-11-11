@@ -80,16 +80,48 @@ function toast(msg) {
   toastTimer = setTimeout(() => toastEl.classList.remove("show"), 2600);
 }
 
-// ── Tariflar (config.js) ──
-$("#prices").innerHTML = PLANS.map((p) => `
-  <article class="price${p.featured ? " featured" : ""}">
-    <span class="tag">${planText(p.note)}</span>
-    <h3>${p.name}</h3>
-    <div class="amount">${planText(p.price)}</div>
-    <div class="per">${p.period ? (LANG === "uz" ? p.period : PLAN_TEXT[LANG].period) : ""}</div>
-    <ul>${p.features.map((f) => `<li>${planText(f)}</li>`).join("")}</ul>
+// ── Tariflar: matnlar config.js da, narxlar va faol tariflar Super Admin "Narxlar" sahifasidan (API) ──
+const esc = (x) => String(x).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+const fmtSum = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+const periodText = (p) => (p.period ? (LANG === "uz" ? p.period : PLAN_TEXT[LANG].period) : "");
+const planCard = (p) => `
+  <article class="price${p.featured ? " featured" : ""}" data-plan="${esc(p.name)}"${p.fixed ? " data-fixed" : ""}>
+    <span class="tag"${p.note ? "" : " hidden"}>${esc(planText(p.note ?? ""))}</span>
+    <h3>${esc(p.name)}</h3>
+    <div class="amount">${esc(planText(p.price))}</div>
+    <div class="per">${periodText(p)}</div>
+    <ul>${(p.features ?? []).map((f) => `<li>${esc(planText(f))}</li>`).join("")}</ul>
     <a class="btn ${p.featured ? "btn-light" : "btn-line"}" href="#aloqa"><span>${tr("prices.cta")}</span><i class="arrow" aria-hidden="true">→</i></a>
-  </article>`).join("");
+  </article>`;
+$("#prices").innerHTML = PLANS.map(planCard).join("");
+
+// Jonli narxlar: kartalar joyida yangilanadi (animatsiyalar buzilmaydi). Xato bo'lsa config.js dagi zaxira qoladi.
+function applyLivePlans(list) {
+  if (!Array.isArray(list) || list.length === 0) return;
+  const box = $("#prices");
+  const live = new Map(list.filter((p) => p?.name && Number.isFinite(p.monthly_fee)).map((p) => [p.name.trim().toLowerCase(), p]));
+  if (live.size === 0) return;
+  box.querySelectorAll("[data-plan]:not([data-fixed])").forEach((card) => {
+    const key = card.dataset.plan.trim().toLowerCase();
+    const p = live.get(key);
+    if (!p) { card.remove(); return; }                    // tarif Narxlar sahifasida o'chirilgan
+    card.querySelector(".amount").textContent = fmtSum(p.monthly_fee);
+    if (LANG === "ru" && p.name_ru) card.querySelector("h3").textContent = p.name_ru;
+    live.delete(key);
+  });
+  // Narxlar sahifasida ochilgan, config.js da tavsifi hali yo'q tariflar — nom va narx bilan
+  const fixed = box.querySelector("[data-fixed]");
+  for (const p of live.values()) {
+    const html = planCard({ name: LANG === "ru" && p.name_ru ? p.name_ru : p.name, price: fmtSum(p.monthly_fee), period: "so'm / oy" });
+    if (fixed) fixed.insertAdjacentHTML("beforebegin", html); else box.insertAdjacentHTML("beforeend", html);
+  }
+}
+if (LINKS.api) {
+  fetch(`${LINKS.api}/api/v1/catalog/plans`)
+    .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+    .then(applyLivePlans)
+    .catch(() => { /* API yo'q — zaxira narxlar ko'rinadi */ });
+}
 
 // ── Havolalar ──
 const SOON = { play: tr("toast.play"), appstore: tr("toast.appstore") };

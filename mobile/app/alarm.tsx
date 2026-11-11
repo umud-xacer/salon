@@ -9,7 +9,7 @@ import { alarmKey, openedAlarms } from '../src/notifications';
 import { Button, dateTimeOf, ErrorText } from '../src/ui';
 import { cancelBookingReminder } from '../src/localReminders';
 
-import { t } from "../src/i18n";
+import { pickList, t } from "../src/i18n";
 const PATTERN = [0, 800, 400];
 
 // Budilnik ekrani: bir tugma bosilmaguncha ovoz va tebranish to'xtamaydi
@@ -84,7 +84,7 @@ export default function Alarm() {
           {isTest
             ? t("Ovoz va tebranish ishlayapti")
             : isClient
-            ? `${appointment?.business_name ?? ''}\n${appointment?.services.join(', ') ?? ''}`
+            ? `${appointment?.business_name ?? ''}\n${(appointment ? pickList(appointment.services, appointment.services_ru).join(', ') : '')}`
             : t("Mijoz bronni tasdiqlamadi, iltimos bog'laning")}
         </Text>
       </View>

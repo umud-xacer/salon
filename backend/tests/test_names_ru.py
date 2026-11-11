@@ -52,3 +52,23 @@ def test_manual_russian_name_set_and_clear(client, superadmin):
     assert r.json()["name_ru"] == "Волосы"
     assert client.post(f"{base}/services", headers=h, json={"name": "Uzun", "name_ru": "x" * 121, "duration_min": 30,
                                                             "price": 1}).status_code == 422
+
+
+def test_booking_shows_russian_service_name(client, superadmin):
+    """Bronda xizmat nomi o'sha paytdagi (o'zbekcha) nusxa; ruscha ilova/panel uchun services_ru ham keladi."""
+    from tests.test_appointments import book, customer
+    from tests.test_schedule import day_from_today
+    biz = create_business(client, superadmin)
+    h = auth_header(biz["owner"])
+    base = f"/api/v1/businesses/{biz['id']}"
+    with_ru = client.post(f"{base}/services", headers=h, json={"name": "Soch olish", "name_ru": "Стрижка",
+                                                               "duration_min": 30, "price": 50000}).json()
+    plain = client.post(f"{base}/services", headers=h, json={"name": "Soqol", "duration_min": 30, "price": 30000}).json()
+    day = day_from_today(biz, 2)
+    tokens = customer(client)
+    r = book(client, tokens, new_master(client, biz, with_ru), with_ru, day, "10:00")
+    assert r.status_code == 201, r.text
+    assert r.json()["services"] == ["Soch olish"] and r.json()["services_ru"] == ["Стрижка"]
+    r = book(client, tokens, new_master(client, biz, plain), plain, day, "11:00")
+    assert r.status_code == 201, r.text
+    assert r.json()["services"] == ["Soqol"] and r.json()["services_ru"] == ["Soqol"]      # ruschasi yo'q — o'zbekchasi

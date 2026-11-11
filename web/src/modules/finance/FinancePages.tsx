@@ -10,7 +10,7 @@ import { Button, Card, Empty, ErrorNote, inputClass, PageTitle, Spinner } from "
 import { PaymentPanel, PaymentRow } from "./PaymentPanel";
 import { useVocab } from "../vocab";
 
-import { t } from "../../i18n";
+import { dyn, expenseNote, pickList, t } from "../../i18n";
 function Tile({ label, value, strong }: { label: string; value: number; strong?: boolean }) {
   return (
     <Card>
@@ -91,7 +91,7 @@ export function CashPage({ membership }: { membership: Membership }) {
                       <span className="min-w-0 flex-1 basis-40">
                         <span className="block font-medium break-words">{u.client_name}</span>
                         <span className="block text-xs text-muted break-words">
-                          {u.services.join(", ")} · {u.member_name} · {STATUS_LABELS[u.status] ?? u.status}
+                          {pickList(u.services, u.services_ru).join(", ")} · {u.member_name} · {STATUS_LABELS[u.status] ?? u.status}
                         </span>
                       </span>
                       <span className="tabular-nums">{formatMoney(u.due)}</span>
@@ -117,7 +117,7 @@ export function CashPage({ membership }: { membership: Membership }) {
       )}
       {paying && (
         <Modal title={paying.client_name ?? v.clientOne} onClose={() => setPaying(null)}>
-          <p className="text-sm text-muted">{paying.services.join(", ")}</p>
+          <p className="text-sm text-muted">{pickList(paying.services, paying.services_ru).join(", ")}</p>
           <PaymentPanel membership={membership} appointmentId={paying.id} onPaid={() => setPaying(null)} />
         </Modal>
       )}
@@ -175,8 +175,8 @@ export function ExpensesPage({ membership }: { membership: Membership }) {
                 className="flex w-full flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 text-left text-sm hover:bg-page">
                 <span className="text-muted tabular-nums">{formatDate(`${e.spent_at}T12:00:00Z`)}</span>
                 <span className="min-w-0 flex-1 basis-40">
-                  <span className="block font-medium break-words">{e.category_name ?? t("Toifasiz")}</span>
-                  {e.note && <span className="block text-xs text-muted break-words">{e.note}</span>}
+                  <span className="block font-medium break-words">{e.category_name ? dyn(e.category_name) : t("Toifasiz")}</span>
+                  {e.note && <span className="block text-xs text-muted break-words">{expenseNote(e.note)}</span>}
                 </span>
                 <span className="tabular-nums">{formatMoney(e.amount)}</span>
               </button>
@@ -244,7 +244,7 @@ function ExpenseDialog({ businessId, expense, categories, onClose }: {
         <label className="block text-sm">{t("Toifa")}
           <select className={inputClass} value={category} onChange={(e) => setCategory(e.target.value)}>
             <option value="">{t("Toifasiz")}</option>
-            {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            {categories.map((c) => <option key={c.id} value={c.id}>{dyn(c.name)}</option>)}
           </select>
         </label>
         <label className="block text-sm">{t("Izoh")}

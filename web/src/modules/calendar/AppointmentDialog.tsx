@@ -9,7 +9,7 @@ import { Modal } from "../../components/Modal";
 import { PaymentPanel } from "../finance/PaymentPanel";
 import { useVocab } from "../vocab";
 
-import { t } from "../../i18n";
+import { pickList, t } from "../../i18n";
 const OPEN = ["pending", "confirmed"];
 
 export function AppointmentDialog({ membership, appointment: a, masterName, onClose }: {
@@ -51,7 +51,7 @@ export function AppointmentDialog({ membership, appointment: a, masterName, onCl
           {formatDate(a.starts_at)}, {formatTime(a.starts_at)}–{formatTime(a.ends_at)}
         </dd>
         <dt className="text-muted">{t("Xizmat")}</dt>
-        <dd>{a.services.join(", ")}</dd>
+        <dd>{pickList(a.services, a.services_ru).join(", ")}</dd>
         <dt className="text-muted">{v.staffOne}</dt>
         <dd>{masterName}</dd>
         <dt className="text-muted">{t("Narx")}</dt>

@@ -47,7 +47,7 @@ def test_report_totals(client, biz, ctx):
     assert bk["total"] == 4 and bk["completed"] == 2 and bk["by_status"]["cancelled"] == 1
     assert bk["by_status"]["no_show"] == 1 and bk["cancel_rate"] == 25.0
     assert bk["completed_revenue"] == 2 * price and bk["avg_check"] == price
-    assert d["services"] == [{"name": ctx["service"]["name"], "count": 2, "revenue": 2 * price}]
+    assert d["services"] == [{"name": ctx["service"]["name"], "name_ru": None, "count": 2, "revenue": 2 * price}]
 
     (staff,) = d["staff"]
     assert (staff["bookings"], staff["completed"], staff["no_show"], staff["revenue"]) == (3, 2, 1, 2 * price)

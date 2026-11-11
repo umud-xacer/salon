@@ -8,7 +8,7 @@ import { api, ApiError, Appointment } from '../src/api';
 import { StarsInput } from '../src/Reviews';
 import { Button, Card, ErrorText, Field, shared, type, dateTimeOf } from '../src/ui';
 
-import { t } from "../src/i18n";
+import { pickList, t } from "../src/i18n";
 export default function Review() {
   const { appointmentId } = useLocalSearchParams<{ appointmentId: string }>();
   const router = useRouter();
@@ -71,7 +71,7 @@ export default function Review() {
   return (
     <ScrollView style={shared.screen} contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
       <Text style={type.h2}>{a.business_name ?? t("Muassasa")}</Text>
-      <Text style={shared.muted}>{dateTimeOf(a.starts_at)} · {a.services.join(', ')}</Text>
+      <Text style={shared.muted}>{dateTimeOf(a.starts_at)} · {pickList(a.services, a.services_ru).join(', ')}</Text>
 
       <Card>
         <Text style={shared.name}>{t("Muassasaga baho")}</Text>

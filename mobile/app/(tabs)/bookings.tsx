@@ -8,7 +8,7 @@ import {
   Button, Card, colors, dateTimeOf, EmptyState, Icon, money, radius, Segments, shared, type,
 } from '../../src/ui';
 
-import { t } from "../../src/i18n";
+import { pickList, t } from "../../src/i18n";
 type Tab = 'active' | 'history' | 'cancelled';
 
 const STATUS: Record<Appointment['status'], { label: string; color: string; bg: string }> = {
@@ -131,7 +131,7 @@ export default function Bookings() {
               )}
               <View style={styles.line}>
                 <Icon name="list-outline" size={16} color={colors.muted} />
-                <Text style={[type.body, { flex: 1 }]} numberOfLines={2}>{a.services.join(', ')}</Text>
+                <Text style={[type.body, { flex: 1 }]} numberOfLines={2}>{pickList(a.services, a.services_ru).join(', ')}</Text>
                 <Text style={{ fontWeight: '700', color: colors.text }}>{money(a.total_price)}</Text>
               </View>
               {a.status === 'pending' && a.confirm_by && !isPast(a) && (

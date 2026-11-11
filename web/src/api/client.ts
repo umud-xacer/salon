@@ -1,5 +1,6 @@
 // API bilan yagona aloqa nuqtasi. Access token xotirada, refresh token localStorage'da.
 import type { LoginResponse } from "./types";
+import { t } from "../i18n";
 
 const BASE = "/api/v1";
 const REFRESH_KEY = "chronix.refresh";
@@ -58,7 +59,7 @@ async function parseError(res: Response): Promise<ApiError> {
   if (Array.isArray(detail) && typeof detail[0]?.msg === "string") {
     return new ApiError(res.status, "validation", detail[0].msg.replace(/^Value error, /, ""));
   }
-  return new ApiError(res.status, "error", "So'rov bajarilmadi. Qayta urinib ko'ring.");
+  return new ApiError(res.status, "error", t("So'rov bajarilmadi. Qayta urinib ko'ring."));
 }
 
 async function doRefresh(): Promise<boolean> {

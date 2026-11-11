@@ -21,7 +21,7 @@ import { BookingDialog, type BookingPreset } from "./BookingDialog";
 import { TimeGrid, type Column } from "./TimeGrid";
 import { useVocab } from "../vocab";
 
-import { t } from "../../i18n";
+import { dyn, pickList, t } from "../../i18n";
 type View = "day" | "week";
 
 export function CalendarPage({ membership }: { membership: Membership }) {
@@ -53,7 +53,7 @@ export function CalendarPage({ membership }: { membership: Membership }) {
       return data.staff.map((s) => ({
         key: String(s.id),
         title: s.full_name,
-        subtitle: s.title,
+        subtitle: dyn(s.title),
         items: data.appointments.filter((a) => a.member_id === s.id),
       }));
     }
@@ -163,7 +163,7 @@ export function CalendarPage({ membership }: { membership: Membership }) {
           hourTo={hourTo}
           onEmptyClick={canBook ? openNew : undefined}
           onOpen={setOpened}
-          label={(a) => (view === "week" ? masterName(a.member_id) : a.services.join(", "))}
+          label={(a) => (view === "week" ? masterName(a.member_id) : pickList(a.services, a.services_ru).join(", "))}
         />
       )}
 

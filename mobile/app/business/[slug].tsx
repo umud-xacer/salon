@@ -71,7 +71,7 @@ export default function Business() {
           {specialties.length === 0 && <Text style={shared.muted}>{t("Hozircha shifokorlar qo'shilmagan")}</Text>}
           <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
             {specialties.map((tx) => (
-              <Chip key={tx} label={`${tx} · ${business.staff.filter((s) => (s.title?.trim() || t("Umumiy amaliyot")) === tx).length}`}
+              <Chip key={tx} label={`${t(tx)} · ${business.staff.filter((s) => (s.title?.trim() || t("Umumiy amaliyot")) === tx).length}`}
                 active={specialty === tx}
                 onPress={() => { setSpecialty(tx); setMemberId(null); setService(null); }} />
             ))}
@@ -133,7 +133,7 @@ export default function Business() {
           {masters.map((m) => (
             <Chip
               key={m.member_id}
-              label={[m.full_name, m.title, m.rating_count > 0 ? `★ ${m.rating_avg.toFixed(1)} (${m.rating_count})` : null]
+              label={[m.full_name, m.title ? t(m.title) : null, m.rating_count > 0 ? `★ ${m.rating_avg.toFixed(1)} (${m.rating_count})` : null]
                 .filter(Boolean).join(' · ')}
               active={memberId === m.member_id}
               onPress={() => setMemberId(m.member_id)}

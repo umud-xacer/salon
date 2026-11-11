@@ -10,7 +10,7 @@ import { Badge, Button, Card, Empty, ErrorNote, inputClass, PageTitle, Spinner }
 import { vocabFor } from "../vocab";
 import { useVocab } from "../vocab";
 
-import { t } from "../../i18n";
+import { pickList, t } from "../../i18n";
 const PAGE = 50;
 
 export function ClientsPage({ membership }: { membership: Membership }) {
@@ -163,7 +163,7 @@ function ClientDialog({ businessId, client, onClose }: {
             {history.data?.map((a) => (
               <li key={a.id} className="flex flex-wrap justify-between gap-2 py-2">
                 <span className="tabular-nums">{formatDate(a.starts_at)} {formatTime(a.starts_at)}</span>
-                <span className="min-w-32 flex-1 truncate">{a.services.join(", ")}</span>
+                <span className="min-w-32 flex-1 truncate">{pickList(a.services, a.services_ru).join(", ")}</span>
                 <span className="text-muted">{STATUS_LABELS[a.status] ?? a.status}</span>
               </li>
             ))}

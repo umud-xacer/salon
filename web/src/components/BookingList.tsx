@@ -7,7 +7,7 @@ import { formatMoney, formatTime, STATUS_LABELS, todayIso } from "./format";
 import { Badge, Card, Empty, ErrorNote, Spinner } from "./ui";
 import { useVocab } from "../modules/vocab";
 
-import { t } from "../i18n";
+import { pickList, t } from "../i18n";
 const tone = (status: string) =>
   status === "completed" ? "green" : status === "cancelled" || status === "no_show" ? "red" : status === "pending" ? "amber" : "gray";
 
@@ -44,7 +44,7 @@ export function BookingList({ businessId, showMaster }: { businessId: number; sh
               {formatTime(a.starts_at)}–{formatTime(a.ends_at)}
             </span>
             <span className="min-w-0 basis-full sm:basis-auto sm:flex-1">
-              {a.services.join(", ") || t("Xizmat")}
+              {pickList(a.services, a.services_ru).join(", ") || t("Xizmat")}
               <span className="block text-muted">
                 {a.client_name ?? v.clientOne}
                 {showMaster && a.member_name ? ` · ${a.member_name}` : ""}

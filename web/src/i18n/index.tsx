@@ -35,6 +35,15 @@ export function t(uz: string, vars?: Record<string, unknown>): string {
 /** Server ma'lumoti: ruscha tilda ruscha nom (bo'lsa), aks holda o'zbekcha */
 export const pick = (uz: string, ru?: string | null) => (current === "ru" && ru?.trim()) || uz;
 
+/** Nomlar ro'yxati (bron xizmatlari): ruscha tilda ruscha ro'yxat (bo'lsa) */
+export const pickList = (uz: string[], ru?: string[] | null) => (current === "ru" && ru?.length ? ru : uz);
+
+/** Server yozgan o'zbekcha matn (lavozim tavsiyasi, "Oylik" toifasi): lug'atda bo'lsa ruscha, bo'lmasa o'zi */
+export const dyn = (s?: string | null) => (s ? t(s) : "");
+
+/** Xarajat izohi: server "Oylik: Ism, 11.2026" deb yozadi */
+export const expenseNote = (s: string) => (current === "ru" ? s.replace(/^Oylik: /, `${t("Oylik")}: `) : s);
+
 /** Qiymatlari o'zbekcha bo'lgan lug'at/massivni o'qilganda tarjima qiladi (STATUS_LABELS, WEEKDAYS...) */
 export function localized<T extends object>(src: T): T {
   return new Proxy(src, {

@@ -374,3 +374,29 @@ def test_superadmin_list_shows_plan_and_last_payment(client, superadmin):
     row = next(b for b in client.get("/api/v1/superadmin/businesses", headers=sa(superadmin)).json() if b["id"] == biz["id"])
     assert row["plan_name"] == "Start" and row["last_payment_method"] == "click"
     assert row["last_payment_amount"] == o["amount"] and row["paid_total"] == 150000 + o["amount"]
+
+
+# ─── Ochiq tariflar (landing narxlari) ───────────────────────────────────────
+def test_public_plans_show_only_active_names_and_prices(client, superadmin):
+    r = client.get("/api/v1/catalog/plans")                      # tokensiz
+    assert r.status_code == 200 and r.headers["access-control-allow-origin"] == "*"
+    def ours():                                                  # boshqa testlar ochgan tariflar hisobga olinmaydi
+        return [p for p in client.get("/api/v1/catalog/plans").json() if p["name"] in ("Start", "Biznes")]
+    assert all(set(p) == {"name", "name_ru", "monthly_fee"} for p in r.json())     # id va boshqa maydonlar chiqmaydi
+    assert ours() == [{"name": "Start", "name_ru": "Старт", "monthly_fee": 199000},
+                        {"name": "Biznes", "name_ru": "Бизнес", "monthly_fee": 399000}]
+    plans = client.get("/api/v1/superadmin/billing/plans", headers=sa(superadmin)).json()
+    start = next(p for p in plans if p["name"] == "Start")
+    biznes = next(p for p in plans if p["name"] == "Biznes")
+    assert client.patch(f"/api/v1/superadmin/billing/plans/{start['id']}", headers=sa(superadmin),
+                        json={"monthly_fee": 249000}).status_code == 200
+    assert client.patch(f"/api/v1/superadmin/billing/plans/{biznes['id']}", headers=sa(superadmin),
+                        json={"is_active": False}).status_code == 200
+    assert ours() == [{"name": "Start", "name_ru": "Старт", "monthly_fee": 249000}]
+    from app.db.session import api_session
+    with api_session(None) as db:                                # jadvalning o'zi baribir yopiq
+        assert db.execute(text("SELECT count(*) FROM billing_plans")).scalar() == 0
+    # Keyingi testlar uchun asl holat
+    client.patch(f"/api/v1/superadmin/billing/plans/{start['id']}", headers=sa(superadmin), json={"monthly_fee": 199000})
+    client.patch(f"/api/v1/superadmin/billing/plans/{biznes['id']}", headers=sa(superadmin), json={"is_active": True})
+

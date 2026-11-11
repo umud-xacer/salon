@@ -58,6 +58,7 @@ class AppointmentOut(BaseModel):
     ends_at: dt.datetime
     total_price: int
     services: list[str]
+    services_ru: list[str] = []                         # ruscha nomlar (yo'q bo'lsa o'zbekchasi) — ruscha ilova/panel uchun
     service_ids: list[int]
     client_note: str | None
     cancel_reason: str | None

@@ -59,6 +59,9 @@ export async function setLang(lang: Lang) {
 /** Server ma'lumoti: ruscha tilda ruscha nom (bo'lsa), aks holda o'zbekcha */
 export const pick = (uz: string, ru?: string | null) => (current === 'ru' && ru?.trim()) || uz;
 
+/** Nomlar ro'yxati (bron xizmatlari): ruscha tilda ruscha ro'yxat (bo'lsa) */
+export const pickList = (uz: string[], ru?: string[] | null) => (current === 'ru' && ru?.length ? ru : uz);
+
 /** Server bildirishnomasi (o'zbekcha matn) — ruscha tilda sarlavha va oxirgi so'zlar tarjima qilinadi */
 export function notificationText(title: string, body: string | null): { title: string; body: string | null } {
   if (current === 'uz') return { title, body };

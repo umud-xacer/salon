@@ -36,6 +36,7 @@ class BookingStats(BaseModel):
 
 class ServiceRow(BaseModel):
     name: str
+    name_ru: str | None = None
     count: int
     revenue: int
 

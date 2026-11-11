@@ -8,7 +8,7 @@ import { roleLabel, useVocab } from "../vocab";
 import { Modal } from "../../components/Modal";
 import { Badge, Button, Card, Empty, ErrorNote, inputClass, PageTitle, Spinner, Tabs } from "../../components/ui";
 
-import { t } from "../../i18n";
+import { dyn, t } from "../../i18n";
 const STATUS: Record<string, { label: string; tone: "gray" | "amber" | "green" }> = {
   draft: { label: t("Qoralama"), tone: "gray" },
   approved: { label: t("Tasdiqlangan"), tone: "amber" },
@@ -208,7 +208,7 @@ function Rates({ businessId }: { businessId: number }) {
               className="flex w-full flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 text-left text-sm hover:bg-page">
               <span className="min-w-0 flex-1 basis-40">
                 <span className="block font-medium break-words">{c.full_name}</span>
-                <span className="block text-xs text-muted">{roleLabel(c.role, v)}{c.title ? ` · ${c.title}` : ""}</span>
+                <span className="block text-xs text-muted">{roleLabel(c.role, v)}{c.title ? ` · ${dyn(c.title)}` : ""}</span>
               </span>
               <span className="tabular-nums">{formatMoney(c.base_salary)}</span>
               <span className="text-muted tabular-nums">{formatQty(c.commission_percent)}%</span>

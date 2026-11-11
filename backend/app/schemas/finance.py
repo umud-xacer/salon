@@ -49,6 +49,7 @@ class UnpaidAppointment(BaseModel):
     client_name: str | None
     member_name: str | None
     services: list[str]
+    services_ru: list[str] = []
     due: int
 
 

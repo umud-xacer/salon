@@ -6,9 +6,13 @@ export const LINKS = {
   appstore: "",                                 // App Store sahifasi — Apple Developer hisobidan keyin
   phone: "+998200035599",
   telegram: "https://t.me/JabborqulovUmidjon",
+  api: "https://api.ariqalqon.uz",              // tarif narxlari shu yerdan olinadi (Super Admin -> Narxlar)
 };
 
-// DIQQAT: narxlar vaqtinchalik namunadir — haqiqiy tariflarni shu yerga yozing.
+// Tarif NARXLARI va qaysi tarif faolligi Super Admin panelidagi "Narxlar" sahifasidan olinadi (nomi bo'yicha
+// moslanadi: "Start", "Biznes"). Bu yerdagi "price" — faqat zaxira: API javob bermasa shu ko'rinadi.
+// Izoh va imkoniyatlar ro'yxati (note, features) shu faylda qoladi. Narxlar sahifasida yangi tarif ochilsa,
+// u saytda nom va narx bilan chiqadi — tavsifini shu yerga qo'shing. "fixed: true" — API'ga bog'liq emas.
 export const PLANS = [
   {
     name: "Start",
@@ -27,6 +31,7 @@ export const PLANS = [
   },
   {
     name: "Premium",
+    fixed: true,
     price: "Kelishiladi",
     period: "",
     note: "Tarmoq va katta klinikalar",

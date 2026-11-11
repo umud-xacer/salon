@@ -9,7 +9,7 @@ import { addDays, formatMoney, METHOD_LABELS, shortDate, STATUS_LABELS, todayIso
 import { Button, Card, Empty, ErrorNote, inputClass, PageTitle, Spinner, Tabs } from "../../components/ui";
 import { useVocab } from "../vocab";
 
-import { t } from "../../i18n";
+import { dyn, pick, t } from "../../i18n";
 type Preset = "today" | "week" | "month" | "last_month" | "custom";
 
 const SOURCE_LABELS: Record<string, string> = { app: t("Ilova"), admin: t("Panel"), walk_in: t("O'zi kelgan"), telegram: "Telegram" };
@@ -150,7 +150,7 @@ function ReportView({ r }: { r: Report }) {
         </Card>
         <Card>
           <h2 className="mb-3 text-sm font-medium">{t("Xarajatlar toifasi bo'yicha")}</h2>
-          <BarList rows={r.expenses_by_category.map((x) => ({ label: x.name, value: x.amount }))}
+          <BarList rows={r.expenses_by_category.map((x) => ({ label: dyn(x.name), value: x.amount }))}
             empty={t("Bu davrda xarajat yo'q")} />
         </Card>
       </div>
@@ -186,7 +186,7 @@ function ReportView({ r }: { r: Report }) {
       <Card>
         <h2 className="mb-3 text-sm font-medium">{t("Xizmatlar (bajarilgan bronlar)")}</h2>
         <Table empty={t("Bu davrda bajarilgan xizmat yo'q")} head={[t("Xizmat"), t("Soni"), t("Summa")]}
-          rows={r.services.map((s) => [s.name, s.count, formatMoney(s.revenue)])} />
+          rows={r.services.map((s) => [pick(s.name, s.name_ru), s.count, formatMoney(s.revenue)])} />
       </Card>
       <Card>
         <h2 className="mb-3 text-sm font-medium">{t("Xodimlar")}</h2>

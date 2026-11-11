@@ -55,6 +55,7 @@ export interface Appointment {
   ends_at: string;
   total_price: number;
   services: string[];
+  services_ru?: string[];
   client_name: string | null;
   client_phone: string | null;
   confirm_by?: string | null;        // 'pending': shu vaqtgacha tasdiqlanmasa — avtomatik bekor qilinadi
@@ -210,7 +211,7 @@ export interface Report {
   expenses_by_category: { name: string; amount: number }[];
   bookings: { total: number; by_status: Record<string, number>; by_source: Record<string, number>;
               completed: number; completed_revenue: number; avg_check: number; cancel_rate: number };
-  services: { name: string; count: number; revenue: number }[];
+  services: { name: string; name_ru?: string | null; count: number; revenue: number }[];
   staff: { member_id: number; name: string; bookings: number; completed: number; no_show: number; revenue: number }[];
   clients: { total: number; new: number; returning: number };
   daily: ReportDay[];
@@ -335,6 +336,7 @@ export interface UnpaidAppointment {
   client_name: string | null;
   member_name: string | null;
   services: string[];
+  services_ru?: string[];
   due: number;
 }
 

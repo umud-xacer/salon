@@ -335,7 +335,7 @@ function SubscriptionTab({ business: b }: { business: BusinessAdmin }) {
   return (
     <div className="space-y-4 text-sm">
       <p>
-        {t("Hozir: {a} {b}", { a: b.subscription_ends_at ? t("{a} gacha", { a: formatDate(b.subscription_ends_at) }) : "muddatsiz", b: !b.is_active && t(" (to'xtatilgan)") })}
+        {t("Hozir: {a} {b}", { a: b.subscription_ends_at ? t("{a} gacha", { a: formatDate(b.subscription_ends_at) }) : t("muddatsiz"), b: !b.is_active && t(" (to'xtatilgan)") })}
       </p>
       <MonthlyFeeForm business={b} onSave={(body) => update.mutate(body)} saving={update.isPending} />
       <RenewForm business={b} onDone={renewed} />
