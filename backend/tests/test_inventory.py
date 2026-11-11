@@ -245,3 +245,51 @@ def test_master_usage_stops_when_module_off(client, superadmin, biz):
         assert sqlstate(e) == "42501"
     finally:
         db.close()
+
+
+# ─── Shtrix-kod skaneri ──────────────────────────────────────────────────────
+def test_barcode_lookup_finds_exact_product_even_hidden(client, biz):
+    p = new_product(client, biz, name="Tish pastasi", barcode="4780012345678", sale_price=25000, stock=7)
+    r = client.get(url(biz, "products/by-barcode/4780012345678"), headers=owner(biz))
+    assert r.status_code == 200, r.text
+    assert (r.json()["id"], r.json()["sale_price"], r.json()["current_qty"]) == (p["id"], 25000, 7)
+    assert client.get(url(biz, "products/by-barcode/478001234567"), headers=owner(biz)).status_code == 404   # qisman mos emas
+    assert client.get(url(biz, "products/by-barcode/abc"), headers=owner(biz)).status_code == 422            # noto'g'ri format
+    # Yashirilgan mahsulot ham topiladi — "yangi" deb qayta qo'shilmasin
+    body = {k: p[k] for k in ("name", "unit", "cost_price", "sale_price", "min_qty", "barcode")}
+    assert client.put(url(biz, f"products/{p['id']}"), headers=owner(biz), json={**body, "is_active": False}).status_code == 200
+    r = client.get(url(biz, "products/by-barcode/4780012345678"), headers=owner(biz))
+    assert r.status_code == 200 and r.json()["is_active"] is False
+
+
+def test_barcode_lookup_is_per_business_and_needs_access(client, superadmin, biz):
+    new_product(client, biz, barcode="4780000000017")
+    other = create_business(client, superadmin, modules=("booking", "inventory"))
+    assert client.get(url(other, "products/by-barcode/4780000000017"), headers=owner(other)).status_code == 404
+    assert client.get(url(biz, "products/by-barcode/4780000000017"), headers=owner(other)).status_code in (403, 404)
+    assert client.get(url(biz, "products/by-barcode/4780000000017")).status_code == 401
+    # Boshqa muassasa xuddi shu kodli o'z mahsulotini ocha oladi
+    assert client.post(url(other, "products"), headers=owner(other),
+                       json={"name": "Boshqa", "barcode": "4780000000017"}).status_code == 201
+
+
+def test_quick_add_creates_product_with_first_purchase(client, biz):
+    r = client.post(url(biz, "products"), headers=owner(biz),
+                    json={"name": "Qo'lqop", "barcode": "4780000000024", "unit": "quti", "cost_price": 30000,
+                          "sale_price": 45000, "initial_qty": 12})
+    assert r.status_code == 201, r.text
+    p = r.json()
+    assert p["current_qty"] == 12 and p["barcode"] == "4780000000024"
+    moves = client.get(url(biz, f"stock-movements?product_id={p['id']}"), headers=owner(biz)).json()
+    assert [(m["type"], m["qty"], m["unit_cost"]) for m in moves] == [("purchase", 12, 30000)]
+    # Miqdorsiz — harakat yozilmaydi; manfiy miqdor rad etiladi
+    r = client.post(url(biz, "products"), headers=owner(biz), json={"name": "Niqob", "barcode": "4780000000031"})
+    assert r.status_code == 201 and r.json()["current_qty"] == 0
+    assert client.get(url(biz, f"stock-movements?product_id={r.json()['id']}"), headers=owner(biz)).json() == []
+    assert client.post(url(biz, "products"), headers=owner(biz),
+                       json={"name": "Xato", "initial_qty": -1}).status_code == 422
+    # Takror kod — ikkinchi mahsulot ham, uning kirimi ham saqlanmaydi
+    r = client.post(url(biz, "products"), headers=owner(biz),
+                    json={"name": "Takror", "barcode": "4780000000024", "initial_qty": 5})
+    assert r.status_code == 409, r.text
+    assert client.get(url(biz, "products?q=Takror"), headers=owner(biz)).json() == []

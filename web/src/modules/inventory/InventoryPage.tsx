@@ -1,5 +1,5 @@
 import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, Plus, Search } from "lucide-react";
+import { AlertTriangle, Plus, ScanLine, Search } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 
 import { api, json } from "../../api/client";
@@ -8,6 +8,7 @@ import { formatDate, formatMoney, formatQty, formatTime, MOVE_LABELS } from "../
 import { Modal } from "../../components/Modal";
 import { Badge, Button, Card, Empty, ErrorNote, inputClass, PageTitle, Spinner, Tabs } from "../../components/ui";
 import { vocabFor } from "../vocab";
+import { ScanDialog } from "./ScanDialog";
 
 import { t } from "../../i18n";
 const PAGE = 50;
@@ -29,6 +30,8 @@ export function InventoryPage({ membership }: { membership: Membership }) {
   const [q, setQ] = useState("");
   const [editing, setEditing] = useState<Product | "new" | null>(null);
   const [moving, setMoving] = useState<Product | null>(null);
+  const [scanning, setScanning] = useState(false);
+  const refresh = useRefreshInventory(b);
 
   useEffect(() => {
     const tx = setTimeout(() => setQ(text.trim()), 300);
@@ -71,22 +74,31 @@ export function InventoryPage({ membership }: { membership: Membership }) {
       />
       {view === "moves" ? <Movements businessId={b} /> : (
         <>
-          <label className="relative mb-3 block">
-            <span className="sr-only">{t("Qidirish")}</span>
-            <Search size={16} className="absolute top-2.5 left-3 text-muted" aria-hidden />
-            <input
-              className="w-full rounded-lg border border-line bg-white py-2 pr-3 pl-9 text-sm outline-none focus:border-primary"
-              placeholder={t("Nomi yoki kodi")}
-              maxLength={60}
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-            />
-          </label>
+          <div className="mb-3 flex gap-2">
+            <label className="relative block min-w-0 flex-1">
+              <span className="sr-only">{t("Qidirish")}</span>
+              <Search size={16} className="absolute top-2.5 left-3 text-muted" aria-hidden />
+              <input
+                className="w-full rounded-lg border border-line bg-white py-2 pr-3 pl-9 text-sm outline-none focus:border-primary"
+                placeholder={t("Nomi yoki kodi")}
+                maxLength={60}
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+              />
+            </label>
+            <Button variant="secondary" className="flex shrink-0 items-center gap-1" onClick={() => setScanning(true)}>
+              <ScanLine size={16} aria-hidden /> {t("Skanerlash")}
+            </Button>
+          </div>
           <ProductList businessId={b} show={view} q={q} canManage={canManage} onEdit={setEditing} onMove={setMoving} />
         </>
       )}
       {editing && (
         <ProductDialog businessId={b} product={editing === "new" ? null : editing} onClose={() => setEditing(null)} />
+      )}
+      {scanning && (
+        <ScanDialog businessId={b} canManage={canManage} onChanged={refresh} onClose={() => setScanning(false)}
+          onEdit={(p) => { setScanning(false); setEditing(p); }} />
       )}
       {moving && <MoveDialog businessId={b} product={moving} onClose={() => setMoving(null)} />}
     </>

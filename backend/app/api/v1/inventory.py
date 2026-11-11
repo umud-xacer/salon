@@ -6,8 +6,8 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, require_permission
-from app.schemas.inventory import (CountIn, InventorySummary, MovementIn, MovementOut, ProductIn, ProductOut,
-                                   ProductUpdate)
+from app.schemas.inventory import (CountIn, InventorySummary, MovementIn, MovementOut, ProductCreate, ProductIn,
+                                   ProductOut, ProductUpdate)
 from app.services import audit
 
 router = APIRouter(prefix="/businesses/{business_id}", tags=["inventory"])
@@ -79,13 +79,28 @@ def list_products(q: str = Query(default="", max_length=60),
     return [ProductOut(**r) for r in rows]
 
 
+@router.get("/products/by-barcode/{barcode}", response_model=ProductOut)
+def product_by_barcode(barcode: str = Path(pattern=r"^[0-9A-Za-z-]{4,64}$"), business_id: int = Depends(_view),
+                       db: Session = Depends(get_db)):
+    """Skaner o'qigan kod bo'yicha aniq qidiruv (veb-panel kamerasi, kelgusida mobil ilova).
+    Yashirilgan mahsulot ham qaytadi (is_active=false) — aks holda "yangi mahsulot" deb qayta qo'shilib,
+    kod takrorlanishi xatosiga uchrardi. Topilmasa 404 — mijoz "yangi mahsulot qo'shish"ni taklif qiladi."""
+    row = db.execute(text(f"{_PRODUCT_SELECT} WHERE p.business_id = :b AND p.barcode = :c"),
+                     {"b": business_id, "c": barcode}).mappings().first()
+    if row is None:
+        raise _NOT_FOUND
+    return ProductOut(**row)
+
+
 @router.post("/products", response_model=ProductOut, status_code=201)
-def create_product(body: ProductIn, business_id: int = Depends(_manage), db: Session = Depends(get_db)):
+def create_product(body: ProductCreate, business_id: int = Depends(_manage), db: Session = Depends(get_db)):
     product_id = db.scalar(text("""
         INSERT INTO products (business_id, name, sku, category, barcode, unit, cost_price, sale_price, min_qty)
         VALUES (:b, :name, :sku, :category, :barcode, :unit, :cost, :sale, :min) RETURNING id
     """), {"b": business_id, **_clean(body)})
     audit.log(db, business_id, "create", "product", product_id)
+    if body.initial_qty > 0:        # mahsulot va birinchi kirim bitta tranzaksiyada: yarim saqlanib qolmaydi
+        _insert_movement(db, business_id, product_id, "purchase", body.initial_qty, body.cost_price, None)
     db.commit()
     return _product(db, business_id, product_id)
 

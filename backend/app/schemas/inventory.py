@@ -21,6 +21,11 @@ class ProductIn(BaseModel):
     min_qty: Decimal = Field(default=Decimal(0), ge=0, le=MAX_QTY, decimal_places=3)
 
 
+class ProductCreate(ProductIn):
+    """Yangi mahsulot. initial_qty > 0 bo'lsa, shu so'rovning o'zida kirim yoziladi (skanerdan tezkor qo'shish)."""
+    initial_qty: Decimal = Field(default=Decimal(0), ge=0, le=MAX_QTY, decimal_places=3)
+
+
 class ProductUpdate(ProductIn):
     is_active: bool = True
 
