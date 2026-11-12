@@ -1,11 +1,11 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { api, ApiError, LoginOut } from '../src/api';
 import { useAuth } from '../src/auth';
 import {
-  Button, colors, ErrorText, Field, Icon, IconName, maskBirthDate, parseBirthDate, radius, shared, type,
+  Button, colors, ErrorText, Field, Icon, IconName, maskBirthDate, parseBirthDate, radius, ScreenScroll, shared, type,
 } from '../src/ui';
 
 import { t } from "../src/i18n";
@@ -85,7 +85,7 @@ export default function Register() {
   });
 
   return (
-    <ScrollView style={shared.screen} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 32 }}>
+    <ScreenScroll>
       <View style={styles.progress}>
         {STEPS.map((title, i) => <View key={title} style={[styles.bar, i <= step && styles.barOn]} />)}
       </View>
@@ -133,7 +133,7 @@ export default function Register() {
           else setStep(step - 1);
         }} />
       </View>
-    </ScrollView>
+    </ScreenScroll>
   );
 }
 

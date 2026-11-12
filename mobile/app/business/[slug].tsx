@@ -1,12 +1,12 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Dimensions, Image, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native';
 
 import { api, ApiError, BusinessDetail, Service } from '../../src/api';
 import { PharmacyCatalog } from '../../src/PharmacyCatalog';
 import { BusinessReviews } from '../../src/Reviews';
 import { useFavorites } from '../../src/favorites';
-import { Button, Card, Chip, colors, ErrorText, Icon, money, radius, shared, type } from '../../src/ui';
+import { Button, Card, Chip, colors, ErrorText, Icon, money, radius, ScreenScroll, shared, type } from '../../src/ui';
 
 import { pick, t } from "../../src/i18n";
 export default function Business() {
@@ -18,6 +18,7 @@ export default function Business() {
   const [memberId, setMemberId] = useState<number | null>(null);
   const [specialty, setSpecialty] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { width } = useWindowDimensions();
 
   useEffect(() => {
     api<BusinessDetail>(`/catalog/businesses/${slug}`)
@@ -25,7 +26,7 @@ export default function Business() {
       .catch((e) => setError(e instanceof ApiError ? e.message : t("Yuklab bo'lmadi")));
   }, [slug]);
 
-  if (error) return <ScrollView style={shared.screen}><ErrorText text={error} /></ScrollView>;
+  if (error) return <ScreenScroll><ErrorText text={error} /></ScreenScroll>;
   if (!business) return <ActivityIndicator style={{ marginTop: 40 }} size="large" />;
 
   const kind = business.kind ?? 'salon';
@@ -38,13 +39,13 @@ export default function Business() {
   const doctorServices = doctor ? allServices.filter((sv) => doctor.service_ids.includes(sv.id)) : [];
 
   return (
-    <ScrollView style={shared.screen} contentContainerStyle={{ paddingBottom: 32 }}>
+    <ScreenScroll>
       {business.photos.length > 0 && (
         <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}
           style={{ borderRadius: radius.lg, marginBottom: 14 }}>
           {business.photos.map((url) => (
             <Image key={url} source={{ uri: url }} resizeMode="cover"
-              style={{ width: Dimensions.get('window').width - 32, height: 200 }} />
+              style={{ width: width - 32, height: Math.min(200, Math.round((width - 32) * 0.6)) }} />
           ))}
         </ScrollView>
       )}
@@ -156,6 +157,6 @@ export default function Business() {
       )}
 
       <BusinessReviews slug={business.slug} staffWord={kind === 'clinic' ? t("Shifokor") : kind === 'pharmacy' ? t("Farmatsevt") : t("Usta")} />
-    </ScrollView>
+    </ScreenScroll>
   );
 }

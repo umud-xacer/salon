@@ -1,10 +1,10 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { api, ApiError, User } from '../src/api';
 import { useAuth } from '../src/auth';
-import { Button, Chip, colors, ErrorText, Field, maskBirthDate, parseBirthDate, shared, showBirthDate, type } from '../src/ui';
+import { Button, Chip, colors, ErrorText, Field, maskBirthDate, parseBirthDate, ScreenScroll, shared, showBirthDate, type } from '../src/ui';
 
 import { t } from "../src/i18n";
 export default function ProfileEdit() {
@@ -38,7 +38,7 @@ export default function ProfileEdit() {
   };
 
   return (
-    <ScrollView style={shared.screen} keyboardShouldPersistTaps="handled">
+    <ScreenScroll>
       <Field label={t("Ism va familiya")} value={name} onChangeText={setName} autoCapitalize="words" maxLength={120} />
       <Field label={t("Telefon raqam")} value={user?.phone} editable={false}
         hint={t("Telefon kirish uchun tasdiqlangan, uni bu yerda o'zgartirib bo'lmaydi")} />
@@ -54,6 +54,6 @@ export default function ProfileEdit() {
       <Pressable onPress={() => router.push('/password')} style={{ paddingVertical: 16, alignItems: 'center' }}>
         <Text style={[type.body, { color: colors.primary, fontWeight: '600' }]}>{t("Parolni tiklash")}</Text>
       </Pressable>
-    </ScrollView>
+    </ScreenScroll>
   );
 }

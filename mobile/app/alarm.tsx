@@ -3,10 +3,11 @@ import { useKeepAwake } from 'expo-keep-awake';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Linking, StyleSheet, Text, Vibration, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, ApiError, Appointment } from '../src/api';
 import { alarmKey, openedAlarms } from '../src/notifications';
-import { Button, dateTimeOf, ErrorText } from '../src/ui';
+import { Button, dateTimeOf, ErrorText, useBottomSpace } from '../src/ui';
 import { cancelBookingReminder } from '../src/localReminders';
 
 import { pickList, t } from "../src/i18n";
@@ -24,6 +25,8 @@ export default function Alarm() {
   const isClient = type === 'appointment_reminder';
   const isTest = type === 'test';
   useKeepAwake();
+  const insets = useSafeAreaInsets();
+  const bottom = useBottomSpace(24);
   // To'liq ekran havolasi bilan to'g'ridan-to'g'ri ochilgan bo'lsa ham, shu bron uchun qayta ochilmasin
   if (!isTest) openedAlarms.add(alarmKey(type, appointmentId));
 
@@ -74,9 +77,9 @@ export default function Alarm() {
   });
 
   return (
-    <View style={styles.screen}>
+    <View style={[styles.screen, { paddingTop: insets.top + 24, paddingBottom: bottom }]}>
       <View style={styles.center}>
-        <Text style={styles.time}>{appointment ? dateTimeOf(appointment.starts_at) : ''}</Text>
+        <Text style={styles.time} numberOfLines={1} adjustsFontSizeToFit>{appointment ? dateTimeOf(appointment.starts_at) : ''}</Text>
         <Text style={styles.title}>
           {isTest ? t("Budilnik sinovi") : isClient ? t("Broningiz yaqinlashmoqda") : t("Mijoz javob bermayapti")}
         </Text>

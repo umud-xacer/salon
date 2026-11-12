@@ -2,9 +2,10 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { ComponentProps, ReactNode, useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator, Animated, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, TextInputProps,
-  View,
+  ActivityIndicator, Animated, Modal, Platform, Pressable, ScrollView, ScrollViewProps, StyleSheet, Text, TextInput,
+  TextInputProps, useWindowDimensions, View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { t } from "./i18n";
 export type IconName = ComponentProps<typeof Ionicons>['name'];
@@ -118,7 +119,8 @@ export function Chip({ label, active, onPress, icon }: {
   return (
     <Pressable onPress={onPress} style={[styles.chip, active && styles.chipActive]} accessibilityState={{ selected: active }}>
       {icon && <Icon name={icon} size={16} color={active ? '#fff' : colors.primary} />}
-      <Text style={{ color: active ? '#fff' : colors.text, fontWeight: '600', fontSize: 14 }}>{label}</Text>
+      {/* Uzun yorliq (xizmat nomi · vaqt · narx) tor ekranda kartadan chiqib ketmaydi: ikki qatorga o'tadi */}
+      <Text style={{ color: active ? '#fff' : colors.text, fontWeight: '600', fontSize: 14, flexShrink: 1 }}>{label}</Text>
     </Pressable>
   );
 }
@@ -134,7 +136,8 @@ export function Segments<T extends string>({ value, options, onChange }: {
       {options.map((o) => (
         <Pressable key={o.id} onPress={() => onChange(o.id)} style={[styles.segment, value === o.id && styles.segmentOn]}
           accessibilityState={{ selected: value === o.id }}>
-          <Text numberOfLines={1} style={{ fontWeight: '600', fontSize: 13, color: value === o.id ? colors.primary : colors.muted }}>
+          <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}
+            style={{ fontWeight: '600', fontSize: 13, color: value === o.id ? colors.primary : colors.muted }}>
             {o.label}
           </Text>
         </Pressable>
@@ -165,14 +168,36 @@ export const Empty = ({ text }: { text: string }) => <Text style={styles.emptyTe
 export const ErrorText = ({ text }: { text: string | null }) =>
   text ? <Text style={{ color: colors.danger, marginBottom: 10 }}>{text}</Text> : null;
 
-/** Pastdan chiquvchi oyna. Ko'rinishi animatsiyali, foni bosilsa yopiladi */
-export function BottomSheet({ visible, title, onClose, children }: {
+/** Ekran pastidagi xavfsiz masofa: tizim tugmalari / imo-ishora chizig'i balandligi + qo'shimcha bo'shliq.
+ *  Android'da ilova chetdan-chetga chiziladi, shuning uchun pastki kontent tizim paneli ostida qolmasligi kerak. */
+export function useBottomSpace(extra = 24) {
+  return useSafeAreaInsets().bottom + extra;
+}
+
+/** Stack ekranlari uchun skroll: yon chetlar bir xil, oxirgi element tizim paneli ostida qolmaydi */
+export function ScreenScroll({ children, contentContainerStyle, ...props }: ScrollViewProps) {
+  const bottom = useBottomSpace();
+  return (
+    <ScrollView style={shared.screen} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets
+      {...props} contentContainerStyle={[{ paddingBottom: bottom }, contentContainerStyle]}>
+      {children}
+    </ScrollView>
+  );
+}
+
+/** Pastdan chiquvchi oyna. Ko'rinishi animatsiyali, foni bosilsa yopiladi.
+ *  Balandligi ekranga moslashadi: kontent ichkarida skroll bo'ladi, `footer` (tugmalar) esa doim pastda,
+ *  tizim panelidan xavfsiz masofada qotib turadi. */
+export function BottomSheet({ visible, title, onClose, children, footer }: {
   visible: boolean;
   title: string;
   onClose: () => void;
   children: ReactNode;
+  footer?: ReactNode;
 }) {
   const y = useRef(new Animated.Value(500)).current;
+  const insets = useSafeAreaInsets();
+  const { height } = useWindowDimensions();
 
   useEffect(() => {
     if (visible) {
@@ -182,12 +207,18 @@ export function BottomSheet({ visible, title, onClose, children }: {
   }, [visible, y]);
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}
+      statusBarTranslucent navigationBarTranslucent>
       <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel={t("Yopish")} />
-      <Animated.View style={[styles.sheet, { transform: [{ translateY: y }] }]}>
+      <Animated.View style={[styles.sheet, {
+        maxHeight: height - insets.top - 24, paddingBottom: Math.max(insets.bottom, 8) + 16, transform: [{ translateY: y }],
+      }]}>
         <View style={styles.grabber} />
         <Text style={[type.h2, { marginBottom: 14 }]}>{title}</Text>
-        <ScrollView keyboardShouldPersistTaps="handled">{children}</ScrollView>
+        <ScrollView style={styles.sheetBody} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+          {children}
+        </ScrollView>
+        {footer && <View style={styles.sheetFooter}>{footer}</View>}
       </Animated.View>
     </Modal>
   );
@@ -255,7 +286,7 @@ const styles = StyleSheet.create({
   soft: { backgroundColor: colors.primarySoft },
   off: { opacity: 0.5 },
   pressed: { opacity: 0.85 },
-  buttonText: { fontSize: 16, fontWeight: '700' },
+  buttonText: { fontSize: 16, fontWeight: '700', flexShrink: 1, textAlign: 'center' },
   label: { color: colors.muted, marginBottom: 6, fontSize: 14 },
   input: {
     backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line, borderRadius: radius.md, padding: 13, fontSize: 16,
@@ -266,10 +297,11 @@ const styles = StyleSheet.create({
   chip: {
     borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card, borderRadius: radius.pill, paddingVertical: 9,
     paddingHorizontal: 14, marginRight: 8, marginBottom: 8, flexDirection: 'row', alignItems: 'center', gap: 6,
+    maxWidth: '100%',
   },
   chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   segments: { flexDirection: 'row', backgroundColor: '#E9ECF4', borderRadius: radius.md, padding: 4, marginBottom: 12 },
-  segment: { flex: 1, alignItems: 'center', paddingVertical: 9, borderRadius: 9 },
+  segment: { flex: 1, minWidth: 0, alignItems: 'center', paddingVertical: 9, paddingHorizontal: 4, borderRadius: 9 },
   segmentOn: { backgroundColor: colors.card, ...shadow },
   empty: { alignItems: 'center', paddingHorizontal: 24, paddingVertical: 40 },
   emptyCircle: {
@@ -282,5 +314,7 @@ const styles = StyleSheet.create({
     position: 'absolute', left: 0, right: 0, bottom: 0, maxHeight: '85%', backgroundColor: colors.card, padding: 18,
     paddingBottom: 26, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl,
   },
+  sheetBody: { flexGrow: 0, flexShrink: 1 },
+  sheetFooter: { gap: 8, paddingTop: 12, marginTop: 4, borderTopWidth: 1, borderTopColor: colors.line },
   grabber: { alignSelf: 'center', width: 44, height: 5, borderRadius: 3, backgroundColor: colors.line, marginBottom: 12 },
 });

@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, Text, View } from 'react-native';
 
 import { api, ApiError, Appointment, Slot } from '../src/api';
-import { Button, Chip, Empty, ErrorText, nextDays, shared } from '../src/ui';
+import { Button, Chip, Empty, ErrorText, nextDays, ScreenScroll, shared } from '../src/ui';
 import { scheduleBookingReminder } from '../src/localReminders';
 
 import { t } from "../src/i18n";
@@ -74,7 +74,7 @@ export default function Book() {
   };
 
   return (
-    <ScrollView style={shared.screen} contentContainerStyle={{ paddingBottom: 32 }}>
+    <ScreenScroll>
       <Text style={shared.heading}>{t("Kun")}</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
         {DAYS.map((d) => (
@@ -104,6 +104,6 @@ export default function Book() {
           disabled={!selected}
         />
       </View>
-    </ScrollView>
+    </ScreenScroll>
   );
 }

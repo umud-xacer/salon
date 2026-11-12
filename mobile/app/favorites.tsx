@@ -5,7 +5,7 @@ import { FlatList, RefreshControl, View } from 'react-native';
 import { api, BusinessCard } from '../src/api';
 import { useFavorites } from '../src/favorites';
 import { SalonCard } from '../src/SalonCard';
-import { EmptyState, ErrorText, shared } from '../src/ui';
+import { EmptyState, ErrorText, shared, useBottomSpace } from '../src/ui';
 
 import { t } from "../src/i18n";
 export default function Favorites() {
@@ -14,6 +14,7 @@ export default function Favorites() {
   const [items, setItems] = useState<BusinessCard[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const bottom = useBottomSpace(8);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -39,6 +40,7 @@ export default function Favorites() {
       <FlatList
         data={shown}
         keyExtractor={(b) => String(b.id)}
+        contentContainerStyle={{ paddingBottom: bottom }}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}
         ListEmptyComponent={loading ? undefined : (
           <EmptyState icon="heart-outline" title={t("Sevimli salonlar yo'q")} text={t("Yoqqan saloningizdagi yurakchani bosing")}

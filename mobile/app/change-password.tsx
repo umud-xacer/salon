@@ -2,11 +2,11 @@
 // shuning uchun shu qurilmada yangi parol bilan darhol qayta kiramiz.
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, ScrollView, Text, View } from 'react-native';
+import { Alert, Text, View } from 'react-native';
 
 import { api, ApiError, LoginOut } from '../src/api';
 import { useAuth } from '../src/auth';
-import { Button, Card, ErrorText, Field, shared, type } from '../src/ui';
+import { Button, Card, ErrorText, Field, ScreenScroll, shared, type } from '../src/ui';
 
 import { t } from "../src/i18n";
 export default function ChangePassword() {
@@ -50,7 +50,7 @@ export default function ChangePassword() {
   };
 
   return (
-    <ScrollView style={shared.screen} keyboardShouldPersistTaps="handled">
+    <ScreenScroll>
       <Card>
         <Text style={[type.small, { marginBottom: 12 }]}>
           {t("Kamida 8 belgi, harf va raqam bo'lsin. SMS orqali ro'yxatdan o'tgan bo'lsangiz va parol qo'ymagan bo'lsangiz, joriy parolni bo'sh qoldiring.")}
@@ -66,6 +66,6 @@ export default function ChangePassword() {
           <Button title={t("Parolni o'zgartirish")} onPress={submit} busy={busy} disabled={!newPassword || !repeat} />
         </View>
       </Card>
-    </ScrollView>
+    </ScreenScroll>
   );
 }

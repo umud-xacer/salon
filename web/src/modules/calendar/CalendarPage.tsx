@@ -102,11 +102,12 @@ export function CalendarPage({ membership }: { membership: Membership }) {
         hint={title}
         action={
           canBook && (
-            <div className="flex flex-wrap gap-2">
-              <Button variant="secondary" className="flex items-center gap-1" onClick={() => setWalkIn(true)}>
+            // Tor ekranda ikkala tugma butun kenglikni teng bo'lib oladi, keng ekranda sarlavha yonida turadi
+            <div className="flex w-full flex-wrap gap-2 sm:w-auto">
+              <Button variant="secondary" className="flex flex-1 items-center justify-center gap-1 sm:flex-none" onClick={() => setWalkIn(true)}>
                 <Zap size={16} aria-hidden /> {t("Tezkor qabul")}
               </Button>
-              <Button className="flex items-center gap-1" onClick={() => setBooking({ day: day < todayIso() ? todayIso() : day })}>
+              <Button className="flex flex-1 items-center justify-center gap-1 sm:flex-none" onClick={() => setBooking({ day: day < todayIso() ? todayIso() : day })}>
                 <Plus size={16} aria-hidden /> {v.newBooking}
               </Button>
             </div>

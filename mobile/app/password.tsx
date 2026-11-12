@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { api, ApiError, LoginOut } from '../src/api';
 import { useAuth } from '../src/auth';
-import { Button, ErrorText, Field, shared } from '../src/ui';
+import { Button, ErrorText, Field, ScreenScroll, shared } from '../src/ui';
 
 import { t } from "../src/i18n";
 type Mode = 'login' | 'forgot' | 'reset';
@@ -51,7 +51,7 @@ export default function Password() {
   });
 
   return (
-    <ScrollView style={shared.screen} keyboardShouldPersistTaps="handled">
+    <ScreenScroll>
       <Field label={t("Telefon raqam")} value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
       {mode === 'reset' && <Field label={t("SMS kod")} value={code} onChangeText={setCode} keyboardType="number-pad" maxLength={6} />}
       {mode !== 'forgot' && (
@@ -69,6 +69,6 @@ export default function Password() {
           onPress={() => setMode(mode === 'login' ? 'forgot' : 'login')}
         />
       </View>
-    </ScrollView>
+    </ScreenScroll>
   );
 }

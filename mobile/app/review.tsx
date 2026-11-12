@@ -2,11 +2,11 @@
 // Usta bronning o'zidan olinadi — mijoz boshqa ustani tanlay olmaydi (soxta baholardan himoya).
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Text, View } from 'react-native';
 
 import { api, ApiError, Appointment } from '../src/api';
 import { StarsInput } from '../src/Reviews';
-import { Button, Card, ErrorText, Field, shared, type, dateTimeOf } from '../src/ui';
+import { Button, Card, ErrorText, Field, ScreenScroll, shared, type, dateTimeOf } from '../src/ui';
 
 import { pickList, t } from "../src/i18n";
 export default function Review() {
@@ -50,12 +50,12 @@ export default function Review() {
   };
 
   if (!a) {
-    return error ? <ScrollView style={shared.screen}><ErrorText text={error} /></ScrollView>
+    return error ? <ScreenScroll><ErrorText text={error} /></ScreenScroll>
       : <ActivityIndicator style={{ marginTop: 40 }} size="large" />;
   }
   if (!a.can_review) {
     return (
-      <ScrollView style={shared.screen}>
+      <ScreenScroll>
         <Card>
           <Text style={type.h3}>{a.review_rating ? t("Siz bu tashrifni baholagansiz") : t("Bu tashrifni baholab bo'lmaydi")}</Text>
           <Text style={[shared.muted, { marginTop: 6 }]}>
@@ -64,12 +64,12 @@ export default function Review() {
               : t("Baho faqat yakunlangan tashrifdan keyin, 30 kun ichida qo'yiladi.")}
           </Text>
         </Card>
-      </ScrollView>
+      </ScreenScroll>
     );
   }
 
   return (
-    <ScrollView style={shared.screen} contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
+    <ScreenScroll>
       <Text style={type.h2}>{a.business_name ?? t("Muassasa")}</Text>
       <Text style={shared.muted}>{dateTimeOf(a.starts_at)} · {pickList(a.services, a.services_ru).join(', ')}</Text>
 
@@ -101,6 +101,6 @@ export default function Review() {
       <ErrorText text={error} />
       {!ready && <Text style={[shared.muted, { marginBottom: 8 }]}>{t("Muassasaga uchala bahoni qo'ying")}</Text>}
       <Button title={t("Bahoni yuborish")} onPress={submit} busy={busy} disabled={!ready} />
-    </ScrollView>
+    </ScreenScroll>
   );
 }

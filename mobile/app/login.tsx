@@ -1,10 +1,10 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Image, Pressable, ScrollView, Text, View } from 'react-native';
+import { Image, Pressable, Text, View } from 'react-native';
 
 import { api, ApiError, LoginOut } from '../src/api';
 import { useAuth } from '../src/auth';
-import { Button, colors, ErrorText, Field, radius, shared, type } from '../src/ui';
+import { Button, colors, ErrorText, Field, radius, ScreenScroll, shared, type } from '../src/ui';
 
 import { t } from "../src/i18n";
 import { LangSwitch } from "../src/LangSwitch";
@@ -40,7 +40,7 @@ export default function Login() {
   });
 
   return (
-    <ScrollView style={shared.screen} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 32 }}>
+    <ScreenScroll>
       <View style={{ marginBottom: 12 }}><LangSwitch /></View>
       <View style={{ backgroundColor: colors.navy, borderRadius: radius.xl, padding: 26, marginBottom: 24, alignItems: 'center' }}>
         <Image source={require('../assets/brand/wordmark.png')} style={{ width: 190, height: 46 }} resizeMode="contain" />
@@ -69,6 +69,6 @@ export default function Login() {
           {t("Hisobingiz yo'qmi?")}{" "}<Text style={{ color: colors.primary, fontWeight: '700' }}>{t("Ro'yxatdan o'ting")}</Text>
         </Text>
       </Pressable>
-    </ScrollView>
+    </ScreenScroll>
   );
 }

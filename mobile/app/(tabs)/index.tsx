@@ -202,7 +202,13 @@ export default function Businesses() {
   );
 
   const sheetView = (
-    <BottomSheet visible={sheet} title={t("Filtrlar")} onClose={() => setSheet(false)}>
+    <BottomSheet visible={sheet} title={t("Filtrlar")} onClose={() => setSheet(false)}
+      footer={(
+        <>
+          <Button title={t("Qo'llash")} onPress={() => { setFilters(draft); setSheet(false); }} />
+          <Button title={t("Tozalash")} kind="outline" onPress={() => { setFilters(DEFAULT_FILTERS); setSheet(false); }} />
+        </>
+      )}>
       <Text style={styles.sheetLabel}>{t("Saralash")}</Text>
       <View style={styles.wrap}>
         {SORTS.map((s) => (
@@ -221,10 +227,6 @@ export default function Businesses() {
           <Chip key={p} label={t("{a}gacha", { a: money(p) })} active={draft.maxPrice === p}
             onPress={() => setDraft({ ...draft, maxPrice: draft.maxPrice === p ? null : p })} />
         ))}
-      </View>
-      <View style={[shared.gap, { marginTop: 10 }]}>
-        <Button title={t("Qo'llash")} onPress={() => { setFilters(draft); setSheet(false); }} />
-        <Button title={t("Tozalash")} kind="outline" onPress={() => { setFilters(DEFAULT_FILTERS); setSheet(false); }} />
       </View>
     </BottomSheet>
   );

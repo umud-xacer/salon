@@ -3,7 +3,7 @@ import * as Updates from 'expo-updates';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import * as Notifications from 'expo-notifications';
-import { Alert, Linking, Platform, ScrollView, Switch, Text, View } from 'react-native';
+import { Alert, Linking, Platform, Switch, Text, View } from 'react-native';
 
 import { ChronixAlarmModule } from '../modules/chronix-alarm';
 import { api } from '../src/api';
@@ -14,7 +14,7 @@ import {
   type StartupSoundKind, type StartupSoundResult,
 } from '../src/startupSound';
 import { useAuth } from '../src/auth';
-import { Button, Card, colors, Segments, shared, type } from '../src/ui';
+import { Button, Card, colors, Segments, ScreenScroll, shared, type } from '../src/ui';
 
 import { t } from "../src/i18n";
 import { LangSwitch } from "../src/LangSwitch";
@@ -65,7 +65,7 @@ export default function Settings() {
   const telegram = support?.support_telegram?.replace(/^@/, '');
 
   return (
-    <ScrollView style={shared.screen}>
+    <ScreenScroll>
       <Card>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <View style={{ flex: 1, paddingRight: 12 }}>
@@ -169,6 +169,6 @@ export default function Settings() {
           {t("Versiya {a} {b}", { a: Constants.expoConfig?.version ?? '1.0.0', b: Updates.updateId ? ` · ${Updates.updateId.slice(0, 8)}` : '' })}
         </Text>
       </Card>
-    </ScrollView>
+    </ScreenScroll>
   );
 }
