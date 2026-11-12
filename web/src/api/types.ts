@@ -212,6 +212,8 @@ export interface Report {
   bookings: { total: number; by_status: Record<string, number>; by_source: Record<string, number>;
               completed: number; completed_revenue: number; avg_check: number; cancel_rate: number };
   services: { name: string; name_ru?: string | null; count: number; revenue: number }[];
+  categories?: { category_id: number | null; name: string | null; name_ru?: string | null; count: number;
+                 revenue: number }[];
   staff: { member_id: number; name: string; bookings: number; completed: number; no_show: number; revenue: number }[];
   clients: { total: number; new: number; returning: number };
   daily: ReportDay[];
@@ -408,11 +410,85 @@ export interface Payroll {
   commission: number;
   bonus: number;
   deductions: number;
+  advances: number;                  // shu oylikdan ayirilgan (qoralamada — ayiriladigan) avanslar
+  clients: number;                   // shu davrda pul tushgan tashriflar soni
   total: number;
   status: "draft" | "approved" | "paid";
   note: string | null;
   approved_at: string | null;
   paid_at: string | null;
+}
+
+export interface Advance {
+  id: number;
+  member_id: number;
+  full_name: string;
+  amount: number;
+  given_on: string;
+  note: string | null;
+  settled: boolean;                  // oylikdan ayirilgan — bekor qilib bo'lmaydi
+  carried: boolean;                  // oldingi davrdan ko'chgan qoldiq
+  created_by_name: string | null;
+}
+
+export interface AdvanceList {
+  month: string;
+  open_total: number;
+  items: Advance[];
+}
+
+// Tashrif qatori: xizmat + uni bajargan xodim (yoki muassasa hisobiga)
+export interface VisitLine {
+  id: number;
+  service_id: number;
+  service_name: string;
+  service_name_ru: string;
+  price: number;
+  duration_min: number;
+  house: boolean;
+  member_id: number | null;
+  member_name: string | null;
+  category_id: number | null;
+  category_name: string | null;
+  category_name_ru: string | null;
+}
+
+export interface VisitLines {
+  appointment_id: number;
+  status: string;
+  total: number;
+  lines: VisitLine[];
+}
+
+export interface Receipt {
+  appointment_id: number;
+  business_name: string;
+  business_address: string | null;
+  business_phone: string | null;
+  client_name: string | null;
+  client_phone: string | null;
+  starts_at: string;
+  status: string;
+  printed_at: string;
+  sections: { category_id: number | null; name: string | null; name_ru: string | null; subtotal: number;
+              lines: VisitLine[] }[];
+  subtotal: number;
+  discount: number;
+  total: number;
+  paid: number;
+  due: number;
+  payments: { method: string; amount: number; paid_at: string }[];
+}
+
+export interface WalkInOption {
+  member_id: number;
+  full_name: string;
+  title: string | null;
+  price: number;
+  duration_min: number;
+  free: boolean;
+  busy_until: string | null;
+  on_shift: boolean;
 }
 
 export interface PayrollList {

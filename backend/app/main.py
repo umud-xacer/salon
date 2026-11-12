@@ -6,7 +6,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.exc import DBAPIError
 
 from app.api.v1 import (appointments, auth, billing, business_admin, catalog, clients, finance, geo, inventory, me, members,
-                        payroll, reception, reminders, reports, reviews, schedule, superadmin)
+                        payroll, reception, reminders, reports, reviews, schedule, superadmin, visits)
 from app.core.config import get_settings
 from app.services.auth_service import AuthError
 
@@ -64,7 +64,7 @@ _DB_ERRORS = {
     "P0409": (409, "not_changeable", "Bu bronni endi o'zgartirib bo'lmaydi"),   # boshlangan yoki yopilgan bron
     "P0404": (404, "not_found", "Yozuv topilmadi"),
     "P0411": (409, "overpaid", "Summa qolgan qarzdan oshib ketdi"),
-    "P0412": (409, "not_payable", "To'lov mijoz kelgandan keyin qabul qilinadi"),
+    "P0412": (409, "not_payable", "Bekor qilingan yoki mijoz kelmagan bronga to'lov qabul qilinmaydi"),
     "P0413": (409, "already_refunded", "Bu to'lov allaqachon qaytarilgan"),
     "P0414": (409, "insufficient_stock", "Omborda yetarli qoldiq yo'q"),
     "P0415": (409, "product_inactive", "Mahsulot yashirilgan, avval uni faollashtiring"),
@@ -73,6 +73,9 @@ _DB_ERRORS = {
     "P0418": (409, "not_completed", "Baho faqat yakunlangan tashrifdan keyin qo'yiladi"),
     "P0419": (409, "review_expired", "Baho tashrifdan keyin 30 kun ichida qo'yiladi"),
     "P0420": (409, "already_reviewed", "Bu tashrifga baho allaqachon qo'yilgan"),
+    "P0421": (409, "line_not_removable", "Bu xizmatni olib tashlab bo'lmaydi: oxirgi xizmat yoki puli to'langan"),
+    "P0422": (409, "advance_settled", "Bu avans oylikdan ayirilgan, endi bekor qilib bo'lmaydi"),
+    "P0423": (409, "nobody_free", "Hozir bo'sh mutaxassis yo'q"),
 }
 
 
@@ -97,6 +100,7 @@ app.include_router(business_admin.router, prefix="/api/v1")
 app.include_router(schedule.router, prefix="/api/v1")
 app.include_router(appointments.router, prefix="/api/v1")
 app.include_router(reception.router, prefix="/api/v1")
+app.include_router(visits.router, prefix="/api/v1")
 app.include_router(clients.router, prefix="/api/v1")
 app.include_router(finance.router, prefix="/api/v1")
 app.include_router(inventory.router, prefix="/api/v1")

@@ -13,7 +13,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, require_permission
-from app.schemas.reports import (BookingStats, ClientStats, DayRow, ExpenseRow, MethodRow, MoneyStats, ReportOut,
+from app.schemas.reports import (BookingStats, CategoryRow, ClientStats, DayRow, ExpenseRow, MethodRow, MoneyStats, ReportOut,
                                  ServiceRow, StaffRow)
 
 router = APIRouter(prefix="/businesses/{business_id}/reports", tags=["reports"])
@@ -97,6 +97,17 @@ def build_report(db: Session, business_id: int, f: date, t: date) -> ReportOut:
          GROUP BY s.service_name ORDER BY revenue DESC, count DESC, name LIMIT 20
     """), p).mappings()
 
+    # Bo'limlar: xizmatlar bilan bir xil qoida (bajarilgan bronlar), faqat xizmat bo'limi bo'yicha guruhlangan
+    categories = db.execute(text(f"""
+        SELECT sc.id AS category_id, sc.name, nullif(btrim(sc.name_ru), '') AS name_ru,
+               count(*) AS count, sum(s.price)::bigint AS revenue
+          FROM appointment_services s JOIN appointments a ON a.id = s.appointment_id
+          LEFT JOIN services sv ON sv.id = s.service_id
+          LEFT JOIN service_categories sc ON sc.id = sv.category_id CROSS JOIN {_TZ}
+         WHERE a.business_id = :b AND {in_period} AND a.status = 'completed'
+         GROUP BY sc.id, sc.name, sc.name_ru ORDER BY revenue DESC, count DESC, sc.name NULLS LAST
+    """), p).mappings()
+
     staff = db.execute(text(f"""
         SELECT a.member_id, coalesce(u.full_name, 'Xodim') AS name,
                count(*) FILTER (WHERE a.status <> 'cancelled') AS bookings,
@@ -160,6 +171,7 @@ def build_report(db: Session, business_id: int, f: date, t: date) -> ReportOut:
                               avg_check=done["revenue"] // done["n"] if done["n"] else 0,
                               cancel_rate=round(100 * statuses.get("cancelled", 0) / total, 1) if total else 0.0),
         services=[ServiceRow(**s) for s in services],
+        categories=[CategoryRow(**c) for c in categories],
         staff=[StaffRow(**s) for s in staff],
         clients=ClientStats(total=clients["total"], new=clients["new"], returning=clients["total"] - clients["new"]),
         daily=[DayRow(**d) for d in daily],

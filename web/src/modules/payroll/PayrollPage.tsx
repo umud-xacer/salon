@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
 
 import { api, json } from "../../api/client";
-import type { Compensation, Membership, Payroll, PayrollList } from "../../api/types";
+import type { AdvanceList, Compensation, Membership, Payroll, PayrollList } from "../../api/types";
 import { formatDate, formatMoney, formatQty, todayIso } from "../../components/format";
 import { roleLabel, useVocab } from "../vocab";
 import { Modal } from "../../components/Modal";
@@ -21,17 +21,143 @@ const StatusBadge = ({ status }: { status: string }) => (
 
 export function PayrollPage({ membership }: { membership: Membership }) {
   const b = membership.business_id;
-  const [tab, setTab] = useState<"payroll" | "rates">("payroll");
+  const [tab, setTab] = useState<"payroll" | "advances" | "rates">("payroll");
   return (
     <>
       <PageTitle title={t("Oylik")} hint={t("Foiz haqiqatda tushgan puldan hisoblanadi")} />
       <Tabs
         value={tab}
         onChange={setTab}
-        tabs={[{ id: "payroll", label: t("Oyliklar") }, { id: "rates", label: t("Stavkalar") }]}
+        tabs={[{ id: "payroll", label: t("Oyliklar") }, { id: "advances", label: t("Avanslar") },
+               { id: "rates", label: t("Stavkalar") }]}
       />
-      {tab === "payroll" ? <Payrolls businessId={b} /> : <Rates businessId={b} />}
+      {tab === "payroll" && <Payrolls businessId={b} />}
+      {tab === "advances" && <Advances businessId={b} />}
+      {tab === "rates" && <Rates businessId={b} />}
     </>
+  );
+}
+
+// Avans: berilgan kuni Kassaga xarajat bo'lib tushadi, oylik hisoblanganda avtomatik ayiriladi
+function Advances({ businessId }: { businessId: number }) {
+  const queryClient = useQueryClient();
+  const [month, setMonth] = useState(() => todayIso().slice(0, 7));
+  const [giving, setGiving] = useState(false);
+  const [asking, setAsking] = useState<number | null>(null);
+  const query = useQuery({
+    queryKey: ["advances", businessId, month],
+    queryFn: () => api<AdvanceList>(`/businesses/${businessId}/payroll/advances?month=${month}`),
+  });
+  const refresh = async () => {
+    await Promise.all(["advances", "payroll", "expenses", "cash-day"].map((k) =>
+      queryClient.invalidateQueries({ queryKey: [k, businessId] })));
+  };
+  const cancel = useMutation({
+    mutationFn: (id: number) => api(`/businesses/${businessId}/payroll/advances/${id}`, { method: "DELETE" }),
+    onSuccess: async () => { setAsking(null); await refresh(); },
+  });
+
+  return (
+    <>
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <input type="month" aria-label={t("Oy")} className="rounded-lg border border-line bg-white px-2 py-2 text-sm"
+          value={month} onChange={(e) => e.target.value && setMonth(e.target.value)} />
+        <Button onClick={() => setGiving(true)}>{t("Avans berish")}</Button>
+      </div>
+      {query.isPending && <Spinner />}
+      {query.error && <ErrorNote error={query.error} />}
+      {cancel.error && <div className="mb-3"><ErrorNote error={cancel.error} /></div>}
+      {query.data && (
+        <>
+          <p className="mb-3 text-sm text-muted">
+            {t("Hali oylikdan ayirilmagan:")}{" "}
+            <b className="text-ink tabular-nums">{formatMoney(query.data.open_total)}</b>
+          </p>
+          {query.data.items.length === 0 ? (
+            <Card><Empty>{t("Bu oyda avans berilmagan")}</Empty></Card>
+          ) : (
+            <ul className="divide-y divide-line rounded-xl border border-line bg-white">
+              {query.data.items.map((a) => (
+                <li key={a.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 text-sm">
+                  <span className="min-w-0 flex-1 basis-40">
+                    <span className="block font-medium break-words">{a.full_name}</span>
+                    <span className="block text-xs text-muted break-words">
+                      {formatDate(a.given_on)}
+                      {a.carried ? ` · ${t("Oldingi davrdan qolgan avans")}` : a.note ? ` · ${a.note}` : ""}
+                    </span>
+                  </span>
+                  {a.settled ? <Badge tone="green">{t("Oylikdan ayirilgan")}</Badge> : <Badge tone="amber">{t("Ayiriladi")}</Badge>}
+                  <span className="font-medium tabular-nums">{formatMoney(a.amount)}</span>
+                  {!a.settled && !a.carried && (asking === a.id ? (
+                    <Button variant="danger" className="!px-2 !py-1 text-xs" disabled={cancel.isPending}
+                      onClick={() => cancel.mutate(a.id)}>{t("Ha, bekor qilish")}</Button>
+                  ) : (
+                    <Button variant="danger" className="!px-2 !py-1 text-xs" onClick={() => setAsking(a.id)}>
+                      {t("Bekor qilish")}
+                    </Button>
+                  ))}
+                </li>
+              ))}
+            </ul>
+          )}
+          <p className="mt-2 text-xs text-muted">
+            {t("Avans berilgan kuni Kassaga xarajat bo'lib tushadi va oylikdan avtomatik ayiriladi. Oylikdan ortgani keyingi oyga ko'chadi.")}
+          </p>
+        </>
+      )}
+      {giving && <AdvanceDialog businessId={businessId} onClose={() => setGiving(false)}
+        onDone={async () => { await refresh(); setGiving(false); }} />}
+    </>
+  );
+}
+
+function AdvanceDialog({ businessId, onClose, onDone }: {
+  businessId: number;
+  onClose: () => void;
+  onDone: () => Promise<void>;
+}) {
+  const [memberId, setMemberId] = useState("");
+  const [amount, setAmount] = useState("");
+  const [note, setNote] = useState("");
+  const staff = useQuery({
+    queryKey: ["compensation", businessId],
+    queryFn: () => api<Compensation[]>(`/businesses/${businessId}/payroll/compensation`),
+  });
+  const give = useMutation({
+    mutationFn: () => api(`/businesses/${businessId}/payroll/advances`,
+      json("POST", { member_id: Number(memberId), amount: Number(amount), note: note.trim() || null })),
+    onSuccess: onDone,
+  });
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    give.mutate();
+  };
+
+  return (
+    <Modal title={t("Avans berish")} onClose={onClose}>
+      {staff.isPending && <Spinner />}
+      {staff.error && <ErrorNote error={staff.error} />}
+      {staff.data && (
+        <form onSubmit={submit} className="space-y-3">
+          <label className="block text-sm">{t("Xodim")}
+            <select className={inputClass} required value={memberId} onChange={(e) => setMemberId(e.target.value)}>
+              <option value="" disabled>{t("Tanlang")}</option>
+              {staff.data.map((c) => <option key={c.member_id} value={c.member_id}>{c.full_name}</option>)}
+            </select>
+          </label>
+          <label className="block text-sm">{t("Summa")}
+            <input className={inputClass} type="number" inputMode="numeric" required min={1} step={1} value={amount}
+              onChange={(e) => setAmount(e.target.value)} />
+          </label>
+          <label className="block text-sm">{t("Izoh")}
+            <input className={inputClass} maxLength={500} value={note} onChange={(e) => setNote(e.target.value)} />
+          </label>
+          <p className="text-xs text-muted">{t("Pul bugungi Kassadan chiqadi (Avans xarajati).")}</p>
+          {give.error && <ErrorNote error={give.error} />}
+          <Button type="submit" disabled={give.isPending}>{t("Avans berish")}</Button>
+        </form>
+      )}
+    </Modal>
   );
 }
 
@@ -81,6 +207,8 @@ function Payrolls({ businessId }: { businessId: number }) {
                       <span className="block font-medium break-words">{p.full_name}</span>
                       <span className="block text-xs text-muted tabular-nums">
                         {t("Stavka {a} · Foiz {b}", { a: formatMoney(p.base_salary), b: formatMoney(p.commission) })}
+                        {p.clients > 0 && ` · ${t("Tashriflar: {a}", { a: p.clients })}`}
+                        {p.advances > 0 && ` · ${t("Avans: {a}", { a: formatMoney(p.advances) })}`}
                       </span>
                     </span>
                     <StatusBadge status={p.status} />
@@ -139,6 +267,14 @@ function PayrollDialog({ businessId, payroll: p, month, onClose }: {
         <dd className="text-right tabular-nums">{formatMoney(p.revenue)}</dd>
         <dt className="text-muted">{t("Foiz")}</dt>
         <dd className="text-right tabular-nums">{formatMoney(p.commission)}</dd>
+        <dt className="text-muted">{t("Pul tushgan tashriflar")}</dt>
+        <dd className="text-right tabular-nums">{p.clients}</dd>
+        {p.advances > 0 && (
+          <>
+            <dt className="text-muted">{p.status === "draft" ? t("Avans (ayiriladi)") : t("Avans (ayirilgan)")}</dt>
+            <dd className="text-right tabular-nums">−{formatMoney(p.advances)}</dd>
+          </>
+        )}
         <dt className="font-medium">{t("Jami")}</dt>
         <dd className="text-right font-medium tabular-nums">{formatMoney(p.total)}</dd>
       </dl>
@@ -149,7 +285,7 @@ function PayrollDialog({ businessId, payroll: p, month, onClose }: {
               <input className={inputClass} type="number" inputMode="numeric" required min={0} step={1} value={bonus}
                 onChange={(e) => setBonus(e.target.value)} />
             </label>
-            <label className="block text-sm">{t("Ushlanma (avans, jarima)")}
+            <label className="block text-sm">{t("Ushlanma (jarima va boshqalar)")}
               <input className={inputClass} type="number" inputMode="numeric" required min={0} step={1} value={deductions}
                 onChange={(e) => setDeductions(e.target.value)} />
             </label>
@@ -278,6 +414,7 @@ export function MyPayrollPage({ membership }: { membership: Membership }) {
                 <span className="block font-medium tabular-nums">{p.period_start.slice(5, 7)}.{p.period_start.slice(0, 4)}</span>
                 <span className="block text-xs text-muted tabular-nums">
                   {t("Stavka {a} · Foiz {b} · Bonus {c} · Ushlanma {d}", { a: formatMoney(p.base_salary), b: formatMoney(p.commission), c: formatMoney(p.bonus), d: formatMoney(p.deductions) })}
+                  {p.advances > 0 && ` · ${t("Avans: {a}", { a: formatMoney(p.advances) })}`}
                 </span>
               </span>
               <StatusBadge status={p.status} />

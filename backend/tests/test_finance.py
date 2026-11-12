@@ -68,10 +68,16 @@ def test_partial_payments_up_to_price(client, biz, ctx):
     assert r.json()["payments"][0]["received_by_name"]
 
 
-def test_not_payable_before_client_arrives(client, biz, ctx):
+def test_prepayment_before_arrival_but_not_after_cancel(client, biz, ctx):
     a = book(client, biz, ctx, status="confirmed")
     r = pay(client, biz, ctx, a, 1000)
+    assert r.status_code == 201 and r.json()["payable"] and r.json()["paid"] == 1000
+
+    b = book(client, biz, ctx, "12:00", status="confirmed")
+    assert client.post(f"/api/v1/appointments/{b['id']}/cancel", headers=h(ctx), json={}).status_code == 200
+    r = pay(client, biz, ctx, b, 1000)
     assert r.status_code == 409 and r.json()["detail"]["code"] == "not_payable"
+    assert client.get(url(biz, f"appointments/{b['id']}/payments"), headers=h(ctx)).json()["payable"] is False
 
 
 def test_concurrent_payments_never_exceed_price(client, biz, ctx):

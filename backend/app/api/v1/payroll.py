@@ -7,8 +7,8 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, require_permission
-from app.schemas.payroll import (CompensationIn, CompensationOut, GenerateIn, GenerateOut, PayrollAdjust, PayrollList,
-                                 PayrollOut)
+from app.schemas.payroll import (AdvanceIn, AdvanceList, AdvanceOut, CompensationIn, CompensationOut, GenerateIn,
+                                 GenerateOut, PayrollAdjust, PayrollList, PayrollOut)
 from app.services import audit
 
 router = APIRouter(prefix="/businesses/{business_id}", tags=["payroll"])
@@ -20,7 +20,8 @@ _MONTH = Query(pattern=r"^\d{4}-(0[1-9]|1[0-2])$")
 
 _SELECT = """
     SELECT p.id, p.member_id, u.full_name, m.title, p.period_start, p.period_end, p.base_salary, p.revenue,
-           p.commission_percent, p.commission, p.bonus, p.deductions, p.total, p.status::text AS status, p.note,
+           p.commission_percent, p.commission, p.bonus, p.deductions, p.advances, p.clients, p.total,
+           p.status::text AS status, p.note,
            p.approved_at, p.paid_at
       FROM payrolls p
       JOIN business_members m ON m.id = p.member_id
@@ -95,6 +96,46 @@ def generate(body: GenerateIn, business_id: int = Depends(_manage), db: Session 
     members = db.scalar(text("SELECT app.generate_payroll(:b, :s, :e)"), {"b": business_id, "s": start, "e": end})
     db.commit()
     return GenerateOut(members=members)
+
+
+_ADVANCES = """
+    SELECT a.id, a.member_id, u.full_name, a.amount, a.given_on, a.note, a.payroll_id IS NOT NULL AS settled,
+           a.expense_id IS NULL AS carried, cu.full_name AS created_by_name
+      FROM payroll_advances a
+      JOIN business_members m ON m.id = a.member_id
+      JOIN users u            ON u.id = m.user_id
+      LEFT JOIN users cu      ON cu.id = a.created_by
+"""
+
+
+@router.get("/payroll/advances", response_model=AdvanceList)
+def list_advances(month: str = _MONTH, business_id: int = Depends(_manage), db: Session = Depends(get_db)):
+    """Shu oyda berilganlar va oldingi oylardan qolgan, hali ayirilmagan avanslar."""
+    start, end = _bounds(month)
+    rows = db.execute(text(f"""{_ADVANCES}
+         WHERE a.business_id = :b
+           AND (a.given_on BETWEEN :s AND :e OR (a.payroll_id IS NULL AND a.given_on < :s))
+         ORDER BY a.given_on DESC, a.id DESC
+    """), {"b": business_id, "s": start, "e": end}).mappings()
+    items = [AdvanceOut(**r) for r in rows]
+    return AdvanceList(month=month, open_total=sum(i.amount for i in items if not i.settled), items=items)
+
+
+@router.post("/payroll/advances", response_model=AdvanceOut, status_code=201)
+def give_advance(body: AdvanceIn, business_id: int = Depends(_manage), db: Session = Depends(get_db)):
+    """Avans shu kuni Kassaga "Avans" xarajati bo'lib tushadi va oylikdan avtomatik ayiriladi."""
+    advance_id = db.scalar(text("SELECT app.give_advance(:b, :m, :a, :n)"),
+                           {"b": business_id, "m": body.member_id, "a": body.amount, "n": body.note})
+    db.commit()
+    row = db.execute(text(f"{_ADVANCES} WHERE a.id = :id"), {"id": advance_id}).mappings().one()
+    return AdvanceOut(**row)
+
+
+@router.delete("/payroll/advances/{advance_id}", status_code=204)
+def cancel_advance(advance_id: int = Path(ge=1), business_id: int = Depends(_manage), db: Session = Depends(get_db)):
+    """Xato yozilgan avansni bekor qiladi (oylikdan ayirilmagan bo'lsa). Kassadagi xarajat ham o'chadi."""
+    db.execute(text("SELECT app.cancel_advance(:b, :id)"), {"b": business_id, "id": advance_id})
+    db.commit()
 
 
 @router.put("/payroll/{payroll_id}", response_model=PayrollOut)

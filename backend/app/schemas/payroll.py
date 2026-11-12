@@ -47,11 +47,37 @@ class PayrollOut(BaseModel):
     commission: int
     bonus: int
     deductions: int
+    advances: int = 0              # shu oylikdan ayirilgan (qoralamada — ayiriladigan) avanslar
+    clients: int = 0               # shu davrda pul tushgan tashriflar soni
     total: int
     status: str
     note: str | None
     approved_at: datetime | None
     paid_at: datetime | None
+
+
+class AdvanceIn(BaseModel):
+    member_id: int = Field(ge=1)
+    amount: int = Field(gt=0, le=MAX_MONEY)
+    note: str | None = Field(default=None, max_length=500)
+
+
+class AdvanceOut(BaseModel):
+    id: int
+    member_id: int
+    full_name: str
+    amount: int
+    given_on: date
+    note: str | None
+    settled: bool                  # oylikdan ayirilgan — endi bekor qilib bo'lmaydi
+    carried: bool                  # oldingi davrdan ko'chgan qoldiq (pul yangi berilmagan)
+    created_by_name: str | None
+
+
+class AdvanceList(BaseModel):
+    month: str
+    open_total: int                # hali oylikdan ayirilmagan avanslar
+    items: list[AdvanceOut]
 
 
 class PayrollList(BaseModel):

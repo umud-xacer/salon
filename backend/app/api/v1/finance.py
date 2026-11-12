@@ -57,7 +57,7 @@ def _appointment_payments(db: Session, business_id: int, appointment_id: int) ->
                       {"id": appointment_id, "b": business_id}).mappings()
     payments = [PaymentOut(**r) for r in rows]
     paid = sum(p.amount for p in payments if p.status == "paid")
-    return AppointmentPayments(appointment_id=appointment_id, payable=a["status"] in ("in_progress", "completed"),
+    return AppointmentPayments(appointment_id=appointment_id, payable=a["status"] not in ("cancelled", "no_show"),
                                total=a["total"], paid=paid, due=max(a["total"] - paid, 0), payments=payments)
 
 

@@ -99,7 +99,7 @@ def test_excel_export(client, biz, ctx):
     assert r.headers["content-type"].startswith("application/vnd.openxmlformats")
     assert f'hisobot_{today()}_{ctx["day"]}.xlsx' in r.headers["content-disposition"]
     wb = load_workbook(io.BytesIO(r.content))
-    assert wb.sheetnames == ["Umumiy", "Kunlar", "Xizmatlar", "Xodimlar", "Xarajatlar", "To'lovlar"]
+    assert wb.sheetnames == ["Umumiy", "Kunlar", "Xizmatlar", "Bo'limlar", "Xodimlar", "Xarajatlar", "To'lovlar"]
     assert wb["Xizmatlar"]["A2"].value == ctx["service"]["name"]
     cell = wb["Xarajatlar"]["A2"]
     assert cell.value == '=HYPERLINK("x")' and cell.data_type == "s"

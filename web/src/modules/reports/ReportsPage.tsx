@@ -189,6 +189,11 @@ function ReportView({ r }: { r: Report }) {
           rows={r.services.map((s) => [pick(s.name, s.name_ru), s.count, formatMoney(s.revenue)])} />
       </Card>
       <Card>
+        <h2 className="mb-3 text-sm font-medium">{t("Bo'limlar (bajarilgan bronlar)")}</h2>
+        <Table empty={t("Bu davrda bajarilgan xizmat yo'q")} head={[t("Bo'lim"), t("Soni"), t("Summa")]}
+          rows={(r.categories ?? []).map((c) => [c.name ? pick(c.name, c.name_ru) : t("Bo'limsiz"), c.count, formatMoney(c.revenue)])} />
+      </Card>
+      <Card>
         <h2 className="mb-3 text-sm font-medium">{t("Xodimlar")}</h2>
         <Table empty={t("Bu davrda bron yo'q")} head={[t("Xodim"), t("Bronlar"), t("Bajarilgan"), t("Kelmagan"), t("Summa")]}
           rows={r.staff.map((s) => [s.name, s.bookings, s.completed, s.no_show, formatMoney(s.revenue)])} />

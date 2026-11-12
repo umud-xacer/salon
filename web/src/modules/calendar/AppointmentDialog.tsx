@@ -8,6 +8,7 @@ import { Button, ErrorNote } from "../../components/ui";
 import { Modal } from "../../components/Modal";
 import { PaymentPanel } from "../finance/PaymentPanel";
 import { useVocab } from "../vocab";
+import { VisitPanel } from "./VisitPanel";
 
 import { pickList, t } from "../../i18n";
 const OPEN = ["pending", "confirmed"];
@@ -25,7 +26,9 @@ export function AppointmentDialog({ membership, appointment: a, masterName, onCl
   const canManage = membership.permissions.includes("appointments.manage");
   const showPayments = membership.modules.includes("finance")
     && (membership.permissions.includes("payments.accept") || membership.permissions.includes("finance.view"))
-    && (a.status === "in_progress" || a.status === "completed");
+    && a.status !== "cancelled" && a.status !== "no_show";     // oldindan to'lov: mijoz kelmasidan ham olinadi
+  const showLines = membership.permissions.includes("appointments.view_all")
+    || membership.permissions.includes("payments.accept");
 
   const done = async () => {
     await queryClient.invalidateQueries({ queryKey: ["calendar", b] });
@@ -50,12 +53,10 @@ export function AppointmentDialog({ membership, appointment: a, masterName, onCl
         <dd className="tabular-nums">
           {formatDate(a.starts_at)}, {formatTime(a.starts_at)}–{formatTime(a.ends_at)}
         </dd>
-        <dt className="text-muted">{t("Xizmat")}</dt>
-        <dd>{pickList(a.services, a.services_ru).join(", ")}</dd>
+        {!showLines && <><dt className="text-muted">{t("Xizmat")}</dt><dd>{pickList(a.services, a.services_ru).join(", ")}</dd></>}
         <dt className="text-muted">{v.staffOne}</dt>
         <dd>{masterName}</dd>
-        <dt className="text-muted">{t("Narx")}</dt>
-        <dd>{formatMoney(a.total_price)}</dd>
+        {!showLines && <><dt className="text-muted">{t("Narx")}</dt><dd>{formatMoney(a.total_price)}</dd></>}
         {a.client_phone && (
           <>
             <dt className="text-muted">{t("Telefon")}</dt>
@@ -77,6 +78,7 @@ export function AppointmentDialog({ membership, appointment: a, masterName, onCl
         </p>
       )}
 
+      {showLines && <VisitPanel membership={membership} appointmentId={a.id} />}
       {showPayments && <PaymentPanel membership={membership} appointmentId={a.id} />}
 
       {(setStatus.error || cancel.error) && (

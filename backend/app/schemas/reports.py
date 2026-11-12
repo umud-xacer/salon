@@ -41,6 +41,14 @@ class ServiceRow(BaseModel):
     revenue: int
 
 
+class CategoryRow(BaseModel):
+    category_id: int | None        # None = bo'limsiz xizmatlar
+    name: str | None
+    name_ru: str | None = None
+    count: int
+    revenue: int
+
+
 class StaffRow(BaseModel):
     member_id: int
     name: str
@@ -72,6 +80,7 @@ class ReportOut(BaseModel):
     expenses_by_category: list[ExpenseRow]
     bookings: BookingStats
     services: list[ServiceRow]
+    categories: list[CategoryRow] = []     # bo'limlar bo'yicha (bajarilgan bronlardagi xizmatlar)
     staff: list[StaffRow]
     clients: ClientStats
     daily: list[DayRow]

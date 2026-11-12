@@ -41,8 +41,9 @@ export const pickList = (uz: string[], ru?: string[] | null) => (current === "ru
 /** Server yozgan o'zbekcha matn (lavozim tavsiyasi, "Oylik" toifasi): lug'atda bo'lsa ruscha, bo'lmasa o'zi */
 export const dyn = (s?: string | null) => (s ? t(s) : "");
 
-/** Xarajat izohi: server "Oylik: Ism, 11.2026" deb yozadi */
-export const expenseNote = (s: string) => (current === "ru" ? s.replace(/^Oylik: /, `${t("Oylik")}: `) : s);
+/** Xarajat izohi: server "Oylik: Ism, 11.2026" yoki "Avans: Ism" deb yozadi */
+export const expenseNote = (s: string) =>
+  current === "ru" ? s.replace(/^(Oylik|Avans): /, (_, word: string) => `${t(word)}: `) : s;
 
 /** Qiymatlari o'zbekcha bo'lgan lug'at/massivni o'qilganda tarjima qiladi (STATUS_LABELS, WEEKDAYS...) */
 export function localized<T extends object>(src: T): T {

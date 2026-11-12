@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Zap } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { api } from "../../api/client";
@@ -19,6 +19,7 @@ import { Button, Empty, ErrorNote, PageTitle, Spinner } from "../../components/u
 import { AppointmentDialog } from "./AppointmentDialog";
 import { BookingDialog, type BookingPreset } from "./BookingDialog";
 import { TimeGrid, type Column } from "./TimeGrid";
+import { WalkInDialog } from "./WalkInDialog";
 import { useVocab } from "../vocab";
 
 import { dyn, pickList, t } from "../../i18n";
@@ -32,6 +33,7 @@ export function CalendarPage({ membership }: { membership: Membership }) {
   const [memberFilter, setMemberFilter] = useState<number | null>(null);
   const [booking, setBooking] = useState<BookingPreset | null>(null);
   const [opened, setOpened] = useState<Appointment | null>(null);
+  const [walkIn, setWalkIn] = useState(false);
 
   const start = view === "day" ? day : mondayOf(day);
   const days = view === "day" ? 1 : 7;
@@ -46,6 +48,8 @@ export function CalendarPage({ membership }: { membership: Membership }) {
 
   const v = useVocab();
   const masterName = (id: number) => data?.staff.find((s) => s.id === id)?.full_name ?? v.staffOne;
+  // Oyna ochiq turganda xizmat qo'shilsa yoki holat o'zgarsa, yangilangan bron ko'rsatiladi
+  const current = opened && (data?.appointments.find((a) => a.id === opened.id) ?? opened);
 
   const columns = useMemo<Column[]>(() => {
     if (!data) return [];
@@ -98,9 +102,14 @@ export function CalendarPage({ membership }: { membership: Membership }) {
         hint={title}
         action={
           canBook && (
-            <Button className="flex items-center gap-1" onClick={() => setBooking({ day: day < todayIso() ? todayIso() : day })}>
-              <Plus size={16} aria-hidden /> {v.newBooking}
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="secondary" className="flex items-center gap-1" onClick={() => setWalkIn(true)}>
+                <Zap size={16} aria-hidden /> {t("Tezkor qabul")}
+              </Button>
+              <Button className="flex items-center gap-1" onClick={() => setBooking({ day: day < todayIso() ? todayIso() : day })}>
+                <Plus size={16} aria-hidden /> {v.newBooking}
+              </Button>
+            </div>
           )
         }
       />
@@ -168,11 +177,24 @@ export function CalendarPage({ membership }: { membership: Membership }) {
       )}
 
       {booking && <BookingDialog membership={membership} preset={booking} onClose={() => setBooking(null)} />}
-      {opened && (
-        <AppointmentDialog
+      {walkIn && (
+        <WalkInDialog
           membership={membership}
-          appointment={opened}
-          masterName={masterName(opened.member_id)}
+          onClose={() => setWalkIn(false)}
+          onBooked={(appointment) => {
+            setWalkIn(false);
+            setDay(todayIso());
+            setOpened(appointment);          // darhol to'lov va chek uchun
+          }}
+        />
+      )}
+      {current && (
+        <AppointmentDialog
+          key={current.id}
+          membership={membership}
+          appointment={current}
+          masterName={data?.staff.some((s) => s.id === current.member_id)
+            ? masterName(current.member_id) : current.member_name ?? v.staffOne}
           onClose={() => setOpened(null)}
         />
       )}

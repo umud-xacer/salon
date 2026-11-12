@@ -86,6 +86,11 @@ def build_workbook(business_name: str, r: ReportOut, payments: list) -> bytes:
     _table(ws, 1, ["Xizmat", "Soni", "Summa"], [[s.name, s.count, s.revenue] for s in r.services], money_cols={3})
     _widths(ws, [40, 10, 18])
 
+    ws = wb.create_sheet("Bo'limlar")
+    _table(ws, 1, ["Bo'lim", "Soni", "Summa"],
+           [[c.name or "Bo'limsiz", c.count, c.revenue] for c in r.categories], money_cols={3})
+    _widths(ws, [40, 10, 18])
+
     ws = wb.create_sheet("Xodimlar")
     _table(ws, 1, ["Xodim", "Bronlar", "Bajarilgan", "Kelmagan", "Summa"],
            [[s.name, s.bookings, s.completed, s.no_show, s.revenue] for s in r.staff], money_cols={5})
