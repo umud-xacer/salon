@@ -12,7 +12,7 @@ import httpx
 from app.services.uz_regions import REGIONS, match_district, match_region, region_by_district
 
 _URL = "https://nominatim.openstreetmap.org/reverse"
-_MIN_INTERVAL = 2.2          # 2 ta API jarayoni: har biri alohida sanaydi, birga sekundiga 1 so'rovdan oshmasin
+_MIN_INTERVAL = 1.1          # bitta API jarayoni; jarayonlar ko'paysa, shu songa ko'paytiring
 _CACHE_SIZE = 500
 
 _lock = threading.Lock()

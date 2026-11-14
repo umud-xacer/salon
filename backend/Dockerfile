@@ -17,5 +17,6 @@ USER chronix
 
 EXPOSE 8000
 # Forwarded sarlavhalari faqat Caddy'dan keladi: api porti tashqariga ochilmagan
-# 2 ta jarayon: serverning ikkala yadrosi ishlaydi (bitta jarayon faqat bittasini band qiladi)
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2", "--proxy-headers", "--forwarded-allow-ips", "*"]
+# Bitta jarayon: 2 ta jarayon sinab ko'rildi (2026-11-14) — 1 GB serverda tezlik oshmadi, xotira esa ~4 barobar
+# ko'p band bo'ldi. Kattaroq serverga o'tilganda "--workers", "2" qo'shiladi.
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips", "*"]
