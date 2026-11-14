@@ -43,7 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     retry: false,
     // Obuna yoki modul Super Admin tomonidan o'zgarsa, panel qayta kirmasdan yangilanadi
     staleTime: 0,
-    refetchInterval: 60_000,
+    refetchInterval: 180_000,
     refetchOnWindowFocus: true,
   });
 

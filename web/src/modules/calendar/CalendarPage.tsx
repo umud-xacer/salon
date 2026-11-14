@@ -41,7 +41,7 @@ export function CalendarPage({ membership }: { membership: Membership }) {
   const query = useQuery({
     queryKey: ["calendar", b, start, days],
     queryFn: () => api<CalendarData>(`/businesses/${b}/calendar?start=${start}&days=${days}`),
-    refetchInterval: 30_000,       // mijoz ilovadan bron qilsa, qabulxona ekranida o'zi chiqadi
+    refetchInterval: 45_000,       // mijoz ilovadan bron qilsa, qabulxona ekranida o'zi chiqadi
     placeholderData: (previous) => previous,
   });
   const data = query.data;

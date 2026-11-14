@@ -22,7 +22,7 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 // Ochilish ovozi fayli splash animatsiyasidan oldin yuklanib tursin (animatsiya paytida faqat play)
 prepareStartupSound();
 
-const POLL_MS = 20_000;
+const POLL_MS = 60_000;          // budilnikning o'zi telefonda rejalashtirilgan; bu faqat qo'shimcha tekshiruv
 
 function openAlarm(router: ReturnType<typeof useRouter>, data: Record<string, unknown> = {}) {
   const type = String(data.type);

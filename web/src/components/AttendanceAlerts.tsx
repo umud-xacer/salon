@@ -45,7 +45,7 @@ export function AttendanceAlerts() {
   const alerts = useQuery({
     queryKey: KEY,
     queryFn: async () => (await api<Alert[]>("/notifications?unread=true&limit=50")).filter((n) => n.type === "attendance_alert"),
-    refetchInterval: 20_000,
+    refetchInterval: 60_000,        // ogohlantirish 20 daqiqalik oyna uchun — daqiqada bir marta yetarli
     refetchIntervalInBackground: true,
   });
   const seen = useRef(new Set<number>());

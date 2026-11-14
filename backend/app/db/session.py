@@ -14,12 +14,12 @@ from app.core.config import get_settings
 
 @lru_cache
 def _api_engine():
-    return create_engine(get_settings().database_url, pool_pre_ping=True)
+    return create_engine(get_settings().database_url, pool_pre_ping=True, pool_size=5, max_overflow=10)
 
 
 @lru_cache
 def _auth_engine():
-    return create_engine(get_settings().auth_database_url, pool_pre_ping=True)
+    return create_engine(get_settings().auth_database_url, pool_pre_ping=True, pool_size=2, max_overflow=4)
 
 
 @lru_cache
