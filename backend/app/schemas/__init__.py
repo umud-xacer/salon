@@ -191,7 +191,7 @@ class BusinessCreate(BaseModel):
     @field_validator("slug")
     @classmethod
     def _not_reserved(cls, v: str) -> str:
-        # Havola panel manzili ham bo'ladi (www.ariqalqon.uz/<havola>): tizim yo'llari bilan to'qnashmasin
+        # Havola panel manzili ham bo'ladi (www.chronix.uz/<havola>): tizim yo'llari bilan to'qnashmasin
         if v in RESERVED_SLUGS:
             raise ValueError("Bu havola band, boshqasini tanlang")
         return v

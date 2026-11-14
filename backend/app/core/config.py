@@ -32,10 +32,10 @@ class Settings(BaseSettings):
     cors_origins: list[str] = []
 
     # Panellarni domen bo'yicha ajratish (app/core/panels.py). Bo'sh — cheklov yo'q
-    admin_panel_hosts: list[str] = []          # faqat Super Admin: ["ega.ariqalqon.uz", "www.ega.ariqalqon.uz"]
-    business_panel_hosts: list[str] = []       # Super Admin kirmaydi: ["ariqalqon.uz", "www.ariqalqon.uz"]
-    admin_panel_url: str = "https://ega.ariqalqon.uz"
-    business_panel_url: str = "https://www.ariqalqon.uz"
+    admin_panel_hosts: list[str] = []          # faqat Super Admin: ["ega.chronix.uz"]
+    business_panel_hosts: list[str] = []       # Super Admin kirmaydi: ["www.chronix.uz", "admin.chronix.uz"]
+    admin_panel_url: str = "https://ega.chronix.uz"
+    business_panel_url: str = "https://www.chronix.uz"
 
     # Yuklangan rasmlar: papka va ochiq manzil (prod'da Caddy /media ni beradi, https bo'lishi shart)
     media_dir: str = "media"
@@ -62,7 +62,7 @@ class Settings(BaseSettings):
     # Xaritaning o'zi mobil ilovada Yandex MapKit (alohida, mobil kalit) bilan chiziladi.
     yandex_geocoder_api_key: SecretStr | None = None
     # Yandex Maps JavaScript API kaliti — faqat mijoz ilovasidagi xarita uchun (ochiq ilova: bepul shart).
-    # Sir emas (brauzerga boradi), Yandex kabinetida HTTP Referer = ariqalqon.uz bilan cheklanadi.
+    # Sir emas (brauzerga boradi), Yandex kabinetida HTTP Referer = chronix.uz bilan cheklanadi.
     # Bo'sh bo'lsa ilova OpenStreetMap ishlatadi. Panellar doim OpenStreetMap (yopiq + koordinata saqlanadi).
     yandex_maps_js_key: str | None = None
     # Veb-panel xaritasi uchun ALOHIDA kalit: panel yopiq, Yandex bu kalitni cheklasa ilova xaritasi ishlayveradi

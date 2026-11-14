@@ -1,12 +1,12 @@
 // Sayt sozlamalari — havolalar va tariflar shu yerda o'zgartiriladi.
 // Bo'sh havola ("") bosilsa "Tez orada" xabari chiqadi.
 export const LINKS = {
-  panel: "https://www.ariqalqon.uz/",          // direktor / xodimlar paneli (login)
+  panel: "https://www.chronix.uz/",          // direktor / xodimlar paneli (login)
   play: "",                                     // Google Play sahifasi — ilova chiqqanda qo'yiladi
   appstore: "",                                 // App Store sahifasi — Apple Developer hisobidan keyin
   phone: "+998200035599",
   telegram: "https://t.me/JabborqulovUmidjon",
-  api: "https://api.ariqalqon.uz",              // tarif narxlari shu yerdan olinadi (Super Admin -> Narxlar)
+  api: "https://api.chronix.uz",              // tarif narxlari shu yerdan olinadi (Super Admin -> Narxlar)
 };
 
 // Tarif NARXLARI va qaysi tarif faolligi Super Admin panelidagi "Narxlar" sahifasidan olinadi (nomi bo'yicha

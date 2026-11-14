@@ -110,7 +110,7 @@ export function OwnerChange({ business: b }: { business: BusinessAdmin }) {
       )}
       {!sameOwner && (
         <p className="text-xs text-muted">
-          {t("Bu odam muassasada xodim bo'lsa, o'sha a'zolik direktorga ko'tariladi. Yangi direktor www.ariqalqon.uz dan shu telefon va parol bilan kiradi.")}
+          {t("Bu odam muassasada xodim bo'lsa, o'sha a'zolik direktorga ko'tariladi. Yangi direktor www.chronix.uz dan shu telefon va parol bilan kiradi.")}
         </p>
       )}
       {confirming && sameOwner && (

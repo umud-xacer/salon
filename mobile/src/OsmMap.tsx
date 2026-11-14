@@ -7,7 +7,7 @@ import { WebView, WebViewMessageEvent, WebViewProps } from 'react-native-webview
 import { BusinessCard } from './api';
 
 // OSM xarita rasmlari Referer'siz bloklanadi: sahifa shu manzildan ochilgandek ko'rinadi
-const BASE_URL = 'https://ariqalqon.uz/';
+const BASE_URL = 'https://chronix.uz/';
 
 // WebView klassining turlari React 19 bilan to'g'ri ishlamaydi
 const MapView = WebView as unknown as ComponentType<WebViewProps & { ref: RefObject<WebView | null> }>;

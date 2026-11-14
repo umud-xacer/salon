@@ -198,7 +198,7 @@ export function BusinessDialog({ business: b, modules, onClose, initialTab = "in
         <span>{t("Direktor: {a}", { a: b.owner_name ?? t("yo'q") })}</span>
         <StatusBadge b={b} />
       </p>
-      <CredentialsBox title={t("Direktorning kirish ma'lumotlari (www.ariqalqon.uz)")} businessId={b.id}
+      <CredentialsBox title={t("Direktorning kirish ma'lumotlari (www.chronix.uz)")} businessId={b.id}
         memberId={b.owner_member_id} phone={b.owner_phone} status={b.owner_password_status}
         changedAt={b.owner_password_changed_at} canView onChanged={refreshAll} />
       <OwnerChange business={b} />

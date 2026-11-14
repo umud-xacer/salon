@@ -10,7 +10,7 @@ SA_LOGIN = {"phone": "+998900000001", "password": "SuperPass123"}
 def test_superadmin_logs_in_only_on_admin_host(client):
     r = client.post("/api/v1/auth/login", headers=PANEL, json=SA_LOGIN)
     assert r.status_code == 403 and r.json()["detail"]["code"] == "wrong_panel"
-    assert "ega.ariqalqon.uz" in r.json()["detail"]["message"]
+    assert "ega.chronix.uz" in r.json()["detail"]["message"]
     assert client.post("/api/v1/auth/login", headers=ADMIN, json=SA_LOGIN).status_code == 200
 
 
@@ -29,7 +29,7 @@ def test_director_and_staff_only_on_business_panel(client, superadmin):
     assert r.status_code == 201, r.text
     login = {"phone": phone, "password": "Direktor2026ab"}
     r = client.post("/api/v1/auth/login", headers=ADMIN, json=login)
-    assert r.status_code == 403 and "www.ariqalqon.uz" in r.json()["detail"]["message"]
+    assert r.status_code == 403 and "www.chronix.uz" in r.json()["detail"]["message"]
     tokens = client.post("/api/v1/auth/login", headers=PANEL, json=login)
     assert tokens.status_code == 200
     assert client.get("/api/v1/auth/me", headers={**auth_header(tokens.json()), **ADMIN}).status_code == 403
