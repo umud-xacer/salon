@@ -895,4 +895,10 @@ export const RU_PAGES: Record<string, string> = {
   "Bu xizmatni olib tashlab bo'lmaydi: oxirgi xizmat yoki puli to'langan": "Эту услугу нельзя убрать: она последняя или уже оплачена",
   "Bu avans oylikdan ayirilgan, endi bekor qilib bo'lmaydi": "Этот аванс уже удержан из зарплаты, отменить его нельзя",
   "Hozir bo'sh mutaxassis yo'q": "Сейчас нет свободного специалиста",
+
+  // ── Rasm yuklash: tekshirish va siqish (2026-11-14) ──
+  "{a}: faqat JPG, PNG yoki WEBP rasm yuklanadi": "{a}: загружаются только изображения JPG, PNG или WEBP",
+  "{a}: rasm {b} MB dan katta ({c} MB). Kichikroq rasm tanlang": "{a}: изображение больше {b} МБ ({c} МБ). Выберите изображение поменьше",
+  "Birinchi rasm ilovadagi kartochkada chiqadi. 20 tagacha, JPG, PNG yoki WEBP, har biri {a} MB gacha. Katta rasmlar avtomatik siqiladi": "Первое фото показывается на карточке в приложении. До 20 штук, JPG, PNG или WEBP, каждое до {a} МБ. Большие фото сжимаются автоматически",
+  "Rasm 15 MB dan katta bo'lmasin": "Изображение не должно быть больше 15 МБ",
 };

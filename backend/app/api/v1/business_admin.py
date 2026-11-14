@@ -99,7 +99,7 @@ def add_photo(body: PhotoIn, business_id: int = Depends(_business), db: Session 
 @router.post("/photos/upload", response_model=PhotoOut, status_code=201)
 async def upload_photo(file: UploadFile = File(...), business_id: int = Depends(_business),
                        db: Session = Depends(get_db)):
-    """Telefondan yoki kompyuterdan rasm. 8 MB gacha, JPG, PNG yoki WEBP. Server qayta siqib saqlaydi."""
+    """Telefondan yoki kompyuterdan rasm. 15 MB gacha, JPG, PNG yoki WEBP. Server kichraytirib, WebP qilib saqlaydi."""
     data = await file.read(media.MAX_BYTES + 1)
     try:
         url = media.save_business_photo(business_id, data)

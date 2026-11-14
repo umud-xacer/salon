@@ -6,6 +6,7 @@ import pytest
 from PIL import Image
 
 from app.core.config import get_settings
+from app.services import media
 from tests.conftest import add_member, auth_header, create_business
 
 
@@ -44,9 +45,9 @@ def test_upload_resizes_and_strips_metadata(client, biz):
     r = upload(client, biz, png((3000, 1500)))
     assert r.status_code == 201, r.text
     url = r.json()["url"]
-    assert url.startswith("https://") and url.endswith(".jpg")
+    assert url.startswith("https://") and url.endswith(".webp")
     with Image.open(disk_path(url)) as saved:
-        assert saved.format == "JPEG" and max(saved.size) == 1600
+        assert saved.format == "WEBP" and saved.size == (1200, 600)        # proporsiya saqlanadi
 
     r = upload(client, biz, jpeg_with_gps(), "gps.jpg", content_type="image/jpeg")
     assert r.status_code == 201, r.text
@@ -78,7 +79,7 @@ def test_rejects_non_images(client, biz, data, name):
 
 
 def test_rejects_too_large(client, biz):
-    r = upload(client, biz, b"\xff\xd8" + b"0" * (8 * 1024 * 1024 + 10), "katta.jpg")
+    r = upload(client, biz, b"\xff\xd8" + b"0" * (media.MAX_BYTES + 10), "katta.jpg")
     assert r.status_code == 422
 
 
@@ -107,6 +108,67 @@ def test_limit_does_not_leave_orphan_files(client, biz):
     r = upload(client, biz, png((50, 50)))
     assert r.status_code == 422
     assert len(list(folder.iterdir())) == before
+
+
+def photo(size, fmt="JPEG", quality=95, mode="RGB") -> bytes:
+    """Telefon suratiga o'xshash: silliq o'tishlar + mayda shovqin (bir xil rangli rasm siqishni ko'rsatmaydi)."""
+    w, h = size
+    base = Image.radial_gradient("L").resize((w, h)).convert("RGB")
+    noise = Image.effect_noise((w, h), 28).convert("RGB")
+    image = Image.blend(base, noise, 0.35)
+    if mode == "RGBA":
+        image.putalpha(Image.linear_gradient("L").resize((w, h)))
+    buf = io.BytesIO()
+    image.save(buf, fmt, **({"quality": quality} if fmt != "PNG" else {}))
+    return buf.getvalue()
+
+
+def test_big_phone_photo_is_compressed(client, biz):
+    """12 MP surat (bir necha MB) 1200 px kenglikdagi WebP bo'lib, kamida 10 barobar kichrayadi."""
+    original = photo((4000, 3000))
+    assert len(original) > 2 * 1024 * 1024
+    r = upload(client, biz, original, "telefon.jpg", content_type="image/jpeg")
+    assert r.status_code == 201, r.text
+    path = disk_path(r.json()["url"])
+    with Image.open(path) as saved:
+        assert saved.format == "WEBP" and saved.size == (1200, 900)
+    assert path.stat().st_size < len(original) / 10 and path.stat().st_size < 400 * 1024
+
+
+def test_small_image_is_not_upscaled_and_alpha_survives(client, biz):
+    r = upload(client, biz, photo((640, 480), "PNG", mode="RGBA"))
+    assert r.status_code == 201, r.text
+    with Image.open(disk_path(r.json()["url"])) as saved:
+        assert saved.size == (640, 480) and saved.mode == "RGBA"
+
+
+def test_portrait_orientation_from_exif_is_applied(client, biz):
+    image = Image.new("RGB", (800, 400), (10, 120, 200))
+    exif = Image.Exif()
+    exif[0x0112] = 6                                          # telefon tik ushlab olingan: 90 gradusga burilgan
+    buf = io.BytesIO()
+    image.save(buf, "JPEG", exif=exif)
+    r = upload(client, biz, buf.getvalue(), "tik.jpg", content_type="image/jpeg")
+    with Image.open(disk_path(r.json()["url"])) as saved:
+        assert saved.size == (400, 800) and 0x0112 not in saved.getexif()
+
+
+def test_huge_png_is_rejected_before_decoding():
+    """25 MP dan katta PNG ochilmasdan rad etiladi: to'liq ochilsa, xotirani to'ldiradi."""
+    buf = io.BytesIO()
+    Image.new("L", (6000, 5000)).save(buf, "PNG")             # 30 MP, fayl o'zi kichik
+    with pytest.raises(media.BadImage):
+        media.process_image(buf.getvalue())
+
+
+def test_jpeg_is_decoded_at_reduced_size():
+    """Xotira nazorati: 12 MP JPEG to'liq (4000x3000) emas, dekoderning o'zida kichraytirib ochiladi."""
+    with Image.open(io.BytesIO(photo((4000, 3000)))) as image:
+        image.draft("RGB", media.draft_size(image.size))
+        assert image.size == (2000, 1500)                     # xotira 4 barobar kam
+    assert media.draft_size((8000, 6000)) == (1200, 900)      # 48 MP: dekoder 1/4 da ochadi
+    assert media.draft_size((4000, 3000), rotated=True) == (1600, 1200)   # burilgach 1200x1600 bo'ladi
+    assert media.draft_size((800, 600)) == (800, 600)         # kichik rasm o'z holicha
 
 
 def test_app_info_public(client):

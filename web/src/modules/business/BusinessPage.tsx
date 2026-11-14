@@ -7,6 +7,7 @@ import { ApiError, api, json, uploadFile } from "../../api/client";
 import type { BusinessHours, BusinessPhoto, BusinessProfile, Membership, Service } from "../../api/types";
 import { WEEKDAYS } from "../../components/format";
 import { Button, Card, ErrorNote, inputClass, PageTitle, Spinner } from "../../components/ui";
+import { checkImage, IMAGE_ACCEPT, ImageError, MAX_IMAGE_MB, shrinkImage } from "../../components/imageUpload";
 import { useVocab } from "../vocab";
 
 import { t } from "../../i18n";
@@ -178,11 +179,14 @@ function PhotosCard({ businessId, photos }: { businessId: number; photos: Busine
     setBusy(true);
     setError(null);
     try {
-      for (const file of Array.from(files)) {
-        await uploadFile(`/businesses/${businessId}/photos/upload`, file);
+      const list = Array.from(files);
+      list.forEach(checkImage);                    // bittasi yaroqsiz bo'lsa, hech biri yuklanmaydi
+      for (const file of list) {
+        await uploadFile(`/businesses/${businessId}/photos/upload`, await shrinkImage(file));
       }
     } catch (e) {
-      setError(e instanceof ApiError ? e : new ApiError(0, "upload", t("Yuklab bo'lmadi")));
+      setError(e instanceof ApiError ? e
+        : new ApiError(0, "upload", e instanceof ImageError ? e.message : t("Yuklab bo'lmadi")));
     } finally {
       setBusy(false);
       if (input.current) input.current.value = "";
@@ -199,13 +203,13 @@ function PhotosCard({ businessId, photos }: { businessId: number; photos: Busine
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div>
           <h2 className="text-sm font-medium">{t("Rasmlar")}</h2>
-          <p className="text-xs text-muted">{t("Birinchi rasm ilovadagi kartochkada chiqadi. 20 tagacha, JPG, PNG yoki WEBP")}</p>
+          <p className="text-xs text-muted">{t("Birinchi rasm ilovadagi kartochkada chiqadi. 20 tagacha, JPG, PNG yoki WEBP, har biri {a} MB gacha. Katta rasmlar avtomatik siqiladi", { a: MAX_IMAGE_MB })}</p>
         </div>
         <Button type="button" className="flex items-center gap-1" disabled={busy || photos.length >= 20}
           onClick={() => input.current?.click()}>
           <ImagePlus size={16} aria-hidden /> {busy ? t("Yuklanmoqda...") : t("Rasm qo'shish")}
         </Button>
-        <input ref={input} type="file" accept="image/jpeg,image/png,image/webp" multiple hidden
+        <input ref={input} type="file" accept={IMAGE_ACCEPT} multiple hidden
           onChange={(e) => void pick(e.target.files)} />
       </div>
       {(error || remove.error) && <div className="mb-3"><ErrorNote error={error ?? remove.error} /></div>}
