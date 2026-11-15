@@ -4,7 +4,7 @@ import { Image, Text, View } from 'react-native';
 
 import { BusinessCard } from './api';
 import { pick, t } from './i18n';
-import { Gradient, Icon, makeStyles, Pressy, useTheme } from './ui';
+import { Gradient, Icon, IconName, makeStyles, Pressy, useTheme } from './ui';
 
 export const distanceText = (m: number | null) => {
   if (m === null) return null;
@@ -19,8 +19,8 @@ function Photo({ b, style }: { b: BusinessCard; style: object }) {
 }
 
 /** Katta karta (Tavsiya etilganlar, O'xshash salonlar, qidiruv ro'yxati) */
-export function SalonCardBig({ item: b, onOpen, badge, width }: {
-  item: BusinessCard; onOpen: () => void; badge?: string | null; width?: number;
+export function SalonCardBig({ item: b, onOpen, badge, badgeIcon = 'trophy-outline', width }: {
+  item: BusinessCard; onOpen: () => void; badge?: string | null; badgeIcon?: IconName; width?: number;
 }) {
   const { c } = useTheme();
   const s = useStyles();
@@ -32,7 +32,7 @@ export function SalonCardBig({ item: b, onOpen, badge, width }: {
         <Photo b={b} style={s.bigImg} />
         {badge && (
           <View style={s.badge}>
-            <Icon name="trophy-outline" size={15} color={c.accent} />
+            <Icon name={badgeIcon} size={15} color={c.accent} />
             <Text style={s.badgeText}>{badge}</Text>
           </View>
         )}
@@ -49,11 +49,6 @@ export function SalonCardBig({ item: b, onOpen, badge, width }: {
         )}
       </View>
       <Text style={s.meta} numberOfLines={1}>{meta}</Text>
-      <Text style={s.meta} numberOfLines={1}>
-        {pick(b.category_name, b.category_name_ru)}
-        {b.rating_count > 0 ? ` · ${t("{a} ta sharh", { a: b.rating_count })}` : ` · ${t("Yangi")}`}
-        {!b.is_open_now ? ` · ${t("Yopiq")}` : ''}
-      </Text>
     </Pressy>
   );
 }
