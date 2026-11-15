@@ -33,14 +33,49 @@ Provider = Literal["payme", "click"]
 
 # ─── Sxemalar ───────────────────────────────────────────────────────────────
 class PackageOut(BaseModel):
-    months: int
+    """Paket narxi (sql/043 billing_quote): kunbay qism (keyingi 1-sanagacha) + to'liq oylar + to'lanmagan qarzlar."""
+    months: int                       # 0 = faqat keyingi 1-sanagacha (kunbay)
     discount_pct: int
-    amount: int                       # so'm, chegirma bilan
-    full_amount: int                  # chegirmasiz
+    amount: int                       # jami to'lov, so'm
+    full_amount: int                  # chegirmasiz jami (taqqoslash uchun)
+    prorate_days: int = 0
+    prorate_amount: int = 0
+    months_amount: int = 0
+    charges_amount: int = 0
+    ends_at: datetime | None = None   # to'langach obuna shu sanagacha
+
+
+class ChainLine(BaseModel):
+    kind: Literal["base", "branch", "module"]
+    business_id: int | None
+    module_code: str | None
+    label: str
+    discount_pct: int
+    amount: int
+
+
+class ChargeOut(BaseModel):
+    id: int
+    kind: str                         # activation | branch
+    business_id: int
+    business_name: str
+    amount: int
+    period_from: datetime
+    period_to: datetime
+
+
+class AddonOut(BaseModel):
+    module_code: str
+    name: str
+    monthly_fee: int
+    state: Literal["off", "active", "cancelling", "gift"]   # cancelling — muddat oxirigacha ishlaydi
+    until: datetime | None = None
+    price_now: int | None = None      # hozir yoqilsa — tarmoq muddatigacha kunbay
 
 
 class BillingOrderOut(BaseModel):
     id: int
+    kind: str = "renew"
     months: int
     amount: int
     provider: str
@@ -60,10 +95,17 @@ class BillingInfo(BaseModel):
     providers: dict[str, bool]
     packages: list[PackageOut]
     orders: list[BillingOrderOut]
+    lines: list[ChainLine] = []
+    charges: list[ChargeOut] = []
+    charges_total: int = 0
+    addons: list[AddonOut] = []
+    this_ends_at: datetime | None = None   # so'ralgan muassasaning o'z muddati (to'lanmagan filialda farq qiladi)
 
 
 class OrderCreate(BaseModel):
-    months: int = Field(ge=1, le=24)
+    kind: Literal["renew", "module", "charges"] = "renew"
+    months: int = Field(default=1, ge=0, le=24)
+    module_code: str | None = Field(default=None, max_length=40)
     provider: Provider
 
 
@@ -95,30 +137,64 @@ def _business(db: Session, business_id: int) -> dict:
 
 
 def _order_out(r: Any) -> BillingOrderOut:
-    return BillingOrderOut(id=r["id"], months=r["months"], amount=r["amount"], provider=r["provider"],
+    return BillingOrderOut(id=r["id"], kind=r.get("kind", "renew"), months=r["months"], amount=r["amount"], provider=r["provider"],
                            status=r["status"], created_at=r["created_at"], paid_at=r["paid_at"])
 
 
 @router.get("/businesses/{business_id}/billing", response_model=BillingInfo)
 def billing_info(business_id: int = Path(ge=1), db: Session = Depends(get_db)):
+    """Tarmoq obunasi: tarkib, paketlar (kunbay qism bilan), qarzlar, qo'shimcha modullar. Filialdan ham — tarmoq boshi."""
     _require_owner(business_id, db)
-    b = _business(db, business_id)
-    packages = [PackageOut(months=r["months"], discount_pct=r["discount_pct"],
-                           amount=r["amount"], full_amount=b["monthly_fee"] * r["months"])
-                for r in db.execute(text("""
-                    SELECT p.months, p.discount_pct, app.billing_price(:b, p.months) AS amount
-                      FROM billing_packages p WHERE p.is_active ORDER BY p.months"""), {"b": business_id}).mappings()
-                if r["amount"] is not None]
+    own = _business(db, business_id)
+    head_id = db.scalar(text("SELECT app.chain_head(:b)"), {"b": business_id})
+    b = _business(db, head_id) if head_id != business_id else own
+    lines = [ChainLine(**r) for r in db.execute(text("SELECT * FROM app.chain_lines(:h)"), {"h": head_id}).mappings()]
+    monthly = sum(x.amount for x in lines)
+    charges = [ChargeOut(**r) for r in db.execute(text("""
+        SELECT c.id, c.kind, c.business_id, x.name || coalesce(' · ' || x.branch_name, '') AS business_name,
+               c.amount, c.period_from, c.period_to
+          FROM billing_charges c JOIN businesses x ON x.id = c.business_id
+         WHERE c.head_id = :h AND c.status = 'due' ORDER BY c.id"""), {"h": head_id}).mappings()]
+    packages = []
+    for p in db.execute(text("SELECT 0 AS months, 0 AS discount_pct UNION ALL "
+                             "SELECT months, discount_pct FROM billing_packages WHERE is_active ORDER BY 1")).mappings():
+        q = db.execute(text("SELECT amount, ends_at, lines FROM app.billing_quote(:h, 'renew', CAST(:m AS smallint))"),
+                       {"h": head_id, "m": p["months"]}).mappings().first()
+        if q is None or q["amount"] is None:
+            continue
+        parts = {x["kind"]: x for x in q["lines"]}
+        pr, mo, ch = parts.get("prorate", {}), parts.get("months", {}), parts.get("charges", {})
+        packages.append(PackageOut(
+            months=p["months"], discount_pct=p["discount_pct"], amount=q["amount"], ends_at=q["ends_at"],
+            full_amount=pr.get("amount", 0) + monthly * p["months"] + ch.get("amount", 0),
+            prorate_days=pr.get("days", 0), prorate_amount=pr.get("amount", 0),
+            months_amount=mo.get("amount", 0), charges_amount=ch.get("amount", 0)))
+    addons = []
+    for r in db.execute(text("""
+        SELECT mp.module_code, m.name, mp.monthly_fee,
+               (SELECT bm.source FROM business_modules bm WHERE bm.business_id = :h AND bm.module_code = mp.module_code
+                   AND bm.enabled AND (bm.expires_at IS NULL OR bm.expires_at > now())) AS source,
+               (SELECT bm.expires_at FROM business_modules bm WHERE bm.business_id = :h AND bm.module_code = mp.module_code
+                   AND bm.enabled AND bm.expires_at > now()) AS until,
+               (SELECT q.amount FROM app.billing_quote(:h, 'module', CAST(0 AS smallint), mp.module_code) q) AS price_now
+          FROM module_prices mp JOIN modules m ON m.code = mp.module_code
+         WHERE mp.is_addon AND mp.monthly_fee > 0 ORDER BY m.name"""), {"h": head_id}).mappings():
+        state = ("gift" if r["source"] == "gift" else "cancelling" if r["source"] == "paid" and r["until"]
+                 else "active" if r["source"] == "paid" else "off")
+        addons.append(AddonOut(module_code=r["module_code"], name=r["name"], monthly_fee=r["monthly_fee"], state=state,
+                               until=r["until"], price_now=r["price_now"] if state == "off" else None))
     orders = db.execute(text("""
-        SELECT id, months, amount, provider, status, created_at, paid_at FROM billing_orders
-         WHERE business_id = :b ORDER BY created_at DESC, id DESC LIMIT 20"""), {"b": business_id}).mappings()
+        SELECT id, kind, months, amount, provider, status, created_at, paid_at FROM billing_orders
+         WHERE business_id = :b ORDER BY created_at DESC, id DESC LIMIT 20"""), {"b": head_id}).mappings()
     ends = b["subscription_ends_at"]
     days_left = None
     if ends is not None:
         days_left = int((ends - datetime.now(timezone.utc)).total_seconds() // 86400)
-    return BillingInfo(business_id=b["id"], business_name=b["name"], status=b["status"], monthly_fee=b["monthly_fee"],
-                       subscription_ends_at=ends, operational=b["operational"], days_left=days_left,
-                       providers=_providers(), packages=packages, orders=[_order_out(o) for o in orders])
+    return BillingInfo(business_id=b["id"], business_name=b["name"], status=b["status"], monthly_fee=monthly,
+                       subscription_ends_at=ends, operational=own["operational"], days_left=days_left,
+                       providers=_providers(), packages=packages, orders=[_order_out(o) for o in orders],
+                       lines=lines, charges=charges, charges_total=sum(c.amount for c in charges), addons=addons,
+                       this_ends_at=own["subscription_ends_at"])
 
 
 def _pay_url(order_id: int, amount: int, provider: str, slug: str) -> str:
@@ -146,9 +222,11 @@ def create_order(body: OrderCreate, business_id: int = Path(ge=1), db: Session =
     try:
         # Summani baza hisoblaydi (guard_billing_orders): bu yerda yuborilmaydi ham
         row = db.execute(text("""
-            INSERT INTO billing_orders (business_id, months, amount, provider) VALUES (:b, :m, 1, :p)
-            RETURNING id, months, amount, provider, status, created_at, paid_at"""),
-            {"b": business_id, "m": body.months, "p": body.provider}).mappings().one()
+            INSERT INTO billing_orders (business_id, kind, months, module_code, amount, provider)
+            VALUES (:b, :k, :m, :mod, 1, :p)
+            RETURNING id, kind, months, amount, provider, status, created_at, paid_at"""),
+            {"b": business_id, "k": body.kind, "m": body.months, "mod": body.module_code,
+             "p": body.provider}).mappings().one()
     except DBAPIError as e:
         db.rollback()
         if "billing_package_unavailable" in str(e.orig) or "foreign key" in str(e.orig).lower():
@@ -162,11 +240,20 @@ def create_order(body: OrderCreate, business_id: int = Path(ge=1), db: Session =
 def get_order(business_id: int = Path(ge=1), order_id: int = Path(ge=1), db: Session = Depends(get_db)):
     _require_owner(business_id, db)
     row = db.execute(text("""
-        SELECT id, months, amount, provider, status, created_at, paid_at FROM billing_orders
-         WHERE id = :o AND business_id = :b"""), {"o": order_id, "b": business_id}).mappings().first()
+        SELECT id, kind, months, amount, provider, status, created_at, paid_at FROM billing_orders
+         WHERE id = :o AND business_id = app.chain_head(:b)"""), {"o": order_id, "b": business_id}).mappings().first()
     if row is None:
         raise HTTPException(404, detail={"code": "not_found", "message": "Buyurtma topilmadi"})
     return _order_out(row)
+
+
+@router.post("/businesses/{business_id}/billing/addons/{module_code}/{action}", status_code=204)
+def addon_toggle(business_id: int = Path(ge=1), module_code: str = Path(max_length=40),
+                 action: Literal["cancel", "resume"] = Path(), db: Session = Depends(get_db)):
+    """Pullik modul: cancel — to'langan muddat oxirigacha ishlaydi, keyingi to'lovga qo'shilmaydi; resume — qaytarish."""
+    _require_owner(business_id, db)
+    db.execute(text("SELECT app.addon_set(:b, :m, :on)"), {"b": business_id, "m": module_code, "on": action == "resume"})
+    db.commit()
 
 
 # ─── Payme Merchant API ─────────────────────────────────────────────────────

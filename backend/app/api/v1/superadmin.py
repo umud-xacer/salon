@@ -84,7 +84,7 @@ def create_business(body: BusinessCreate, db: Session = Depends(get_db)):
     biz = Business(name=body.name.strip(), slug=body.slug, category_id=body.category_id,
                    region=body.region, city=body.city, address=body.address, status="active", created_by=user.id,
                    parent_id=body.parent_id, branch_name=body.branch_name)
-    if body.subscription_days is not None:
+    if body.billing_mode != "unlimited" and body.subscription_days is not None:
         biz.subscription_ends_at = datetime.now(timezone.utc) + timedelta(days=body.subscription_days)
     # Tarif: tanlanmasa — filialda asosiy kompaniyaniki, aks holda birinchi faol tarif (odatda Start)
     if body.plan_id:
@@ -126,6 +126,10 @@ def create_business(body: BusinessCreate, db: Session = Depends(get_db)):
     db.flush()
     if parent is not None:
         audit.log(db, biz.id, "create", "branch", biz.id, {"parent_id": parent.id, "branch_name": body.branch_name})
+    # Faollashtirish: 1-sanagacha (filialda — tarmoq muddatigacha) kunbay qarz va muhlat. Filial bepul sinov /
+    # muddatsiz tanlanmagan bo'lsa ham tarmoq muddatiga bog'lanadi
+    if body.billing_mode == "activation" or (parent is not None and body.billing_mode is None):
+        db.execute(text("SELECT app.billing_activate(:b)"), {"b": biz.id})
     db.commit()
     return BusinessOut(id=biz.id, name=biz.name, slug=biz.slug, status=biz.status, owner_member_id=owner.id)
 
@@ -156,6 +160,7 @@ def update_business(body: BusinessUpdate, business_id: int = Path(ge=1), db: Ses
     biz = _business_or_404(db, business_id)
     data = body.model_dump(exclude_unset=True)
     lat, lng = data.pop("lat", ...), data.pop("lng", ...)
+    attach_billing = False
     if "parent_id" in data and data["parent_id"] != biz.parent_id:
         new_parent = data["parent_id"]
         if new_parent is not None:
@@ -175,6 +180,7 @@ def update_business(body: BusinessUpdate, business_id: int = Path(ge=1), db: Ses
                     db.add(BusinessMember(business_id=business_id, user_id=owner_id, role="owner", is_bookable=False))
                 else:
                     m.role, m.is_active, m.is_bookable = "owner", True, False
+            attach_billing = True
         else:
             data["branch_name"] = None          # tarmoqdan ajratilgan muassasada filial yorlig'i qolmaydi
     for field, value in data.items():
@@ -185,6 +191,9 @@ def update_business(body: BusinessUpdate, business_id: int = Path(ge=1), db: Ses
                            ELSE ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography END WHERE id = :id"""),
                    {"lat": lat, "lng": lng, "id": business_id})
     audit.log(db, business_id, "update", "business", business_id, body.model_dump(exclude_unset=True))
+    if attach_billing:
+        # Tarmoqqa biriktirildi: muddat tarmoqqa bog'lanadi, qolgan kunlar uchun filial qarzi yoziladi
+        db.execute(text("SELECT app.billing_activate(:b)"), {"b": business_id})
     db.commit()
     return _read_business(db, business_id)
 
@@ -291,9 +300,17 @@ def set_business_status(body: BusinessStatusIn, business_id: int = Path(ge=1), d
 def renew_subscription(body: SubscriptionRenew, business_id: int = Path(ge=1), db: Session = Depends(get_db)):
     """To'lovdan keyin: qolgan kunlar kuymaydi, salon darhol shu joyidan davom etadi."""
     biz = _business_or_404(db, business_id)
+    if biz.parent_id is not None:               # tarmoqda obuna asosiy muassasaga yoziladi
+        business_id = biz.parent_id
+        biz = _business_or_404(db, business_id)
     now = datetime.now(timezone.utc)
     biz.subscription_ends_at = max(biz.subscription_ends_at or now, now) + timedelta(days=body.days)
     biz.is_active = True
+    db.flush()
+    # Tarmoq: filiallar muddati asosiyniki bilan teng; qo'lda to'lov qarzlarni ham yopadi
+    db.execute(text("""UPDATE businesses SET subscription_ends_at = :e, is_active = TRUE WHERE parent_id = :b"""),
+               {"e": biz.subscription_ends_at, "b": business_id})
+    db.execute(text("SELECT app.billing_settle_manual(:b)"), {"b": business_id})
     db.execute(text("""
         INSERT INTO subscription_payments (business_id, business_name, days, amount, method, note, ends_at)
         VALUES (:b, :n, :d, :a, :m, :note, :e)"""),
@@ -328,6 +345,7 @@ class BillingPlanIn(BaseModel):
     monthly_fee: int = Field(ge=0, le=100_000_000)
     is_active: bool = True
     sort_order: int = Field(default=0, ge=0, le=999)
+    branch_discount_pct: int = Field(default=30, ge=0, le=90)     # 2-chi va keyingi filiallar uchun chegirma
 
 
 class BillingPlanUpdate(BaseModel):
@@ -336,6 +354,7 @@ class BillingPlanUpdate(BaseModel):
     monthly_fee: int | None = Field(default=None, ge=0, le=100_000_000)
     is_active: bool | None = None
     sort_order: int | None = Field(default=None, ge=0, le=999)
+    branch_discount_pct: int | None = Field(default=None, ge=0, le=90)
     apply_to_businesses: bool = False      # yangi narxni shu tarifdagi muassasalarga ham qo'llash
 
 
@@ -346,12 +365,13 @@ class BillingPlanOut(BaseModel):
     monthly_fee: int
     is_active: bool
     sort_order: int
+    branch_discount_pct: int = 30
     business_count: int
     updated_businesses: int | None = None
 
 
 _PLAN_SELECT = """
-    SELECT p.id, p.name, p.name_ru, p.monthly_fee, p.is_active, p.sort_order,
+    SELECT p.id, p.name, p.name_ru, p.monthly_fee, p.is_active, p.sort_order, p.branch_discount_pct,
            (SELECT count(*) FROM businesses b WHERE b.plan_id = p.id) AS business_count
       FROM billing_plans p
 """
@@ -378,10 +398,11 @@ def billing_plans(db: Session = Depends(get_db)):
 @router.post("/billing/plans", response_model=BillingPlanOut, status_code=201)
 def create_billing_plan(body: BillingPlanIn, db: Session = Depends(get_db)):
     try:
-        plan_id = db.scalar(text("""INSERT INTO billing_plans (name, name_ru, monthly_fee, is_active, sort_order)
-                                    VALUES (:n, :r, :f, :a, :s) RETURNING id"""),
+        plan_id = db.scalar(text("""INSERT INTO billing_plans (name, name_ru, monthly_fee, is_active, sort_order,
+                                                               branch_discount_pct)
+                                    VALUES (:n, :r, :f, :a, :s, :d) RETURNING id"""),
                             {"n": body.name.strip(), "r": (body.name_ru or "").strip() or None, "f": body.monthly_fee,
-                             "a": body.is_active, "s": body.sort_order})
+                             "a": body.is_active, "s": body.sort_order, "d": body.branch_discount_pct})
     except IntegrityError as e:
         db.rollback()
         raise _plan_conflict(e)
@@ -396,7 +417,7 @@ def update_billing_plan(body: BillingPlanUpdate, plan_id: int = Path(ge=1), db: 
     yangilanadi (keyingi to'lovdan boshlab; to'langan muddatga tegilmaydi)."""
     _plan(db, plan_id)
     data = body.model_dump(exclude_unset=True, exclude={"apply_to_businesses"})
-    for key in ("name", "monthly_fee", "is_active", "sort_order"):
+    for key in ("name", "monthly_fee", "is_active", "sort_order", "branch_discount_pct"):
         if key in data and data[key] is None:
             raise HTTPException(422, detail={"code": "invalid_value", "message": f"{key} bo'sh bo'lishi mumkin emas"})
     if "name" in data:
@@ -563,6 +584,11 @@ def update_subscription(body: SubscriptionUpdate, business_id: int = Path(ge=1),
     for field, value in changes.items():
         if field != "plan_name":
             setattr(biz, field, value)
+    if "subscription_ends_at" in changes and biz.parent_id is None:
+        # Tarmoq bitta muddatda yashaydi (sql/043): asosiyning muddati filiallarga ham
+        db.flush()
+        db.execute(text("UPDATE businesses SET subscription_ends_at = :e WHERE parent_id = :b"),
+                   {"e": biz.subscription_ends_at, "b": business_id})
     audit.log(db, business_id, "update", "subscription", business_id, changes)
     db.commit()
     return _read_business(db, business_id)
@@ -737,3 +763,55 @@ def audit_log(business_id: int | None = Query(default=None, ge=1),
 @router.get("/audit/entity-types", response_model=list[str])
 def audit_entity_types(db: Session = Depends(get_db)):
     return list(db.scalars(text("SELECT DISTINCT entity_type FROM audit_logs ORDER BY 1")))
+
+
+
+# ─── Tarmoq obunasi sozlamalari (sql/043) ─────────────────────────────────────
+class ModulePriceOut(BaseModel):
+    module_code: str
+    name: str
+    monthly_fee: int
+    is_addon: bool
+
+
+class ModulePriceIn(BaseModel):
+    monthly_fee: int = Field(ge=0, le=100_000_000)
+    is_addon: bool = True
+
+
+class BillingSettingsIO(BaseModel):
+    activation_grace_days: int = Field(ge=0, le=30)
+
+
+@router.get("/billing/module-prices", response_model=list[ModulePriceOut])
+def module_prices(db: Session = Depends(get_db)):
+    rows = db.execute(text("""SELECT mp.module_code, m.name, mp.monthly_fee, mp.is_addon
+                                FROM module_prices mp JOIN modules m ON m.code = mp.module_code
+                               ORDER BY m.name""")).mappings()
+    return [ModulePriceOut(**r) for r in rows]
+
+
+@router.put("/billing/module-prices/{module_code}", response_model=ModulePriceOut)
+def update_module_price(body: ModulePriceIn, module_code: str = Path(max_length=40), db: Session = Depends(get_db)):
+    """Qo'shimcha modul narxi (so'm/oy, tarmoqqa bir marta). 0 — bepul / tarifga kiradi."""
+    row = db.execute(text("""UPDATE module_prices SET monthly_fee = :f, is_addon = :a WHERE module_code = :c
+                             RETURNING module_code"""), {"f": body.monthly_fee, "a": body.is_addon, "c": module_code}).first()
+    if row is None:
+        raise HTTPException(404, detail={"code": "not_found", "message": "Modul topilmadi"})
+    audit.log(db, None, "update", "module_price", None, {"module": module_code, **body.model_dump()})
+    db.commit()
+    return next(m for m in module_prices(db) if m.module_code == module_code)
+
+
+@router.get("/billing/settings", response_model=BillingSettingsIO)
+def billing_settings(db: Session = Depends(get_db)):
+    return BillingSettingsIO(activation_grace_days=db.scalar(text("SELECT activation_grace_days FROM billing_settings")))
+
+
+@router.put("/billing/settings", response_model=BillingSettingsIO)
+def update_billing_settings(body: BillingSettingsIO, db: Session = Depends(get_db)):
+    """Faollashtirish muhlati: yangi kompaniya/filial to'lovsiz necha kun ishlaydi."""
+    db.execute(text("UPDATE billing_settings SET activation_grace_days = :d"), {"d": body.activation_grace_days})
+    audit.log(db, None, "update", "billing_settings", None, body.model_dump())
+    db.commit()
+    return body

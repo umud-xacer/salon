@@ -191,6 +191,8 @@ class BusinessCreate(BaseModel):
     branch_name: str | None = Field(default=None, max_length=80)         # "Chilonzor filiali"
     modules: list[str] = ["booking"]
     subscription_days: int | None = Field(default=None, ge=1, le=3660)    # None = muddatsiz
+    # activation — 1-sanagacha kunbay qarz, muhlat tugaguncha to'lanadi (sql/043); None — subscription_days bo'yicha
+    billing_mode: Literal["activation", "trial", "unlimited"] | None = None
     plan_id: int | None = Field(default=None, ge=1)      # None = birinchi faol tarif (odatda Start)
 
     @field_validator("owner_phone")

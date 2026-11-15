@@ -58,6 +58,31 @@ def membership(client, tokens):
     return client.get("/api/v1/auth/me", headers=auth_header(tokens)).json()["memberships"][0]
 
 
+TZ = timezone(timedelta(hours=5))
+
+
+def next_first(dt: datetime) -> datetime:
+    """Toshkent bo'yicha keyingi oyning 1-sanasi 00:00 (aniq 1-sana 00:00 bo'lsa — o'zi)."""
+    local = dt.astimezone(TZ)
+    first = local.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    if local == first:
+        return first
+    return (first + timedelta(days=32)).replace(day=1)
+
+
+def prorate(fee: int, start: datetime) -> int:
+    """Kunbay: start dan keyingi 1-sanagacha (sql/043 app.prorate bilan bir xil, bitta oy ichida)."""
+    a = next_first(start)
+    d0 = start.astimezone(TZ).date()
+    days_in_month = ((a - timedelta(days=1)).astimezone(TZ)).day
+    return fee * (a.date() - d0).days // days_in_month
+
+
+def expected(fee: int, months: int, pct: int = 0, start: datetime | None = None) -> int:
+    start = start or datetime.now(timezone.utc)
+    return prorate(fee, start) + fee * months * (100 - pct) // 100
+
+
 def expired_business(client, superadmin):
     biz = create_business(client, superadmin)
     set_sub(client, superadmin, biz, subscription_ends_at=(datetime.now(timezone.utc) - timedelta(days=2)).isoformat())
@@ -75,7 +100,11 @@ def test_owner_sees_billing_when_expired_staff_does_not(client, superadmin):
     assert r.status_code == 200, r.text
     info = r.json()
     assert info["operational"] is False and info["days_left"] < 0 and info["monthly_fee"] == 300000
-    assert {p["months"]: p["amount"] for p in info["packages"]} == {1: 300000, 3: 900000, 6: 1800000, 12: 3600000}
+    # Kunbay qism (bugundan keyingi 1-sanagacha) + to'liq oylar; muddat 1-sanaga to'g'rilanadi
+    got = {p["months"]: p["amount"] for p in info["packages"]}
+    assert got == {k: expected(300000, k) for k in got} and {1, 3, 6, 12} <= set(got)
+    assert all(next_first(datetime.fromisoformat(p["ends_at"])) == datetime.fromisoformat(p["ends_at"])
+               for p in info["packages"])
     assert info["providers"] == {"payme": True, "click": True}
 
     assert client.get(f"/api/v1/businesses/{biz['id']}/billing", headers=auth_header(staff["tokens"])).status_code == 403
@@ -91,7 +120,7 @@ def test_package_discount_and_pay_urls(client, superadmin):
     assert r.status_code == 200, r.text
     try:
         o = order(client, biz, months=12)
-        assert o["amount"] == 199000 * 12 * 90 // 100 and o["status"] == "created"
+        assert o["amount"] == expected(199000, 12, 10) and o["status"] == "created"
         decoded = base64.b64decode(o["pay_url"].rsplit("/", 1)[1]).decode()
         assert f"ac.order_id={o['id']}" in decoded and f"a={o['amount'] * 100}" in decoded
         c = order(client, biz, months=1, provider="click")
@@ -109,7 +138,7 @@ def test_amount_is_set_by_database_not_by_request(client, superadmin):
         row = db.execute(text("""INSERT INTO billing_orders (business_id, months, amount, provider, status)
                                  VALUES (:b, 3, 1, 'payme', 'paid') RETURNING amount, status"""),
                          {"b": biz["id"]}).one()
-        assert row.amount == 199000 * 3 and row.status == "created"
+        assert row.amount == expected(199000, 3) and row.status == "created"
         # Holatni ilova o'zgartira olmaydi — faqat to'lov funksiyalari
         with pytest.raises(Exception) as e:
             db.execute(text("UPDATE billing_orders SET status = 'paid' WHERE business_id = :b"), {"b": biz["id"]})
@@ -170,7 +199,9 @@ def test_payme_full_flow_unlocks_expired_panel(client, superadmin):
     m = membership(client, biz["owner"])
     assert m["operational"] is True
     ends = datetime.fromisoformat(m["subscription_ends_at"].replace("Z", "+00:00"))
-    assert timedelta(days=88) < ends - datetime.now(timezone.utc) < timedelta(days=93)   # hozirdan 3 oy
+    # keyingi 1-sana + 3 oy (oyning 1-sanasiga to'g'rilangan)
+    assert ends.astimezone(TZ).day == 1 and ends.astimezone(TZ).hour == 0
+    assert timedelta(days=88) < ends - datetime.now(timezone.utc) < timedelta(days=124)
 
     info = client.get(f"/api/v1/businesses/{biz['id']}/billing", headers=auth_header(biz["owner"])).json()
     assert info["orders"][0]["status"] == "paid"
@@ -195,7 +226,9 @@ def test_payme_renew_keeps_remaining_days(client, superadmin):
     payme(client, "CreateTransaction", {"id": "pm-keep", "time": now_ms(), "amount": o["amount"] * 100, "account": acc})
     payme(client, "PerformTransaction", {"id": "pm-keep"})
     got = datetime.fromisoformat(membership(client, biz["owner"])["subscription_ends_at"].replace("Z", "+00:00"))
-    assert timedelta(days=38) < got - datetime.now(timezone.utc) < timedelta(days=42)    # 10 kun + 1 oy
+    # Qolgan 10 kun kuymaydi: o'sha sanadan keyingi 1-sanagacha kunbay + 1 oy, natija oyning 1-sanasi
+    assert o["amount"] == expected(199000, 1, start=ends)
+    assert got.astimezone(TZ).day == 1 and got > ends + timedelta(days=27)
 
 
 def test_payme_errors(client, superadmin):
@@ -343,7 +376,8 @@ def test_assign_plan_custom_price_and_apply_plan_change(client, superadmin):
                      json={"apply_to_businesses": True})
     assert r.json()["updated_businesses"] == 1 and r.json()["business_count"] == 1
     info = client.get(f"/api/v1/businesses/{a['id']}/billing", headers=auth_header(a["owner"])).json()
-    assert info["monthly_fee"] == 300000 and info["packages"][0]["amount"] == 300000
+    one = next(p for p in info["packages"] if p["months"] == 1)
+    assert info["monthly_fee"] == 300000 and one["months_amount"] == 300000
     info = client.get(f"/api/v1/businesses/{b['id']}/billing", headers=auth_header(b["owner"])).json()
     assert info["monthly_fee"] == 180000                               # maxsus narxga tegilmadi
 
