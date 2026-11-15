@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /superadmin/
+
+Sitemap: https://chronix.uz/sitemap.xml

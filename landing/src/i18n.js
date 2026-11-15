@@ -22,8 +22,8 @@ export function saveLang(lang) {
 
 const T = {
   uz: {
-    "meta.title": "Chronix — vaqtingiz, bizning ustuvorligimiz",
-    "meta.desc": "Chronix — go'zallik salonlari, stomatologiyalar, Lor klinikalari va Wellness & Spa markazlari uchun onlayn bron va boshqaruv platformasi.",
+    "meta.title": "Chronix — Salonlar, klinikalar, dorixonalar va xizmat ko'rsatish markazlari uchun platforma",
+    "meta.desc": "Chronix orqali go'zallik salonlari, stomatologiyalar, dorixonalar va klinikalarni boshqaring, mijozlar uchun onlayn bron qiling va vaqtingizni tejang.",
     "loader.tag": "Vaqtingiz — bizning ustuvorligimiz",
     "nav.features": "Imkoniyatlar", "nav.verticals": "Yo'nalishlar", "nav.prices": "Narxlar", "nav.about": "Biz haqimizda",
     "nav.login": "Kirish", "nav.menu": "Menyu",
@@ -113,8 +113,8 @@ const T = {
   },
 
   ru: {
-    "meta.title": "Chronix — ваше время в приоритете",
-    "meta.desc": "Chronix — платформа онлайн-записи и управления для салонов красоты, стоматологий, ЛОР-клиник и центров Wellness & Spa.",
+    "meta.title": "Chronix — платформа для салонов, клиник, аптек и сервисных центров",
+    "meta.desc": "Управляйте салонами красоты, стоматологиями, аптеками и клиниками в Chronix, принимайте онлайн-записи клиентов и экономьте время.",
     "loader.tag": "Ваше время — наш приоритет",
     "nav.features": "Возможности", "nav.verticals": "Направления", "nav.prices": "Цены", "nav.about": "О нас",
     "nav.login": "Войти", "nav.menu": "Меню",
