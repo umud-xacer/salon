@@ -12,6 +12,7 @@ import {
   Hospital,
   LayoutDashboard,
   Package,
+  Percent,
   Pill,
   Receipt,
   Scissors,
@@ -37,6 +38,7 @@ import { DashboardPage } from "./dashboard/DashboardPage";
 import { CashPage, ExpensesPage } from "./finance/FinancePages";
 import { InventoryPage } from "./inventory/InventoryPage";
 import { MyPayrollPage, PayrollPage } from "./payroll/PayrollPage";
+import { PromotionsPage } from "./promotions/PromotionsPage";
 import { ReportsPage } from "./reports/ReportsPage";
 import { MyReviewsPage, ReviewsPage } from "./reviews/ReviewsPage";
 import { MyBookingsPage, MySchedulePage, MyServicesPage } from "./schedule/StaffPages";
@@ -99,6 +101,10 @@ export const SECTIONS: Section[] = [
   {
     path: "services", uz: "xizmatlar", uzByKind: { clinic: "tibbiy-xizmatlar" }, label: "Xizmatlar", term: "services", icon: Scissors, iconByKind: { clinic: Stethoscope, pharmacy: ClipboardList }, panel: "admin",
     anyPermission: ["services.manage"], page: ServicesPage,
+  },
+  {
+    path: "promotions", uz: "aksiyalar", label: "Aksiyalar", icon: Percent, panel: "admin", module: "booking",
+    anyPermission: ["business.manage"], page: PromotionsPage,
   },
   { path: "reviews", uz: "baholar", label: "Baholar", icon: Star, panel: "admin", anyPermission: ["business.manage"], page: ReviewsPage },
   { path: "business", uz: "salon", uzByKind: { pharmacy: "dorixona", clinic: "klinika" }, label: "Salon", term: "businessPage", icon: Store, iconByKind: { clinic: Hospital, pharmacy: Pill }, panel: "admin", anyPermission: ["business.manage"], page: BusinessPage },
