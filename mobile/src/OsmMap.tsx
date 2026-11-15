@@ -61,8 +61,9 @@ const yandexHtml = (lat: number, lng: number, key: string) => `<!doctype html>
     window.setMarkers = (list) => {
       markers.removeAll();
       list.forEach((b) => {
-        const mark = new ymaps.Placemark([b.lat, b.lng], { hintContent: esc(b.name) },
-                                         { preset: b.open ? 'islands#blueDotIcon' : 'islands#grayDotIcon' });
+        // Figma: qora yorliq "★ 4,9" (yangi muassasa — "Yangi"), yopig'i kulrang
+        const mark = new ymaps.Placemark([b.lat, b.lng], { hintContent: esc(b.name), iconContent: esc((b.rated ? '\u2605 ' : '') + b.label) },
+                                         { preset: b.open ? 'islands#blackStretchyIcon' : 'islands#grayStretchyIcon' });
         mark.events.add('click', () => post({ type: 'select', id: b.id }));
         markers.add(mark);
       });
@@ -93,10 +94,10 @@ const html = (lat: number, lng: number) => `<!doctype html>
   integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
 <style>
   html,body,#map{width:100%;height:100%;margin:0;padding:0;background:#eef1f6}
-  .pin{width:30px;height:30px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:3px solid #fff;
-       box-shadow:0 2px 6px rgba(1,13,73,.35)}
-  .pin.open{background:#1565F5}.pin.closed{background:#8a8fa0}
-  .me{width:16px;height:16px;border-radius:50%;background:#1565F5;border:3px solid #fff;box-shadow:0 0 0 6px rgba(21,101,245,.25)}
+  .pin{display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border-radius:999px;background:#111114;color:#fff;
+       font:600 13px system-ui,sans-serif;white-space:nowrap;box-shadow:0 2px 8px rgba(17,17,20,.3);transform:translate(-50%,-100%)}
+  .pin .s{color:#F5A623}.pin.closed{background:#8a8a94}
+  .me{width:16px;height:16px;border-radius:50%;background:#6B4EFF;border:3px solid #fff;box-shadow:0 0 0 6px rgba(107,78,255,.25)}
   .leaflet-tooltip{font:600 12px system-ui,sans-serif}
   .locate a{display:flex!important;align-items:center;justify-content:center;color:#1565F5}
   .locate a.busy{opacity:.5}
@@ -131,11 +132,17 @@ const html = (lat: number, lng: number) => `<!doctype html>
   window.setMarkers = (list) => {
     markers.clearLayers();
     list.forEach((b) => {
-      const icon = L.divIcon({ className: '', html: '<div class="pin ' + (b.open ? 'open' : 'closed') + '"></div>',
-                               iconSize: [30, 30], iconAnchor: [15, 30] });
+      const pill = document.createElement('div');
+      pill.className = 'pin ' + (b.open ? 'open' : 'closed');
+      const star = document.createElement('span');
+      star.className = 's';
+      star.textContent = b.rated ? '★' : '';
+      pill.appendChild(star);
+      pill.appendChild(document.createTextNode(b.label));
+      const icon = L.divIcon({ className: '', html: pill, iconSize: [0, 0], iconAnchor: [0, 0] });
       const label = document.createElement('span');
       label.textContent = b.name;
-      L.marker([b.lat, b.lng], { icon }).bindTooltip(label, { direction: 'top', offset: [0, -30] })
+      L.marker([b.lat, b.lng], { icon }).bindTooltip(label, { direction: 'top', offset: [0, -34] })
         .on('click', () => post({ type: 'select', id: b.id })).addTo(markers);
     });
   };
@@ -181,7 +188,8 @@ export function OsmMap({ center, me, businesses, onBounds, onSelect, onError, on
   const pushMarkers = () => {
     const list = latest.current.businesses.map((b) => ({
       id: b.id, name: b.branch_name ? `${b.name} · ${b.branch_name}` : b.name,   // filial xaritada aniq ajralsin
-      lat: b.lat, lng: b.lng, open: b.is_open_now }));
+      lat: b.lat, lng: b.lng, open: b.is_open_now, rated: b.rating_count > 0,
+      label: b.rating_count > 0 ? b.rating_avg.toFixed(1).replace('.', ',') : 'Yangi' }));
     run(`window.setMarkers && window.setMarkers(${JSON.stringify(list)})`);
     const p = latest.current.me;
     if (p) run(`window.setMe && window.setMe(${JSON.stringify({ lat: p.latitude, lng: p.longitude })})`);

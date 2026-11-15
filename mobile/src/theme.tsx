@@ -14,26 +14,49 @@ export type Palette = {
   segment: string; segmentOn: string;
 };
 
+// Figma "Beauty Booking App — Mobil UI" (2026-11-16) tokenlari: color/bg, surface, border, text-primary/secondary, accent
 export const light: Palette = {
-  bg: '#F5F6F8', surface: '#FFFFFF', surface2: '#F7F8FA', text: '#0E1116', muted: '#5B6474', line: '#E7E9EE',
-  accent: '#1A5CE6', accentSoft: '#EAF1FF', accent2: '#6D4BD1', onAccent: '#FFFFFF',
-  success: '#0B7A50', successSoft: '#E6F4EC', warning: '#B26A00', warningSoft: '#FFF3DF', danger: '#C62828', dangerSoft: '#FDECEC',
-  star: '#B7791F', hot: '#E5484D', cta: '#0E1116', ctaText: '#FFFFFF', off: '#B8BEC9',
-  glass: 'rgba(255,255,255,0.82)', glassLine: 'rgba(14,17,22,0.06)', overlay: 'rgba(11,13,18,0.45)', shadow: '#1E285A',
-  hero: ['#1A5CE6', '#5B3BD9', '#8A4FD8'], perk: ['#6D4BD1', '#D0508A'], avatar: ['#1A5CE6', '#6D4BD1'],
-  segment: '#E8EBF0', segmentOn: '#FFFFFF',
+  bg: '#FFFFFF', surface: '#FFFFFF', surface2: '#F5F5F7', text: '#111114', muted: '#6E6E78', line: '#E6E6EB',
+  accent: '#6B4EFF', accentSoft: '#F0ECFF', accent2: '#6B4EFF', onAccent: '#FFFFFF',
+  success: '#1E9E5A', successSoft: '#E8F6EE', warning: '#B26A00', warningSoft: '#FFF3DF', danger: '#D93636', dangerSoft: '#FDECEC',
+  star: '#F5A623', hot: '#E5484D', cta: '#111114', ctaText: '#FFFFFF', off: '#C9C9D1',
+  glass: 'rgba(255,255,255,0.94)', glassLine: '#E6E6EB', overlay: 'rgba(17,17,20,0.45)', shadow: '#111114',
+  hero: ['#E9DED3', '#D7C6B5', '#C7B29E'], perk: ['#6B4EFF', '#9A7BFF'], avatar: ['#E9DED3', '#C7B29E'],
+  segment: '#F5F5F7', segmentOn: '#FFFFFF',
 };
 
 export const dark: Palette = {
-  bg: '#0B0D12', surface: '#161A22', surface2: '#1E2330', text: '#F2F4F8', muted: '#9AA3B2', line: '#262B36',
-  accent: '#7FA2FF', accentSoft: 'rgba(127,162,255,0.14)', accent2: '#9C82FF', onAccent: '#0B0D12',
-  success: '#5FD3A2', successSoft: 'rgba(95,211,162,0.12)', warning: '#F5B83D', warningSoft: 'rgba(245,184,61,0.12)',
+  bg: '#0E0E11', surface: '#18181C', surface2: '#222228', text: '#F4F4F6', muted: '#9C9CA6', line: '#2A2A31',
+  accent: '#9A85FF', accentSoft: 'rgba(154,133,255,0.16)', accent2: '#9A85FF', onAccent: '#0E0E11',
+  success: '#4CC98A', successSoft: 'rgba(76,201,138,0.14)', warning: '#F5B83D', warningSoft: 'rgba(245,184,61,0.12)',
   danger: '#FF7A7A', dangerSoft: 'rgba(255,122,122,0.12)',
-  star: '#F5B83D', hot: '#FF6B5A', cta: '#F2F4F8', ctaText: '#0B0D12', off: '#3A404D',
-  glass: 'rgba(22,26,34,0.74)', glassLine: 'rgba(255,255,255,0.08)', overlay: 'rgba(0,0,0,0.6)', shadow: '#000000',
-  hero: ['#1B2A6B', '#2A1F66', '#0B0D12'], perk: ['#5B3BD9', '#B0447A'], avatar: ['#3566FF', '#7B4BFF'],
-  segment: '#161A22', segmentOn: '#2A303C',
+  star: '#F5B83D', hot: '#FF6B5A', cta: '#F4F4F6', ctaText: '#0E0E11', off: '#3A3A42',
+  glass: 'rgba(24,24,28,0.94)', glassLine: '#2A2A31', overlay: 'rgba(0,0,0,0.6)', shadow: '#000000',
+  hero: ['#2A2622', '#3A332C', '#4A4036'], perk: ['#6B4EFF', '#9A7BFF'], avatar: ['#3A332C', '#4A4036'],
+  segment: '#18181C', segmentOn: '#2A2A31',
 };
+
+/** Plus Jakarta Sans: Android'da fontWeight shrift tanlamaydi — har og'irlik o'z fayli */
+export const FONTS: Record<string, string> = {
+  '400': 'PlusJakartaSans_400Regular', normal: 'PlusJakartaSans_400Regular', '500': 'PlusJakartaSans_500Medium',
+  '600': 'PlusJakartaSans_600SemiBold', '700': 'PlusJakartaSans_700Bold', bold: 'PlusJakartaSans_700Bold',
+  '800': 'PlusJakartaSans_800ExtraBold', '900': 'PlusJakartaSans_800ExtraBold',
+};
+export const font = (weight: string = '400') => ({ fontFamily: FONTS[weight] ?? FONTS['400'] });
+
+/** Uslubdagi matnlarga shrift: fontWeight bo'lsa mos fayl, fontSize bo'lsa (og'irliksiz) — Regular */
+function withFonts<T extends Record<string, object>>(styles: T): T {
+  const out: Record<string, object> = {};
+  for (const [k, v] of Object.entries(styles)) {
+    const st = v as { fontWeight?: string; fontSize?: number; fontFamily?: string; letterSpacing?: number };
+    if (st.fontFamily || (st.fontWeight === undefined && st.fontSize === undefined)) out[k] = v;
+    else {
+      const { fontWeight, ...rest } = st;
+      out[k] = { letterSpacing: -0.3, ...rest, ...font(fontWeight ?? '400') };
+    }
+  }
+  return out as T;
+}
 
 export type Mode = 'system' | 'light' | 'dark';
 const KEY = 'chronix_theme';
@@ -44,15 +67,15 @@ const ThemeContext = createContext<Theme>({ c: light, dark: false, mode: 'system
 function savedMode(): Mode {
   try {
     const v = getItem(KEY);
-    return v === 'light' || v === 'dark' ? v : 'system';
+    return v === 'system' || v === 'dark' ? v : 'light';
   } catch {
-    return 'system';
+    return 'light';
   }
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const system = useColorScheme();
-  const [mode, setModeState] = useState<Mode>(savedMode);
+  const [mode, setModeState] = useState<Mode>(savedMode);   // standart: kunduzgi (Figma)
   const setMode = useCallback((m: Mode) => {
     setModeState(m);
     setItemAsync(KEY, m).catch(() => {});
@@ -72,7 +95,7 @@ export function makeStyles<T extends Styles>(factory: (c: Palette, isDark: boole
     const { c, dark: isDark } = useTheme();
     let styles = cache.get(c);
     if (!styles) {
-      styles = StyleSheet.create(factory(c, isDark));
+      styles = StyleSheet.create(withFonts(factory(c, isDark)));
       cache.set(c, styles);
     }
     return styles;

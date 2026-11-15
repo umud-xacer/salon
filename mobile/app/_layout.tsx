@@ -15,8 +15,12 @@ import {
 } from '../src/notifications';
 import { bioCheck, bioLockEnabled } from '../src/biometric';
 import { ThemeProvider, useTheme } from '../src/theme';
-import { Button, Gradient, Icon } from '../src/ui';
+import { Button, font, Icon } from '../src/ui';
 import { StatusBar } from 'expo-status-bar';
+import {
+  PlusJakartaSans_400Regular, PlusJakartaSans_500Medium, PlusJakartaSans_600SemiBold, PlusJakartaSans_700Bold,
+  PlusJakartaSans_800ExtraBold, useFonts,
+} from '@expo-google-fonts/plus-jakarta-sans';
 import { prepareStartupSound } from '../src/startupSound';
 import { useOtaUpdates } from '../src/useOtaUpdates';
 
@@ -86,17 +90,16 @@ function LockScreen({ onUnlock }: { onUnlock: () => void }) {
     void tryUnlock();
   }, [tryUnlock]);
   return (
-    <Gradient colors={c.hero} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center',
+    <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', backgroundColor: c.bg,
       justifyContent: 'center', padding: 32, gap: 18 }}>
-      <View style={{ width: 96, height: 96, borderRadius: 32, backgroundColor: 'rgba(255,255,255,0.16)', alignItems: 'center',
-        justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)' }}>
-        <Icon name="scan-outline" size={48} color="#FFFFFF" />
+      <View style={{ width: 96, height: 96, borderRadius: 48, backgroundColor: c.accentSoft, alignItems: 'center', justifyContent: 'center' }}>
+        <Icon name="scan-outline" size={46} color={c.accent} />
       </View>
-      <Text style={{ color: '#FFFFFF', fontSize: 24, fontWeight: '800' }}>{t("Chronix qulflangan")}</Text>
+      <Text style={{ color: c.text, fontSize: 24, ...font('700') }}>{t("Chronix qulflangan")}</Text>
       <View style={{ alignSelf: 'stretch' }}>
-        <Button title={t("Ochish")} icon="lock-open-outline" kind="outline" onPress={() => { void tryUnlock(); }} />
+        <Button title={t("Ochish")} icon="lock-open-outline" onPress={() => { void tryUnlock(); }} />
       </View>
-    </Gradient>
+    </View>
   );
 }
 
@@ -226,6 +229,11 @@ function Navigator() {
 export default function RootLayout() {
   // Budilnik bilan ochilganda kirish animatsiyasi kerak emas: ekran darhol ko'rinsin
   const [splash, setSplash] = useState(usePathname() !== '/alarm');
+  // Shrift ilova bilan birga keladi; yuklashda xato bo'lsa — tizim shrifti bilan ochiladi
+  const [fontsLoaded, fontError] = useFonts({
+    PlusJakartaSans_400Regular, PlusJakartaSans_500Medium, PlusJakartaSans_600SemiBold, PlusJakartaSans_700Bold,
+    PlusJakartaSans_800ExtraBold,
+  });
   const hideNative = useCallback(() => {
     SplashScreen.hideAsync().catch(() => {});
   }, []);
@@ -236,6 +244,8 @@ export default function RootLayout() {
     setupCategories();
     if (!splash) hideNative();
   }, [splash, hideNative]);
+
+  if (!fontsLoaded && !fontError) return null;
 
   return (
     <ThemeProvider>

@@ -116,6 +116,7 @@ export type BusinessCard = {
   id: number;
   slug: string;
   name: string;
+  category?: string;                    // yo'nalish slug'i
   category_name: string;
   category_name_ru?: string | null;
   city: string | null;
@@ -164,6 +165,7 @@ export type BusinessDetail = {
   address: string | null;
   phone: string | null;
   photos: string[];
+  category?: string;
   category_name: string;
   category_name_ru?: string | null;
   kind?: 'salon' | 'pharmacy' | 'clinic';

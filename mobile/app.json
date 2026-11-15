@@ -101,7 +101,8 @@
         {
           "faceIDPermission": "Chronix ilovasini Face ID bilan tez va xavfsiz ochish uchun"
         }
-      ]
+      ],
+      "expo-font"
     ],
     "scheme": "chronix",
     "extra": {

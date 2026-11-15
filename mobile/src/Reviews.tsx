@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { api, PublicReview, ReviewsOut } from './api';
-import { Button, Card, dayOf, Icon, makeStyles, useShared, useTheme, useType } from './ui';
+import { Button, dayOf, font, Icon, makeStyles, useShared, useTheme, useType } from './ui';
 
 import { t } from "./i18n";
 export function StarsView({ value, size = 14 }: { value: number | null | undefined; size?: number }) {
@@ -41,9 +41,9 @@ export function StarsInput({ label, value, onChange }: { label: string; value: n
   );
 }
 
+/** Salon sahifasidagi sharhlar (Figma 06): umumiy baho kartasi va mijozlar fikrlari */
 export function BusinessReviews({ slug, staffWord }: { slug: string; staffWord: string }) {
   const { c: colors } = useTheme();
-  const shared = useShared();
   const type = useType();
   const styles = useStyles();
   const [data, setData] = useState<ReviewsOut | null>(null);
@@ -55,9 +55,14 @@ export function BusinessReviews({ slug, staffWord }: { slug: string; staffWord: 
     api<ReviewsOut>(`/catalog/businesses/${slug}/reviews?limit=5`).then(setData).catch(() => {});
   }, [slug]);
 
-  if (!data || data.summary.count === 0) return null;
+  if (!data) return null;
   const s = data.summary;
+  if (s.count === 0) {
+    return <Text style={[type.small, { marginTop: 4 }]}>{t("Hali sharh yo'q. Birinchi tashrifdan keyin mijozlar baho qo'yadi.")}</Text>;
+  }
   const items = [...data.items, ...more];
+  const avg = s.rating_avg ?? 0;
+  const title = avg >= 4.8 ? t("Eng yaxshi salon") : avg >= 4.5 ? t("A'lo baholangan") : avg >= 4 ? t("Yaxshi baholangan") : t("Mijozlar bahosi");
 
   const loadMore = async () => {
     setBusy(true);
@@ -73,55 +78,65 @@ export function BusinessReviews({ slug, staffWord }: { slug: string; staffWord: 
   };
 
   return (
-    <>
-      <Text style={shared.heading}>{t("Baholar")}</Text>
-      <Card>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          <Text style={{ fontSize: 40, fontWeight: '800', color: colors.text, letterSpacing: -1 }}>{s.rating_avg?.toFixed(1)}</Text>
-          <View>
-            <StarsView value={s.rating_avg} size={18} />
-            <Text style={shared.muted}>{t("{a} ta baho", { a: s.count })}</Text>
-          </View>
+    <View style={{ gap: 16 }}>
+      <View style={styles.score}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+          <Icon name="trophy-outline" size={30} color={colors.accent} />
+          <Text style={styles.scoreValue}>{avg.toFixed(1).replace('.', ',')}</Text>
+          <Icon name="trophy-outline" size={30} color={colors.accent} />
         </View>
-        <Text style={[shared.muted, { marginTop: 8 }]}>
-          {t("Tozalik {a} · Qabul va xizmat {b}", { a: s.cleanliness_avg?.toFixed(1) ?? '—', b: s.quality_avg?.toFixed(1) ?? '—' })}
-        </Text>
-        <Text style={[type.small, { marginTop: 4, color: colors.muted }]}>{t("Faqat xizmatdan foydalangan mijozlar baho qo'ya oladi")}</Text>
-      </Card>
+        <Text style={styles.scoreTitle}>{title}</Text>
+        <Text style={type.small}>{t("{a} ta mijoz sharhi asosida", { a: s.count })}</Text>
+        {(s.cleanliness_avg || s.quality_avg) && (
+          <Text style={[type.small, { marginTop: 4 }]}>
+            {t("Tozalik {a} · Qabul va xizmat {b}", { a: s.cleanliness_avg?.toFixed(1) ?? '—', b: s.quality_avg?.toFixed(1) ?? '—' })}
+          </Text>
+        )}
+      </View>
       {items.map((r) => (
-        <Card key={r.id}>
-          <View style={shared.row}>
-            <Text style={[type.h3, { flex: 1 }]}>{r.author}</Text>
-            <Text style={shared.muted}>{dayOf(r.created_at).split('-').reverse().join('.')}</Text>
+        <View key={r.id} style={styles.item}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <View style={styles.avatar}><Text style={styles.avatarText}>{initials(r.author)}</Text></View>
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={type.h3}>{r.author}</Text>
+              <StarsView value={r.rating} size={14} />
+            </View>
           </View>
-          <View style={{ marginTop: 4 }}><StarsView value={r.rating} /></View>
-          {r.comment && <Text style={[type.body, { marginTop: 6 }]}>{r.comment}</Text>}
-          {r.staff_rating != null && r.member_name && (
+          {r.comment && <Text style={type.body}>{r.comment}</Text>}
+          <Text style={type.small}>
+            {dayOf(r.created_at).split('-').reverse().join('.')}{r.member_name ? ` · ${t("{a} bilan", { a: r.member_name })}` : ''}
+          </Text>
+          {r.staff_rating != null && r.staff_comment && (
             <View style={styles.staff}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Text style={shared.muted}>{staffWord}: {r.member_name}</Text>
-                <StarsView value={r.staff_rating} size={12} />
-              </View>
-              {r.staff_comment && <Text style={[type.body, { marginTop: 4 }]}>{r.staff_comment}</Text>}
+              <Text style={type.small}>{staffWord}: {r.member_name}</Text>
+              <Text style={type.body}>{r.staff_comment}</Text>
             </View>
           )}
           {r.reply && (
             <View style={styles.reply}>
-              <Text style={[type.small, { fontWeight: '700' }]}>{t("Muassasa javobi")}</Text>
-              <Text style={[type.body, { marginTop: 2 }]}>{r.reply}</Text>
+              <Text style={[type.small, { color: colors.text, ...font('700') }]}>{t("Muassasa javobi")}</Text>
+              <Text style={type.body}>{r.reply}</Text>
             </View>
           )}
-        </Card>
+        </View>
       ))}
       {!done && items.length < s.count && (
-        <Button title={t("Yana baholar")} kind="outline" compact busy={busy} onPress={loadMore} />
+        <Button title={t("Barcha sharhlar")} kind="outline" compact busy={busy} onPress={loadMore} />
       )}
-    </>
+    </View>
   );
 }
 
+const initials = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase()).join('') || '?';
+
 const useStyles = makeStyles((c) => ({
   starBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  staff: { marginTop: 8, padding: 10, borderRadius: 12, backgroundColor: c.surface2 },
-  reply: { marginTop: 8, paddingLeft: 10, borderLeftWidth: 3, borderLeftColor: c.accent },
+  score: { alignItems: 'center', gap: 4, paddingVertical: 20, borderRadius: 20, backgroundColor: c.accentSoft },
+  scoreValue: { fontSize: 40, fontWeight: '800', color: c.text, letterSpacing: -1 },
+  scoreTitle: { fontSize: 16, fontWeight: '700', color: c.text },
+  item: { gap: 8, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: c.line },
+  avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: c.accentSoft, alignItems: 'center', justifyContent: 'center' },
+  avatarText: { fontSize: 14, fontWeight: '700', color: c.accent },
+  staff: { padding: 12, borderRadius: 14, backgroundColor: c.surface2, gap: 2 },
+  reply: { paddingLeft: 12, borderLeftWidth: 3, borderLeftColor: c.accent, gap: 2 },
 }));

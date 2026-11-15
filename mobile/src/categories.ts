@@ -31,3 +31,19 @@ export function categoryTint(c: Category, dark: boolean): { bg: string; fg: stri
   const t = TINTS.find(([re]) => re.test(c.slug) || re.test(c.name_uz))?.[1] ?? ['#EEF1F7', '#3A4250', 'rgba(255,255,255,0.08)', '#C9D0DC'];
   return dark ? { bg: t[2], fg: t[3] } : { bg: t[0], fg: t[1] };
 }
+
+/** Bosh sahifa kataklari uchun qisqa nom (tor katakda so'z bo'linmasin) */
+const SHORT: [RegExp, string, string][] = [
+  [/barber/i, "Barber", 'Барбер'],
+  [/^ent$|otorino|^lor/i, 'LOR', 'ЛОР'],
+  [/dent|stomat/i, 'Stomatolog', 'Стоматолог'],
+  [/spa|massaj|massage/i, 'SPA', 'SPA'],
+  [/pharm|dorixona|apteka/i, 'Dorixona', 'Аптека'],
+  [/clinic|klinika/i, 'Klinika', 'Клиника'],
+  [/salon|beauty|go'zal/i, "Go'zallik", 'Красота'],
+];
+
+export function categoryShort(c: Category, lang: 'uz' | 'ru'): string | null {
+  const hit = SHORT.find(([re]) => re.test(c.slug) || re.test(c.name_uz));
+  return hit ? (lang === 'ru' ? hit[2] : hit[1]) : null;
+}

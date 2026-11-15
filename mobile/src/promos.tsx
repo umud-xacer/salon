@@ -8,7 +8,7 @@ import { api, HotSlot, MyLoyalty, Offer } from './api';
 import { pick, t } from './i18n';
 import { useMyLocation } from './location';
 import { distanceText } from './SalonCard';
-import { Gradient, Icon, makeStyles, money, Pressy, SectionHeader, useTheme } from './ui';
+import { font, Gradient, Icon, makeStyles, money, Pressy, SectionHeader, useTheme } from './ui';
 
 /** "HH:MM:SS" — mahalliy (Toshkent) vaqt bo'yicha bugun `until` gacha qolgan vaqt */
 function useCountdown(until: string | null) {
@@ -45,10 +45,10 @@ export function HotSlots({ refreshKey }: { refreshKey: number }) {
 
   return (
     <View style={{ marginTop: 26 }}>
-      <SectionHeader title={`🔥 ${t("Hot Slots")}`}
-        sub={<>{t("Bugungi bo'sh vaqtlar chegirmada")}{countdown ? <Text style={{ color: c.hot, fontWeight: '800' }}>{` · ${countdown}`}</Text> : null}</>}
-        style={{ paddingHorizontal: 16 }} />
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 10, paddingTop: 12 }}>
+      <SectionHeader title={t("Bugun chegirmada")}
+        sub={<>{t("Bo'sh qolgan vaqtlar arzonroq")}{countdown ? <Text style={{ color: c.hot, ...font('700') }}>{` · ${countdown}`}</Text> : null}</>}
+        style={{ paddingHorizontal: 24 }} />
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 24, gap: 14, paddingTop: 16 }}>
         {items.map((h) => (
           <Pressy key={`${h.business_id}-${h.service_id}`} style={s.hot} accessibilityRole="button"
             accessibilityLabel={t("{a}, {b}, {c} foiz chegirma", { a: pick(h.service_name, h.service_name_ru), b: h.time, c: h.percent })}
@@ -58,13 +58,13 @@ export function HotSlots({ refreshKey }: { refreshKey: number }) {
             <View style={s.hotTop}>
               {h.photo
                 ? <Image source={{ uri: h.photo }} style={s.fill} resizeMode="cover" />
-                : <Gradient colors={c.perk} style={s.fill} />}
+                : <Gradient colors={c.hero} style={s.fill} />}
               <View style={s.hotBadges}>
-                <View style={[s.pill, { backgroundColor: c.hot }]}><Text style={s.pillText}>−{h.percent}%</Text></View>
-                <View style={[s.pill, { backgroundColor: 'rgba(0,0,0,0.45)' }]}><Text style={s.pillText}>{h.time}</Text></View>
+                <View style={[s.pill, { backgroundColor: '#FFFFFF' }]}><Text style={[s.pillText, { color: c.hot }]}>−{h.percent}%</Text></View>
+                <View style={[s.pill, { backgroundColor: 'rgba(17,17,20,0.7)' }]}><Text style={s.pillText}>{h.time}</Text></View>
               </View>
             </View>
-            <View style={{ padding: 12, gap: 3 }}>
+            <View style={{ paddingTop: 10, gap: 3 }}>
               <Text style={s.title} numberOfLines={1}>{pick(h.service_name, h.service_name_ru)}</Text>
               <Text style={s.muted} numberOfLines={1}>{[h.business_name, distanceText(h.distance_m)].filter(Boolean).join(' · ')}</Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline', columnGap: 6, marginTop: 3 }}>
@@ -100,12 +100,12 @@ export function Perks({ refreshKey }: { refreshKey: number }) {
     <View style={s.perks}>
       {offer && (
         <Pressy onPress={() => open(offer.business_slug)} style={{ flex: 1 }} accessibilityRole="button">
-          <Gradient colors={c.perk} style={s.perk}>
-            <View style={s.perkIcon}><Icon name="gift-outline" size={18} color="#FFFFFF" /></View>
+          <View style={[s.perk, s.offer]}>
+            <View style={s.perkIcon}><Icon name="gift-outline" size={18} color={c.accent} /></View>
             <Text style={s.perkLabel}>{t("Sizga sovg'a")} · {offer.business_name}</Text>
             <Text style={s.perkTitle} numberOfLines={2}>−{offer.percent}% {offer.title}</Text>
             <View style={s.codeBox}><Text style={s.code}>{offer.code}</Text></View>
-          </Gradient>
+          </View>
         </Pressy>
       )}
       {loyalty && (
@@ -128,23 +128,24 @@ export function Perks({ refreshKey }: { refreshKey: number }) {
 }
 
 const useStyles = makeStyles((c) => ({
-  hot: { width: 200, borderRadius: 22, backgroundColor: c.surface, borderWidth: 1, borderColor: c.line, overflow: 'hidden' },
-  hotTop: { height: 96, backgroundColor: c.line },
+  hot: { width: 250 },
+  hotTop: { height: 150, borderRadius: 16, overflow: 'hidden', backgroundColor: c.surface2 },
   fill: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
-  hotBadges: { flexDirection: 'row', justifyContent: 'space-between', padding: 10 },
-  pill: { paddingHorizontal: 9, paddingVertical: 5, borderRadius: 10 },
-  pillText: { color: '#FFFFFF', fontSize: 13, fontWeight: '800' },
-  title: { fontSize: 14, fontWeight: '800', color: c.text },
-  muted: { fontSize: 12, color: c.muted, fontWeight: '600' },
-  price: { fontSize: 16, fontWeight: '800', color: c.text },
-  old: { fontSize: 12, color: c.muted, textDecorationLine: 'line-through' },
-  perks: { flexDirection: 'row', gap: 10, paddingHorizontal: 16, marginTop: 24 },
-  perk: { flex: 1, minHeight: 132, borderRadius: 22, padding: 14, gap: 8 },
-  perkIcon: { width: 34, height: 34, borderRadius: 11, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
-  perkLabel: { color: 'rgba(255,255,255,0.85)', fontSize: 12, fontWeight: '600' },
-  perkTitle: { color: '#FFFFFF', fontSize: 16, fontWeight: '800', lineHeight: 20 },
-  codeBox: { alignSelf: 'flex-start', paddingHorizontal: 9, paddingVertical: 4, borderRadius: 8, borderWidth: 1, borderStyle: 'dashed', borderColor: 'rgba(255,255,255,0.7)' },
-  code: { color: '#FFFFFF', fontWeight: '800', fontSize: 12, letterSpacing: 1 },
-  loyal: { backgroundColor: c.surface, borderWidth: 1, borderColor: c.line },
-  loyalTitle: { fontSize: 16, fontWeight: '800', color: c.text, lineHeight: 20 },
+  hotBadges: { flexDirection: 'row', justifyContent: 'space-between', padding: 12 },
+  pill: { paddingHorizontal: 11, paddingVertical: 6, borderRadius: 999 },
+  pillText: { color: '#FFFFFF', fontSize: 13, fontWeight: '700' },
+  title: { fontSize: 16, fontWeight: '700', color: c.text },
+  muted: { fontSize: 13, color: c.muted },
+  price: { fontSize: 15, fontWeight: '700', color: c.text },
+  old: { fontSize: 13, color: c.muted, textDecorationLine: 'line-through' },
+  perks: { flexDirection: 'row', gap: 12, paddingHorizontal: 24, marginTop: 28 },
+  perk: { flex: 1, minHeight: 140, borderRadius: 20, padding: 16, gap: 8, borderWidth: 1, borderColor: c.line, backgroundColor: c.bg },
+  offer: { backgroundColor: c.accentSoft, borderColor: c.accentSoft },
+  perkIcon: { width: 36, height: 36, borderRadius: 18, backgroundColor: c.bg, alignItems: 'center', justifyContent: 'center' },
+  perkLabel: { color: c.muted, fontSize: 12, fontWeight: '600' },
+  perkTitle: { color: c.text, fontSize: 16, fontWeight: '700', lineHeight: 21 },
+  codeBox: { alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, borderWidth: 1, borderStyle: 'dashed', borderColor: c.accent },
+  code: { color: c.accent, fontWeight: '700', fontSize: 12, letterSpacing: 1 },
+  loyal: {},
+  loyalTitle: { fontSize: 16, fontWeight: '700', color: c.text, lineHeight: 21 },
 }));

@@ -10,9 +10,9 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { t } from './i18n';
-import { light, makeStyles, Palette, useTheme } from './theme';
+import { font, light, makeStyles, Palette, useTheme } from './theme';
 
-export { makeStyles, useTheme } from './theme';
+export { font, makeStyles, useTheme } from './theme';
 export type IconName = ComponentProps<typeof Ionicons>['name'];
 
 export const radius = { sm: 10, md: 14, lg: 18, xl: 22, xxl: 28, pill: 999 };
@@ -28,15 +28,15 @@ export const shadowOf = (c: Palette, level: 1 | 2 = 1): ViewStyle => Platform.se
 
 /** Matn ierarxiyasi (Inter o'rniga tizim shrifti — og'irliklar prototipdagidek) */
 export const useType = makeStyles((c) => ({
-  display: { fontSize: 30, fontWeight: '800', color: c.text, letterSpacing: -0.8 },
-  h1: { fontSize: 26, fontWeight: '800', color: c.text, letterSpacing: -0.6 },
-  h2: { fontSize: 19, fontWeight: '800', color: c.text, letterSpacing: -0.3 },
-  h3: { fontSize: 16, fontWeight: '700', color: c.text },
-  body: { fontSize: 15, color: c.text },
-  small: { fontSize: 13, color: c.muted },
-  tiny: { fontSize: 12, color: c.muted, fontWeight: '600' },
-  caps: { fontSize: 12, color: c.muted, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.7 },
-  link: { fontSize: 14, color: c.accent, fontWeight: '700' },
+  display: { fontSize: 28, fontWeight: '800', color: c.text, letterSpacing: -0.8, lineHeight: 34 },
+  h1: { fontSize: 26, fontWeight: '700', color: c.text, letterSpacing: -0.6, lineHeight: 32 },
+  h2: { fontSize: 20, fontWeight: '700', color: c.text, letterSpacing: -0.5, lineHeight: 26 },
+  h3: { fontSize: 16, fontWeight: '700', color: c.text, letterSpacing: -0.5, lineHeight: 22 },
+  body: { fontSize: 15, color: c.text, letterSpacing: -0.5, lineHeight: 22 },
+  small: { fontSize: 13, color: c.muted, letterSpacing: -0.3, lineHeight: 18 },
+  tiny: { fontSize: 12, color: c.muted, fontWeight: '600', letterSpacing: -0.3 },
+  caps: { fontSize: 12, color: c.muted, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.4 },
+  link: { fontSize: 13, color: c.accent, fontWeight: '600', letterSpacing: -0.5 },
 }));
 
 export function Icon({ name, size = 20, color }: { name: IconName; size?: number; color?: string }) {
@@ -95,7 +95,7 @@ export function Avatar({ name, photo, size = 48, colors }: {
   if (photo) return <Image source={{ uri: photo }} style={box} />;
   return (
     <Gradient colors={colors ?? c.avatar} style={[box, { alignItems: 'center', justifyContent: 'center' }]}>
-      <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: size * 0.34 }}>{initials}</Text>
+      <Text style={{ color: '#FFFFFF', fontSize: size * 0.34, ...font('700') }}>{initials}</Text>
     </Gradient>
   );
 }
@@ -138,7 +138,7 @@ export function Button({ title, onPress, kind = 'primary', busy, disabled, icon,
   const look: Record<string, [string, string, string]> = {          // fon, matn, chegara
     primary: [c.cta, c.ctaText, c.cta],
     accent: [c.accent, c.onAccent, c.accent],
-    outline: [c.surface, c.text, c.line],
+    outline: [c.bg, c.text, c.line],
     danger: [c.dangerSoft, c.danger, c.dangerSoft],
     soft: [c.accentSoft, c.accent, c.accentSoft],
     ghost: ['transparent', c.muted, 'transparent'],
@@ -202,7 +202,7 @@ export function Chip({ label, active, onPress, icon }: {
       style={[s.chip, active && { backgroundColor: c.cta, borderColor: c.cta }]}>
       {icon && <Icon name={icon} size={16} color={active ? c.ctaText : c.accent} />}
       {/* Uzun yorliq (xizmat nomi · vaqt · narx) tor ekranda kartadan chiqib ketmaydi: ikki qatorga o'tadi */}
-      <Text style={{ color: active ? c.ctaText : c.text, fontWeight: '600', fontSize: 14, flexShrink: 1 }}>{label}</Text>
+      <Text style={{ color: active ? c.ctaText : c.text, fontSize: 14, flexShrink: 1, letterSpacing: -0.5, ...font('600') }}>{label}</Text>
     </Pressy>
   );
 }
@@ -221,7 +221,7 @@ export function Segments<T extends string>({ value, options, onChange }: {
         <Pressable key={o.id} onPress={() => onChange(o.id)} style={[s.segment, value === o.id && s.segmentOn]}
           accessibilityRole="tab" accessibilityState={{ selected: value === o.id }}>
           <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}
-            style={{ fontWeight: '700', fontSize: 14, color: value === o.id ? c.text : c.muted }}>
+            style={{ fontSize: 14, color: value === o.id ? c.text : c.muted, letterSpacing: -0.5, ...font('600') }}>
             {o.label}
           </Text>
         </Pressable>
@@ -238,6 +238,30 @@ export function Steps({ step, total }: { step: number; total: number }) {
       {Array.from({ length: total }, (_, i) => (
         <View key={i} style={{ flex: 1, height: 5, borderRadius: 3, backgroundColor: i < step ? c.accent : c.line }} />
       ))}
+    </View>
+  );
+}
+
+/** Ostki chiziqli tablar (Figma: salon sahifasi, qidiruv kunlari) — gorizontal suriladi */
+export function UnderlineTabs<T extends string>({ value, options, onChange }: {
+  value: T;
+  options: { id: T; label: string }[];
+  onChange: (id: T) => void;
+}) {
+  const { c } = useTheme();
+  return (
+    <View style={{ borderBottomWidth: 1, borderBottomColor: c.line }}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 24, gap: 22 }}>
+        {options.map((o) => {
+          const on = value === o.id;
+          return (
+            <Pressable key={o.id} onPress={() => onChange(o.id)} accessibilityRole="tab" accessibilityState={{ selected: on }}
+              style={{ paddingTop: 10, paddingBottom: 10, borderBottomWidth: 3, borderBottomColor: on ? c.text : 'transparent', marginBottom: -1 }}>
+              <Text style={{ fontSize: 15, letterSpacing: -0.5, color: on ? c.text : c.muted, ...font(on ? '700' : '400') }}>{o.label}</Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
     </View>
   );
 }
@@ -270,7 +294,7 @@ export function Badge({ label, tone = 'accent' }: { label: string; tone?: 'accen
   const [bg, fg] = map[tone];
   return (
     <View style={{ backgroundColor: bg, borderRadius: 9, paddingHorizontal: 8, paddingVertical: 4, alignSelf: 'flex-start' }}>
-      <Text style={{ color: fg, fontSize: 12, fontWeight: '800' }}>{label}</Text>
+      <Text style={{ color: fg, fontSize: 12, ...font('700') }}>{label}</Text>
     </View>
   );
 }
@@ -311,9 +335,9 @@ export function useBottomSpace(extra = 24) {
   return useSafeAreaInsets().bottom + extra;
 }
 
-/** Pastki suzuvchi menyu balandligi + bo'shliq: tab ekranlarida kontent menyu ostida qolmasin */
+/** Tab ekranlari pastidagi bo'shliq (menyu endi kontent ostida emas, alohida qator) */
 export function useTabSpace() {
-  return useSafeAreaInsets().bottom + 110;
+  return 28;
 }
 
 /** Stack ekranlari uchun skroll: yon chetlar bir xil, oxirgi element tizim paneli ostida qolmaydi */
@@ -447,11 +471,11 @@ export const colors = {
 
 const useStyles = makeStyles((c, isDark) => ({
   button: {
-    minHeight: 54, borderRadius: radius.lg, paddingVertical: 14, paddingHorizontal: 20, alignItems: 'center',
+    minHeight: 52, borderRadius: radius.pill, paddingVertical: 13, paddingHorizontal: 22, alignItems: 'center',
     justifyContent: 'center', flexDirection: 'row', gap: 8, borderWidth: 1,
   },
-  compact: { minHeight: 40, paddingVertical: 8, paddingHorizontal: 14, borderRadius: radius.md },
-  buttonText: { fontSize: 16, fontWeight: '700', flexShrink: 1, textAlign: 'center' },
+  compact: { minHeight: 40, paddingVertical: 8, paddingHorizontal: 16 },
+  buttonText: { fontSize: 15, fontWeight: '600', flexShrink: 1, textAlign: 'center', letterSpacing: -0.5 },
   field: {
     backgroundColor: c.surface, borderWidth: 1.5, borderColor: c.line, borderRadius: radius.lg, paddingHorizontal: 14,
     paddingTop: 9, paddingBottom: 4,
@@ -460,19 +484,18 @@ const useStyles = makeStyles((c, isDark) => ({
   input: { fontSize: 16, fontWeight: '600', color: c.text, paddingVertical: Platform.OS === 'ios' ? 8 : 4, paddingHorizontal: 0 },
   eye: { position: 'absolute', right: 4, top: 0, bottom: 0, width: 44, alignItems: 'center', justifyContent: 'center' },
   card: {
-    backgroundColor: c.surface, borderRadius: radius.xl, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: c.line,
-    ...shadowOf(c),
+    backgroundColor: c.surface, borderRadius: 20, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: c.line,
   },
   chip: {
-    borderWidth: 1, borderColor: c.line, backgroundColor: c.surface, borderRadius: radius.pill, paddingVertical: 9,
-    paddingHorizontal: 14, marginRight: 8, marginBottom: 8, flexDirection: 'row', alignItems: 'center', gap: 6,
+    borderWidth: 1, borderColor: c.line, backgroundColor: c.bg, borderRadius: radius.pill, paddingVertical: 9,
+    paddingHorizontal: 16, marginRight: 8, marginBottom: 8, flexDirection: 'row', alignItems: 'center', gap: 6,
     maxWidth: '100%',
   },
   segments: { flexDirection: 'row', backgroundColor: c.segment, borderRadius: radius.md, padding: 4, marginBottom: 12 },
   segment: { flex: 1, minWidth: 0, alignItems: 'center', paddingVertical: 9, paddingHorizontal: 4, borderRadius: 11 },
   segmentOn: { backgroundColor: c.segmentOn, ...shadowOf(c) },
   iconBtn: {
-    borderRadius: 14, backgroundColor: c.surface, borderWidth: 1, borderColor: c.line, alignItems: 'center',
+    borderRadius: radius.pill, backgroundColor: c.bg, borderWidth: 1, borderColor: c.line, alignItems: 'center',
     justifyContent: 'center',
   },
   iconBtnGlass: { backgroundColor: 'rgba(255,255,255,0.16)', borderColor: 'rgba(255,255,255,0.28)' },
