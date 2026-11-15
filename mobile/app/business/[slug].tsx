@@ -6,6 +6,8 @@ import { api, ApiError, BusinessDetail, Service } from '../../src/api';
 import { PharmacyCatalog } from '../../src/PharmacyCatalog';
 import { BusinessReviews } from '../../src/Reviews';
 import { useFavorites } from '../../src/favorites';
+import { distanceM, getLastLocation } from '../../src/lastLocation';
+import { distanceText } from '../../src/SalonCard';
 import { Button, Card, Chip, colors, ErrorText, Icon, money, radius, ScreenScroll, shared, type } from '../../src/ui';
 
 import { pick, t } from "../../src/i18n";
@@ -37,6 +39,11 @@ export default function Business() {
   const doctor = business.staff.find((s) => s.member_id === memberId);
   const allServices = business.service_groups.flatMap((g) => g.services);
   const doctorServices = doctor ? allServices.filter((sv) => doctor.service_ids.includes(sv.id)) : [];
+  // Tarmoqning boshqa filiallari: joylashuv ma'lum bo'lsa — eng yaqini birinchi
+  const here = getLastLocation();
+  const branches = (business.branches ?? [])
+    .map((br) => ({ ...br, distance: here ? distanceM(here, br.lat, br.lng) : null }))
+    .sort((a, b) => (a.distance ?? 0) - (b.distance ?? 0));
 
   return (
     <ScreenScroll>
@@ -50,7 +57,10 @@ export default function Business() {
         </ScrollView>
       )}
       <View style={shared.row}>
-        <Text style={[type.h1, { flex: 1, paddingRight: 8 }]}>{business.name}</Text>
+        <View style={{ flex: 1, paddingRight: 8 }}>
+          <Text style={type.h1}>{business.name}</Text>
+          {business.branch_name && <Text style={[type.h3, { color: colors.primary }]}>{business.branch_name}</Text>}
+        </View>
         <Pressable onPress={() => favorites.toggle(business.id)} hitSlop={10}
           accessibilityLabel={favorites.has(business.id) ? t("Sevimlilardan olib tashlash") : t("Sevimlilarga qo'shish")}>
           <Icon name={favorites.has(business.id) ? 'heart' : 'heart-outline'} size={26}
@@ -62,6 +72,30 @@ export default function Business() {
       </Text>
       {business.address && <Text style={shared.muted}>{business.address}</Text>}
       {business.description && <Text style={[shared.muted, { marginTop: 8 }]}>{business.description}</Text>}
+
+      {branches.length > 0 && (
+        <>
+          <Text style={shared.heading}>{t("Boshqa filiallar ({a})", { a: branches.length })}</Text>
+          <Text style={[shared.muted, { marginBottom: 6 }]}>{t("O'zingizga qulay filialni tanlang — bron o'sha filialga bo'ladi")}</Text>
+          {branches.map((br) => (
+            <Pressable key={br.id} onPress={() => router.push(`/business/${br.slug}`)}
+              accessibilityRole="button" accessibilityLabel={`${br.name} ${br.branch_name ?? ''}`}
+              style={({ pressed }) => [{ opacity: pressed ? 0.8 : 1 }]}>
+              <Card>
+                <View style={shared.row}>
+                  <Text style={[shared.name, { flex: 1 }]} numberOfLines={1}>{br.branch_name ?? br.name}</Text>
+                  <Text style={{ color: br.is_open_now ? colors.success : colors.danger, fontSize: 12, fontWeight: '600' }}>
+                    {br.is_open_now ? t("Ochiq") : t("Yopiq")}
+                  </Text>
+                </View>
+                <Text style={shared.muted} numberOfLines={2}>
+                  {[distanceText(br.distance), br.address ?? br.city].filter(Boolean).join(' · ')}
+                </Text>
+              </Card>
+            </Pressable>
+          ))}
+        </>
+      )}
 
       {kind === 'pharmacy' && <PharmacyCatalog slug={business.slug} />}
 

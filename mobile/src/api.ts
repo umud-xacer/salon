@@ -129,6 +129,24 @@ export type BusinessCard = {
   top_service: string | null;
   photos: string[];
   is_open_now: boolean;
+  // Tarmoq: filial yorlig'i, asosiy kompaniya nomi (filial bo'lsa), ilovadagi filiallar soni (o'zi bilan)
+  branch_name?: string | null;
+  chain_name?: string | null;
+  branch_count?: number;
+};
+
+export type Branch = {
+  id: number;
+  slug: string;
+  name: string;
+  branch_name: string | null;
+  city: string | null;
+  address: string | null;
+  lat: number;
+  lng: number;
+  rating_avg: number;
+  rating_count: number;
+  is_open_now: boolean;
 };
 
 export type Category = { id: number; slug: string; name_uz: string; name_ru?: string | null };
@@ -151,6 +169,10 @@ export type BusinessDetail = {
   is_open_now: boolean;
   service_groups: { category_id: number | null; category_name: string; category_name_ru?: string | null; services: Service[] }[];
   staff: Staff[];
+  branch_name?: string | null;
+  chain_name?: string | null;
+  branch_count?: number;
+  branches?: Branch[];
 };
 
 export type Slot = { starts_at: string; ends_at: string; time: string };

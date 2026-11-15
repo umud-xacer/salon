@@ -350,4 +350,9 @@ export const RU: Record<string, string> = {
   "Bolalar Lor-shifokori (pediatrik otorinolaringolog)": "Детский ЛОР-врач (детский оториноларинголог)",
   "Lor-jarroh (burun, tomoq, quloq)": "ЛОР-хирург (нос, горло, ухо)",
   "Audiolog / Surdolog (eshitish mutaxassisi)": "Аудиолог / сурдолог (специалист по слуху)",
+
+  // ── Filiallar (2026-11-15) ──
+  "Tarmoq · {a} ta filial": "Сеть · филиалов: {a}",
+  "Boshqa filiallar ({a})": "Другие филиалы ({a})",
+  "O'zingizga qulay filialni tanlang — bron o'sha filialga bo'ladi": "Выберите удобный филиал — запись будет в этот филиал",
 };

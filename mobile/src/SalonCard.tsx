@@ -35,7 +35,9 @@ export function SalonCard({ item: b, favorite, onToggleFavorite, onOpen }: {
 
       <View style={styles.body}>
         <View style={styles.row}>
-          <Text style={[type.h3, styles.name]} numberOfLines={1}>{b.name}</Text>
+          <Text style={[type.h3, styles.name]} numberOfLines={1}>
+            {b.name}{b.branch_name ? <Text style={styles.branch}>{` · ${b.branch_name}`}</Text> : null}
+          </Text>
           <Pressable onPress={onToggleFavorite} hitSlop={10} style={styles.heart}
             accessibilityLabel={favorite ? t("Sevimlilardan olib tashlash") : t("Sevimlilarga qo'shish")}>
             <Icon name={favorite ? 'heart' : 'heart-outline'} size={19} color={favorite ? colors.danger : colors.muted} />
@@ -43,6 +45,11 @@ export function SalonCard({ item: b, favorite, onToggleFavorite, onOpen }: {
         </View>
 
         <Text style={type.small} numberOfLines={1}>{meta}</Text>
+        {(b.branch_count ?? 1) > 1 && (
+          <Text style={[type.small, styles.chain]} numberOfLines={1}>
+            {t("Tarmoq · {a} ta filial", { a: b.branch_count ?? 1 })}
+          </Text>
+        )}
 
         <View style={[styles.row, { marginTop: 6 }]}>
           <View style={styles.rating}>
@@ -81,6 +88,8 @@ const styles = StyleSheet.create({
   body: { flex: 1, minWidth: 0, justifyContent: 'center' },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   name: { flex: 1, fontSize: 15 },
+  branch: { color: colors.muted, fontWeight: '500' },
+  chain: { color: colors.primary, marginTop: 2 },
   heart: { padding: 2 },
   rating: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   ratingText: { fontWeight: '700', color: colors.text, fontSize: 13 },

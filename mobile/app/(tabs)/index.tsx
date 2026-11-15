@@ -15,6 +15,7 @@ import {
 import { Bounds, OsmMap } from '../../src/OsmMap';
 
 import { pick, t } from "../../src/i18n";
+import { setLastLocation } from '../../src/lastLocation';
 const TASHKENT = { latitude: 41.3111, longitude: 69.2797 };
 const MAX_BOUNDS_DEG = 1;          // backend chegarasi: bundan keng oynada so'rov rad etiladi
 // Keyingi banner chetdan ko'rinib tursin: ro'yxat davom etishi seziladi
@@ -80,6 +81,7 @@ export default function Businesses() {
       const { coords: c } = await Location.getCurrentPositionAsync({});
       setCoords({ latitude: c.latitude, longitude: c.longitude });
       setMyPoint({ latitude: c.latitude, longitude: c.longitude });
+      setLastLocation({ latitude: c.latitude, longitude: c.longitude });
       const found = await api<{ address: string; district: string | null; region: string | null }>(
         `/geo/address?lat=${c.latitude}&lng=${c.longitude}`).catch(() => null);
       setPlace(found?.district ?? found?.region ?? t("Joylashuvingiz"));
@@ -96,6 +98,7 @@ export default function Businesses() {
     const { coords: c } = await Location.getCurrentPositionAsync({});
     const p = { latitude: c.latitude, longitude: c.longitude };
     setMyPoint(p);
+    setLastLocation(p);
     setMapHint(null);
     return p;
   };

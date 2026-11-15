@@ -167,7 +167,9 @@ export function OsmMap({ center, me, businesses, onBounds, onSelect, onError, on
 
   const run = (code: string) => web.current?.injectJavaScript(`${code}; true;`);
   const pushMarkers = () => {
-    const list = latest.current.businesses.map((b) => ({ id: b.id, name: b.name, lat: b.lat, lng: b.lng, open: b.is_open_now }));
+    const list = latest.current.businesses.map((b) => ({
+      id: b.id, name: b.branch_name ? `${b.name} · ${b.branch_name}` : b.name,   // filial xaritada aniq ajralsin
+      lat: b.lat, lng: b.lng, open: b.is_open_now }));
     run(`window.setMarkers && window.setMarkers(${JSON.stringify(list)})`);
     const p = latest.current.me;
     if (p) run(`window.setMe && window.setMe(${JSON.stringify({ lat: p.latitude, lng: p.longitude })})`);
