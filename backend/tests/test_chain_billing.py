@@ -71,6 +71,16 @@ def test_prorate_by_calendar_days(admin_db):
             == datetime(2026, 12, 1, tzinfo=TZ)
 
 
+def test_month_math_in_tashkent_time_on_utc_database(admin_db):
+    """Prod bazasi UTC da: 30-noyabr 19:00 UTC (= 1-dekabr Toshkent) + 1 oy = 1-yanvar Toshkent, 30-dekabr emas."""
+    with admin_db.connect() as c:
+        c.exec_driver_sql("SET TIME ZONE 'UTC'")
+        q = lambda sql: c.execute(text(sql)).scalar()
+        assert q("SELECT app.next_first(CAST('2026-12-15 20:24+05' AS timestamptz))") == datetime(2027, 1, 1, tzinfo=TZ)
+        assert q("SELECT app.add_months_local(CAST('2026-12-01 00:00+05' AS timestamptz), 1)") == datetime(2027, 1, 1, tzinfo=TZ)
+        assert q("SELECT app.add_months_local(CAST('2027-01-01 00:00+05' AS timestamptz), 2)") == datetime(2027, 3, 1, tzinfo=TZ)
+
+
 def test_tz_example_188000(client, superadmin, admin_db, module_price):
     """Asosiy 70 000 + 2 filial (30%) 49 000 + Ombor 20 000 = 188 000 so'm/oy."""
     head = create_business(client, superadmin, modules=("booking", "inventory"))

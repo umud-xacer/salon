@@ -37,6 +37,8 @@ def _recreate_database():
     with engine.connect() as c:
         c.exec_driver_sql(f'DROP DATABASE IF EXISTS "{DB_NAME}" WITH (FORCE)')
         c.exec_driver_sql(f'CREATE DATABASE "{DB_NAME}"')
+        # Prod bazasi UTC da ishlaydi — testlar ham (vaqt mintaqasiga bog'liq xatolar shu yerda ushlansin)
+        c.exec_driver_sql(f"ALTER DATABASE \"{DB_NAME}\" SET timezone TO 'UTC'")
     engine.dispose()
 
 
