@@ -41,7 +41,8 @@ export function createScene(canvas, { sections, reducedMotion = false, onFrame }
   const lowPower = window.innerWidth < 860 || (navigator.hardwareConcurrency ?? 8) <= 4;
 
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: !lowPower, powerPreference: "high-performance" });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, lowPower ? 1.5 : 1.75));
+  // Telefonda piksel zichligi 1: sahna fon bo'lib turadi, keskinlik farqi sezilmaydi, GPU yuki 2-4 barobar kam
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, mobile() ? 1 : lowPower ? 1.5 : 1.75));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
@@ -554,8 +555,15 @@ export function createScene(canvas, { sections, reducedMotion = false, onFrame }
   const heroInfo = { x: 0, y: 0, r: 0, mix: 0 };
   const v3 = new THREE.Vector3();
 
-  function frame() {
+  // Kuchsiz qurilmada 30 kadr/s yetadi — protsessor va batareya yuki yarmiga tushadi
+  const frameGap = lowPower ? 1000 / 30 - 2 : 0;
+  let lastTs = 0;
+
+  function frame(ts) {
     if (!running) return;
+    requestAnimationFrame(frame);
+    if (frameGap && ts - lastTs < frameGap) return;
+    lastTs = ts;
     const dt = Math.min(clock.getDelta(), 0.05) * speed;
     t += dt;
     measure();
@@ -625,7 +633,6 @@ export function createScene(canvas, { sections, reducedMotion = false, onFrame }
       renderer.render(scene, camera);
     }
     onFrame?.({ hero: heroInfo });
-    requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
 

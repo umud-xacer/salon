@@ -188,21 +188,22 @@ const words = (el) => (el ? el.querySelectorAll(".wi") : []);
 const showWords = (el, opts = {}) => gsap.to(words(el), { y: 0, duration: 1.1, stagger: 0.05, ease: "expo.out", ...opts });
 
 // ── Yuklanish: 000 → 100 ──
-function runLoader(ready) {
+function runLoader(ready, quick = false) {
   const num = $("#loadNum");
   const o = { v: 0 };
   return new Promise((resolve) => {
     gsap.to(o, {
-      v: 100, duration: reducedMotion || skipLoader ? 0.15 : 1.8, ease: "power2.inOut",
+      v: 100, duration: reducedMotion || skipLoader ? 0.15 : quick ? 0.5 : 1.8, ease: "power2.inOut",
       onUpdate: () => {
         num.textContent = String(Math.round(o.v)).padStart(3, "0");
         gsap.set("#loadBar", { scaleX: o.v / 100 });
       },
       onComplete: async () => {
         await ready;
+        const k = quick ? 0.5 : 1;
         gsap.timeline({ onComplete: resolve })
-          .to(".loader-count, .loader-top", { yPercent: -40, opacity: 0, duration: 0.6, ease: "power3.in" })
-          .to("#loader", { yPercent: -100, duration: 1, ease: "expo.inOut" }, "-=0.2")
+          .to(".loader-count, .loader-top", { yPercent: -40, opacity: 0, duration: 0.6 * k, ease: "power3.in" })
+          .to("#loader", { yPercent: -100, duration: 1 * k, ease: "expo.inOut" }, `-=${0.2 * k}`)
           .set("#loader", { display: "none" });
       },
     });
@@ -389,15 +390,40 @@ async function initScene() {
   }
 }
 
-const sceneReady = new Promise((resolve) => {
+// Telefon va kuchsiz qurilma: yuklanish ekrani qisqa, matn darhol chiqadi, 3D sahna birinchi teginishda yuklanadi.
+// Kompyuterda — avvalgidek: sahna tayyor bo'lgach ochiladi.
+const lite = mobile() || (navigator.hardwareConcurrency ?? 8) <= 4;
+const sceneReady = lite ? Promise.resolve(true) : new Promise((resolve) => {
   const start = async () => resolve(await initScene());
   if (document.readyState === "complete") start();
   else window.addEventListener("load", start);
 });
 
-runLoader(sceneReady).then(async () => {
+function startSceneLater() {
+  const canvas = $("#scene");
+  canvas.classList.add("later");
+  const go = async () => {
+    const ok = await initScene();
+    if (!ok) { cards.forEach((c) => { c.style.display = "none"; }); return; }
+    requestAnimationFrame(() => canvas.classList.remove("later"));
+  };
+  // Birinchi teginish / surish / tugma bosilishida (foydalanuvchi talabi, 2026-11-15): ochilishda protsessor bo'sh,
+  // matn va tugmalar darhol ishlaydi; 3D sahna odam sahifa bilan ishlay boshlaganda yuklanadi.
+  const events = ["scroll", "wheel", "touchstart", "pointerdown", "keydown"];
+  let started = false;
+  const kick = () => {
+    if (started) return;
+    started = true;
+    events.forEach((e) => window.removeEventListener(e, kick));
+    void go();
+  };
+  events.forEach((e) => window.addEventListener(e, kick, { passive: true }));
+}
+
+runLoader(sceneReady, lite).then(async () => {
   const ok = await sceneReady;
   if (!ok) cards.forEach((c) => { c.style.display = "none"; });
+  if (lite) startSceneLater();
   document.body.classList.remove("loading");
   lenis?.start();
   chrome();
