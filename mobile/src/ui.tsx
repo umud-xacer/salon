@@ -1,113 +1,192 @@
-// Chronix dizayn tizimi: ranglar, radiuslar, soyalar, matn uslublari va umumiy bloklar.
+// Chronix dizayn tizimi (prototip 2026-11-16): tema tokenlari src/theme.tsx da, bu yerda umumiy bloklar.
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import { ComponentProps, ReactNode, useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator, Animated, Modal, Platform, Pressable, ScrollView, ScrollViewProps, StyleSheet, Text, TextInput,
-  TextInputProps, useWindowDimensions, View,
+  ActivityIndicator, Animated, Image, Modal, Platform, Pressable, PressableProps, ScrollView, ScrollViewProps, StyleProp,
+  Text, TextInput, TextInputProps, TextStyle, useWindowDimensions, View, ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { t } from "./i18n";
+import { t } from './i18n';
+import { light, makeStyles, Palette, useTheme } from './theme';
+
+export { makeStyles, useTheme } from './theme';
 export type IconName = ComponentProps<typeof Ionicons>['name'];
 
-export const colors = {
-  primary: '#1565F5',
-  primaryDark: '#0D4CC4',
-  primarySoft: '#E8F0FF',
-  navy: '#010D49',
-  danger: '#C62828',
-  dangerSoft: '#FDECEC',
-  success: '#12845A',
-  successSoft: '#E5F6EF',
-  warning: '#B26A00',
-  star: '#F5A623',
-  text: '#14161F',
-  muted: '#6C7080',
-  line: '#E6E8EF',
-  card: '#FFFFFF',
-  background: '#F4F6FB',
-};
+export const radius = { sm: 10, md: 14, lg: 18, xl: 22, xxl: 28, pill: 999 };
+export const space = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24 };
 
-export const radius = { sm: 10, md: 12, lg: 16, xl: 20, pill: 999 };
+export const shadowOf = (c: Palette, level: 1 | 2 = 1): ViewStyle => Platform.select({
+  android: { elevation: level === 1 ? 2 : 8, shadowColor: c.shadow },
+  default: {
+    shadowColor: c.shadow, shadowOpacity: level === 1 ? 0.06 : 0.16, shadowRadius: level === 1 ? 10 : 24,
+    shadowOffset: { width: 0, height: level === 1 ? 4 : 12 },
+  },
+}) as ViewStyle;
 
-export const shadow = Platform.select({
-  android: { elevation: 3 },
-  default: { shadowColor: '#0B1B4D', shadowOpacity: 0.08, shadowRadius: 12, shadowOffset: { width: 0, height: 4 } },
-});
+/** Matn ierarxiyasi (Inter o'rniga tizim shrifti — og'irliklar prototipdagidek) */
+export const useType = makeStyles((c) => ({
+  display: { fontSize: 30, fontWeight: '800', color: c.text, letterSpacing: -0.8 },
+  h1: { fontSize: 26, fontWeight: '800', color: c.text, letterSpacing: -0.6 },
+  h2: { fontSize: 19, fontWeight: '800', color: c.text, letterSpacing: -0.3 },
+  h3: { fontSize: 16, fontWeight: '700', color: c.text },
+  body: { fontSize: 15, color: c.text },
+  small: { fontSize: 13, color: c.muted },
+  tiny: { fontSize: 12, color: c.muted, fontWeight: '600' },
+  caps: { fontSize: 12, color: c.muted, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.7 },
+  link: { fontSize: 14, color: c.accent, fontWeight: '700' },
+}));
 
-export const type = StyleSheet.create({
-  h1: { fontSize: 26, fontWeight: '800', color: colors.text, letterSpacing: -0.3 },
-  h2: { fontSize: 20, fontWeight: '700', color: colors.text },
-  h3: { fontSize: 16, fontWeight: '700', color: colors.text },
-  body: { fontSize: 15, color: colors.text },
-  small: { fontSize: 13, color: colors.muted },
-});
+export function Icon({ name, size = 20, color }: { name: IconName; size?: number; color?: string }) {
+  const { c } = useTheme();
+  return <Ionicons name={name} size={size} color={color ?? c.text} />;
+}
 
-export function Icon({ name, size = 20, color = colors.text }: { name: IconName; size?: number; color?: string }) {
-  return <Ionicons name={name} size={size} color={color} />;
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+/** Bosilganda prujina bilan biroz kichrayadi (prototipdagi .press). Uslub (kenglik, flex) bosiladigan elementning o'zida */
+export function Pressy({ style, children, scaleTo = 0.97, ...props }: PressableProps & {
+  style?: StyleProp<ViewStyle>; children?: ReactNode; scaleTo?: number;
+}) {
+  const scale = useRef(new Animated.Value(1)).current;
+  const to = (v: number) => Animated.spring(scale, { toValue: v, useNativeDriver: Platform.OS !== 'web', speed: 40, bounciness: 6 }).start();
+  return (
+    <AnimatedPressable {...props} style={[style, { transform: [{ scale }] }]}
+      onPressIn={(e) => { to(scaleTo); props.onPressIn?.(e); }}
+      onPressOut={(e) => { to(1); props.onPressOut?.(e); }}>
+      {children}
+    </AnimatedPressable>
+  );
+}
+
+export function Gradient({ colors, style, children, diagonal = true }: {
+  colors: readonly [string, string, ...string[]]; style?: StyleProp<ViewStyle>; children?: ReactNode; diagonal?: boolean;
+}) {
+  return (
+    <LinearGradient colors={colors} start={{ x: 0, y: 0 }} end={diagonal ? { x: 1, y: 1 } : { x: 0, y: 1 }} style={style}>
+      {children}
+    </LinearGradient>
+  );
+}
+
+/** Shisha sirt: haqiqiy blur (iOS, Android 12+) va ustida tema rangi */
+export function Glass({ style, children, intensity = 40, tint }: {
+  style?: StyleProp<ViewStyle>; children?: ReactNode; intensity?: number; tint?: string;
+}) {
+  const { c, dark } = useTheme();
+  return (
+    <View style={[{ overflow: 'hidden', borderWidth: 1, borderColor: c.glassLine }, style]}>
+      <BlurView intensity={intensity} tint={dark ? 'dark' : 'light'} blurMethod="dimezisBlurViewSdk31Plus"
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
+      <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: tint ?? c.glass }} />
+      {children}
+    </View>
+  );
+}
+
+export function Avatar({ name, photo, size = 48, colors }: {
+  name: string; photo?: string | null; size?: number; colors?: readonly [string, string];
+}) {
+  const { c } = useTheme();
+  const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase()).join('') || '?';
+  const box = { width: size, height: size, borderRadius: size / 2 };
+  if (photo) return <Image source={{ uri: photo }} style={box} />;
+  return (
+    <Gradient colors={colors ?? c.avatar} style={[box, { alignItems: 'center', justifyContent: 'center' }]}>
+      <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: size * 0.34 }}>{initials}</Text>
+    </Gradient>
+  );
+}
+
+export function IconButton({ icon, onPress, label, badge, glass, size = 44 }: {
+  icon: IconName; onPress: () => void; label: string; badge?: number | boolean; glass?: boolean; size?: number;
+}) {
+  const { c } = useTheme();
+  const s = useStyles();
+  const body = (
+    <>
+      <Icon name={icon} size={20} color={glass ? '#FFFFFF' : c.text} />
+      {!!badge && (
+        <View style={[s.badge, typeof badge !== 'number' && s.badgeDot]}>
+          {typeof badge === 'number' && <Text style={s.badgeText}>{badge > 9 ? '9+' : badge}</Text>}
+        </View>
+      )}
+    </>
+  );
+  return (
+    <Pressy onPress={onPress} accessibilityRole="button" accessibilityLabel={label} hitSlop={6} scaleTo={0.92}
+      style={[s.iconBtn, { width: size, height: size }, glass && s.iconBtnGlass]}>
+      {body}
+    </Pressy>
+  );
 }
 
 export function Button({ title, onPress, kind = 'primary', busy, disabled, icon, compact }: {
   title: string;
   onPress: () => void;
-  kind?: 'primary' | 'outline' | 'danger' | 'soft';
+  kind?: 'primary' | 'accent' | 'outline' | 'danger' | 'soft' | 'ghost';
   busy?: boolean;
   disabled?: boolean;
   icon?: IconName;
   compact?: boolean;
 }) {
+  const { c } = useTheme();
+  const s = useStyles();
   const off = busy || disabled;
-  const tint = kind === 'outline' || kind === 'soft' ? colors.primary : '#fff';
+  const look: Record<string, [string, string, string]> = {          // fon, matn, chegara
+    primary: [c.cta, c.ctaText, c.cta],
+    accent: [c.accent, c.onAccent, c.accent],
+    outline: [c.surface, c.text, c.line],
+    danger: [c.dangerSoft, c.danger, c.dangerSoft],
+    soft: [c.accentSoft, c.accent, c.accentSoft],
+    ghost: ['transparent', c.muted, 'transparent'],
+  };
+  const [bg, fg, border] = off && (kind === 'primary' || kind === 'accent') ? [c.off, c.ctaText, c.off] : look[kind];
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ disabled: !!off }}
-      onPress={onPress}
-      disabled={off}
-      style={({ pressed }) => [
-        styles.button, compact && styles.compact, kind === 'outline' && styles.outline, kind === 'danger' && styles.danger,
-        kind === 'soft' && styles.soft, off && styles.off, pressed && !off && styles.pressed,
-      ]}
-    >
-      {busy ? <ActivityIndicator color={tint} /> : (
+    <Pressy accessibilityRole="button" accessibilityState={{ disabled: !!off, busy: !!busy }} onPress={onPress} disabled={off}
+      style={[s.button, compact && s.compact, { backgroundColor: bg, borderColor: border }]}>
+      {busy ? <ActivityIndicator color={fg} /> : (
         <>
-          {icon && <Icon name={icon} size={compact ? 16 : 18} color={tint} />}
-          <Text style={[styles.buttonText, compact && { fontSize: 14 }, { color: tint }]}>{title}</Text>
+          {icon && <Icon name={icon} size={compact ? 16 : 19} color={fg} />}
+          <Text style={[s.buttonText, compact && { fontSize: 14 }, { color: fg }]}>{title}</Text>
         </>
       )}
-    </Pressable>
+    </Pressy>
   );
 }
 
-export function Field({ label, hint, ...props }: TextInputProps & { label: string; hint?: string }) {
-  // Parol maydonida o'ng tomonda "ko'z": bosilsa parol ochiq ko'rinadi
+export function Field({ label, hint, style, ...props }: TextInputProps & { label: string; hint?: string }) {
+  const { c } = useTheme();
+  const s = useStyles();
+  const ty = useType();
   const [shown, setShown] = useState(false);
+  const [focus, setFocus] = useState(false);
   const secret = !!props.secureTextEntry;
   return (
     <View style={{ marginBottom: 14 }}>
-      <Text style={styles.label}>{label}</Text>
-      <View>
-        <TextInput placeholderTextColor={colors.muted} {...props} secureTextEntry={secret && !shown}
-          style={[styles.input, secret && { paddingRight: 48 }, props.editable === false && styles.inputOff]} />
+      <View style={[s.field, focus && { borderColor: c.accent }, props.editable === false && { backgroundColor: c.surface2 }]}>
+        <Text style={s.fieldLabel}>{label}</Text>
+        <TextInput placeholderTextColor={c.muted} {...props} secureTextEntry={secret && !shown}
+          onFocus={(e) => { setFocus(true); props.onFocus?.(e); }} onBlur={(e) => { setFocus(false); props.onBlur?.(e); }}
+          style={[s.input, secret && { paddingRight: 40 }, props.editable === false && { color: c.muted }, style]} />
         {secret && (
           <Pressable onPress={() => setShown(!shown)} hitSlop={8} accessibilityRole="button"
-            accessibilityLabel={shown ? t("Parolni yashirish") : t("Parolni ko'rsatish")}
-            style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 48, alignItems: 'center', justifyContent: 'center' }}>
-            <Icon name={shown ? 'eye-off-outline' : 'eye-outline'} size={20} color={colors.muted} />
+            accessibilityLabel={shown ? t("Parolni yashirish") : t("Parolni ko'rsatish")} style={s.eye}>
+            <Icon name={shown ? 'eye-off-outline' : 'eye-outline'} size={20} color={c.muted} />
           </Pressable>
         )}
       </View>
-      {hint && <Text style={[type.small, { marginTop: 4 }]}>{hint}</Text>}
+      {hint && <Text style={[ty.small, { marginTop: 5, marginLeft: 4 }]}>{hint}</Text>}
     </View>
   );
 }
 
-export function Card({ children, onPress }: { children: ReactNode; onPress?: () => void }) {
-  return (
-    <Pressable onPress={onPress} disabled={!onPress} style={styles.card}>
-      {children}
-    </Pressable>
-  );
+export function Card({ children, onPress, style }: { children: ReactNode; onPress?: () => void; style?: StyleProp<ViewStyle> }) {
+  const s = useStyles();
+  if (!onPress) return <View style={[s.card, style]}>{children}</View>;
+  return <Pressy onPress={onPress} style={[s.card, style]}>{children}</Pressy>;
 }
 
 export function Chip({ label, active, onPress, icon }: {
@@ -116,12 +195,15 @@ export function Chip({ label, active, onPress, icon }: {
   onPress: () => void;
   icon?: IconName;
 }) {
+  const { c } = useTheme();
+  const s = useStyles();
   return (
-    <Pressable onPress={onPress} style={[styles.chip, active && styles.chipActive]} accessibilityState={{ selected: active }}>
-      {icon && <Icon name={icon} size={16} color={active ? '#fff' : colors.primary} />}
+    <Pressy onPress={onPress} scaleTo={0.95} accessibilityRole="button" accessibilityState={{ selected: active }}
+      style={[s.chip, active && { backgroundColor: c.cta, borderColor: c.cta }]}>
+      {icon && <Icon name={icon} size={16} color={active ? c.ctaText : c.accent} />}
       {/* Uzun yorliq (xizmat nomi · vaqt · narx) tor ekranda kartadan chiqib ketmaydi: ikki qatorga o'tadi */}
-      <Text style={{ color: active ? '#fff' : colors.text, fontWeight: '600', fontSize: 14, flexShrink: 1 }}>{label}</Text>
-    </Pressable>
+      <Text style={{ color: active ? c.ctaText : c.text, fontWeight: '600', fontSize: 14, flexShrink: 1 }}>{label}</Text>
+    </Pressy>
   );
 }
 
@@ -131,17 +213,64 @@ export function Segments<T extends string>({ value, options, onChange }: {
   options: { id: T; label: string }[];
   onChange: (id: T) => void;
 }) {
+  const { c } = useTheme();
+  const s = useStyles();
   return (
-    <View style={styles.segments}>
+    <View style={s.segments}>
       {options.map((o) => (
-        <Pressable key={o.id} onPress={() => onChange(o.id)} style={[styles.segment, value === o.id && styles.segmentOn]}
-          accessibilityState={{ selected: value === o.id }}>
+        <Pressable key={o.id} onPress={() => onChange(o.id)} style={[s.segment, value === o.id && s.segmentOn]}
+          accessibilityRole="tab" accessibilityState={{ selected: value === o.id }}>
           <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}
-            style={{ fontWeight: '600', fontSize: 13, color: value === o.id ? colors.primary : colors.muted }}>
+            style={{ fontWeight: '700', fontSize: 14, color: value === o.id ? c.text : c.muted }}>
             {o.label}
           </Text>
         </Pressable>
       ))}
+    </View>
+  );
+}
+
+/** Bosqich chiziqlari (kirish oqimi, bron) */
+export function Steps({ step, total }: { step: number; total: number }) {
+  const { c } = useTheme();
+  return (
+    <View style={{ flex: 1, flexDirection: 'row', gap: 6 }} accessibilityLabel={t("{a}-bosqich, {b} tadan", { a: step, b: total })}>
+      {Array.from({ length: total }, (_, i) => (
+        <View key={i} style={{ flex: 1, height: 5, borderRadius: 3, backgroundColor: i < step ? c.accent : c.line }} />
+      ))}
+    </View>
+  );
+}
+
+/** Bo'lim sarlavhasi va o'ngda havola ("Hammasi") */
+export function SectionHeader({ title, sub, action, onAction, style }: {
+  title: string; sub?: ReactNode; action?: string; onAction?: () => void; style?: StyleProp<ViewStyle>;
+}) {
+  const ty = useType();
+  return (
+    <View style={[{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12 }, style]}>
+      <View style={{ flex: 1, gap: 3 }}>
+        <Text style={ty.h2} accessibilityRole="header">{title}</Text>
+        {sub ? <Text style={ty.small}>{sub}</Text> : null}
+      </View>
+      {action && onAction && (
+        <Pressable onPress={onAction} hitSlop={8} accessibilityRole="button"><Text style={ty.link}>{action}</Text></Pressable>
+      )}
+    </View>
+  );
+}
+
+/** Ochiq/yopiq kabi kichik holat yorlig'i */
+export function Badge({ label, tone = 'accent' }: { label: string; tone?: 'accent' | 'success' | 'warning' | 'danger' | 'hot' }) {
+  const { c } = useTheme();
+  const map = {
+    accent: [c.accentSoft, c.accent], success: [c.successSoft, c.success], warning: [c.warningSoft, c.warning],
+    danger: [c.dangerSoft, c.danger], hot: [c.hot, '#FFFFFF'],
+  } as const;
+  const [bg, fg] = map[tone];
+  return (
+    <View style={{ backgroundColor: bg, borderRadius: 9, paddingHorizontal: 8, paddingVertical: 4, alignSelf: 'flex-start' }}>
+      <Text style={{ color: fg, fontSize: 12, fontWeight: '800' }}>{label}</Text>
     </View>
   );
 }
@@ -153,20 +282,28 @@ export function EmptyState({ icon, title, text, action, onAction }: {
   action?: string;
   onAction?: () => void;
 }) {
+  const { c } = useTheme();
+  const s = useStyles();
+  const ty = useType();
   return (
-    <View style={styles.empty}>
-      <View style={styles.emptyCircle}><Icon name={icon} size={44} color={colors.primary} /></View>
-      <Text style={[type.h3, { textAlign: 'center' }]}>{title}</Text>
-      {text && <Text style={[type.small, { textAlign: 'center', marginTop: 6 }]}>{text}</Text>}
-      {action && onAction && <View style={{ marginTop: 18 }}><Button title={action} onPress={onAction} /></View>}
+    <View style={s.empty}>
+      <View style={s.emptyCircle}><Icon name={icon} size={42} color={c.accent} /></View>
+      <Text style={[ty.h3, { textAlign: 'center' }]}>{title}</Text>
+      {text && <Text style={[ty.small, { textAlign: 'center', marginTop: 6 }]}>{text}</Text>}
+      {action && onAction && <View style={{ marginTop: 18, alignSelf: 'stretch' }}><Button title={action} onPress={onAction} /></View>}
     </View>
   );
 }
 
-export const Empty = ({ text }: { text: string }) => <Text style={styles.emptyText}>{text}</Text>;
+export function Empty({ text }: { text: string }) {
+  const { c } = useTheme();
+  return <Text style={{ color: c.muted, textAlign: 'center', marginTop: 32 }}>{text}</Text>;
+}
 
-export const ErrorText = ({ text }: { text: string | null }) =>
-  text ? <Text style={{ color: colors.danger, marginBottom: 10 }}>{text}</Text> : null;
+export function ErrorText({ text }: { text: string | null }) {
+  const { c } = useTheme();
+  return text ? <Text style={{ color: c.danger, marginBottom: 10 }} accessibilityLiveRegion="polite">{text}</Text> : null;
+}
 
 /** Ekran pastidagi xavfsiz masofa: tizim tugmalari / imo-ishora chizig'i balandligi + qo'shimcha bo'shliq.
  *  Android'da ilova chetdan-chetga chiziladi, shuning uchun pastki kontent tizim paneli ostida qolmasligi kerak. */
@@ -174,57 +311,83 @@ export function useBottomSpace(extra = 24) {
   return useSafeAreaInsets().bottom + extra;
 }
 
+/** Pastki suzuvchi menyu balandligi + bo'shliq: tab ekranlarida kontent menyu ostida qolmasin */
+export function useTabSpace() {
+  return useSafeAreaInsets().bottom + 110;
+}
+
 /** Stack ekranlari uchun skroll: yon chetlar bir xil, oxirgi element tizim paneli ostida qolmaydi */
-export function ScreenScroll({ children, contentContainerStyle, ...props }: ScrollViewProps) {
+export function ScreenScroll({ children, contentContainerStyle, style, ...props }: ScrollViewProps) {
   const bottom = useBottomSpace();
+  const { c } = useTheme();
   return (
-    <ScrollView style={shared.screen} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets
-      {...props} contentContainerStyle={[{ paddingBottom: bottom }, contentContainerStyle]}>
+    <ScrollView style={[{ flex: 1, backgroundColor: c.bg }, style]} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets
+      {...props} contentContainerStyle={[{ padding: 16, paddingBottom: bottom }, contentContainerStyle]}>
       {children}
     </ScrollView>
   );
 }
 
-/** Pastdan chiquvchi oyna. Ko'rinishi animatsiyali, foni bosilsa yopiladi.
+/** Pastdan chiquvchi oyna: prujinali ochilish, foni bosilsa yopiladi.
  *  Balandligi ekranga moslashadi: kontent ichkarida skroll bo'ladi, `footer` (tugmalar) esa doim pastda,
  *  tizim panelidan xavfsiz masofada qotib turadi. */
-export function BottomSheet({ visible, title, onClose, children, footer }: {
+export function BottomSheet({ visible, title, onClose, children, footer, header }: {
   visible: boolean;
   title: string;
   onClose: () => void;
   children: ReactNode;
   footer?: ReactNode;
+  header?: ReactNode;
 }) {
-  const y = useRef(new Animated.Value(500)).current;
+  const y = useRef(new Animated.Value(800)).current;
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
+  const s = useStyles();
+  const ty = useType();
 
   useEffect(() => {
     if (visible) {
-      y.setValue(500);
-      Animated.spring(y, { toValue: 0, useNativeDriver: true, bounciness: 2 }).start();
+      y.setValue(800);
+      Animated.spring(y, { toValue: 0, useNativeDriver: true, damping: 18, stiffness: 180, mass: 0.9 }).start();
     }
   }, [visible, y]);
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}
       statusBarTranslucent navigationBarTranslucent>
-      <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel={t("Yopish")} />
-      <Animated.View style={[styles.sheet, {
+      <Pressable style={s.backdrop} onPress={onClose} accessibilityLabel={t("Yopish")} />
+      <Animated.View style={[s.sheet, {
         maxHeight: height - insets.top - 24, paddingBottom: Math.max(insets.bottom, 8) + 16, transform: [{ translateY: y }],
       }]}>
-        <View style={styles.grabber} />
-        <Text style={[type.h2, { marginBottom: 14 }]}>{title}</Text>
-        <ScrollView style={styles.sheetBody} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+        <View style={s.grabber} />
+        {header ?? <Text style={[ty.h2, { marginBottom: 14 }]}>{title}</Text>}
+        <ScrollView style={s.sheetBody} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           {children}
         </ScrollView>
-        {footer && <View style={styles.sheetFooter}>{footer}</View>}
+        {footer && <View style={s.sheetFooter}>{footer}</View>}
       </Animated.View>
     </Modal>
   );
 }
 
-export const money = (value: number) => t("{a} so'm", { a: value.toLocaleString('ru-RU').replace(/,/g, ' ') });
+/** Ro'yxat elementlari pastdan sekin ko'tarilib chiqadi (prototipdagi .fade) */
+export function FadeIn({ children, delay = 0, style }: { children: ReactNode; delay?: number; style?: StyleProp<ViewStyle> }) {
+  const v = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(v, { toValue: 1, duration: 420, delay, useNativeDriver: true }).start();
+  }, [v, delay]);
+  return (
+    <Animated.View style={[style, { opacity: v, transform: [{ translateY: v.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) }] }]}>
+      {children}
+    </Animated.View>
+  );
+}
+
+/** 901234567 -> "90 123 45 67" */
+export const formatPhone = (digits: string) =>
+  [digits.slice(0, 2), digits.slice(2, 5), digits.slice(5, 7), digits.slice(7, 9)].filter(Boolean).join(' ');
+
+export const money = (value: number) => t("{a} so'm", { a: value.toLocaleString('ru-RU').replace(/[, ]/g, ' ') });
 
 // Bizneslar hozircha faqat O'zbekistonda (UTC+5, yozgi vaqt yo'q)
 const TZ_MS = 5 * 3600 * 1000;
@@ -265,56 +428,73 @@ export function maskBirthDate(text: string) {
   return [digits.slice(0, 2), digits.slice(2, 4), digits.slice(4)].filter(Boolean).join('.');
 }
 
-export const shared = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.background, padding: 16 },
-  title: { fontSize: 22, fontWeight: '700', color: colors.text, marginBottom: 6 },
-  heading: { fontSize: 17, fontWeight: '700', color: colors.text, marginTop: 16, marginBottom: 8 },
-  name: { fontSize: 16, fontWeight: '600', color: colors.text },
-  muted: { color: colors.muted, marginTop: 2 },
+/** Umumiy matn/qator uslublari (temaga bog'liq) */
+export const useShared = makeStyles((c) => ({
+  screen: { flex: 1, backgroundColor: c.bg, padding: 16 },
+  title: { fontSize: 22, fontWeight: '800', color: c.text, marginBottom: 6, letterSpacing: -0.3 },
+  heading: { fontSize: 17, fontWeight: '800', color: c.text, marginTop: 18, marginBottom: 10, letterSpacing: -0.2 },
+  name: { fontSize: 16, fontWeight: '700', color: c.text },
+  muted: { color: c.muted, marginTop: 2 },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  gap: { gap: 8 },
-});
+  gap: { gap: 10 },
+}));
 
-const styles = StyleSheet.create({
+/** @deprecated faqat tema kontekstidan tashqaridagi joylar uchun (splash, bildirishnoma) */
+export const colors = {
+  primary: light.accent, text: light.text, muted: light.muted, background: light.bg, card: light.surface,
+  line: light.line, danger: light.danger, success: light.success, star: light.star, navy: '#010D49',
+};
+
+const useStyles = makeStyles((c, isDark) => ({
   button: {
-    backgroundColor: colors.primary, borderRadius: radius.md, paddingVertical: 14, paddingHorizontal: 18, alignItems: 'center',
-    justifyContent: 'center', flexDirection: 'row', gap: 8,
+    minHeight: 54, borderRadius: radius.lg, paddingVertical: 14, paddingHorizontal: 20, alignItems: 'center',
+    justifyContent: 'center', flexDirection: 'row', gap: 8, borderWidth: 1,
   },
-  compact: { paddingVertical: 9, paddingHorizontal: 12 },
-  outline: { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.primary },
-  danger: { backgroundColor: colors.danger },
-  soft: { backgroundColor: colors.primarySoft },
-  off: { opacity: 0.5 },
-  pressed: { opacity: 0.85 },
+  compact: { minHeight: 40, paddingVertical: 8, paddingHorizontal: 14, borderRadius: radius.md },
   buttonText: { fontSize: 16, fontWeight: '700', flexShrink: 1, textAlign: 'center' },
-  label: { color: colors.muted, marginBottom: 6, fontSize: 14 },
-  input: {
-    backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line, borderRadius: radius.md, padding: 13, fontSize: 16,
-    color: colors.text,
+  field: {
+    backgroundColor: c.surface, borderWidth: 1.5, borderColor: c.line, borderRadius: radius.lg, paddingHorizontal: 14,
+    paddingTop: 9, paddingBottom: 4,
   },
-  inputOff: { backgroundColor: colors.background, color: colors.muted },
-  card: { backgroundColor: colors.card, borderRadius: radius.lg, padding: 14, marginBottom: 12, ...shadow },
+  fieldLabel: { fontSize: 11, fontWeight: '700', color: c.muted, textTransform: 'uppercase', letterSpacing: 0.6 },
+  input: { fontSize: 16, fontWeight: '600', color: c.text, paddingVertical: Platform.OS === 'ios' ? 8 : 4, paddingHorizontal: 0 },
+  eye: { position: 'absolute', right: 4, top: 0, bottom: 0, width: 44, alignItems: 'center', justifyContent: 'center' },
+  card: {
+    backgroundColor: c.surface, borderRadius: radius.xl, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: c.line,
+    ...shadowOf(c),
+  },
   chip: {
-    borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card, borderRadius: radius.pill, paddingVertical: 9,
+    borderWidth: 1, borderColor: c.line, backgroundColor: c.surface, borderRadius: radius.pill, paddingVertical: 9,
     paddingHorizontal: 14, marginRight: 8, marginBottom: 8, flexDirection: 'row', alignItems: 'center', gap: 6,
     maxWidth: '100%',
   },
-  chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  segments: { flexDirection: 'row', backgroundColor: '#E9ECF4', borderRadius: radius.md, padding: 4, marginBottom: 12 },
-  segment: { flex: 1, minWidth: 0, alignItems: 'center', paddingVertical: 9, paddingHorizontal: 4, borderRadius: 9 },
-  segmentOn: { backgroundColor: colors.card, ...shadow },
+  segments: { flexDirection: 'row', backgroundColor: c.segment, borderRadius: radius.md, padding: 4, marginBottom: 12 },
+  segment: { flex: 1, minWidth: 0, alignItems: 'center', paddingVertical: 9, paddingHorizontal: 4, borderRadius: 11 },
+  segmentOn: { backgroundColor: c.segmentOn, ...shadowOf(c) },
+  iconBtn: {
+    borderRadius: 14, backgroundColor: c.surface, borderWidth: 1, borderColor: c.line, alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconBtnGlass: { backgroundColor: 'rgba(255,255,255,0.16)', borderColor: 'rgba(255,255,255,0.28)' },
+  badge: {
+    position: 'absolute', top: -4, right: -4, minWidth: 18, height: 18, paddingHorizontal: 4, borderRadius: 9,
+    backgroundColor: '#FF5A5F', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: isDark ? c.bg : '#FFFFFF',
+  },
+  badgeDot: { minWidth: 12, width: 12, height: 12, top: 7, right: 8, paddingHorizontal: 0 },
+  badgeText: { color: '#FFFFFF', fontSize: 10, fontWeight: '800' },
   empty: { alignItems: 'center', paddingHorizontal: 24, paddingVertical: 40 },
   emptyCircle: {
-    width: 104, height: 104, borderRadius: 52, backgroundColor: colors.primarySoft, alignItems: 'center',
+    width: 100, height: 100, borderRadius: 34, backgroundColor: c.accentSoft, alignItems: 'center',
     justifyContent: 'center', marginBottom: 16,
   },
-  emptyText: { color: colors.muted, textAlign: 'center', marginTop: 32 },
-  backdrop: { flex: 1, backgroundColor: 'rgba(1,13,73,0.45)' },
+  backdrop: { flex: 1, backgroundColor: c.overlay },
   sheet: {
-    position: 'absolute', left: 0, right: 0, bottom: 0, maxHeight: '85%', backgroundColor: colors.card, padding: 18,
-    paddingBottom: 26, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl,
+    position: 'absolute', left: 0, right: 0, bottom: 0, maxHeight: '85%', backgroundColor: c.surface, padding: 20,
+    paddingBottom: 26, borderTopLeftRadius: radius.xxl, borderTopRightRadius: radius.xxl, ...shadowOf(c, 2),
   },
   sheetBody: { flexGrow: 0, flexShrink: 1 },
-  sheetFooter: { gap: 8, paddingTop: 12, marginTop: 4, borderTopWidth: 1, borderTopColor: colors.line },
-  grabber: { alignSelf: 'center', width: 44, height: 5, borderRadius: 3, backgroundColor: colors.line, marginBottom: 12 },
-});
+  sheetFooter: { gap: 8, paddingTop: 12, marginTop: 4, borderTopWidth: 1, borderTopColor: c.line },
+  grabber: { alignSelf: 'center', width: 44, height: 5, borderRadius: 3, backgroundColor: c.line, marginBottom: 14 },
+}));
+
+export type { TextStyle };

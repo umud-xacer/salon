@@ -152,7 +152,10 @@ export type Branch = {
 export type Category = { id: number; slug: string; name_uz: string; name_ru?: string | null };
 
 export type Service = { id: number; name: string; name_ru?: string | null; description: string | null; duration_min: number; price: number };
-export type Staff = { member_id: number; full_name: string; title: string | null; rating_avg: number; rating_count: number; service_ids: number[] };
+export type Staff = {
+  member_id: number; full_name: string; title: string | null; bio?: string | null; photo_url?: string | null;
+  rating_avg: number; rating_count: number; service_ids: number[];
+};
 export type BusinessDetail = {
   id: number;
   slug: string;
@@ -167,6 +170,9 @@ export type BusinessDetail = {
   rating_avg: number;
   rating_count: number;
   is_open_now: boolean;
+  lat?: number;
+  lng?: number;
+  hours?: { weekday: number; opens_at: string; closes_at: string }[];
   service_groups: { category_id: number | null; category_name: string; category_name_ru?: string | null; services: Service[] }[];
   staff: Staff[];
   branch_name?: string | null;
@@ -190,6 +196,8 @@ export type Appointment = {
   starts_at: string;
   ends_at: string;
   total_price: number;
+  discount?: number;                    // aksiya chegirmasi; to'lanadigani total_price - discount
+  discount_source?: 'hot' | 'promo' | 'loyalty' | null;
   services: string[];
   services_ru?: string[];
   service_ids: number[];
@@ -237,4 +245,58 @@ export type Notification = {
   data: { appointment_id?: number; action?: string } | null;
   read_at: string | null;
   created_at: string;
+};
+
+// ─── Aksiyalar ──────────────────────────────────────────────────────────────
+export type HotSlot = {
+  business_id: number;
+  business_slug: string;
+  business_name: string;
+  category_name: string;
+  category_name_ru?: string | null;
+  distance_m: number | null;
+  photo: string | null;
+  service_id: number;
+  service_name: string;
+  service_name_ru?: string | null;
+  member_id: number;
+  member_name: string;
+  starts_at: string;
+  time: string;
+  percent: number;
+  price: number;
+  final: number;
+  rule_title: string;
+  ends_window: string;
+};
+
+export type Offer = {
+  business_id: number;
+  business_slug: string;
+  business_name: string;
+  distance_m: number | null;
+  code: string;
+  title: string;
+  percent: number;
+  first_visit_only: boolean;
+  valid_to: string | null;
+};
+
+export type MyLoyalty = {
+  business_id: number;
+  business_slug: string;
+  business_name: string;
+  visits: number;
+  required: number;
+  percent: number;
+  ready: boolean;
+};
+
+export type Quote = {
+  price: number;
+  percent: number;
+  discount: number;
+  final: number;
+  source: 'hot' | 'promo' | 'loyalty' | null;
+  code_error: 'promo_not_found' | 'promo_used' | 'promo_limit' | 'promo_first_visit' | null;
 };

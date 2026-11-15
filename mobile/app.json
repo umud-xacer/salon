@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "uz.chronix.app",
@@ -95,7 +95,13 @@
           }
         }
       ],
-      "expo-asset"
+      "expo-asset",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Chronix ilovasini Face ID bilan tez va xavfsiz ochish uchun"
+        }
+      ]
     ],
     "scheme": "chronix",
     "extra": {

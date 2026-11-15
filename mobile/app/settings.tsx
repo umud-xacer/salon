@@ -14,11 +14,27 @@ import {
   type StartupSoundKind, type StartupSoundResult,
 } from '../src/startupSound';
 import { useAuth } from '../src/auth';
-import { Button, Card, colors, Segments, ScreenScroll, shared, type } from '../src/ui';
+import { bioCheck, bioKind, bioLockEnabled, setBioAsked, setBioLock } from '../src/biometric';
+import { Button, Card, Segments, ScreenScroll, useShared, useTheme, useType } from '../src/ui';
+import type { Mode } from '../src/theme';
 
 import { t } from "../src/i18n";
 import { LangSwitch } from "../src/LangSwitch";
 export default function Settings() {
+  const { c, mode, setMode } = useTheme();
+  const shared = useShared();
+  const type = useType();
+  const [bio, setBio] = useState<'face' | 'finger' | null>(null);
+  const [lock, setLock] = useState(bioLockEnabled);
+  useEffect(() => {
+    bioKind().then(setBio);
+  }, []);
+  const toggleLock = async (on: boolean) => {
+    if (on && !(await bioCheck())) return;          // yoqishdan oldin shaxs tasdiqlanadi
+    setLock(on);
+    await setBioLock(on);
+    await setBioAsked();
+  };
   const [fullScreen, setFullScreen] = useState(true);
   const [startSound, setStartSound] = useState(startupSoundEnabled);
   const [soundKind, setSoundKind] = useState<StartupSoundKind>(startupSoundKind);
@@ -67,6 +83,24 @@ export default function Settings() {
   return (
     <ScreenScroll>
       <Card>
+        <Text style={type.h3}>{t("Ko'rinish")}</Text>
+        <Text style={[type.small, { marginTop: 4, marginBottom: 12 }]}>{t("Tungi rejim ko'zni charchatmaydi va batareyani tejaydi")}</Text>
+        <Segments<Mode> value={mode} onChange={setMode} options={[
+          { id: 'system', label: t("Tizim") }, { id: 'light', label: t("Kunduzgi") }, { id: 'dark', label: t("Tungi") },
+        ]} />
+      </Card>
+      {bio && (
+        <Card>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View style={{ flex: 1, paddingRight: 12 }}>
+              <Text style={type.h3}>{bio === 'face' ? t("Face ID bilan kirish") : t("Barmoq izi bilan kirish")}</Text>
+              <Text style={[type.small, { marginTop: 4 }]}>{t("Ilova ochilganda shaxsingiz tasdiqlanadi")}</Text>
+            </View>
+            <Switch value={lock} trackColor={{ true: c.accent }} onValueChange={(on) => { void toggleLock(on); }} />
+          </View>
+        </Card>
+      )}
+      <Card>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <View style={{ flex: 1, paddingRight: 12 }}>
             <Text style={type.h3}>{t("Ilova tili")}</Text>
@@ -83,7 +117,7 @@ export default function Settings() {
               {t("Ilova to'liq yopilib, qayta ochilganda (logo animatsiyasi paytida) qisqa Chronix ovozi. Telefon tebranish yoki ovozsiz rejimda bo'lsa, chalinmaydi.")}
             </Text>
           </View>
-          <Switch value={startSound} trackColor={{ true: colors.primary }}
+          <Switch value={startSound} trackColor={{ true: c.accent }}
             onValueChange={(on) => { setStartSound(on); void setStartupSoundEnabled(on); }} />
         </View>
         <Text style={[type.small, { marginTop: 12, marginBottom: 6 }]}>{t("Ovoz turi")}</Text>
@@ -97,7 +131,7 @@ export default function Settings() {
             icon="volume-high-outline" disabled={soundCheck === 'busy'} onPress={() => { void checkSound(); }} />
         </View>
         {soundCheck !== null && soundCheck !== 'busy' && (
-          <Text style={[type.small, { marginTop: 8, color: soundCheck === 'played' ? colors.success : colors.danger }]}>
+          <Text style={[type.small, { marginTop: 8, color: soundCheck === 'played' ? c.success : c.danger }]}>
             {soundCheck === 'played'
               ? t("Ovoz chalindi. Eshitilmagan bo'lsa, telefonning media ovozini (musiqa balandligini) oshiring.")
               : soundCheck === 'silent'
@@ -128,7 +162,7 @@ export default function Settings() {
               onPress={() => { Notifications.requestExactAlarmPermissionsAsync().then((r) => setExact(r.granted)).catch(() => {}); }} />
           )}
         </View>
-        <Text style={[type.small, { marginTop: 10, color: colors.muted }]}>
+        <Text style={[type.small, { marginTop: 10, color: c.muted }]}>
           {pushStatus === 'ok'
             ? t("Server xabarlari ulangan: ilova yopiq bo'lsa ham ogohlantirish keladi.")
             : t("Server xabarlari (push) hali ulanmagan: budilnik telefonning o'zida ishlaydi, salon ogohlantirishlari esa ilova ochiq bo'lganda keladi.")}
@@ -165,7 +199,7 @@ export default function Settings() {
       )}
       <Card>
         <Text style={type.h3}>{t("Ilova haqida")}</Text>
-        <Text style={[type.small, { marginTop: 4, color: colors.muted }]}>
+        <Text style={[type.small, { marginTop: 4, color: c.muted }]}>
           {t("Versiya {a} {b}", { a: Constants.expoConfig?.version ?? '1.0.0', b: Updates.updateId ? ` · ${Updates.updateId.slice(0, 8)}` : '' })}
         </Text>
       </Card>

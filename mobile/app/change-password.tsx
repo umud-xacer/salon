@@ -6,11 +6,13 @@ import { Alert, Text, View } from 'react-native';
 
 import { api, ApiError, LoginOut } from '../src/api';
 import { useAuth } from '../src/auth';
-import { Button, Card, ErrorText, Field, ScreenScroll, shared, type } from '../src/ui';
+import { Button, Card, ErrorText, Field, ScreenScroll, useShared, useType } from '../src/ui';
 
 import { t } from "../src/i18n";
 export default function ChangePassword() {
   const { me, signIn, signOut } = useAuth();
+  const shared = useShared();
+  const type = useType();
   const router = useRouter();
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');

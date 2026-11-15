@@ -1,49 +1,67 @@
+// Pastki suzuvchi shisha menyu (prototip): Asosiy, Xarita, Bronlar, Profil
 import { Tabs } from 'expo-router';
+import type { BottomTabBarProps } from 'expo-router/build/layouts/Tabs';
 import { useEffect, useRef } from 'react';
-import { Animated, ColorValue } from 'react-native';
+import { Animated, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { colors, Icon, IconName } from '../../src/ui';
+import { t } from '../../src/i18n';
+import { Glass, Icon, IconName, shadowOf, useTheme } from '../../src/ui';
 
-import { t } from "../../src/i18n";
-function TabIcon({ name, focused, color }: { name: IconName; focused: boolean; color: string }) {
+const TABS: Record<string, { label: string; on: IconName; off: IconName }> = {
+  index: { label: t("Asosiy"), on: 'home', off: 'home-outline' },
+  map: { label: t("Xarita"), on: 'map', off: 'map-outline' },
+  bookings: { label: t("Bronlar"), on: 'calendar', off: 'calendar-outline' },
+  profile: { label: t("Profil"), on: 'person', off: 'person-outline' },
+};
+
+function TabItem({ name, focused, onPress }: { name: string; focused: boolean; onPress: () => void }) {
+  const { c } = useTheme();
   const scale = useRef(new Animated.Value(1)).current;
-
   useEffect(() => {
-    Animated.spring(scale, { toValue: focused ? 1.16 : 1, useNativeDriver: true, friction: 4 }).start();
+    Animated.spring(scale, { toValue: focused ? 1.12 : 1, useNativeDriver: true, friction: 5 }).start();
   }, [focused, scale]);
-
+  const tab = TABS[name];
+  if (!tab) return null;
+  const color = focused ? c.accent : c.muted;
   return (
-    <Animated.View style={{ transform: [{ scale }] }}>
-      <Icon name={name} size={24} color={color} />
-    </Animated.View>
+    <Pressable onPress={onPress} style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 3 }}
+      accessibilityRole="tab" accessibilityState={{ selected: focused }} accessibilityLabel={tab.label}>
+      <Animated.View style={{ transform: [{ scale }] }}>
+        <Icon name={focused ? tab.on : tab.off} size={23} color={color} />
+      </Animated.View>
+      <Text style={{ fontSize: 11, fontWeight: '700', color }}>{tab.label}</Text>
+    </Pressable>
   );
 }
 
-const icon = (on: IconName, off: IconName) => ({
-  tabBarIcon: ({ focused, color }: { focused: boolean; color: ColorValue }) => (
-    <TabIcon name={focused ? on : off} focused={focused} color={String(color)} />
-  ),
-});
-
-export default function TabsLayout() {
+function FloatingBar({ state, navigateToTab }: BottomTabBarProps) {
+  const { c } = useTheme();
   const { bottom } = useSafeAreaInsets();
   return (
-    <Tabs
+    <View pointerEvents="box-none" style={{ position: 'absolute', left: 16, right: 16, bottom: Math.max(bottom, 12) + 8 }}>
+      <Glass intensity={50} style={[{ height: 68, borderRadius: 24, flexDirection: 'row' }, shadowOf(c, 2)]}>
+        {state.routes.map((route, i) => (
+          <TabItem key={route.key} name={route.name} focused={state.index === i} onPress={() => navigateToTab(route.key)} />
+        ))}
+      </Glass>
+    </View>
+  );
+}
+
+export default function TabsLayout() {
+  const { c } = useTheme();
+  return (
+    <Tabs tabBar={(props) => <FloatingBar {...props} />}
       screenOptions={{
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.muted,
-        tabBarLabelStyle: { fontSize: 12, fontWeight: '600' },
-        tabBarStyle: { borderTopColor: colors.line, backgroundColor: colors.card, height: 62 + bottom, paddingTop: 6, paddingBottom: bottom + 6 },
-        headerStyle: { backgroundColor: colors.background },
-        headerShadowVisible: false,
-        headerTitleStyle: { fontWeight: '700', color: colors.text },
-      }}
-    >
-      <Tabs.Screen name="index" options={{ title: t("Salonlar"), headerShown: false, ...icon('storefront', 'storefront-outline') }} />
-      <Tabs.Screen name="bookings" options={{ title: t("Bronlarim"), ...icon('calendar', 'calendar-outline') }} />
-      <Tabs.Screen name="inbox" options={{ title: t("Xabarlar"), ...icon('notifications', 'notifications-outline') }} />
-      <Tabs.Screen name="profile" options={{ title: t("Profil"), ...icon('person', 'person-outline') }} />
+        headerShown: false,
+        sceneStyle: { backgroundColor: c.bg },
+        animation: 'shift',
+      }}>
+      <Tabs.Screen name="index" />
+      <Tabs.Screen name="map" />
+      <Tabs.Screen name="bookings" />
+      <Tabs.Screen name="profile" />
     </Tabs>
   );
 }

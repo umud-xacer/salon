@@ -3,13 +3,14 @@ import { Text, View } from 'react-native';
 
 import { api, ApiError, LoginOut } from '../src/api';
 import { useAuth } from '../src/auth';
-import { Button, ErrorText, Field, ScreenScroll, shared } from '../src/ui';
+import { Button, ErrorText, Field, ScreenScroll, useShared } from '../src/ui';
 
 import { t } from "../src/i18n";
 type Mode = 'login' | 'forgot' | 'reset';
 
 export default function Password() {
   const { signIn } = useAuth();
+  const shared = useShared();
   const [mode, setMode] = useState<Mode>('login');
   const [phone, setPhone] = useState('+998');
   const [password, setPassword] = useState('');

@@ -2,7 +2,7 @@ import * as Notifications from 'expo-notifications';
 import { Stack, usePathname, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, AppState, Platform, View } from 'react-native';
+import { ActivityIndicator, Alert, AppState, Platform, Text, View } from 'react-native';
 
 import { AnimatedSplash } from '../src/AnimatedSplash';
 import { api, ApiError, Appointment, Notification as ApiNotification } from '../src/api';
@@ -13,7 +13,10 @@ import {
   ACTION_ATTEND, ACTION_DECLINE, ALARM_TYPES, alarmKey, ensureNotificationPermission, openedAlarms, setupCategories,
   setupChannels,
 } from '../src/notifications';
-import { colors } from '../src/ui';
+import { bioCheck, bioLockEnabled } from '../src/biometric';
+import { ThemeProvider, useTheme } from '../src/theme';
+import { Button, Gradient, Icon } from '../src/ui';
+import { StatusBar } from 'expo-status-bar';
 import { prepareStartupSound } from '../src/startupSound';
 import { useOtaUpdates } from '../src/useOtaUpdates';
 
@@ -70,18 +73,57 @@ async function handleAction(router: ReturnType<typeof useRouter>, r: Notificatio
   openAlarm(router, data);
 }
 
+const AUTH_SCREENS = ['login', 'otp', 'password'];
+const SETUP_SCREENS = { profile: 'onboarding', biometric: 'biometric' } as const;
+
+/** Face ID yoqilgan bo'lsa: ilova ochilganda (va fondan qaytganda) shaxs tasdiqlanadi */
+function LockScreen({ onUnlock }: { onUnlock: () => void }) {
+  const { c } = useTheme();
+  const tryUnlock = useCallback(async () => {
+    if (await bioCheck()) onUnlock();
+  }, [onUnlock]);
+  useEffect(() => {
+    void tryUnlock();
+  }, [tryUnlock]);
+  return (
+    <Gradient colors={c.hero} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center',
+      justifyContent: 'center', padding: 32, gap: 18 }}>
+      <View style={{ width: 96, height: 96, borderRadius: 32, backgroundColor: 'rgba(255,255,255,0.16)', alignItems: 'center',
+        justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)' }}>
+        <Icon name="scan-outline" size={48} color="#FFFFFF" />
+      </View>
+      <Text style={{ color: '#FFFFFF', fontSize: 24, fontWeight: '800' }}>{t("Chronix qulflangan")}</Text>
+      <View style={{ alignSelf: 'stretch' }}>
+        <Button title={t("Ochish")} icon="lock-open-outline" kind="outline" onPress={() => { void tryUnlock(); }} />
+      </View>
+    </Gradient>
+  );
+}
+
 function Navigator() {
-  const { me, ready } = useAuth();
+  const { me, ready, setup } = useAuth();
+  const { c, dark } = useTheme();
   const router = useRouter();
   const segments = useSegments();
+  const [locked, setLocked] = useState(bioLockEnabled);
   useOtaUpdates();
 
   useEffect(() => {
     if (!ready) return;
-    const onLogin = segments[0] === 'login' || segments[0] === 'password' || segments[0] === 'register';
-    if (!me && !onLogin) router.replace('/login');
-    if (me && onLogin) router.replace('/');
-  }, [me, ready, segments, router]);
+    const here = segments[0] as string | undefined;
+    const onAuth = AUTH_SCREENS.includes(here ?? '');
+    if (!me && !onAuth) router.replace('/login');
+    else if (me && setup && here !== SETUP_SCREENS[setup]) router.replace(`/${SETUP_SCREENS[setup]}`);
+    else if (me && !setup && (onAuth || here === 'onboarding' || here === 'biometric')) router.replace('/');
+  }, [me, ready, setup, segments, router]);
+
+  // Fondan qaytganda qayta qulflash (Face ID yoqilgan bo'lsa)
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (s) => {
+      if (s === 'background' && bioLockEnabled()) setLocked(true);
+    });
+    return () => sub.remove();
+  }, []);
 
   useEffect(() => {
     if (!me || Platform.OS === 'web') return;
@@ -149,25 +191,35 @@ function Navigator() {
     );
   }
   return (
+    <View style={{ flex: 1, backgroundColor: c.bg }}>
+    <StatusBar style={dark ? 'light' : 'dark'} />
     <Stack screenOptions={{
-      headerStyle: { backgroundColor: colors.background },
+      headerStyle: { backgroundColor: c.bg },
       headerShadowVisible: false,
-      headerTitleStyle: { fontWeight: '700', color: colors.text },
-      headerTintColor: colors.primary,
+      headerTitleStyle: { fontWeight: '800', color: c.text },
+      headerTintColor: c.text,
+      contentStyle: { backgroundColor: c.bg },
+      animation: 'slide_from_right',
     }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="login" options={{ title: t("Kirish") }} />
+      <Stack.Screen name="login" options={{ headerShown: false }} />
+      <Stack.Screen name="otp" options={{ headerShown: false }} />
+      <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false }} />
+      <Stack.Screen name="biometric" options={{ headerShown: false, gestureEnabled: false }} />
       <Stack.Screen name="password" options={{ title: t("Parol bilan kirish") }} />
-      <Stack.Screen name="register" options={{ title: t("Ro'yxatdan o'tish") }} />
+      <Stack.Screen name="search" options={{ headerShown: false, animation: 'fade_from_bottom' }} />
+      <Stack.Screen name="inbox" options={{ title: t("Bildirishnomalar") }} />
       <Stack.Screen name="profile-edit" options={{ title: t("Shaxsiy ma'lumotlar") }} />
       <Stack.Screen name="favorites" options={{ title: t("Sevimli salonlar") }} />
       <Stack.Screen name="settings" options={{ title: t("Sozlamalar") }} />
       <Stack.Screen name="change-password" options={{ title: t("Parolni almashtirish") }} />
-      <Stack.Screen name="business/[slug]" options={{ title: t("Salon") }} />
-      <Stack.Screen name="book" options={{ title: t("Vaqt tanlash") }} />
+      <Stack.Screen name="business/[slug]" options={{ headerShown: false }} />
+      <Stack.Screen name="book" options={{ headerShown: false, presentation: 'transparentModal', animation: 'fade' }} />
       <Stack.Screen name="review" options={{ title: t("Xizmatni baholash") }} />
       <Stack.Screen name="alarm" options={{ headerShown: false, presentation: 'fullScreenModal', gestureEnabled: false }} />
     </Stack>
+    {me && locked && <LockScreen onUnlock={() => setLocked(false)} />}
+    </View>
   );
 }
 
@@ -186,11 +238,13 @@ export default function RootLayout() {
   }, [splash, hideNative]);
 
   return (
-    <AuthProvider>
-      <FavoritesProvider>
-        <Navigator />
-      </FavoritesProvider>
-      {splash && <AnimatedSplash onReady={hideNative} onDone={finish} />}
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <FavoritesProvider>
+          <Navigator />
+        </FavoritesProvider>
+        {splash && <AnimatedSplash onReady={hideNative} onDone={finish} />}
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

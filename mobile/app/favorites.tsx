@@ -5,11 +5,13 @@ import { FlatList, RefreshControl, View } from 'react-native';
 import { api, BusinessCard } from '../src/api';
 import { useFavorites } from '../src/favorites';
 import { SalonCard } from '../src/SalonCard';
-import { EmptyState, ErrorText, shared, useBottomSpace } from '../src/ui';
+import { EmptyState, ErrorText, FadeIn, useBottomSpace, useShared, useTheme } from '../src/ui';
 
 import { t } from "../src/i18n";
 export default function Favorites() {
   const router = useRouter();
+  const shared = useShared();
+  const { c } = useTheme();
   const favorites = useFavorites();
   const [items, setItems] = useState<BusinessCard[]>([]);
   const [loading, setLoading] = useState(false);
@@ -41,14 +43,16 @@ export default function Favorites() {
         data={shown}
         keyExtractor={(b) => String(b.id)}
         contentContainerStyle={{ paddingBottom: bottom }}
-        refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}
+        refreshControl={<RefreshControl refreshing={loading} onRefresh={load} tintColor={c.accent} />}
         ListEmptyComponent={loading ? undefined : (
-          <EmptyState icon="heart-outline" title={t("Sevimli salonlar yo'q")} text={t("Yoqqan saloningizdagi yurakchani bosing")}
-            action={t("Salonlarni ko'rish")} onAction={() => router.navigate('/')} />
+          <EmptyState icon="heart-outline" title={t("Sevimli muassasalar yo'q")} text={t("Yoqqan muassasangiz sahifasidagi ♡ ni bosing")}
+            action={t("Muassasalarni ko'rish")} onAction={() => router.navigate('/')} />
         )}
-        renderItem={({ item }) => (
-          <SalonCard item={item} favorite onToggleFavorite={() => favorites.toggle(item.id)}
-            onOpen={() => router.push({ pathname: '/business/[slug]', params: { slug: item.slug } })} />
+        renderItem={({ item, index }) => (
+          <FadeIn delay={Math.min(index, 6) * 40}>
+            <SalonCard item={item} favorite onToggleFavorite={() => favorites.toggle(item.id)}
+              onOpen={() => router.push({ pathname: '/business/[slug]', params: { slug: item.slug } })} />
+          </FadeIn>
         )}
       />
     </View>

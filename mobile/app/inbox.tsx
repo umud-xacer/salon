@@ -1,11 +1,11 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { FlatList, RefreshControl, ScrollView, Text, View } from 'react-native';
 
-import { api, Notification } from '../../src/api';
-import { Chip, colors, dateTimeOf, EmptyState, Icon, IconName, radius, shadow, shared, type } from '../../src/ui';
+import { api, Notification } from '../src/api';
+import { Chip, dateTimeOf, EmptyState, Icon, IconName, makeStyles, Pressy, useShared, useTheme, useType } from '../src/ui';
 
-import { notificationText, t } from "../../src/i18n";
+import { notificationText, t } from "../src/i18n";
 type Group = 'all' | 'booking' | 'promo' | 'system';
 
 const GROUPS: { id: Group; label: string }[] = [
@@ -30,6 +30,10 @@ const ICONS: Record<Exclude<Group, 'all'>, IconName> = {
 
 export default function Inbox() {
   const router = useRouter();
+  const { c } = useTheme();
+  const styles = useStyles();
+  const shared = useShared();
+  const type = useType();
   const [items, setItems] = useState<Notification[]>([]);
   const [group, setGroup] = useState<Group>('all');
   const [loading, setLoading] = useState(false);
@@ -62,7 +66,7 @@ export default function Inbox() {
 
   return (
     <View style={shared.screen}>
-      <View>
+      <View style={{ marginBottom: 6 }}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           {GROUPS.map((g) => <Chip key={g.id} label={g.label} active={group === g.id} onPress={() => setGroup(g.id)} />)}
         </ScrollView>
@@ -77,9 +81,9 @@ export default function Inbox() {
         renderItem={({ item: n }) => {
           const kind = groupOf(n.type) as Exclude<Group, 'all'>;
           return (
-            <Pressable onPress={() => read(n)} style={styles.item}>
+            <Pressy onPress={() => read(n)} style={[styles.item, !n.read_at && styles.itemNew]}>
               <View style={[styles.icon, !n.read_at && styles.iconNew]}>
-                <Icon name={ICONS[kind]} size={20} color={n.read_at ? colors.muted : colors.primary} />
+                <Icon name={ICONS[kind]} size={20} color={n.read_at ? c.muted : c.accent} />
               </View>
               <View style={{ flex: 1 }}>
                 <View style={shared.row}>
@@ -91,7 +95,7 @@ export default function Inbox() {
                 {n.body && <Text style={[type.small, { marginTop: 2 }]}>{notificationText(n.title, n.body).body}</Text>}
                 <Text style={[type.small, { marginTop: 4, fontSize: 12 }]}>{dateTimeOf(n.created_at)}</Text>
               </View>
-            </Pressable>
+            </Pressy>
           );
         }}
       />
@@ -99,11 +103,13 @@ export default function Inbox() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((c) => ({
   item: {
-    flexDirection: 'row', gap: 12, backgroundColor: colors.card, borderRadius: radius.lg, padding: 13, marginBottom: 10, ...shadow,
+    flexDirection: 'row', gap: 12, backgroundColor: c.surface, borderRadius: 20, padding: 14, marginBottom: 10,
+    borderWidth: 1, borderColor: c.line,
   },
-  icon: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' },
-  iconNew: { backgroundColor: colors.primarySoft },
-  dot: { width: 9, height: 9, borderRadius: 5, backgroundColor: colors.primary },
-});
+  itemNew: { borderColor: c.accentSoft },
+  icon: { width: 42, height: 42, borderRadius: 14, backgroundColor: c.surface2, alignItems: 'center', justifyContent: 'center' },
+  iconNew: { backgroundColor: c.accentSoft },
+  dot: { width: 9, height: 9, borderRadius: 5, backgroundColor: c.accent },
+}));

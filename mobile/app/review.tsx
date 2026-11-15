@@ -6,10 +6,12 @@ import { ActivityIndicator, Alert, Text, View } from 'react-native';
 
 import { api, ApiError, Appointment } from '../src/api';
 import { StarsInput } from '../src/Reviews';
-import { Button, Card, ErrorText, Field, ScreenScroll, shared, type, dateTimeOf } from '../src/ui';
+import { Button, Card, ErrorText, Field, ScreenScroll, dateTimeOf, useShared, useType } from '../src/ui';
 
 import { pickList, t } from "../src/i18n";
 export default function Review() {
+  const shared = useShared();
+  const type = useType();
   const { appointmentId } = useLocalSearchParams<{ appointmentId: string }>();
   const router = useRouter();
   const [a, setA] = useState<Appointment | null>(null);

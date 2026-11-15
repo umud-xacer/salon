@@ -4,9 +4,9 @@ import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, 
 import { api } from './api';
 import { useAuth } from './auth';
 
-type Favorites = { has: (id: number) => boolean; toggle: (id: number) => void };
+type Favorites = { has: (id: number) => boolean; toggle: (id: number) => void; count: number };
 
-const FavoritesContext = createContext<Favorites>({ has: () => false, toggle: () => {} });
+const FavoritesContext = createContext<Favorites>({ has: () => false, toggle: () => {}, count: 0 });
 
 export const useFavorites = () => useContext(FavoritesContext);
 
@@ -41,6 +41,6 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const value = useMemo<Favorites>(() => ({ has: (id) => ids.has(id), toggle }), [ids, toggle]);
+  const value = useMemo<Favorites>(() => ({ has: (id) => ids.has(id), toggle, count: ids.size }), [ids, toggle]);
   return <FavoritesContext.Provider value={value}>{children}</FavoritesContext.Provider>;
 }

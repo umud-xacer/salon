@@ -4,11 +4,13 @@ import { Pressable, Text, View } from 'react-native';
 
 import { api, ApiError, User } from '../src/api';
 import { useAuth } from '../src/auth';
-import { Button, Chip, colors, ErrorText, Field, maskBirthDate, parseBirthDate, ScreenScroll, shared, showBirthDate, type } from '../src/ui';
+import { Button, Chip, ErrorText, Field, maskBirthDate, parseBirthDate, ScreenScroll, showBirthDate, useTheme, useType } from '../src/ui';
 
 import { t } from "../src/i18n";
 export default function ProfileEdit() {
   const { me, refresh } = useAuth();
+  const { c } = useTheme();
+  const type = useType();
   const router = useRouter();
   const user = me?.user;
   const [name, setName] = useState(user?.full_name ?? '');
@@ -44,7 +46,7 @@ export default function ProfileEdit() {
         hint={t("Telefon kirish uchun tasdiqlangan, uni bu yerda o'zgartirib bo'lmaydi")} />
       <Field label={t("Tug'ilgan sana")} placeholder="03.02.1995" keyboardType="number-pad" maxLength={10} value={birth}
         onChangeText={(tx) => setBirth(maskBirthDate(tx))} />
-      <Text style={{ color: colors.muted, marginBottom: 8, fontSize: 14 }}>{t("Jinsi")}</Text>
+      <Text style={[type.caps, { marginBottom: 8 }]}>{t("Jinsi")}</Text>
       <View style={{ flexDirection: 'row', marginBottom: 12 }}>
         <Chip label={t("Erkak")} icon="man-outline" active={gender === 'male'} onPress={() => setGender('male')} />
         <Chip label={t("Ayol")} icon="woman-outline" active={gender === 'female'} onPress={() => setGender('female')} />
@@ -52,7 +54,7 @@ export default function ProfileEdit() {
       <ErrorText text={error} />
       <Button title={t("Saqlash")} onPress={save} busy={busy} />
       <Pressable onPress={() => router.push('/password')} style={{ paddingVertical: 16, alignItems: 'center' }}>
-        <Text style={[type.body, { color: colors.primary, fontWeight: '600' }]}>{t("Parolni tiklash")}</Text>
+        <Text style={[type.body, { color: c.accent, fontWeight: '700' }]}>{t("Parolni tiklash")}</Text>
       </Pressable>
     </ScreenScroll>
   );

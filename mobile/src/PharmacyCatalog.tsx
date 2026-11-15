@@ -1,21 +1,25 @@
 // Dorixona katalogi: qidiruv (nom yoki shtrix-kod), kategoriyalar, narx va holat (bor / kam qoldi / tugagan).
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, ScrollView, Text, TextInput, View } from 'react-native';
 
 import { api, ApiError } from './api';
-import { Chip, colors, ErrorText, Icon, money, radius, shared, type } from './ui';
+import { Chip, ErrorText, Icon, makeStyles, money, radius, useShared, useTheme, useType } from './ui';
 
 import { t } from "./i18n";
 type Product = { id: number; name: string; category: string | null; unit: string; price: number; stock: 'in' | 'low' | 'out' };
 type Catalog = { items: Product[]; categories: { category: string; count: number }[] };
 
-const STOCK = {
-  in: { label: t("Bor"), color: colors.success, bg: colors.successSoft },
-  low: { label: t("Kam qoldi"), color: colors.warning, bg: '#FFF4E0' },
-  out: { label: t("Tugagan"), color: colors.danger, bg: colors.dangerSoft },
-} as const;
 
 export function PharmacyCatalog({ slug }: { slug: string }) {
+  const { c: colors } = useTheme();
+  const shared = useShared();
+  const type = useType();
+  const styles = useStyles();
+  const STOCK = {
+    in: { label: t("Bor"), color: colors.success, bg: colors.successSoft },
+    low: { label: t("Kam qoldi"), color: colors.warning, bg: colors.warningSoft },
+    out: { label: t("Tugagan"), color: colors.danger, bg: colors.dangerSoft },
+  } as const;
   const [q, setQ] = useState('');
   const [category, setCategory] = useState<string | null>(null);
   const [data, setData] = useState<Catalog | null>(null);
@@ -54,9 +58,9 @@ export function PharmacyCatalog({ slug }: { slug: string }) {
       {categories.length > 0 && (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 8 }}>
           <Chip label={t("Hammasi")} active={category === null} onPress={() => setCategory(null)} />
-          {categories.map((c) => (
-            <Chip key={c.category} label={`${c.category} (${c.count})`} active={category === c.category}
-              onPress={() => setCategory(category === c.category ? null : c.category)} />
+          {categories.map((x) => (
+            <Chip key={x.category} label={`${x.category} (${x.count})`} active={category === x.category}
+              onPress={() => setCategory(category === x.category ? null : x.category)} />
           ))}
         </ScrollView>
       )}
@@ -85,15 +89,15 @@ export function PharmacyCatalog({ slug }: { slug: string }) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   search: {
-    flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.card, borderRadius: radius.md,
+    flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.surface, borderRadius: radius.lg,
     borderWidth: 1, borderColor: colors.line, paddingHorizontal: 12, marginBottom: 10,
   },
-  input: { flex: 1, paddingVertical: 10, fontSize: 15, color: colors.text },
+  input: { flex: 1, paddingVertical: 12, fontSize: 15, color: colors.text },
   row: {
-    flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.card, borderRadius: radius.md,
-    padding: 12, marginBottom: 8,
+    flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.surface, borderRadius: radius.lg,
+    padding: 12, marginBottom: 8, borderWidth: 1, borderColor: colors.line,
   },
   badge: { fontSize: 12, fontWeight: '700', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999, overflow: 'hidden' },
-});
+}));

@@ -1,12 +1,13 @@
 // Yulduzchalar (ko'rsatish va tanlash) va salon sahifasidagi baholar bo'limi.
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { api, PublicReview, ReviewsOut } from './api';
-import { Button, Card, colors, dayOf, Icon, shared, type } from './ui';
+import { Button, Card, dayOf, Icon, makeStyles, useShared, useTheme, useType } from './ui';
 
 import { t } from "./i18n";
 export function StarsView({ value, size = 14 }: { value: number | null | undefined; size?: number }) {
+  const { c: colors } = useTheme();
   const v = Math.round(value ?? 0);
   return (
     <View style={{ flexDirection: 'row', gap: 1 }} accessibilityLabel={`${value ? value.toFixed(1) : 0} / 5`}>
@@ -20,6 +21,10 @@ export function StarsView({ value, size = 14 }: { value: number | null | undefin
 // Katta, bosiladigan yulduzchalar (barmoq uchun kamida 40px)
 export function StarsInput({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
   const WORDS = ['', t("Juda yomon"), t("Yomon"), t("O'rtacha"), t("Yaxshi"), t("A'lo")];
+  const { c: colors } = useTheme();
+  const shared = useShared();
+  const type = useType();
+  const styles = useStyles();
   return (
     <View style={{ marginTop: 14 }}>
       <Text style={type.h3}>{label}</Text>
@@ -37,6 +42,10 @@ export function StarsInput({ label, value, onChange }: { label: string; value: n
 }
 
 export function BusinessReviews({ slug, staffWord }: { slug: string; staffWord: string }) {
+  const { c: colors } = useTheme();
+  const shared = useShared();
+  const type = useType();
+  const styles = useStyles();
   const [data, setData] = useState<ReviewsOut | null>(null);
   const [more, setMore] = useState<PublicReview[]>([]);
   const [busy, setBusy] = useState(false);
@@ -68,7 +77,7 @@ export function BusinessReviews({ slug, staffWord }: { slug: string; staffWord: 
       <Text style={shared.heading}>{t("Baholar")}</Text>
       <Card>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          <Text style={{ fontSize: 34, fontWeight: '800', color: colors.text }}>{s.rating_avg?.toFixed(1)}</Text>
+          <Text style={{ fontSize: 40, fontWeight: '800', color: colors.text, letterSpacing: -1 }}>{s.rating_avg?.toFixed(1)}</Text>
           <View>
             <StarsView value={s.rating_avg} size={18} />
             <Text style={shared.muted}>{t("{a} ta baho", { a: s.count })}</Text>
@@ -111,8 +120,8 @@ export function BusinessReviews({ slug, staffWord }: { slug: string; staffWord: 
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((c) => ({
   starBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  staff: { marginTop: 8, padding: 10, borderRadius: 10, backgroundColor: colors.background },
-  reply: { marginTop: 8, paddingLeft: 10, borderLeftWidth: 3, borderLeftColor: colors.primary },
-});
+  staff: { marginTop: 8, padding: 10, borderRadius: 12, backgroundColor: c.surface2 },
+  reply: { marginTop: 8, paddingLeft: 10, borderLeftWidth: 3, borderLeftColor: c.accent },
+}));
