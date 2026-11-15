@@ -1,7 +1,8 @@
 // Mijoz xaritasi WebView ichida: Yandex Maps JS API (kalit serverdan kelsa) yoki OpenStreetMap (Leaflet, kalitsiz).
 // Ikkalasida bir xil window API: setMarkers, setMe, flyTo, locateDone — RN tomoni bitta.
 // Salon nomlari xaritaga faqat matn sifatida qo'yiladi (textContent), HTML sifatida emas.
-import { ComponentType, RefObject, useEffect, useMemo, useRef } from 'react';
+import { ComponentType, createElement, RefObject, useEffect, useMemo, useRef } from 'react';
+import { Platform } from 'react-native';
 import { WebView, WebViewMessageEvent, WebViewProps } from 'react-native-webview';
 
 import { BusinessCard } from './api';
@@ -165,7 +166,18 @@ export function OsmMap({ center, me, businesses, onBounds, onSelect, onError, on
     baseUrl: BASE_URL,                               // Yandex kaliti shu Referer bilan cheklanadi
   }), [yandexKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const run = (code: string) => web.current?.injectJavaScript(`${code}; true;`);
+  const frame = useRef<{ contentWindow: { eval: (code: string) => unknown } | null } | null>(null);
+  const run = (code: string) => {
+    if (Platform.OS === 'web') {
+      try {
+        frame.current?.contentWindow?.eval(code);
+      } catch {
+        // xarita hali yuklanmagan
+      }
+      return;
+    }
+    web.current?.injectJavaScript(`${code}; true;`);
+  };
   const pushMarkers = () => {
     const list = latest.current.businesses.map((b) => ({
       id: b.id, name: b.branch_name ? `${b.name} · ${b.branch_name}` : b.name,   // filial xaritada aniq ajralsin
@@ -200,6 +212,11 @@ export function OsmMap({ center, me, businesses, onBounds, onSelect, onError, on
     }
   };
 
+  if (Platform.OS === 'web') {
+    // Brauzerdagi ko'rik: WebView yo'q — o'sha xarita iframe ichida, xabarlar postMessage orqali
+    return <WebFrame html={source.html} frame={frame} onMessage={(data) => onMessage({ nativeEvent: { data } } as WebViewMessageEvent)} />;
+  }
+
   return (
     <MapView
       ref={web}
@@ -212,6 +229,29 @@ export function OsmMap({ center, me, businesses, onBounds, onSelect, onError, on
       onShouldStartLoadWithRequest={(r) => r.url === 'about:blank' || r.url === BASE_URL}
     />
   );
+}
+
+type Frame = { contentWindow: { eval: (code: string) => unknown } | null };
+
+/** Faqat web: xarita HTML'i iframe'da. ReactNativeWebView.postMessage o'rniga ota oynaga postMessage */
+function WebFrame({ html: page, frame, onMessage }: {
+  html: string; frame: RefObject<Frame | null>; onMessage: (data: string) => void;
+}) {
+  const handler = useRef(onMessage);
+  handler.current = onMessage;
+  useEffect(() => {
+    const listen = (e: { source: unknown; data: unknown }) => {
+      if (e.source !== frame.current?.contentWindow || typeof e.data !== 'string') return;
+      handler.current(e.data);
+    };
+    const w = globalThis as unknown as { addEventListener: (t: string, f: typeof listen) => void; removeEventListener: (t: string, f: typeof listen) => void };
+    w.addEventListener('message', listen);
+    return () => w.removeEventListener('message', listen);
+  }, [frame]);
+  const shim = '<script>window.ReactNativeWebView={postMessage:function(m){parent.postMessage(m,"*")}};</script>';
+  const srcDoc = page.replace('<head>', `<head>${shim}`);
+  const Iframe = 'iframe' as unknown as ComponentType<Record<string, unknown>>;
+  return createElement(Iframe, { ref: frame, srcDoc, title: 'map', style: { border: 0, width: '100%', height: '100%', flex: 1 } });
 }
 
 /** Joylashuvga qaytish tugmasi uchun */
