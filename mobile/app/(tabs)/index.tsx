@@ -1,6 +1,7 @@
-// Bosh sahifa — aynan Figma 01–02: joylashuv, qidiruv, yo'nalishlar setkasi, "Tavsiya etilganlar" (yonma-yon katta
-// kartalar), "Yangi" (yonma-yon katta kartalar), "Yaqin atrofda" (3 ta qator + Barchasi). Uzun ro'yxat yo'q.
-import { useRouter } from 'expo-router';
+// Bosh sahifa — Fresha ko'rinishi (loyxalar/fresha1-3.jpg) va Figma 01–02: joylashuv, qidiruv, yo'nalishlar setkasi,
+// "Tavsiya etilganlar", "Yaqinda ko'rilganlar", "Chronix'da yangi" (yonma-yon katta kartalar),
+// "Yaqin atrofdagi muassasalar" (3 ta qator + Hammasini ko'rish).
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { RefreshControl, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -9,20 +10,34 @@ import { api, ApiError, BusinessCard, Category } from '../../src/api';
 import { categoryIcon, categoryShort } from '../../src/categories';
 import { getLang, pick, t } from '../../src/i18n';
 import { getInterests } from '../../src/interests';
+import { getRecent } from '../../src/recent';
 import { useMyLocation } from '../../src/location';
 import { SalonCard, SalonCardBig } from '../../src/SalonCard';
-import { EmptyState, ErrorText, Icon, makeStyles, Pressy, SectionHeader, useTabSpace, useTheme } from '../../src/ui';
+import { EmptyState, ErrorText, Icon, IconName, makeStyles, Pressy, useTabSpace, useTheme } from '../../src/ui';
 
 const NEARBY_ON_HOME = 3;
 
-function Carousel({ items, onOpen, badge, badgeIcon }: {
-  items: BusinessCard[]; onOpen: (slug: string) => void; badge: (b: BusinessCard) => string | null; badgeIcon?: 'sparkles-outline';
+function Carousel({ items, onOpen, badge }: {
+  items: BusinessCard[]; onOpen: (slug: string) => void; badge: (b: BusinessCard) => [string, IconName?] | null;
 }) {
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} snapToInterval={324} decelerationRate="fast"
-      contentContainerStyle={{ paddingHorizontal: 24, gap: 14 }}>
-      {items.map((b) => <SalonCardBig key={b.id} item={b} width={310} onOpen={() => onOpen(b.slug)} badge={badge(b)} badgeIcon={badgeIcon} />)}
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} snapToInterval={300} decelerationRate="fast"
+      contentContainerStyle={{ paddingHorizontal: 20, gap: 14 }}>
+      {items.map((b) => {
+        const bd = badge(b);
+        return <SalonCardBig key={b.id} item={b} width={286} onOpen={() => onOpen(b.slug)} badge={bd?.[0]} badgeIcon={bd?.[1]} />;
+      })}
     </ScrollView>
+  );
+}
+
+function Title({ text, action, onAction }: { text: string; action?: string; onAction?: () => void }) {
+  const s = useStyles();
+  return (
+    <View style={s.titleRow}>
+      <Text style={s.title} numberOfLines={1} accessibilityRole="header">{text}</Text>
+      {action && onAction && <Pressy onPress={onAction} accessibilityRole="button"><Text style={s.titleAction}>{action}</Text></Pressy>}
+    </View>
   );
 }
 
@@ -38,6 +53,11 @@ export default function Home() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [recent, setRecent] = useState<BusinessCard[]>([]);
+
+  useFocusEffect(useCallback(() => {
+    setRecent(getRecent());
+  }, []));
 
   useEffect(() => {
     api<Category[]>('/catalog/categories').then((list) => {
@@ -83,15 +103,17 @@ export default function Home() {
       refreshControl={<RefreshControl refreshing={loading} tintColor={c.accent} onRefresh={() => { void load(); }} />}>
       <Pressy onPress={() => router.navigate('/map')} style={s.loc} accessibilityRole="button"
         accessibilityLabel={t("Joylashuv: {a}", { a: place })}>
-        <Icon name="location-outline" size={20} color={c.accent} />
-        <Text style={s.locText} numberOfLines={1}>{place}</Text>
+        <Icon name="location" size={20} color={c.accent} />
+        <Text style={s.locText} numberOfLines={1}>
+          {place === t("Toshkent") || place === t("Joylashuvingiz") ? t("Mening joylashuvim") : place}
+        </Text>
         <Icon name="chevron-down" size={18} color={c.text} />
       </Pressy>
 
       <View style={s.pad}>
         <Pressy onPress={() => router.push('/search')} style={s.search} accessibilityRole="search" scaleTo={0.99}>
           <Icon name="search-outline" size={22} color={c.text} />
-          <Text style={s.searchText} numberOfLines={2}>{t("Xizmat yoki salon qidiring")}</Text>
+          <Text style={s.searchText} numberOfLines={2}>{t("Barcha xizmatlarni ko'rish")}</Text>
           <View style={s.searchBtn}><Text style={s.searchBtnText}>{t("Qidirish")}</Text></View>
         </Pressy>
       </View>
@@ -100,7 +122,7 @@ export default function Home() {
         {tiles.map((x) => (
           <Pressy key={x.slug ?? 'all'} style={s.tile} scaleTo={0.94} accessibilityRole="button"
             onPress={() => (x.slug ? router.push({ pathname: '/search', params: { category: x.slug } }) : router.push('/search'))}>
-            <View style={s.tileBox}><Icon name={x.icon} size={24} color={c.text} /></View>
+            <View style={s.tileBox}><Icon name={x.icon} size={28} color={c.text} /></View>
             <Text style={s.tileText} numberOfLines={2}>{x.label}</Text>
           </Pressy>
         ))}
@@ -110,22 +132,30 @@ export default function Home() {
 
       {recommended.length > 0 && (
         <>
-          <SectionHeader title={t("Tavsiya etilganlar")} action={t("Barchasi")} onAction={() => router.navigate('/map')} style={s.header} />
+          <Title text={t("Tavsiya etilganlar")} />
           <Carousel items={recommended} onOpen={open}
-            badge={(b) => (b.rating_count > 0 && b.rating_avg >= 4.8 ? t("Eng yaxshi") : null)} />
+            badge={(b) => (b.rating_count > 0 && b.rating_avg >= 4.8 ? [t("Eng yaxshi"), 'trophy'] : null)} />
+        </>
+      )}
+
+      {recent.length > 0 && (
+        <>
+          <Title text={t("Yaqinda ko'rilganlar")} />
+          <Carousel items={recent} onOpen={open}
+            badge={(b) => (b.rating_count > 0 && b.rating_avg >= 4.8 ? [t("Eng yaxshi"), 'trophy'] : null)} />
         </>
       )}
 
       {fresh.length > 0 && (
         <>
-          <SectionHeader title={t("Yangi")} style={s.header} />
-          <Carousel items={fresh} onOpen={open} badge={() => t("Yangi")} badgeIcon="sparkles-outline" />
+          <Title text={t("Chronix'da yangi")} />
+          <Carousel items={fresh} onOpen={open} badge={() => [t("Yangi")]} />
         </>
       )}
 
       {near.length > 0 ? (
         <>
-          <SectionHeader title={t("Yaqin atrofda")} action={t("Barchasi")} onAction={() => router.navigate('/map')} style={s.header} />
+          <Title text={t("Yaqin atrofdagi muassasalar")} action={t("Hammasini ko'rish")} onAction={() => router.navigate('/map')} />
           <View style={s.pad}>
             {near.slice(0, NEARBY_ON_HOME).map((b) => <SalonCard key={b.id} item={b} onOpen={() => open(b.slug)} />)}
           </View>
@@ -138,10 +168,12 @@ export default function Home() {
 }
 
 const useStyles = makeStyles((c) => ({
-  pad: { paddingHorizontal: 24 },
-  header: { paddingHorizontal: 24, marginTop: 28, marginBottom: 16 },
-  loc: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 24, paddingVertical: 12, alignSelf: 'flex-start' },
-  locText: { fontSize: 16, fontWeight: '700', color: c.text, flexShrink: 1 },
+  pad: { paddingHorizontal: 20 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, marginTop: 40, marginBottom: 16 },
+  title: { flex: 1, fontSize: 24, fontWeight: '700', color: c.text, letterSpacing: -0.6 },
+  titleAction: { fontSize: 15, fontWeight: '500', color: c.text },
+  loc: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 20, paddingVertical: 14, alignSelf: 'flex-start' },
+  locText: { fontSize: 17, fontWeight: '500', color: c.text, flexShrink: 1 },
   search: {
     flexDirection: 'row', alignItems: 'center', gap: 12, height: 66, paddingLeft: 18, paddingRight: 9, marginTop: 4,
     borderRadius: 999, backgroundColor: c.bg, borderWidth: 1, borderColor: c.line,
@@ -150,11 +182,11 @@ const useStyles = makeStyles((c) => ({
   searchText: { flex: 1, fontSize: 15, color: c.muted, lineHeight: 20 },
   searchBtn: { height: 48, paddingHorizontal: 22, borderRadius: 999, backgroundColor: c.cta, justifyContent: 'center' },
   searchBtnText: { color: c.ctaText, fontSize: 15, fontWeight: '600' },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 24, marginTop: 24, rowGap: 16, columnGap: 10 },
-  tile: { width: '22.5%', alignItems: 'center', gap: 8 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 12, marginTop: 28, rowGap: 22 },
+  tile: { width: '25%', alignItems: 'center', gap: 10, paddingHorizontal: 4 },
   tileBox: {
-    width: '100%', aspectRatio: 1, maxWidth: 78, borderRadius: 20, backgroundColor: c.surface2, borderWidth: 1,
+    width: '100%', aspectRatio: 1, maxWidth: 82, borderRadius: 22, backgroundColor: c.surface2, borderWidth: 1,
     borderColor: c.line, alignItems: 'center', justifyContent: 'center',
   },
-  tileText: { fontSize: 13, color: c.text, textAlign: 'center', lineHeight: 18 },
+  tileText: { fontSize: 14, color: c.text, textAlign: 'center', lineHeight: 19 },
 }));

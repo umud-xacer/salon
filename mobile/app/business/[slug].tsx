@@ -14,6 +14,7 @@ import { pick, t } from '../../src/i18n';
 import { distanceM, getLastLocation } from '../../src/lastLocation';
 import { useMyLocation } from '../../src/location';
 import { PharmacyCatalog } from '../../src/PharmacyCatalog';
+import { addRecent } from '../../src/recent';
 import { BusinessReviews } from '../../src/Reviews';
 import { distanceText, SalonCardBig } from '../../src/SalonCard';
 import {
@@ -66,7 +67,11 @@ export default function Business() {
   useEffect(() => {
     setB(null);
     api<BusinessDetail>(`/catalog/businesses/${slug}`)
-      .then(setB)
+      .then((d) => {
+        setB(d);
+        const here = getLastLocation();
+        addRecent(d, here && d.lat != null && d.lng != null ? distanceM(here, d.lat, d.lng) : null);
+      })
       .catch((e) => setError(e instanceof ApiError ? e.message : t("Yuklab bo'lmadi")));
   }, [slug]);
 
@@ -144,7 +149,11 @@ export default function Business() {
               onMomentumScrollEnd={(e) => setPhoto(Math.round(e.nativeEvent.contentOffset.x / width))}>
               {b.photos.map((url) => <Image key={url} source={{ uri: url }} style={{ width, height: heroH }} resizeMode="cover" />)}
             </ScrollView>
-          ) : <Gradient colors={c.hero} style={{ flex: 1 }} />}
+          ) : (
+            <View style={{ flex: 1, backgroundColor: c.surface2, alignItems: 'center', justifyContent: 'center' }}>
+              <Icon name="storefront-outline" size={56} color={c.off} />
+            </View>
+          )}
           {b.photos.length > 1 && (
             <View style={s.counter}><Text style={s.counterText}>{photo + 1}/{b.photos.length}</Text></View>
           )}

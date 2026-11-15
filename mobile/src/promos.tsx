@@ -58,7 +58,7 @@ export function HotSlots({ refreshKey }: { refreshKey: number }) {
             <View style={s.hotTop}>
               {h.photo
                 ? <Image source={{ uri: h.photo }} style={s.fill} resizeMode="cover" />
-                : <Gradient colors={c.hero} style={s.fill} />}
+                : <View style={[s.fill, { alignItems: 'center', justifyContent: 'center' }]}><Icon name="storefront-outline" size={32} color={c.off} /></View>}
               <View style={s.hotBadges}>
                 <View style={[s.pill, { backgroundColor: '#FFFFFF' }]}><Text style={[s.pillText, { color: c.hot }]}>−{h.percent}%</Text></View>
                 <View style={[s.pill, { backgroundColor: 'rgba(17,17,20,0.7)' }]}><Text style={s.pillText}>{h.time}</Text></View>

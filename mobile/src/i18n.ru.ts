@@ -587,4 +587,12 @@ export const RU: Record<string, string> = {
   "{a} soat {b} daq": "{a} ч {b} мин",
   "{a} ta mijoz sharhi asosida": "На основе отзывов: {a}",
   "{a} ta xizmat mavjud": "Доступно услуг: {a}",
+  // ── Fresha bosh sahifa ──
+  ">50 km": ">50 км",
+  "Barcha xizmatlarni ko'rish": "Посмотреть все процедуры",
+  "Chronix'da yangi": "Новое в Chronix",
+  "Hammasini ko'rish": "Посмотреть все",
+  "Mening joylashuvim": "Мое местоположение",
+  "Yaqin atrofdagi muassasalar": "Ближайшие заведения",
+  "Yaqinda ko'rilganlar": "Недавно просмотренные",
 };

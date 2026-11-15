@@ -4,6 +4,7 @@ import type { BottomTabBarProps } from 'expo-router/build/layouts/Tabs';
 import { Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useAuth } from '../../src/auth';
 import { t } from '../../src/i18n';
 import { font, Icon, IconName, useTheme } from '../../src/ui';
 
@@ -17,6 +18,8 @@ const TABS: Record<string, { label: string; on: IconName; off: IconName }> = {
 function TabBar({ state, navigateToTab }: BottomTabBarProps) {
   const { c } = useTheme();
   const { bottom } = useSafeAreaInsets();
+  const { me } = useAuth();
+  const initial = (me?.user.full_name?.trim()[0] ?? 'C').toUpperCase();
   return (
     <View style={{ flexDirection: 'row', backgroundColor: c.bg, borderTopWidth: 1, borderTopColor: c.line,
       paddingTop: 10, paddingBottom: Math.max(bottom, 10) + 4 }}>
@@ -24,12 +27,17 @@ function TabBar({ state, navigateToTab }: BottomTabBarProps) {
         const tab = TABS[route.name];
         if (!tab) return null;
         const on = state.index === i;
-        const color = on ? c.accent : c.muted;
+        const color = on ? c.accent : c.text;
         return (
           <Pressable key={route.key} onPress={() => navigateToTab(route.key)} accessibilityRole="tab"
             accessibilityState={{ selected: on }} accessibilityLabel={tab.label}
             style={{ flex: 1, alignItems: 'center', gap: 4 }}>
-            <Icon name={on ? tab.on : tab.off} size={24} color={color} />
+            {route.name === 'profile' ? (
+              <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: on ? c.accent : '#0F5C4C',
+                alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={{ color: '#FFFFFF', fontSize: 14, ...font('600') }}>{initial}</Text>
+              </View>
+            ) : <Icon name={on ? tab.on : tab.off} size={26} color={color} />}
             <Text style={{ fontSize: 12, color, letterSpacing: -0.3, ...font(on ? '600' : '500') }}>{tab.label}</Text>
           </Pressable>
         );
