@@ -1,20 +1,25 @@
 """Kalendar va qabulxona: mijoz nomidan bron, "istalgan usta"."""
 from datetime import date, timedelta
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db, require_permission
+from app.api.deps import get_db, require_any_permission, require_permission
+from app.schemas.schedule import SlotsOut
+from app.services.slots import available_slots
 from app.api.v1.appointments import _SELECT, _get
 from app.schemas.appointments import AppointmentOut
-from app.schemas.reception import (AnySlot, CalendarOut, CalendarStaff, OptionService, OptionStaff, ReceptionBooking,
-                                   ReceptionOptions)
+from app.schemas.reception import (AnySlot, CalendarOut, CalendarStaff, MyClientOut, OptionService, OptionStaff,
+                                   ReceptionBooking, ReceptionOptions)
 
 router = APIRouter(prefix="/businesses/{business_id}", tags=["reception"])
 
 _view_all = require_permission("appointments.view_all")
 _booking = require_permission("appointments.manage")
+# Qabulxonasiz muassasada oddiy xodim faqat o'ziga bron qo'shadi (appointments.manage_own) — chegarani baza tekshiradi
+_booking_any = require_any_permission("appointments.manage", "appointments.manage_own")
+_own_view = require_permission("appointments.view_own")
 
 DEFAULT_HOURS = (9, 20)
 
@@ -94,7 +99,7 @@ def any_staff_slots(service_id: int = Query(ge=1), day: date = Query(alias="date
 
 
 @router.post("/reception/appointments", response_model=AppointmentOut, status_code=201)
-def book_for_client(body: ReceptionBooking, business_id: int = Depends(_booking), db: Session = Depends(get_db)):
+def book_for_client(body: ReceptionBooking, business_id: int = Depends(_booking_any), db: Session = Depends(get_db)):
     """Telefon qilgan yoki kelgan mijoz uchun bron. Narx va tugash vaqtini server hisoblaydi."""
     appointment_id = db.scalar(text("""
         SELECT app.reception_book(:b, :m, :s, :t, :name, :phone, :note)
@@ -102,3 +107,25 @@ def book_for_client(body: ReceptionBooking, business_id: int = Depends(_booking)
            "name": body.client_name, "phone": body.client_phone, "note": body.note})
     db.commit()
     return _get(db, appointment_id)
+
+
+# ─── Xodimning o'zi (qabulxonasiz rejim va "Mijozlarim") ──────────────────────
+def _me(db: Session, business_id: int) -> int:
+    member = db.scalar(text("SELECT app.my_member_in(:b)"), {"b": business_id})
+    if member is None:
+        raise HTTPException(403, detail={"code": "forbidden", "message": "Bu amal uchun huquq yo'q"})
+    return member
+
+
+@router.get("/my-slots", response_model=SlotsOut)
+def my_slots(service_id: int = Query(ge=1), day: date = Query(alias="date"), step: int = Query(default=15, ge=5, le=60),
+             business_id: int = Depends(_booking_any), db: Session = Depends(get_db)):
+    """Xodimning o'z bo'sh vaqtlari — o'ziga bron qo'shish uchun."""
+    return available_slots(db, _me(db, business_id), service_id, day, step)
+
+
+@router.get("/my-clients", response_model=list[MyClientOut])
+def my_clients(business_id: int = Depends(_own_view), db: Session = Depends(get_db)):
+    """O'z bronlaridagi mijozlar: ism, telefon, tashriflar soni, oxirgi va keyingi tashrif."""
+    rows = db.execute(text("SELECT * FROM app.my_clients(:b)"), {"b": business_id}).mappings()
+    return [MyClientOut(**r) for r in rows]

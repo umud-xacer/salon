@@ -64,3 +64,13 @@ class ReceptionBooking(BaseModel):
         if len(v) < 2:
             raise ValueError("Mijoz ismi juda qisqa")
         return v
+
+
+class MyClientOut(BaseModel):
+    """Xodimning o'z mijozi ("Mijozlarim")."""
+    client_id: int
+    full_name: str
+    phone: str | None
+    visits: int                      # yakunlangan tashriflar
+    last_visit: dt.datetime | None
+    next_visit: dt.datetime | None

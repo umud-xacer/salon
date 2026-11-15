@@ -27,7 +27,9 @@ def test_staff_workspace_and_limited_permissions(client, superadmin):
     staff = add_member(client, biz, "staff")
     me = client.get("/api/v1/auth/me", headers=auth_header(staff["tokens"])).json()
     assert me["workspace"] == "business"
-    assert me["memberships"][0]["permissions"] == ["appointments.view_own"]
+    # Qabulxonasiz muassasa (2026-11-15): o'z bronlari + o'ziga bron qo'shish; finance moduli yo'q — to'lov yo'q
+    assert me["memberships"][0]["permissions"] == ["appointments.manage_own", "appointments.view_own"]
+    assert me["memberships"][0]["has_reception"] is False
 
     # Xodim boshqa xodim qo'sha olmaydi
     r = client.post(f"/api/v1/businesses/{biz['id']}/members", headers=auth_header(staff["tokens"]),

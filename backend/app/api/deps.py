@@ -92,6 +92,16 @@ def require_permission(permission: str):
     return dependency
 
 
+def require_any_permission(*permissions: str):
+    """Ro'yxatdagi huquqlardan kamida bittasi. Aniq chegarani (masalan, "faqat o'ziga") baza funksiyasi tekshiradi."""
+    def dependency(business_id: int = Path(..., ge=1), db: Session = Depends(get_db)) -> int:
+        allowed = any(db.scalar(text("SELECT app.has_perm(:b, :p)"), {"b": business_id, "p": p}) for p in permissions)
+        if not allowed:
+            raise HTTPException(403, detail={"code": "forbidden", "message": "Bu amal uchun huquq yo'q"})
+        return business_id
+    return dependency
+
+
 def client_meta(request: Request) -> tuple[str | None, str | None]:
     ip = request.client.host if request.client else None
     if ip == "testclient":

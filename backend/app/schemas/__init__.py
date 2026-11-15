@@ -152,6 +152,8 @@ class MembershipOut(BaseModel):
     chain_id: int | None = None
     chain_name: str | None = None
     branch_name: str | None = None
+    # Qabulxona rejimi: faol Administrator bor bo'lsa oddiy xodim bron/to'lov qila olmaydi
+    has_reception: bool = False
 
 
 class MeOut(BaseModel):

@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db, require_permission
+from app.api.deps import get_db, require_any_permission, require_permission
 from app.schemas.finance import (AppointmentPayments, CashDay, ExpenseCategoryIn, ExpenseCategoryOut, ExpenseIn,
                                  ExpenseList, ExpenseOut, MethodTotal, PaymentIn, PaymentOut, RefundIn,
                                  UnpaidAppointment)
@@ -13,7 +13,8 @@ from app.services import audit
 
 router = APIRouter(prefix="/businesses/{business_id}", tags=["finance"])
 
-_accept = require_permission("payments.accept")
+# Qabulxonasiz muassasada oddiy xodim o'z mijozidan ham oladi (payments.accept_own) — chegarani baza tekshiradi
+_accept = require_any_permission("payments.accept", "payments.accept_own")
 _refund = require_permission("payments.refund")
 _finance = require_permission("finance.view")
 
@@ -41,7 +42,8 @@ def _can(db: Session, business_id: int, permission: str) -> bool:
 
 def _cash_viewer(business_id: int = Path(ge=1), db: Session = Depends(get_db)) -> int:
     """Kassani to'lov qabul qiluvchi ham, hisobot ko'ruvchi ham ochadi."""
-    if not (_can(db, business_id, "payments.accept") or _can(db, business_id, "finance.view")):
+    if not (_can(db, business_id, "payments.accept") or _can(db, business_id, "finance.view")
+            or _can(db, business_id, "payments.accept_own")):
         raise HTTPException(403, detail={"code": "forbidden", "message": "Bu amal uchun huquq yo'q"})
     return business_id
 
