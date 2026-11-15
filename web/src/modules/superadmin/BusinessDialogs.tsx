@@ -57,7 +57,9 @@ export function CreateBusinessDialog({ modules, businesses, onClose }: {
   const [ownerPhone, setOwnerPhone] = useState("");
   const ownerLookup = usePhoneLookup(ownerPhone);
   const [ownerPassword, setOwnerPassword] = useState("");
-  const [days, setDays] = useState("30");
+  const [days, setDays] = useState("14");
+  // To'lov rejimi: activation — bugundan 1-sanagacha kunbay, muhlat ichida to'lanadi (sql/043)
+  const [billingMode, setBillingMode] = useState<"activation" | "trial" | "unlimited">("activation");
   const [picked, setPicked] = useState<string[]>(["booking"]);
 
   const create = useMutation({
@@ -79,7 +81,8 @@ export function CreateBusinessDialog({ modules, businesses, onClose }: {
               owner_password: ownerPassword.trim() || null,
             }),
         modules: picked,
-        subscription_days: days ? Number(days) : null,
+        ...(isBranch ? {} : { billing_mode: billingMode,
+          subscription_days: billingMode === "trial" && days ? Number(days) : null }),
       })),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["superadmin"] })   // ro'yxat va menyudagi sonlar;
@@ -206,9 +209,27 @@ export function CreateBusinessDialog({ modules, businesses, onClose }: {
         <PhoneOwnerHint lookup={ownerLookup.data} mode="assign" />
         <PasswordInput label={t("Direktorning boshlang'ich paroli")} value={ownerPassword} onChange={setOwnerPassword} />
         </>)}
-        <label className="block text-sm">{t("Obuna (kun, bo'sh qolsa muddatsiz)")}
-          <input className={inputClass} type="number" min={1} max={3660} value={days} onChange={(e) => setDays(e.target.value)} />
-        </label>
+        {isBranch ? (
+          <p className="text-sm text-muted">
+            {t("To'lov: filial tarmoq obunasiga qo'shiladi — bugundan tarmoq muddatigacha kunbay summa direktorga chiqadi.")}
+          </p>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="block text-sm">{t("To'lov")}
+              <select className={inputClass} value={billingMode}
+                onChange={(e) => setBillingMode(e.target.value as typeof billingMode)}>
+                <option value="activation">{t("1-sanagacha kunbay to'lov (muhlat bilan)")}</option>
+                <option value="trial">{t("Bepul sinov muddati")}</option>
+                <option value="unlimited">{t("Muddatsiz (bepul)")}</option>
+              </select>
+            </label>
+            {billingMode === "trial" && (
+              <label className="block text-sm">{t("Sinov muddati, kun")}
+                <input className={inputClass} type="number" min={1} max={3660} required value={days} onChange={(e) => setDays(e.target.value)} />
+              </label>
+            )}
+          </div>
+        )}
         <fieldset>
           <legend className="text-sm">{t("Modullar")}</legend>
           <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1">

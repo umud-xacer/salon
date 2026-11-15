@@ -2,6 +2,7 @@
 //  - Tarif (Start, Biznes ...) — oylik narx. O'zgartirilsa, xohlasangiz shu tarifdagi muassasalarga ham qo'llanadi.
 //  - Paket (1/3/6/12 oy) — oldindan to'lashdagi chegirma va yoqilgan/o'chirilganligi.
 // Muassasaning o'z narxi uning "Obuna" oynasida (tarif yoki maxsus narx).
+//  - Tarmoq (sql/043): filial chegirmasi tarifda, qo'shimcha bo'limlar narxi va faollashtirish muhlati shu yerda.
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { useState, type FormEvent } from "react";
@@ -25,9 +26,12 @@ function PlanRow({ plan }: { plan: BillingPlan }) {
   const qc = useQueryClient();
   const [name, setName] = useState(plan.name);
   const [fee, setFee] = useState(String(plan.monthly_fee));
+  const [branchPct, setBranchPct] = useState(String(plan.branch_discount_pct ?? 30));
   const [apply, setApply] = useState(true);
   const [result, setResult] = useState<string | null>(null);
-  const changed = name.trim() !== plan.name || money(fee) !== plan.monthly_fee;
+  const pct = Number(branchPct);
+  const pctOk = branchPct.trim() !== "" && Number.isInteger(pct) && pct >= 0 && pct <= 90;
+  const changed = name.trim() !== plan.name || money(fee) !== plan.monthly_fee || pct !== (plan.branch_discount_pct ?? 30);
 
   const save = useMutation({
     mutationFn: (body: Record<string, unknown>) => api<BillingPlan>(`/superadmin/billing/plans/${plan.id}`, json("PATCH", body)),
@@ -48,8 +52,13 @@ function PlanRow({ plan }: { plan: BillingPlan }) {
         <label className="block w-44 text-sm">{t("Oylik narx (so'm)")}
           <input className={inputClass} inputMode="numeric" value={fee} onChange={(e) => { setFee(onlyDigits(e.target.value)); setResult(null); }} />
         </label>
-        <Button disabled={!changed || !moneyOk(fee) || !name.trim() || save.isPending}
-          onClick={() => save.mutate({ name: name.trim(), monthly_fee: money(fee), apply_to_businesses: feeChanged && apply })}>
+        <label className="block w-36 text-sm" title={t("2-chi va keyingi filiallar uchun chegirma")}>{t("Filial chegirmasi, %")}
+          <input className={inputClass} inputMode="numeric" value={branchPct}
+            onChange={(e) => { setBranchPct(e.target.value.replace(/\D/g, "").slice(0, 2)); setResult(null); }} />
+        </label>
+        <Button disabled={!changed || !moneyOk(fee) || !pctOk || !name.trim() || save.isPending}
+          onClick={() => save.mutate({ name: name.trim(), monthly_fee: money(fee), branch_discount_pct: pct,
+            apply_to_businesses: feeChanged && apply })}>
           {t("Saqlash")}
         </Button>
         <Button variant="secondary" disabled={save.isPending}
@@ -66,6 +75,12 @@ function PlanRow({ plan }: { plan: BillingPlan }) {
           <input type="checkbox" checked={apply} onChange={(e) => setApply(e.target.checked)} />
           {t("Yangi narxni shu tarifdagi {a} ta muassasaga ham qo'llash (keyingi to'lovdan boshlab)", { a: plan.business_count })}
         </label>
+      )}
+      {pctOk && moneyOk(fee) && (
+        <p className="text-xs text-muted">
+          {t("Tarmoqda: asosiy filial {a}, har bir qo'shimcha filial {b}", {
+            a: formatMoney(money(fee)), b: formatMoney(Math.floor((money(fee) * (100 - pct)) / 100)) })}
+        </p>
       )}
       {result && <p className="text-sm text-success">{result}</p>}
       {save.error && <ErrorNote error={save.error} />}
@@ -132,6 +147,66 @@ function PackageRow({ p, sample }: { p: BillingPackageAdmin; sample: number }) {
   );
 }
 
+type ModulePrice = { module_code: string; name: string; monthly_fee: number; is_addon: boolean };
+
+function ModulePriceRow({ m }: { m: ModulePrice }) {
+  const qc = useQueryClient();
+  const [fee, setFee] = useState(String(m.monthly_fee));
+  const save = useMutation({
+    mutationFn: (body: { monthly_fee: number; is_addon: boolean }) =>
+      api(`/superadmin/billing/module-prices/${m.module_code}`, json("PUT", body)),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["superadmin", "module-prices"] }),
+  });
+  return (
+    <li className="flex flex-wrap items-end gap-3 py-3 text-sm">
+      <span className="w-48 font-medium text-navy">{m.name}</span>
+      <label className="block w-40">{t("Oylik narx (so'm)")}
+        <input className={inputClass} inputMode="numeric" value={fee} onChange={(e) => setFee(onlyDigits(e.target.value))} />
+      </label>
+      <Button variant="secondary" disabled={!moneyOk(fee) || money(fee) === m.monthly_fee || save.isPending}
+        onClick={() => save.mutate({ monthly_fee: money(fee), is_addon: m.is_addon })}>{t("Saqlash")}</Button>
+      <label className="flex items-center gap-2">
+        <input type="checkbox" checked={m.is_addon} disabled={save.isPending}
+          onChange={(e) => save.mutate({ monthly_fee: m.monthly_fee, is_addon: e.target.checked })} />
+        {t("Direktor o'zi yoqa oladi")}
+      </label>
+      <span className="ml-auto text-muted">
+        {m.monthly_fee === 0 ? t("Bepul (tarifga kiradi)") : t("{a} / oy, tarmoqqa bir marta", { a: formatMoney(m.monthly_fee) })}
+      </span>
+      {save.error && <div className="w-full"><ErrorNote error={save.error} /></div>}
+    </li>
+  );
+}
+
+function GraceSetting() {
+  const qc = useQueryClient();
+  const q = useQuery({ queryKey: ["superadmin", "billing-settings"],
+    queryFn: () => api<{ activation_grace_days: number }>("/superadmin/billing/settings") });
+  const [days, setDays] = useState<string | null>(null);
+  const save = useMutation({
+    mutationFn: (d: number) => api("/superadmin/billing/settings", json("PUT", { activation_grace_days: d })),
+    onSuccess: () => { setDays(null); void qc.invalidateQueries({ queryKey: ["superadmin", "billing-settings"] }); },
+  });
+  if (!q.data) return q.error ? <ErrorNote error={q.error} /> : <Spinner />;
+  const value = days ?? String(q.data.activation_grace_days);
+  const d = Number(value);
+  const ok = value.trim() !== "" && Number.isInteger(d) && d >= 0 && d <= 30;
+  return (
+    <div className="flex flex-wrap items-end gap-3 text-sm">
+      <label className="block w-40">{t("To'lov muhlati, kun")}
+        <input className={inputClass} inputMode="numeric" value={value} onChange={(e) => setDays(e.target.value.replace(/\D/g, "").slice(0, 2))} />
+      </label>
+      <Button variant="secondary" disabled={!ok || d === q.data.activation_grace_days || save.isPending} onClick={() => save.mutate(d)}>
+        {t("Saqlash")}
+      </Button>
+      <p className="basis-full text-muted">
+        {t("Yangi kompaniya yoki filial qo'shilganda direktor 1-sanagacha bo'lgan kunlar uchun to'laydi. Shu muhlatda to'lanmasa, u yopiladi.")}
+      </p>
+      {save.error && <div className="w-full"><ErrorNote error={save.error} /></div>}
+    </div>
+  );
+}
+
 export function PricingPage() {
   const plans = useBillingPlans();
   const packages = useQuery({
@@ -139,6 +214,10 @@ export function PricingPage() {
     queryFn: () => api<BillingPackageAdmin[]>("/superadmin/billing/packages"),
   });
   const sample = plans.data?.find((p) => p.is_active)?.monthly_fee ?? 0;
+  const modules = useQuery({
+    queryKey: ["superadmin", "module-prices"],
+    queryFn: () => api<ModulePrice[]>("/superadmin/billing/module-prices"),
+  });
 
   return (
     <div className="space-y-4">
@@ -170,6 +249,23 @@ export function PricingPage() {
             {packages.data!.map((p) => <PackageRow key={`${p.months}-${p.discount_pct}-${p.is_active}`} p={p} sample={sample} />)}
           </ul>
         )}
+      </Card>
+
+      <Card>
+        <h2 className="font-semibold text-navy">{t("Qo'shimcha bo'limlar (modullar) narxi")}</h2>
+        <p className="mb-1 text-sm text-muted">
+          {t("Narx qo'yilgan bo'limni direktor \"Obuna\" sahifasida o'zi yoqadi va oylik to'lovga qo'shiladi. Siz muassasaga bepul yoqib bergan bo'limlar sovg'a bo'lib qoladi.")}
+        </p>
+        {modules.isLoading ? <Spinner /> : modules.error ? <ErrorNote error={modules.error} /> : (
+          <ul className="divide-y divide-line">
+            {modules.data!.map((m) => <ModulePriceRow key={`${m.module_code}-${m.monthly_fee}-${m.is_addon}`} m={m} />)}
+          </ul>
+        )}
+      </Card>
+
+      <Card>
+        <h2 className="mb-2 font-semibold text-navy">{t("Faollashtirish")}</h2>
+        <GraceSetting />
       </Card>
     </div>
   );

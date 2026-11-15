@@ -538,14 +538,49 @@ export type SubscriptionMethod = ManualSubscriptionMethod | "payme" | "click";
 export type BillingProvider = "payme" | "click";
 
 export interface BillingPackage {
-  months: number;
+  months: number;                  // 0 = faqat keyingi 1-sanagacha (kunbay)
+  discount_pct: number;
+  amount: number;                  // jami to'lov
+  full_amount: number;
+  prorate_days: number;
+  prorate_amount: number;
+  months_amount: number;
+  charges_amount: number;
+  ends_at: string | null;
+}
+
+export interface BillingLine {
+  kind: "base" | "branch" | "module";
+  business_id: number | null;
+  module_code: string | null;
+  label: string;
   discount_pct: number;
   amount: number;
-  full_amount: number;
+}
+
+export interface BillingCharge {
+  id: number;
+  kind: "activation" | "branch";
+  business_id: number;
+  business_name: string;
+  amount: number;
+  period_from: string;
+  period_to: string;
+  pay_by: string | null;            // to'lanmasa shu payt yopiladi
+}
+
+export interface BillingAddon {
+  module_code: string;
+  name: string;
+  monthly_fee: number;
+  state: "off" | "active" | "cancelling" | "gift";
+  until: string | null;
+  price_now: number | null;
 }
 
 export interface BillingOrder {
   id: number;
+  kind?: "renew" | "module" | "charges";
   months: number;
   amount: number;
   provider: BillingProvider;
@@ -561,6 +596,7 @@ export interface BillingPlan {
   monthly_fee: number;
   is_active: boolean;
   sort_order: number;
+  branch_discount_pct?: number;
   business_count: number;
   updated_businesses?: number | null;
 }
@@ -582,6 +618,11 @@ export interface BillingInfo {
   providers: Record<BillingProvider, boolean>;
   packages: BillingPackage[];
   orders: BillingOrder[];
+  lines: BillingLine[];
+  charges: BillingCharge[];
+  charges_total: number;
+  addons: BillingAddon[];
+  this_ends_at: string | null;
 }
 
 export interface SubscriptionPayment {

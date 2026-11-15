@@ -62,6 +62,7 @@ class ChargeOut(BaseModel):
     amount: int
     period_from: datetime
     period_to: datetime
+    pay_by: datetime | None = None    # shu muassasaning hozirgi muddati: to'lanmasa shu payt yopiladi
 
 
 class AddonOut(BaseModel):
@@ -152,7 +153,7 @@ def billing_info(business_id: int = Path(ge=1), db: Session = Depends(get_db)):
     monthly = sum(x.amount for x in lines)
     charges = [ChargeOut(**r) for r in db.execute(text("""
         SELECT c.id, c.kind, c.business_id, x.name || coalesce(' · ' || x.branch_name, '') AS business_name,
-               c.amount, c.period_from, c.period_to
+               c.amount, c.period_from, c.period_to, x.subscription_ends_at AS pay_by
           FROM billing_charges c JOIN businesses x ON x.id = c.business_id
          WHERE c.head_id = :h AND c.status = 'due' ORDER BY c.id"""), {"h": head_id}).mappings()]
     packages = []
