@@ -10,7 +10,8 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
-from app.schemas.appointments import AppointmentOut, BookingCreate, CancelIn, RescheduleIn, StatusIn
+from app.schemas.appointments import (AppointmentOut, BookingCreate, CancelIn, QuoteIn, QuoteOut, RescheduleIn,
+                                      StatusIn)
 from app.services import audit
 
 router = APIRouter(tags=["appointments"])
@@ -22,7 +23,7 @@ _SELECT = """
     SELECT a.id, a.business_id, b.name AS business_name, b.slug AS business_slug, b.address AS business_address,
            ST_Y(b.location::geometry) AS business_lat, ST_X(b.location::geometry) AS business_lng,
            a.member_id, ps.full_name AS member_name,
-           a.status::text AS status, a.starts_at, a.ends_at, a.total_price, a.client_note, a.cancel_reason,
+           a.status::text AS status, a.starts_at, a.ends_at, a.total_price, a.discount, a.discount_source, a.client_note, a.cancel_reason,
            coalesce(c.full_name, app.own_client_name(a.id)) AS client_name, c.phone AS client_phone,  -- usta: faqat ism
            CASE WHEN r.confirmed_at IS NOT NULL THEN 'confirmed'
                 WHEN r.alerted_at IS NOT NULL THEN 'no_response'
@@ -59,10 +60,20 @@ def _get(db: Session, appointment_id: int) -> AppointmentOut:
 
 @router.post("/appointments", response_model=AppointmentOut, status_code=201)
 def create_booking(body: BookingCreate, db: Session = Depends(get_db)):
-    appointment_id = db.scalar(text("SELECT app.book_appointment(:m, :s, :t, :n)"),
-                               {"m": body.member_id, "s": body.service_id, "t": body.starts_at, "n": body.note})
+    appointment_id = db.scalar(text("SELECT app.book_appointment(:m, :s, :t, :n, :c)"),
+                               {"m": body.member_id, "s": body.service_id, "t": body.starts_at, "n": body.note,
+                                "c": body.promo_code})
     db.commit()
     return _get(db, appointment_id)
+
+
+@router.post("/appointments/quote", response_model=QuoteOut)
+def booking_quote(body: QuoteIn, db: Session = Depends(get_db)):
+    """Tasdiqlash ekrani uchun: narx va qo'llanadigan chegirma (bo'sh soat, sodiqlik yoki promokod)."""
+    r = db.execute(text("SELECT * FROM app.booking_quote(:m, :s, :t, :c)"),
+                   {"m": body.member_id, "s": body.service_id, "t": body.starts_at, "c": body.promo_code}).mappings().one()
+    return QuoteOut(price=r["price"], percent=r["percent"], discount=r["discount"], final=r["price"] - r["discount"],
+                    source=r["source"] if r["percent"] > 0 else None, code_error=r["code_error"])
 
 
 @router.get("/appointments/mine", response_model=list[AppointmentOut])

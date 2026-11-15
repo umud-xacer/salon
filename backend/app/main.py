@@ -6,7 +6,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.exc import DBAPIError
 
 from app.api.v1 import (appointments, auth, billing, business_admin, catalog, clients, finance, geo, inventory, me, members,
-                        payroll, reception, reminders, reports, reviews, schedule, superadmin, visits)
+                        payroll, promotions, reception, reminders, reports, reviews, schedule, superadmin, visits)
 from app.core.config import get_settings
 from app.services.auth_service import AuthError
 
@@ -76,6 +76,10 @@ _DB_ERRORS = {
     "P0421": (409, "line_not_removable", "Bu xizmatni olib tashlab bo'lmaydi: oxirgi xizmat yoki puli to'langan"),
     "P0422": (409, "advance_settled", "Bu avans oylikdan ayirilgan, endi bekor qilib bo'lmaydi"),
     "P0423": (409, "nobody_free", "Hozir bo'sh mutaxassis yo'q"),
+    "P0440": (409, "promo_not_found", "Promokod topilmadi yoki muddati tugagan"),
+    "P0441": (409, "promo_used", "Bu promokoddan allaqachon foydalangansiz"),
+    "P0442": (409, "promo_limit", "Promokod limiti tugagan"),
+    "P0443": (409, "promo_first_visit", "Bu promokod faqat birinchi tashrif uchun"),
     "P0430": (409, "branch_parent_invalid", "Filial faqat asosiy kompaniyaga biriktiriladi (filialning filiali bo'lmaydi)"),
     "P0431": (409, "branch_has_children", "Bu muassasaning o'z filiallari bor, uni boshqasiga filial qilib bo'lmaydi"),
 }
@@ -111,6 +115,7 @@ app.include_router(reports.router, prefix="/api/v1")
 app.include_router(reviews.router, prefix="/api/v1")
 app.include_router(me.router, prefix="/api/v1")
 app.include_router(billing.router, prefix="/api/v1")
+app.include_router(promotions.router, prefix="/api/v1")
 
 # Prod'da rasmlarni Caddy beradi. Dev'da shu yerdan
 if settings.env != "prod":

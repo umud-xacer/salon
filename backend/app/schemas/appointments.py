@@ -9,6 +9,23 @@ class BookingCreate(BaseModel):
     service_id: int = Field(ge=1)
     starts_at: AwareDatetime
     note: str | None = Field(default=None, max_length=500)
+    promo_code: str | None = Field(default=None, max_length=20)
+
+
+class QuoteIn(BaseModel):
+    member_id: int = Field(ge=1)
+    service_id: int = Field(ge=1)
+    starts_at: AwareDatetime
+    promo_code: str | None = Field(default=None, max_length=20)
+
+
+class QuoteOut(BaseModel):
+    price: int
+    percent: int
+    discount: int
+    final: int
+    source: Literal["hot", "promo", "loyalty"] | None
+    code_error: Literal["promo_not_found", "promo_used", "promo_limit", "promo_first_visit"] | None
 
 
 class CancelIn(BaseModel):
@@ -57,6 +74,8 @@ class AppointmentOut(BaseModel):
     starts_at: dt.datetime
     ends_at: dt.datetime
     total_price: int
+    discount: int = 0                                   # aksiya chegirmasi (so'm); to'lanadigani total_price - discount
+    discount_source: Literal["hot", "promo", "loyalty"] | None = None
     services: list[str]
     services_ru: list[str] = []                         # ruscha nomlar (yo'q bo'lsa o'zbekchasi) — ruscha ilova/panel uchun
     service_ids: list[int]
