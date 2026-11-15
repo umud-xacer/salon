@@ -40,6 +40,7 @@ import { MyPayrollPage, PayrollPage } from "./payroll/PayrollPage";
 import { ReportsPage } from "./reports/ReportsPage";
 import { MyReviewsPage, ReviewsPage } from "./reviews/ReviewsPage";
 import { MyBookingsPage, MySchedulePage, MyServicesPage } from "./schedule/StaffPages";
+import { MyClientsPage } from "./schedule/StaffSelfService";
 import { ServicesPage } from "./services/ServicesPage";
 import { StaffPage } from "./staff/StaffPage";
 import { WorkSchedulePage } from "./staff/WorkSchedulePage";
@@ -55,6 +56,7 @@ export interface Section {
   term?: Exclude<keyof Vocab, "titles">;   // nomi muassasa turiga qarab (Ustalar/Shifokorlar...)
   uz: string;                     // manzil: /b/1/kassa
   uzByKind?: Partial<Record<BusinessKind, string>>;   // turga qarab: dorixonada /farmatsevtlar
+  labelByKind?: Partial<Record<BusinessKind, string>>; // turga qarab menyu nomi (Mijozlarim / Bemorlarim)
   iconByKind?: Partial<Record<BusinessKind, LucideIcon>>;   // klinikada qaychi emas — stetoskop
   page: ComponentType<{ membership: Membership }>;
 }
@@ -103,6 +105,10 @@ export const SECTIONS: Section[] = [
   { path: "billing", uz: "obuna", label: "Obuna", icon: CreditCard, panel: "admin", ownerOnly: true, page: BillingPage },
   { path: "bookings", uz: "bronlarim", label: "Mening bronlarim", icon: CalendarDays, panel: "staff", page: MyBookingsPage },
   { path: "schedule", uz: "jadvalim", label: "Ish jadvalim", icon: Clock3, panel: "staff", page: MySchedulePage },
+  {
+    path: "my-clients", uz: "mijozlarim", uzByKind: { clinic: "bemorlarim", pharmacy: "xaridorlarim" }, label: "Mijozlarim",
+    labelByKind: { clinic: "Bemorlarim", pharmacy: "Xaridorlarim" }, icon: Contact, panel: "staff", module: "booking", page: MyClientsPage,
+  },
   { path: "my-services", uz: "xizmatlarim", label: "Xizmatlarim", icon: Scissors, iconByKind: { clinic: Stethoscope }, panel: "staff", page: MyServicesPage },
   { path: "my-reviews", uz: "baholarim", label: "Baholarim", icon: Star, panel: "staff", page: MyReviewsPage },
   { path: "my-payroll", uz: "oyliklarim", label: "Oyliklarim", icon: WalletCards, panel: "staff", module: "payroll", page: MyPayrollPage },
@@ -121,5 +127,5 @@ export function sectionsFor(m: Membership): Section[] {
       (!s.module || m.modules.includes(s.module)) &&
       (!s.ownerOnly || m.role === "owner") &&
       (!s.anyPermission || s.anyPermission.some((p) => m.permissions.includes(p))),
-  ).map((s) => ({ ...s, label: s.term ? v[s.term] : t(s.label), icon: s.iconByKind?.[m.business_kind as BusinessKind] ?? s.icon }));
+  ).map((s) => ({ ...s, label: s.term ? v[s.term] : t(s.labelByKind?.[m.business_kind as BusinessKind] ?? s.label), icon: s.iconByKind?.[m.business_kind as BusinessKind] ?? s.icon }));
 }

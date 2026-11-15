@@ -23,7 +23,7 @@ _SELECT = """
            ST_Y(b.location::geometry) AS business_lat, ST_X(b.location::geometry) AS business_lng,
            a.member_id, ps.full_name AS member_name,
            a.status::text AS status, a.starts_at, a.ends_at, a.total_price, a.client_note, a.cancel_reason,
-           c.full_name AS client_name, c.phone AS client_phone,
+           coalesce(c.full_name, app.own_client_name(a.id)) AS client_name, c.phone AS client_phone,  -- usta: faqat ism
            CASE WHEN r.confirmed_at IS NOT NULL THEN 'confirmed'
                 WHEN r.alerted_at IS NOT NULL THEN 'no_response'
                 WHEN r.sent_at IS NOT NULL THEN 'reminded' END AS attendance,

@@ -36,6 +36,7 @@ export interface Membership {
   chain_id?: number | null;
   chain_name?: string | null;
   branch_name?: string | null;
+  has_reception?: boolean;          // faol Administrator bor: oddiy xodim bron/to'lov qilmaydi
 }
 
 export interface Me {

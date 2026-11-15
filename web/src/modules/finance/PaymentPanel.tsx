@@ -26,7 +26,8 @@ export function PaymentPanel({ membership, appointmentId, onPaid }: {
   if (query.isPending) return <Spinner />;
   if (query.error) return <div className="mt-3"><ErrorNote error={query.error} /></div>;
   const data = query.data;
-  const canAccept = membership.permissions.includes("payments.accept");
+  // payments.accept_own — qabulxonasiz muassasada xodim o'z mijozidan (panel faqat o'z bronlarini ochadi, baza ham tekshiradi)
+  const canAccept = membership.permissions.includes("payments.accept") || membership.permissions.includes("payments.accept_own");
   const canRefund = membership.permissions.includes("payments.refund");
 
   return (

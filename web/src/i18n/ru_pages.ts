@@ -927,4 +927,21 @@ export const RU_PAGES: Record<string, string> = {
   "Asosiy kompaniyaning direktori yo'q — avval uni biriktiring": "У головной компании нет директора — сначала назначьте его",
   "Bu muassasaning direktori boshqa odam. Avval direktorni asosiy kompaniya direktoriga almashtiring": "У этого заведения другой директор. Сначала смените директора на директора головной компании",
   "Direktor telefoni va ismi kiritilishi shart": "Нужно указать телефон и имя директора",
+
+  // ── Qabulxona rejimi (2026-11-15) ──
+  "Bu muassasada {a} ishlaydi: yangi bronlar va to'lovlarni u qabul qiladi. Siz o'z jadvalingiz, bronlaringiz va mijozlaringizni ko'rasiz.": "В этом заведении работает {a}: новые записи и оплату принимает он(а). Вы видите своё расписание, свои записи и своих клиентов.",
+  "Bo'sh vaqt": "Свободное время",
+  "{a} ismi": "{a}: имя",
+  "{a} ga bron qilish": "Записать на {a}",
+  "Vaqtni tanlang": "Выберите время",
+  "Bronlarni qabulxona qo'shadi": "Записи добавляет администратор (ресепшн)",
+  "Sizga yozilgan va sizda bo'lgan {a}": "{a}, записанные к вам и побывавшие у вас",
+  "Hali mijoz yo'q": "Клиентов пока нет",
+  "oxirgisi {a}": "последний {a}",
+  "Keyingi: {a}": "Следующий: {a}",
+  "Mijozlarim": "Мои клиенты",
+  "Bemorlarim": "Мои пациенты",
+  "Xaridorlarim": "Мои покупатели",
+  "{a} bor: yangi bronlar va to'lovlarni faqat u (va siz) qabul qiladi. {b} faqat o'z jadvali, bronlari va mijozlarini ko'radi.": "{a} есть: новые записи и оплату принимает только он(а) (и вы). {b} видят только своё расписание, записи и клиентов.",
+  "{a} yo'q: {b} o'z kalendariga bron qo'sha oladi va o'z mijozidan to'lov oladi. {a} qo'shsangiz, bu imkoniyat avtomatik yopiladi.": "{a} нет: {b} могут сами записывать клиентов к себе и принимать от них оплату. Если добавить: {a}, эта возможность закроется автоматически.",
 };

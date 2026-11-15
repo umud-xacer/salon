@@ -207,12 +207,24 @@ CREATE POLICY read ON payments FOR SELECT TO app_api
                AND EXISTS (SELECT 1 FROM appointments a
                             WHERE a.id = appointment_id AND a.member_id = ANY (app.my_member_ids()))));
 
+-- Usta mijoz telefonini ko'rmaydi (mijozlar bazasi — muassasaniki; 2026-11 dan beri shu qoida, testlar bor).
+-- Faqat o'z bronidagi mijozning ISMI ko'rinadi — bron ro'yxatida "Mijoz" o'rniga.
+CREATE FUNCTION app.own_client_name(p_appointment BIGINT) RETURNS TEXT
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public, pg_temp AS $$
+    SELECT c.full_name::text
+      FROM appointments a JOIN business_clients c ON c.id = a.client_id
+     WHERE a.id = p_appointment
+       AND a.member_id = ANY (app.my_member_ids())
+       AND app.has_perm(a.business_id, 'appointments.view_own')
+$$;
+
 -- "Mijozlarim": xodimning o'z bronlaridagi mijozlar (har ikki rejimda). Mijozlar bazasi huquqi kerak emas
 CREATE FUNCTION app.my_clients(p_business BIGINT)
 RETURNS TABLE (client_id BIGINT, full_name TEXT, phone TEXT, visits INTEGER, last_visit TIMESTAMPTZ,
                next_visit TIMESTAMPTZ)
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public, pg_temp AS $$
-    SELECT c.id, c.full_name::text, c.phone::text,
+    SELECT c.id, c.full_name::text,
+           CASE WHEN app.has_perm(p_business, 'clients.view') THEN c.phone::text END,   -- ustaga telefon yo'q
            (count(*) FILTER (WHERE a.status = 'completed'))::int,
            max(a.starts_at) FILTER (WHERE a.status = 'completed'),
            min(a.starts_at) FILTER (WHERE a.status IN ('pending', 'confirmed') AND a.starts_at > now())
@@ -227,6 +239,7 @@ $$;
 
 REVOKE ALL ON FUNCTION app.has_reception(BIGINT), app.reception_locked(member_role, BIGINT, TEXT),
                        app.can_book_for(BIGINT, BIGINT), app.can_accept_for(BIGINT, BIGINT),
-                       app.my_clients(BIGINT) FROM PUBLIC;
+                       app.my_clients(BIGINT), app.own_client_name(BIGINT) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION app.has_reception(BIGINT), app.can_book_for(BIGINT, BIGINT),
-                          app.can_accept_for(BIGINT, BIGINT), app.my_clients(BIGINT) TO app_api;
+                          app.can_accept_for(BIGINT, BIGINT), app.my_clients(BIGINT),
+                          app.own_client_name(BIGINT) TO app_api;

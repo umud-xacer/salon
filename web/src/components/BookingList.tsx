@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 
 import { api } from "../api/client";
 import type { Appointment } from "../api/types";
@@ -12,7 +12,11 @@ const tone = (status: string) =>
   status === "completed" ? "green" : status === "cancelled" || status === "no_show" ? "red" : status === "pending" ? "amber" : "gray";
 
 /** Kunlik bronlar. Ustaga RLS faqat o'z bronlarini beradi, shuning uchun komponent ikkala panelga ham yaraydi. */
-export function BookingList({ businessId, showMaster }: { businessId: number; showMaster: boolean }) {
+export function BookingList({ businessId, showMaster, actions }: {
+  businessId: number;
+  showMaster: boolean;
+  actions?: (a: Appointment) => ReactNode;      // qator oxiridagi tugmalar (masalan, xodimning "To'lov"i)
+}) {
   const v = useVocab();
   const [day, setDay] = useState(todayIso());
   const query = useQuery({
@@ -52,6 +56,7 @@ export function BookingList({ businessId, showMaster }: { businessId: number; sh
             </span>
             {showMaster && <span className="tabular-nums">{formatMoney(a.total_price)}</span>}
             <Badge tone={tone(a.status)}>{STATUS_LABELS[a.status] ?? a.status}</Badge>
+            {actions?.(a)}
           </li>
         ))}
       </ul>

@@ -58,6 +58,10 @@ def test_without_reception_staff_books_and_takes_payment_for_self_only(client, b
     assert r.status_code == 201, r.text
     own = r.json()
     assert own["member_id"] == a["member"]["id"]
+    # O'z bronidagi mijoz ismi ko'rinadi, boshqa xodimning mijozi esa ro'yxatga umuman tushmaydi
+    mine = client.get(url(biz, f"appointments?date={ctx['day']}"), headers=auth_header(a["tokens"])).json()
+    assert [x["client_name"] for x in mine] == ["Mijoz Sinov"]
+    assert mine[0]["client_phone"] is None                     # telefon ustaga ko'rinmaydi (eski qoida)
     # Boshqa xodimga yoki "istalgan" — yo'q
     assert book(client, biz, ctx, a["tokens"], b, "12:00").status_code == 403
     assert book(client, biz, ctx, a["tokens"], None, "13:00").status_code == 403
@@ -85,6 +89,7 @@ def test_my_slots_and_my_clients(client, biz, ctx):
     assert book(client, biz, ctx, biz["owner"], ctx["b"], "11:00").status_code == 201   # boshqa xodim mijozi
     clients = client.get(url(biz, "my-clients"), headers=auth_header(a["tokens"])).json()
     assert [c["full_name"] for c in clients] == ["Mijoz Sinov"]
+    assert clients[0]["phone"] is None
     assert clients[0]["next_visit"] is not None
 
 

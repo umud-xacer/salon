@@ -5,14 +5,27 @@ import { api, json } from "../../api/client";
 import type { Membership, ScheduleDay } from "../../api/types";
 import { BookingList } from "../../components/BookingList";
 import { DURATION_CHOICES, formatDuration, formatMoney, WEEKDAYS } from "../../components/format";
-import { Card, Empty, ErrorNote, PageTitle, Spinner } from "../../components/ui";
+import { Button, Card, Empty, ErrorNote, PageTitle, Spinner } from "../../components/ui";
+import { useState } from "react";
+import { canBookSelf, canTakePayment, ReceptionNotice, SelfBookingDialog, SelfPaymentButton } from "./StaffSelfService";
 
 import { t } from "../../i18n";
 export function MyBookingsPage({ membership }: { membership: Membership }) {
+  const [creating, setCreating] = useState(false);
+  const book = canBookSelf(membership);
+  const pay = canTakePayment(membership);
   return (
     <>
-      <PageTitle title={t("Mening bronlarim")} />
-      <BookingList businessId={membership.business_id} showMaster={false} />
+      <PageTitle title={t("Mening bronlarim")} action={
+        // Administrator bor bo'lsa tugma o'chiq ko'rinadi (TZ): bronni qabulxona qo'shadi
+        <Button onClick={() => setCreating(true)} disabled={!book}
+          title={book ? undefined : t("Bronlarni qabulxona qo'shadi")}>{t("Yangi bron")}</Button>
+      } />
+      <ReceptionNotice membership={membership} />
+      <BookingList businessId={membership.business_id} showMaster={false}
+        actions={pay ? (a) => (a.status === "cancelled" || a.status === "no_show" ? null
+          : <SelfPaymentButton membership={membership} appointmentId={a.id} />) : undefined} />
+      {creating && <SelfBookingDialog membership={membership} onClose={() => setCreating(false)} />}
     </>
   );
 }
