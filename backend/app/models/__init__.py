@@ -85,6 +85,8 @@ class Business(Base):
     subscription_ends_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     monthly_fee: Mapped[int] = mapped_column(BigInteger, default=199000)   # obuna narxi (so'm/oy), sql/037
     plan_id: Mapped[int | None] = mapped_column(BigInteger)   # billing_plans.id (sql/038), NULL = maxsus narx
+    parent_id: Mapped[int | None] = mapped_column(BigInteger)   # asosiy kompaniya (filial bo'lsa), sql/041
+    branch_name: Mapped[str | None] = mapped_column(String(80))  # "Chilonzor filiali"
     created_by: Mapped[int | None] = mapped_column(BigInteger)
 
 

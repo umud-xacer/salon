@@ -147,6 +147,11 @@ class MembershipOut(BaseModel):
     title: str | None
     permissions: list[str]
     modules: list[str]
+    # Tarmoq: chain_id — asosiy kompaniya id si; panelda bir tarmoq filiallari orasida almashtirgich shu bo'yicha
+    parent_id: int | None = None
+    chain_id: int | None = None
+    chain_name: str | None = None
+    branch_name: str | None = None
 
 
 class MeOut(BaseModel):
@@ -176,17 +181,33 @@ class BusinessCreate(BaseModel):
     # Lokatsiyasiz salon mijoz ilovasida ko'rinmaydi, shuning uchun yaratishda majburiy
     lat: float = Field(ge=-90, le=90)
     lng: float = Field(ge=-180, le=180)
-    owner_phone: str
-    owner_full_name: str = Field(min_length=2, max_length=120)
+    # Filial bo'lsa direktor maydonlari bo'sh qoldiriladi — asosiy kompaniyaning direktori biriktiriladi
+    owner_phone: str | None = None
+    owner_full_name: str | None = Field(default=None, min_length=2, max_length=120)
     owner_password: str | None = Field(default=None, max_length=128)   # direktorning boshlang'ich paroli
+    parent_id: int | None = Field(default=None, ge=1)                    # asosiy kompaniya (filial yaratilsa)
+    branch_name: str | None = Field(default=None, max_length=80)         # "Chilonzor filiali"
     modules: list[str] = ["booking"]
     subscription_days: int | None = Field(default=None, ge=1, le=3660)    # None = muddatsiz
     plan_id: int | None = Field(default=None, ge=1)      # None = birinchi faol tarif (odatda Start)
 
     @field_validator("owner_phone")
     @classmethod
-    def _norm(cls, v: str) -> str:
-        return normalize_phone(v)
+    def _norm(cls, v: str | None) -> str | None:
+        return normalize_phone(v) if v else None
+
+    @field_validator("branch_name")
+    @classmethod
+    def _branch(cls, v: str | None) -> str | None:
+        return v.strip() or None if v else None
+
+    @model_validator(mode="after")
+    def _owner_required(self):
+        if self.parent_id is None and (not self.owner_phone or not self.owner_full_name):
+            raise ValueError("Direktor telefoni va ismi kiritilishi shart")
+        if self.parent_id is None and self.branch_name:
+            raise ValueError("Filial yorlig'i faqat filial uchun")
+        return self
 
     @field_validator("slug")
     @classmethod
@@ -247,11 +268,18 @@ class BusinessUpdate(BaseModel):
     address: str | None = Field(default=None, max_length=300)
     lat: float | None = Field(default=None, ge=-90, le=90)
     lng: float | None = Field(default=None, ge=-180, le=180)
+    parent_id: int | None = Field(default=None, ge=1)        # null = asosiy kompaniya (tarmoqdan ajratish)
+    branch_name: str | None = Field(default=None, max_length=80)
 
     @field_validator("region")
     @classmethod
     def _region(cls, v: str | None) -> str | None:
         return _known_region(v)
+
+    @field_validator("branch_name")
+    @classmethod
+    def _branch(cls, v: str | None) -> str | None:
+        return v.strip() or None if v else None
 
     @model_validator(mode="after")
     def _pair(self):
@@ -284,6 +312,10 @@ class BusinessAdminOut(BaseModel):
     owner_name: str | None
     owner_phone: str | None
     owner_member_id: int | None = None
+    parent_id: int | None = None          # filial bo'lsa — asosiy kompaniya
+    parent_name: str | None = None
+    branch_name: str | None = None
+    branch_count: int = 0                 # asosiy kompaniyaning filiallari soni
     owner_password_status: Literal["none", "issued", "temporary", "own"] | None
     owner_password_changed_at: datetime | None
     staff_count: int

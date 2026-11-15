@@ -113,6 +113,8 @@ def me(db: Session = Depends(get_db)):
                (SELECT c.name_ru FROM business_categories c WHERE c.id = b.category_id) AS business_type_name_ru,
                (SELECT c.staff_word FROM business_categories c WHERE c.id = b.category_id) AS staff_word,
                b.status::text AS business_status, b.is_active AS business_active, b.subscription_ends_at,
+               b.parent_id, app.chain_id(b.parent_id, b.id) AS chain_id, b.branch_name,
+               (SELECT ch.name FROM businesses ch WHERE ch.id = app.chain_id(b.parent_id, b.id)) AS chain_name,
                app.business_operational(b.id) AS operational, m.role::text AS role,
                CASE WHEN m.role = 'staff' THEN 'staff' ELSE 'admin' END AS panel, m.title,
                coalesce((SELECT array_agg(x.code ORDER BY x.code) FROM modules x

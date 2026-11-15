@@ -34,6 +34,8 @@ _BUSINESS_SELECT = """
            b.rating_avg::float AS rating_avg, b.rating_count,
            app.business_operational(b.id) AS operational,
            u.full_name AS owner_name, u.phone AS owner_phone, o.id AS owner_member_id,
+           b.parent_id, (SELECT pb.name FROM businesses pb WHERE pb.id = b.parent_id) AS parent_name, b.branch_name,
+           (SELECT count(*) FROM businesses ch WHERE ch.parent_id = b.id) AS branch_count,
            u.id AS owner_user_id, u.status::text AS owner_status, u.last_login_at AS owner_last_login_at,
            (SELECT c.name_uz FROM business_categories c WHERE c.id = b.category_id) AS type_name,
            CASE WHEN u.id IS NULL THEN NULL ELSE app.password_state(u.id) END AS owner_password_status,
@@ -78,13 +80,20 @@ def list_businesses(db: Session = Depends(get_db)):
 @router.post("/businesses", response_model=BusinessOut, status_code=201)
 def create_business(body: BusinessCreate, db: Session = Depends(get_db)):
     user: User = db.info["user"]
+    parent = _parent_or_error(db, body.parent_id) if body.parent_id else None
     biz = Business(name=body.name.strip(), slug=body.slug, category_id=body.category_id,
-                   region=body.region, city=body.city, address=body.address, status="active", created_by=user.id)
+                   region=body.region, city=body.city, address=body.address, status="active", created_by=user.id,
+                   parent_id=body.parent_id, branch_name=body.branch_name)
     if body.subscription_days is not None:
         biz.subscription_ends_at = datetime.now(timezone.utc) + timedelta(days=body.subscription_days)
-    # Tarif: tanlanmasa — birinchi faol tarif (odatda Start). Narx tarifdan olinadi
-    plan = _plan(db, body.plan_id) if body.plan_id else db.execute(text(
-        "SELECT id, monthly_fee FROM billing_plans WHERE is_active ORDER BY sort_order, id LIMIT 1")).mappings().first()
+    # Tarif: tanlanmasa — filialda asosiy kompaniyaniki, aks holda birinchi faol tarif (odatda Start)
+    if body.plan_id:
+        plan = _plan(db, body.plan_id)
+    elif parent is not None and parent.plan_id:
+        plan = _plan(db, parent.plan_id)
+    else:
+        plan = db.execute(text(
+            "SELECT id, monthly_fee FROM billing_plans WHERE is_active ORDER BY sort_order, id LIMIT 1")).mappings().first()
     if plan is not None:
         biz.plan_id, biz.monthly_fee = plan["id"], plan["monthly_fee"]
     db.add(biz)
@@ -97,10 +106,14 @@ def create_business(body: BusinessCreate, db: Session = Depends(get_db)):
         SELECT :id, d, c.opens_at, c.closes_at FROM business_categories c, generate_series(1, 6) d
          WHERE c.id = :c"""), {"id": biz.id, "c": body.category_id})
 
-    owner_id = db.scalar(text("SELECT app.ensure_user(:p, :n)"), {"p": body.owner_phone, "n": body.owner_full_name})
+    if body.owner_phone:
+        owner_id = db.scalar(text("SELECT app.ensure_user(:p, :n)"), {"p": body.owner_phone, "n": body.owner_full_name})
+    else:
+        # Filial: asosiy kompaniyaning direktori (bitta direktor — butun tarmoq)
+        owner_id = _parent_owner(db, parent.id)
     owner = BusinessMember(business_id=biz.id, user_id=owner_id, role="owner", is_bookable=False)
     db.add(owner)
-    if body.owner_password:
+    if body.owner_password and body.owner_phone:
         # Odamning o'z paroli bo'lsa, ustidan yozilmaydi (u boshqa salon yoki mijoz hisobi bo'lishi mumkin)
         own = db.scalar(text("SELECT app.password_state(:u) = 'own'"), {"u": owner_id})
         if own:
@@ -110,8 +123,31 @@ def create_business(body: BusinessCreate, db: Session = Depends(get_db)):
         assign_password(db, biz.id, owner.id, body.owner_password)
     for code in set(body.modules):
         db.add(BusinessModule(business_id=biz.id, module_code=code, enabled=True))
+    db.flush()
+    if parent is not None:
+        audit.log(db, biz.id, "create", "branch", biz.id, {"parent_id": parent.id, "branch_name": body.branch_name})
     db.commit()
     return BusinessOut(id=biz.id, name=biz.name, slug=biz.slug, status=biz.status, owner_member_id=owner.id)
+
+
+def _parent_or_error(db: Session, parent_id: int) -> Business:
+    parent = db.get(Business, parent_id)
+    if parent is None:
+        raise HTTPException(404, detail={"code": "not_found", "message": "Asosiy kompaniya topilmadi"})
+    if parent.parent_id is not None:
+        raise HTTPException(409, detail={"code": "branch_parent_invalid",
+                                         "message": "Filial faqat asosiy kompaniyaga biriktiriladi (filialning filiali bo'lmaydi)"})
+    return parent
+
+
+def _parent_owner(db: Session, parent_id: int) -> int:
+    owner_id = db.scalar(text("""SELECT user_id FROM business_members
+                                  WHERE business_id = :p AND role = 'owner' AND is_active ORDER BY id LIMIT 1"""),
+                         {"p": parent_id})
+    if owner_id is None:
+        raise HTTPException(409, detail={"code": "parent_without_owner",
+                                         "message": "Asosiy kompaniyaning direktori yo'q — avval uni biriktiring"})
+    return owner_id
 
 
 @router.patch("/businesses/{business_id}", response_model=BusinessAdminOut)
@@ -120,6 +156,27 @@ def update_business(body: BusinessUpdate, business_id: int = Path(ge=1), db: Ses
     biz = _business_or_404(db, business_id)
     data = body.model_dump(exclude_unset=True)
     lat, lng = data.pop("lat", ...), data.pop("lng", ...)
+    if "parent_id" in data and data["parent_id"] != biz.parent_id:
+        new_parent = data["parent_id"]
+        if new_parent is not None:
+            _parent_or_error(db, new_parent)
+            # Bitta direktor — butun tarmoq: asosiy direktor bu filialda a'zo bo'lmasa, direktor qilib qo'shiladi
+            owner_id = _parent_owner(db, new_parent)
+            current = db.scalar(text("""SELECT user_id FROM business_members
+                                         WHERE business_id = :b AND role = 'owner' AND is_active"""), {"b": business_id})
+            if current is not None and current != owner_id:
+                raise HTTPException(409, detail={"code": "different_owner",
+                                                 "message": "Bu muassasaning direktori boshqa odam. Avval direktorni "
+                                                            "asosiy kompaniya direktoriga almashtiring"})
+            if current is None:
+                m = db.execute(select(BusinessMember).where(BusinessMember.business_id == business_id,
+                                                            BusinessMember.user_id == owner_id)).scalar_one_or_none()
+                if m is None:
+                    db.add(BusinessMember(business_id=business_id, user_id=owner_id, role="owner", is_bookable=False))
+                else:
+                    m.role, m.is_active, m.is_bookable = "owner", True, False
+        else:
+            data["branch_name"] = None          # tarmoqdan ajratilgan muassasada filial yorlig'i qolmaydi
     for field, value in data.items():
         setattr(biz, field, value.strip() if isinstance(value, str) else value)
     db.flush()

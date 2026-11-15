@@ -66,6 +66,10 @@ class BusinessCard(BaseModel):
     top_service: str | None = None
     photos: list[str] = []
     is_open_now: bool
+    # Tarmoq: filial yorlig'i, asosiy kompaniya nomi (filial bo'lsa), ilovadagi filiallar soni (o'zi bilan)
+    branch_name: str | None = None
+    chain_name: str | None = None
+    branch_count: int = 1
 
 
 class NearbyOut(BaseModel):
@@ -109,6 +113,21 @@ class StaffOut(BaseModel):
     service_ids: list[int]
 
 
+class BranchOut(BaseModel):
+    """Tarmoqdagi boshqa filial (salon sahifasida "Boshqa filiallar")."""
+    id: int
+    slug: str
+    name: str
+    branch_name: str | None
+    city: str | None
+    address: str | None
+    lat: float
+    lng: float
+    rating_avg: float
+    rating_count: int
+    is_open_now: bool
+
+
 class BusinessDetail(BaseModel):
     id: int
     slug: str
@@ -132,6 +151,10 @@ class BusinessDetail(BaseModel):
     photos: list[str]
     service_groups: list[ServiceGroupOut]
     staff: list[StaffOut]
+    branch_name: str | None = None
+    chain_name: str | None = None
+    branch_count: int = 1
+    branches: list[BranchOut] = []
 
 
 class RegionOut(BaseModel):
@@ -166,6 +189,12 @@ class ProfileUpdate(BaseModel):
     is_listed: bool | None = None
     logo_url: HttpUrl | None = None
     cover_url: HttpUrl | None = None
+    branch_name: str | None = Field(default=None, max_length=80)   # filial yorlig'i ("Chilonzor filiali")
+
+    @field_validator("branch_name")
+    @classmethod
+    def _branch(cls, v):
+        return v.strip() or None if v else None
 
     @field_validator("phone")
     @classmethod
@@ -200,6 +229,8 @@ class ProfileOut(BaseModel):
     logo_url: str | None
     cover_url: str | None
     category_name: str
+    branch_name: str | None = None   # filial yorlig'i
+    parent_name: str | None = None   # filial bo'lsa — asosiy kompaniya nomi (faqat ko'rish uchun)
     default_opens_at: time           # muassasa turining standart ish vaqti
     default_closes_at: time
 

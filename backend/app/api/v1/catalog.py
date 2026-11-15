@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_public_db
 from app.core.config import get_settings
-from app.schemas.catalog import (BusinessCard, BusinessDetail, CategoryOut, HoursOut, NearbyOut, ProductCategory,
+from app.schemas.catalog import (BranchOut, BusinessCard, BusinessDetail, CategoryOut, HoursOut, NearbyOut, ProductCategory,
                                  PublicProduct, PublicProducts,
                                  ServiceGroupOut, ServiceOut, StaffOut)
 from app.schemas.schedule import SlotsOut
@@ -56,6 +56,18 @@ _PUBLIC_WHERE = (
     " AND app.has_public_offer(b.id)"            # faol xizmat yoki (dorixona) katalogdagi dori
     " AND EXISTS (SELECT 1 FROM business_categories c0 WHERE c0.id = b.category_id AND c0.is_active)"
 )
+
+
+# x — tarmoqdagi boshqa muassasa (filial) uchun o'sha ochiqlik shartlari
+_PUBLIC_WHERE_X = _PUBLIC_WHERE.replace("b.", "x.").replace("c0", "cx")
+_CHAIN = "coalesce(b.parent_id, b.id)"
+_CHAIN_COLUMNS = f"""
+    b.branch_name,
+    (SELECT ch.name FROM businesses ch WHERE ch.id = {_CHAIN} AND ch.id <> b.id) AS chain_name,
+    (SELECT count(*) FROM businesses x WHERE (x.id = {_CHAIN} OR x.parent_id = {_CHAIN})
+        AND {_PUBLIC_WHERE_X})::int AS branch_count
+"""
+_CARD_COLUMNS = _CARD_COLUMNS + "," + _CHAIN_COLUMNS
 
 
 def _filters(category: str | None, q: str | None, params: dict) -> str:
@@ -188,7 +200,8 @@ def business_detail(slug: str, db: Session = Depends(get_public_db)):
         SELECT b.id, b.slug, b.name, b.description, c.slug AS category, c.name_uz AS category_name, c.name_ru AS category_name_ru,
                c.kind, b.phone, b.city, b.address, b.logo_url, b.cover_url,
                ST_Y(b.location::geometry) AS lat, ST_X(b.location::geometry) AS lng,
-               b.rating_avg::float AS rating_avg, b.rating_count, {_IS_OPEN} AS is_open_now
+               b.rating_avg::float AS rating_avg, b.rating_count, {_IS_OPEN} AS is_open_now,
+               {_CHAIN} AS chain_id, {_CHAIN_COLUMNS}
           FROM businesses b JOIN business_categories c ON c.id = b.category_id
          WHERE b.slug = :slug AND {_PUBLIC_WHERE}
     """), {"slug": slug}).mappings().first()
@@ -228,5 +241,16 @@ def business_detail(slug: str, db: Session = Depends(get_public_db)):
          ORDER BY ps.rating_avg DESC, ps.full_name
     """), {"b": bid}).mappings()
 
+    # Shu tarmoqning ilovada ko'rinadigan boshqa filiallari — mijoz o'ziga qulayini tanlaydi
+    branches = db.execute(text(f"""
+        SELECT b.id, b.slug, b.name, b.branch_name, b.city, b.address,
+               ST_Y(b.location::geometry) AS lat, ST_X(b.location::geometry) AS lng,
+               b.rating_avg::float AS rating_avg, b.rating_count, {_IS_OPEN} AS is_open_now
+          FROM businesses b
+         WHERE (b.id = :chain OR b.parent_id = :chain) AND b.id <> :b AND {_PUBLIC_WHERE}
+         ORDER BY b.parent_id NULLS FIRST, b.branch_name NULLS LAST, b.name
+    """), {"chain": b["chain_id"], "b": bid}).mappings()
+
     return BusinessDetail(**b, hours=[HoursOut(**h) for h in hours], photos=list(photos),
-                          service_groups=list(groups.values()), staff=[StaffOut(**s) for s in staff])
+                          service_groups=list(groups.values()), staff=[StaffOut(**s) for s in staff],
+                          branches=[BranchOut(**r) for r in branches])

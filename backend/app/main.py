@@ -76,6 +76,8 @@ _DB_ERRORS = {
     "P0421": (409, "line_not_removable", "Bu xizmatni olib tashlab bo'lmaydi: oxirgi xizmat yoki puli to'langan"),
     "P0422": (409, "advance_settled", "Bu avans oylikdan ayirilgan, endi bekor qilib bo'lmaydi"),
     "P0423": (409, "nobody_free", "Hozir bo'sh mutaxassis yo'q"),
+    "P0430": (409, "branch_parent_invalid", "Filial faqat asosiy kompaniyaga biriktiriladi (filialning filiali bo'lmaydi)"),
+    "P0431": (409, "branch_has_children", "Bu muassasaning o'z filiallari bor, uni boshqasiga filial qilib bo'lmaydi"),
 }
 
 

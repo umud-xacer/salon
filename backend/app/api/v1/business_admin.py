@@ -27,7 +27,8 @@ def _profile(db: Session, business_id: int) -> ProfileOut:
     row = db.execute(text("""
         SELECT b.id, b.slug, b.name, b.description, b.category_id, b.status::text AS status, b.phone, b.city,
                b.address, ST_Y(b.location::geometry) AS lat, ST_X(b.location::geometry) AS lng, b.is_listed,
-               b.logo_url, b.cover_url, c.name_uz AS category_name,
+               b.logo_url, b.cover_url, c.name_uz AS category_name, b.branch_name,
+               (SELECT p.name FROM businesses p WHERE p.id = b.parent_id) AS parent_name,
                c.opens_at AS default_opens_at, c.closes_at AS default_closes_at
           FROM businesses b JOIN business_categories c ON c.id = b.category_id
          WHERE b.id = :b
