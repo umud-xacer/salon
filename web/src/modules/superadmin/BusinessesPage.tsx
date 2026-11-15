@@ -117,7 +117,14 @@ export function BusinessesPage() {
                   className="flex min-w-0 flex-1 flex-wrap items-center gap-x-4 gap-y-1 py-3 pl-4 text-left text-sm"
                 >
                   <span className="min-w-0 basis-full sm:basis-auto sm:flex-1">
-                    <span className="block font-medium">{b.name} <StatusBadge b={b} /></span>
+                    <span className="block font-medium">
+                      {b.name}{b.branch_name ? ` · ${b.branch_name}` : ""} <StatusBadge b={b} />{" "}
+                      {b.parent_id ? (
+                        <Badge tone="gray">{t("Filial: {a}", { a: b.parent_name ?? "" })}</Badge>
+                      ) : (b.branch_count ?? 0) > 0 ? (
+                        <Badge tone="gray">{t("Tarmoq · {a} filial", { a: b.branch_count ?? 0 })}</Badge>
+                      ) : null}
+                    </span>
                     <span className="block text-muted">
                       {b.owner_name ?? t("Direktor yo'q")}{b.owner_phone ? ` · ${b.owner_phone}` : ""}
                     </span>
@@ -149,7 +156,9 @@ export function BusinessesPage() {
       {opened && modules.data && (
         <BusinessDialog key={opened.id} business={opened} modules={modules.data} onClose={() => setOpenedId(null)} />
       )}
-      {creating && modules.data && <CreateBusinessDialog modules={modules.data} onClose={() => setCreating(false)} />}
+      {creating && modules.data && (
+        <CreateBusinessDialog modules={modules.data} businesses={businesses.data ?? []} onClose={() => setCreating(false)} />
+      )}
     </>
   );
 }

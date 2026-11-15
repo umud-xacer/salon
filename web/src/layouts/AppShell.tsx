@@ -19,10 +19,11 @@ export interface NavItem {
 
 const footerButton = "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-white/80 hover:bg-white/10";
 
-export function AppShell({ nav, title, header, children }: {
+export function AppShell({ nav, title, header, mobileTitle, children }: {
   nav: NavItem[];
   title: string;
   header?: ReactNode;
+  mobileTitle?: ReactNode;          // telefondagi yuqori qatorda nom o'rniga (masalan, filial almashtirgich)
   children: ReactNode;
 }) {
   const { me, signOut } = useAuth();
@@ -99,7 +100,8 @@ export function AppShell({ nav, title, header, children }: {
             <Menu size={24} />
           </button>
           <Logo size={28} />
-          <span className="min-w-0 flex-1 truncate font-semibold text-navy">{title}</span>
+          {mobileTitle ? <div className="min-w-0 flex-1">{mobileTitle}</div>
+            : <span className="min-w-0 flex-1 truncate font-semibold text-navy">{title}</span>}
           <LangSwitch />
         </div>
         <main className="mx-auto max-w-5xl p-3 sm:p-4 md:p-6">{children}</main>

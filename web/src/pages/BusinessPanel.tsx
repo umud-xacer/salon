@@ -2,6 +2,7 @@ import { Navigate, Route, Routes, useParams } from "react-router-dom";
 
 import { useAuth } from "../auth/AuthProvider";
 import { AttendanceAlerts } from "../components/AttendanceAlerts";
+import { BranchSwitcher, chainMemberships } from "../components/BranchSwitcher";
 import { AppShell } from "../layouts/AppShell";
 import { panelVocab, sectionsFor, sectionUrl } from "../modules/registry";
 import { BillingPaywall, ExpiryBanner } from "../modules/billing/BillingPage";
@@ -35,12 +36,15 @@ export function BusinessPanel() {
   const kind = membership.business_kind;
   const url = (s: (typeof sections)[number]) => sectionUrl(s, kind);
   const home = `${base}/${url(sections[0])}`;     // har bir panelda kamida bitta bo'lim bor
-  // Muassasa almashtirish ro'yxati yo'q (foydalanuvchi talabi): panel faqat shu muassasani ko'rsatadi.
-  // Boshqa muassasaga kirish huquqini baza (RLS) va yuqoridagi tekshiruv hal qiladi.
+  // Almashtirgich faqat bitta tarmoq (asosiy kompaniya + filiallar) ichida — tarmoqqa kirmagan boshqa
+  // muassasalar ro'yxatda chiqmaydi (2026-11-06 talabi). Kirish huquqini baza (RLS) va yuqoridagi tekshiruv hal qiladi.
+  const hasBranches = chainMemberships(memberships, membership).length > 1;
   return (
     <VocabContext.Provider value={panelVocab(membership)}>
     <AppShell
-      title={membership.business_name}
+      title={membership.branch_name ? `${membership.business_name} · ${membership.branch_name}` : membership.business_name}
+      header={hasBranches ? <BranchSwitcher current={membership} dark /> : undefined}
+      mobileTitle={hasBranches ? <BranchSwitcher current={membership} /> : undefined}
       nav={sections.map((s) => ({ to: `${base}/${url(s)}`, label: s.label, icon: s.icon }))}
     >
       <ExpiryBanner membership={membership} billingUrl={`${base}/obuna`} />

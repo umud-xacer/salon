@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Trash2 } from "lucide-react";
 import { useState, type FormEvent } from "react";
 
@@ -33,9 +33,21 @@ export function StatusBadge({ b }: { b: BusinessAdmin }) {
   return <Badge tone="green">{t("Faol")}</Badge>;
 }
 
-export function CreateBusinessDialog({ modules, onClose }: { modules: ModuleInfo[]; onClose: () => void }) {
+/** Asosiy kompaniya bo'la oladiganlar: o'zi filial bo'lmagan muassasalar */
+const mainCompanies = (list: BusinessAdmin[], exceptId?: number) =>
+  list.filter((x) => !x.parent_id && x.id !== exceptId).sort((a, b) => a.name.localeCompare(b.name));
+
+export function CreateBusinessDialog({ modules, businesses, onClose }: {
+  modules: ModuleInfo[]; businesses: BusinessAdmin[]; onClose: () => void;
+}) {
   const queryClient = useQueryClient();
   const categories = useCategories();
+  // Tuzilishi: asosiy kompaniya yoki mavjud tarmoqning filiali (direktor va tarif asosiydan olinadi)
+  const [isBranch, setIsBranch] = useState(false);
+  const [parentId, setParentId] = useState("");
+  const [branchName, setBranchName] = useState("");
+  const parents = mainCompanies(businesses);
+  const parent = parents.find((x) => String(x.id) === parentId);
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [slugEdited, setSlugEdited] = useState(false);
@@ -59,9 +71,13 @@ export function CreateBusinessDialog({ modules, onClose }: { modules: ModuleInfo
         address: place.address.trim() || null,
         lat: place.lat,
         lng: place.lng,
-        owner_full_name: ownerName.trim(),
-        owner_phone: normalizePhone(ownerPhone),
-        owner_password: ownerPassword.trim() || null,
+        ...(isBranch
+          ? { parent_id: Number(parentId), branch_name: branchName.trim() || null }
+          : {
+              owner_full_name: ownerName.trim(),
+              owner_phone: normalizePhone(ownerPhone),
+              owner_password: ownerPassword.trim() || null,
+            }),
         modules: picked,
         subscription_days: days ? Number(days) : null,
       })),
@@ -84,10 +100,58 @@ export function CreateBusinessDialog({ modules, onClose }: { modules: ModuleInfo
     setCategory(id);
     if (!slugEdited) setSlug(slugFor(name, active.find((c) => String(c.id) === id)));
   };
+  // Filial: nom va tur asosiy kompaniyadan, havola — "nom-filial-yorlig'i"
+  const chooseParent = (id: string) => {
+    setParentId(id);
+    const p = parents.find((x) => String(x.id) === id);
+    if (!p) return;
+    if (!name.trim()) setName(p.name);
+    if (!category && active.some((c) => c.id === p.category_id)) setCategory(String(p.category_id));
+    if (!slugEdited) setSlug(slugFor(`${name.trim() || p.name} ${branchName}`, type ?? active.find((c) => c.id === p.category_id)));
+  };
+  const changeBranchName = (v: string) => {
+    setBranchName(v);
+    if (!slugEdited) setSlug(slugFor(`${name} ${v}`, type));
+  };
+  const branchReady = !isBranch || !!parent;
 
   return (
-    <Modal title={type ? t("Yangi {a}", { a: w.noun.toLowerCase() }) : t("Yangi muassasa")} onClose={onClose}>
+    <Modal title={isBranch ? t("Yangi filial") : type ? t("Yangi {a}", { a: w.noun.toLowerCase() }) : t("Yangi muassasa")} onClose={onClose}>
       <form onSubmit={submit} className="space-y-3">
+        <fieldset>
+          <legend className="text-sm">{t("Tuzilishi")}</legend>
+          <div className="mt-1 flex flex-wrap gap-2">
+            {[{ v: false, label: t("Asosiy kompaniya") }, { v: true, label: t("Mavjud tarmoqning filiali") }].map((o) => (
+              <label key={String(o.v)}
+                className={`cursor-pointer rounded-full border px-3 py-1.5 text-sm transition has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary/40 ${
+                  isBranch === o.v ? "border-primary bg-primary text-white" : "border-line bg-white hover:border-primary/60"}`}>
+                <input type="radio" name="structure" checked={isBranch === o.v} className="sr-only"
+                  onChange={() => setIsBranch(o.v)} />
+                {o.label}
+              </label>
+            ))}
+          </div>
+          {isBranch && (
+            <div className="mt-2 grid gap-3 sm:grid-cols-2">
+              <label className="block text-sm">{t("Asosiy kompaniya")}
+                <select className={inputClass} required value={parentId} onChange={(e) => chooseParent(e.target.value)}>
+                  <option value="">{t("Tanlang")}</option>
+                  {parents.map((p) => <option key={p.id} value={p.id}>{p.name}{p.city ? ` (${p.city})` : ""}</option>)}
+                </select>
+              </label>
+              <label className="block text-sm">{t("Filial nomi (yorliq)")}
+                <input className={inputClass} maxLength={80} value={branchName} placeholder={t("Masalan: Chilonzor filiali")}
+                  onChange={(e) => changeBranchName(e.target.value)} />
+              </label>
+              {parent && (
+                <p className="text-sm text-muted sm:col-span-2">
+                  {t("Direktor: {a} — asosiy kompaniyadan biriktiriladi. Xodimlar, ombor, kassa va bronlar filialning o'ziniki bo'ladi.",
+                    { a: parent.owner_name ?? t("yo'q") })}
+                </p>
+              )}
+            </div>
+          )}
+        </fieldset>
         <fieldset>
           <legend className="text-sm">{t("1. Muassasa turi")}</legend>
           {categories.isPending && <p className="mt-1 text-sm text-muted">{t("Yuklanmoqda...")}</p>}
@@ -128,6 +192,7 @@ export function CreateBusinessDialog({ modules, onClose }: { modules: ModuleInfo
           </span>
         </label>
         <AddressFields value={place} onChange={setPlace} />
+        {!isBranch && (<>
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="block text-sm">{t("Direktor ismi")}
             <input className={inputClass} required minLength={2} maxLength={120} value={ownerName}
@@ -140,6 +205,7 @@ export function CreateBusinessDialog({ modules, onClose }: { modules: ModuleInfo
         </div>
         <PhoneOwnerHint lookup={ownerLookup.data} mode="assign" />
         <PasswordInput label={t("Direktorning boshlang'ich paroli")} value={ownerPassword} onChange={setOwnerPassword} />
+        </>)}
         <label className="block text-sm">{t("Obuna (kun, bo'sh qolsa muddatsiz)")}
           <input className={inputClass} type="number" min={1} max={3660} value={days} onChange={(e) => setDays(e.target.value)} />
         </label>
@@ -161,8 +227,8 @@ export function CreateBusinessDialog({ modules, onClose }: { modules: ModuleInfo
           </p>
         )}
         {create.error && <ErrorNote error={create.error} />}
-        <Button type="submit" disabled={create.isPending || !type || place.lat === null} className="w-full">
-          {type ? t("{a}ni yaratish", { a: w.noun }) : t("Avval turini tanlang")}
+        <Button type="submit" disabled={create.isPending || !type || place.lat === null || !branchReady} className="w-full">
+          {!type ? t("Avval turini tanlang") : isBranch ? t("Filialni yaratish") : t("{a}ni yaratish", { a: w.noun })}
         </Button>
         </fieldset>
       </form>
@@ -228,6 +294,12 @@ function InfoTab({ business: b }: { business: BusinessAdmin }) {
   const [place, setPlace] = useState<AddressValue>({
     region: b.region ?? "", city: b.city ?? "", address: b.address ?? "", lat: b.lat, lng: b.lng,
   });
+  // Tarmoq: filiallari bor muassasa boshqasiga filial bo'la olmaydi (bir daraja)
+  const all = useQuery({ queryKey: BUSINESSES_KEY, queryFn: () => api<BusinessAdmin[]>("/superadmin/businesses") });
+  const [parentId, setParentId] = useState(b.parent_id ? String(b.parent_id) : "");
+  const [branchName, setBranchName] = useState(b.branch_name ?? "");
+  const hasBranches = (b.branch_count ?? 0) > 0;
+  const parentChanged = parentId !== (b.parent_id ? String(b.parent_id) : "");
 
   const save = useMutation({
     mutationFn: () =>
@@ -239,6 +311,8 @@ function InfoTab({ business: b }: { business: BusinessAdmin }) {
         address: place.address.trim() || null,
         lat: place.lat,
         lng: place.lng,
+        ...(parentChanged ? { parent_id: parentId ? Number(parentId) : null } : {}),
+        ...(parentId ? { branch_name: branchName.trim() || null } : {}),
       })),
     onSuccess: refresh,
   });
@@ -259,6 +333,36 @@ function InfoTab({ business: b }: { business: BusinessAdmin }) {
         </select>
       </label>
       <AddressFields value={place} onChange={setPlace} />
+      <fieldset className="space-y-2 rounded-lg border border-line p-3">
+        <legend className="px-1 text-sm">{t("Tarmoq (filiallar)")}</legend>
+        {hasBranches ? (
+          <p className="text-sm text-muted">
+            {t("Bu asosiy kompaniya: {a} ta filiali bor. Uni boshqa tarmoqqa filial qilib bo'lmaydi.", { a: b.branch_count ?? 0 })}
+          </p>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="block text-sm">{t("Asosiy kompaniya")}
+              <select className={inputClass} value={parentId} onChange={(e) => setParentId(e.target.value)}>
+                <option value="">{t("— Yo'q (mustaqil / asosiy kompaniya)")}</option>
+                {mainCompanies(all.data ?? [], b.id).map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}{p.city ? ` (${p.city})` : ""}</option>
+                ))}
+              </select>
+            </label>
+            {parentId && (
+              <label className="block text-sm">{t("Filial nomi (yorliq)")}
+                <input className={inputClass} maxLength={80} value={branchName} placeholder={t("Masalan: Chilonzor filiali")}
+                  onChange={(e) => setBranchName(e.target.value)} />
+              </label>
+            )}
+            {parentChanged && parentId && (
+              <p className="text-xs text-muted sm:col-span-2">
+                {t("Direktor asosiy kompaniya direktori bilan bir xil bo'lishi kerak. Boshqa bo'lsa, avval direktorni almashtiring.")}
+              </p>
+            )}
+          </div>
+        )}
+      </fieldset>
       {save.error && <ErrorNote error={save.error} />}
       <div className="flex items-center gap-3">
         <Button type="submit" disabled={save.isPending}>{t("Saqlash")}</Button>

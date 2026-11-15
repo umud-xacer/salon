@@ -9,10 +9,13 @@ import { WEEKDAYS } from "../../components/format";
 import { Button, Card, ErrorNote, inputClass, PageTitle, Spinner } from "../../components/ui";
 import { checkImage, IMAGE_ACCEPT, ImageError, MAX_IMAGE_MB, shrinkImage } from "../../components/imageUpload";
 import { useVocab } from "../vocab";
+import { useAuth } from "../../auth/AuthProvider";
+import { chainMemberships } from "../../components/BranchSwitcher";
 
 import { t } from "../../i18n";
 export function BusinessPage({ membership }: { membership: Membership }) {
   const v = useVocab();
+  const { me } = useAuth();
   const b = membership.business_id;
   const profile = useQuery({ queryKey: ["biz-profile", b], queryFn: () => api<BusinessProfile>(`/businesses/${b}/profile`) });
   const hours = useQuery({ queryKey: ["biz-hours", b], queryFn: () => api<BusinessHours[]>(`/businesses/${b}/hours`) });
@@ -55,7 +58,7 @@ export function BusinessPage({ membership }: { membership: Membership }) {
             ))}
           </ul>
         </Card>
-        <ProfileCard businessId={b} profile={profile.data} />
+        <ProfileCard businessId={b} profile={profile.data} inChain={!!membership.parent_id || chainMemberships(me?.memberships ?? [], membership).length > 1} />
         <HoursCard businessId={b} hours={hours.data ?? []}
           defaults={[profile.data.default_opens_at.slice(0, 5), profile.data.default_closes_at.slice(0, 5)]} />
         <PhotosCard businessId={b} photos={photos.data ?? []} />
@@ -64,17 +67,23 @@ export function BusinessPage({ membership }: { membership: Membership }) {
   );
 }
 
-function ProfileCard({ businessId, profile }: { businessId: number; profile: BusinessProfile }) {
+function ProfileCard({ businessId, profile, inChain }: { businessId: number; profile: BusinessProfile; inChain: boolean }) {
   const v = useVocab();
   const queryClient = useQueryClient();
+  const { refresh } = useAuth();
+  const [branchName, setBranchName] = useState(profile.branch_name ?? "");
   const [description, setDescription] = useState(profile.description ?? "");
   const [phone, setPhone] = useState(profile.phone ?? "");
   const [listed, setListed] = useState(profile.is_listed);
   const save = useMutation({
     mutationFn: () => api(`/businesses/${businessId}/profile`, json("PATCH", {
       description: description.trim() || null, phone: phone.trim() || null, is_listed: listed,
+      ...(inChain ? { branch_name: branchName.trim() || null } : {}),
     })),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["biz-profile", businessId] }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["biz-profile", businessId] });
+      if (inChain) await refresh();          // almashtirgich va sarlavhadagi filial nomi yangilansin
+    },
   });
   const submit = (e: FormEvent) => {
     e.preventDefault();
@@ -85,6 +94,16 @@ function ProfileCard({ businessId, profile }: { businessId: number; profile: Bus
     <Card>
       <h2 className="mb-3 text-sm font-medium">{t("Ma'lumotlar")}</h2>
       <form onSubmit={submit} className="space-y-3">
+        {inChain && (
+          <label className="block text-sm">{t("Filial nomi (yorliq)")}
+            <input className={inputClass} maxLength={80} value={branchName} placeholder={t("Masalan: Chilonzor filiali")}
+              onChange={(e) => setBranchName(e.target.value)} />
+            <span className="mt-1 block text-xs text-muted">
+              {profile.parent_name ? t("Tarmoq: {a}. ", { a: profile.parent_name }) : ""}
+              {t("Mijozlar ilovada filialni shu nom bilan ajratadi.")}
+            </span>
+          </label>
+        )}
         <label className="block text-sm">{v.businessPage}{" "}{t("haqida")}
           <textarea className={inputClass} rows={3} maxLength={2000} value={description}
             placeholder={t("Xizmatlar, afzalliklar, mo'ljal")} onChange={(e) => setDescription(e.target.value)} />

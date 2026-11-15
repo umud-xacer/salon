@@ -31,6 +31,11 @@ export interface Membership {
   title: string | null;
   permissions: string[];
   modules: string[];
+  // Tarmoq (filiallar): chain_id — asosiy kompaniya id si; almashtirgich shu bo'yicha guruhlaydi
+  parent_id?: number | null;
+  chain_id?: number | null;
+  chain_name?: string | null;
+  branch_name?: string | null;
 }
 
 export interface Me {
@@ -182,6 +187,8 @@ export interface BusinessProfile {
   id: number;
   slug: string;
   name: string;
+  branch_name?: string | null;     // filial yorlig'i
+  parent_name?: string | null;     // filial bo'lsa — asosiy kompaniya
   description: string | null;
   phone: string | null;
   city: string | null;
@@ -294,6 +301,10 @@ export interface BusinessAdmin {
   owner_password_status: PasswordStatus | null;
   owner_password_changed_at: string | null;
   owner_member_id: number | null;
+  parent_id?: number | null;
+  parent_name?: string | null;
+  branch_name?: string | null;
+  branch_count?: number;
   owner_user_id?: number | null;
   owner_status?: string | null;
   owner_last_login_at?: string | null;
