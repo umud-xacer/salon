@@ -108,10 +108,10 @@ Chronix — ваше время в приоритете.
 
 | Talab | Holat |
 |---|---|
-| Maxfiylik siyosati (privacy policy) URL | ⬜ **Yo'q** — `chronix.uz/privacy` sahifasi kerak |
-| Hisobni o'chirish (ilova ichida + veb havola) | ⬜ **Yo'q** — Play 2024-yildan majburiy |
+| Maxfiylik siyosati (privacy policy) URL | ✅ https://chronix.uz/privacy (uz/ru) |
+| Hisobni o'chirish (ilova ichida + veb havola) | ✅ Profil → Hisobni o'chirish; veb: https://chronix.uz/hisobni-ochirish |
 | Data safety formasi | ⬜ Tayyorlash: telefon raqami, ism, taxminiy/aniq joylashuv, bronlar tarixi, qurilma push tokeni; shifrlangan uzatish (HTTPS); o'chirish so'rovi mumkin |
-| Ko'rib chiquvchi uchun kirish (App access) | ⬜ SMS kod orqali kirish — Google tekshiruvchisiga **doimiy sinov raqami + kod** kerak (Eskiz hozir test rejimida) |
+| Ko'rib chiquvchi uchun kirish (App access) | ✅ Doimiy sinov raqami + kod serverda (`REVIEW_PHONE`/`REVIEW_CODE`); qiymatlar repoda emas — `loyxalar/PLAY_TEST_LOGIN.md` |
 | Kontent reytingi anketasi | ⬜ Play Console'da to'ldiriladi (zo'ravonliksiz, "Everyone") |
 | Maqsadli auditoriya | ⬜ 18+ (yoki 13+), bolalarga mo'ljallanmagan |
 | Reklama bormi | Yo'q |
