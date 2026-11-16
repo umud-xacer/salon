@@ -173,7 +173,7 @@ def test_cannot_make_self_superadmin(world):
 
 def test_auth_tables_closed_for_api_role(world):
     with api_session(uid(world["a"]["owner"])) as db:
-        for table in ("otp_codes", "refresh_tokens"):
+        for table in ("otp_codes", "refresh_tokens", "telegram_logins", "user_identities"):
             with pytest.raises(DBAPIError) as e:
                 db.execute(text(f"SELECT * FROM {table} LIMIT 1"))
             assert sqlstate(e) == "42501"

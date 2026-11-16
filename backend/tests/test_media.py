@@ -173,4 +173,5 @@ def test_jpeg_is_decoded_at_reduced_size():
 
 def test_app_info_public(client):
     r = client.get("/api/v1/catalog/app-info")
-    assert r.status_code == 200 and set(r.json()) == {"support_phone", "support_telegram", "yandex_maps_key", "yandex_maps_panel_key"}
+    assert r.status_code == 200 and set(r.json()) == {"support_phone", "support_telegram", "yandex_maps_key", "yandex_maps_panel_key",
+                                                 "login_methods", "google_web_client_id"}

@@ -6,8 +6,10 @@ from app.core.panels import check_panel
 from app.api.deps import client_meta, current_user, get_auth_db, get_db
 from app.core.config import get_settings
 from app.models import User
-from app.schemas import (LoginOut, MembershipOut, MeOut, OtpRequest, OtpRequestOut, OtpVerify, PasswordForgot,
-                         PasswordLogin, PasswordReset, ProfileUpdate, RefreshIn, SetPasswordIn, TokenOut, UserOut)
+from app.schemas import (GoogleLoginIn, GoogleLoginOut, LoginOut, MembershipOut, MeOut, OtpRequest, OtpRequestOut,
+                         OtpVerify, PasswordForgot, PasswordLogin, PasswordReset, ProfileUpdate, RefreshIn,
+                         SetPasswordIn, TelegramPollIn, TelegramPollOut, TelegramStartIn, TelegramStartOut,
+                         TokenOut, UserOut)
 from app.services import auth_service
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -33,9 +35,49 @@ def otp_verify(body: OtpVerify, request: Request, db: Session = Depends(get_auth
     ua, ip = client_meta(request)
     user, tokens, is_new = auth_service.verify_otp(db, body.phone, body.code, body.full_name, ua, ip,
                                                    birth_date=body.birth_date, gender=body.gender,
-                                                   password=body.password)
+                                                   password=body.password, link_token=body.link_token)
     check_panel(request, user.is_superadmin)
     return _login_out(user, tokens, is_new)
+
+
+@router.post("/telegram/start", response_model=TelegramStartOut)
+def telegram_start(body: TelegramStartIn, request: Request, db: Session = Depends(get_auth_db)):
+    """Telegram orqali kirish: ilova qaytgan havolani ochadi, bot raqamni tasdiqlaydi, so'ng /telegram/poll."""
+    _, ip = client_meta(request)
+    nonce, ttl = auth_service.telegram_start(db, ip, body.link_token)
+    bot = get_settings().telegram_bot_username
+    return TelegramStartOut(nonce=nonce, url=f"https://t.me/{bot}?start={nonce}", expires_in=ttl)
+
+
+@router.post("/telegram/poll", response_model=TelegramPollOut)
+def telegram_poll(body: TelegramPollIn, request: Request, db: Session = Depends(get_auth_db)):
+    ua, ip = client_meta(request)
+    res = auth_service.telegram_poll(db, body.nonce, ua, ip)
+    if res is None:
+        return TelegramPollOut(status="pending")
+    user, tokens, is_new = res
+    check_panel(request, user.is_superadmin)
+    return TelegramPollOut(status="ok", login=_login_out(user, tokens, is_new))
+
+
+@router.post("/google", response_model=GoogleLoginOut)
+def google_login(body: GoogleLoginIn, request: Request, db: Session = Depends(get_auth_db)):
+    """Google ID token. Hisob bog'lanmagan bo'lsa — need_phone + link_token (raqam bir marta tasdiqlanadi)."""
+    ua, ip = client_meta(request)
+    res = auth_service.google_login(db, body.id_token, ua, ip)
+    if isinstance(res, str):
+        return GoogleLoginOut(need_phone=True, link_token=res)
+    user, tokens = res
+    check_panel(request, user.is_superadmin)
+    return GoogleLoginOut(login=_login_out(user, tokens))
+
+
+@router.delete("/me", status_code=204)
+def delete_me(db: Session = Depends(get_db)):
+    """Hisobni o'chirish (Google Play talabi): shaxsiy ma'lumot tozalanadi, kelgusi bronlar bekor qilinadi.
+    Salon xodimi/direktori hisobi bu yerdan o'chirilmaydi (P0450)."""
+    db.execute(text("SELECT app.delete_my_account()"))
+    db.commit()
 
 
 @router.post("/login", response_model=LoginOut)

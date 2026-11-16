@@ -53,6 +53,22 @@ class Settings(BaseSettings):
     sms_otp_template: str = "Chronix mobil ilovasiga kirish uchun tasdiqlash kodi: {code}"
     sms_reset_template: str = "Chronix mobil ilovasi parolini tiklash uchun kod: {code}"
 
+    # Telegram orqali kirish (bot foydalanuvchining O'Z raqamini tasdiqlaydi). Token bo'sh — tugma ilovada yashirin.
+    # Webhook: POST /api/v1/telegram/webhook, "X-Telegram-Bot-Api-Secret-Token" = telegram_webhook_secret
+    telegram_bot_token: SecretStr | None = None
+    telegram_bot_username: str | None = None              # "ChronixUzBot" (@ siz)
+    telegram_webhook_secret: SecretStr | None = None
+    telegram_login_ttl_seconds: int = 600
+
+    # Google orqali kirish: Google Cloud OAuth "Web" mijoz ID si (ID token auditoriyasi). Bo'sh — tugma yashirin.
+    google_web_client_id: str | None = None
+    google_extra_client_ids: list[str] = []               # qo'shimcha qabul qilinadigan auditoriyalar
+
+    # Google Play tekshiruvchisi uchun doimiy sinov hisobi: shu raqamga SMS yuborilmaydi, kod o'zgarmas.
+    # Faqat oddiy mijoz hisobi bo'lishi kerak (biznesga a'zo qilinmasin).
+    review_phone: str | None = None
+    review_code: SecretStr | None = None
+
     # Bron eslatmasi: boshlanishidan necha daqiqa oldin yuboriladi va javob uchun necha daqiqa kutiladi
     reminder_lead_minutes: int = Field(default=30, ge=5, le=240)
     # Mijoz javob bermasa, bron vaqtiga shuncha daqiqa qolganda usta va qabulxonaga ogohlantirish
@@ -89,7 +105,20 @@ class Settings(BaseSettings):
                 raise ValueError("prod muhitida ESKIZ_EMAIL va ESKIZ_PASSWORD kerak")
             if "*" in self.cors_origins:
                 raise ValueError("prod muhitida CORS '*' taqiqlangan")
+            if self.telegram_bot_token is not None and self.telegram_webhook_secret is None:
+                raise ValueError("TELEGRAM_BOT_TOKEN bilan TELEGRAM_WEBHOOK_SECRET ham kerak")
+        if self.review_code is not None and not (self.review_code.get_secret_value().isdigit()
+                                                  and len(self.review_code.get_secret_value()) == 6):
+            raise ValueError("REVIEW_CODE 6 xonali raqam bo'lishi kerak")
         return self
+
+    @property
+    def telegram_login_enabled(self) -> bool:
+        return bool(self.telegram_bot_token and self.telegram_bot_username and self.telegram_webhook_secret)
+
+    @property
+    def google_audiences(self) -> list[str]:
+        return [a for a in [self.google_web_client_id, *self.google_extra_client_ids] if a]
 
     @property
     def expose_dev_otp(self) -> bool:

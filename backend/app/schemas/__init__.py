@@ -43,6 +43,7 @@ class OtpVerify(_Phone):
     birth_date: date | None = None
     gender: Gender | None = None
     password: str | None = Field(default=None, max_length=128)
+    link_token: str | None = Field(default=None, max_length=2000)   # Google hisobini shu raqamga bog'lash
 
     @field_validator("birth_date")
     @classmethod
@@ -126,6 +127,36 @@ class UserOut(BaseModel):
 class LoginOut(TokenOut):
     user: UserOut
     is_new: bool = False
+
+
+class TelegramStartIn(BaseModel):
+    link_token: str | None = Field(default=None, max_length=2000)
+
+
+class TelegramStartOut(BaseModel):
+    nonce: str
+    url: str                                   # https://t.me/<bot>?start=<nonce>
+    expires_in: int
+
+
+class TelegramPollIn(BaseModel):
+    nonce: str = Field(min_length=16, max_length=64)
+
+
+class TelegramPollOut(BaseModel):
+    status: Literal["pending", "ok"]
+    login: LoginOut | None = None
+
+
+class GoogleLoginIn(BaseModel):
+    id_token: str = Field(min_length=20, max_length=4096)
+
+
+class GoogleLoginOut(BaseModel):
+    """need_phone — Google hisobi hali hech kimga bog'lanmagan: raqam bir marta tasdiqlanadi (link_token bilan)."""
+    need_phone: bool = False
+    link_token: str | None = None
+    login: LoginOut | None = None
 
 
 class MembershipOut(BaseModel):

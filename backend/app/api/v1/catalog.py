@@ -89,7 +89,10 @@ def app_info():
     s = get_settings()
     return {"support_phone": s.support_phone, "support_telegram": s.support_telegram,
             "yandex_maps_key": s.yandex_maps_js_key or None,
-            "yandex_maps_panel_key": s.yandex_maps_panel_key or None}
+            "yandex_maps_panel_key": s.yandex_maps_panel_key or None,
+            # Ilova faqat yoqilgan kirish usullarining tugmasini ko'rsatadi
+            "login_methods": {"telegram": s.telegram_login_enabled, "google": bool(s.google_web_client_id)},
+            "google_web_client_id": s.google_web_client_id or None}
 
 
 @router.get("/plans")

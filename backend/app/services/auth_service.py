@@ -1,9 +1,11 @@
 """Kirish jarayoni. Faqat AuthSession (app_auth roli) bilan ishlaydi."""
 import logging
+import secrets
 import uuid
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
+import jwt
 from sqlalchemy import select, text, update
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import Session
@@ -48,9 +50,9 @@ def _now() -> datetime:
 
 
 # ─── OTP ────────────────────────────────────────────────────────────────────
-def _create_otp(db: Session, phone: str, ip: str | None) -> str:
+def _create_otp(db: Session, phone: str, ip: str | None, code: str | None = None) -> str:
     s = get_settings()
-    code = security.new_otp_code()
+    code = code or security.new_otp_code()
     db.add(OtpCode(
         phone=phone,
         code_hash=security.hash_otp(phone, code),
@@ -75,7 +77,15 @@ def _deliver(send, phone: str, code: str) -> None:
         raise SmsUnavailable("sms_unavailable", "SMS yuborib bo'lmadi. Birozdan keyin qayta urinib ko'ring")
 
 
+def _is_review_phone(phone: str) -> bool:
+    s = get_settings()
+    return bool(s.review_phone and s.review_code and phone == s.review_phone)
+
+
 def request_otp(db: Session, phone: str, ip: str | None) -> str:
+    if _is_review_phone(phone):
+        # Google Play tekshiruvchisi: SMS yuborilmaydi, kod o'zgarmas (qolgan tekshiruvlar odatdagidek)
+        return _create_otp(db, phone, ip, code=get_settings().review_code.get_secret_value())
     code = _create_otp(db, phone, ip)
     _deliver(sms.send_otp, phone, code)
     return code
@@ -105,8 +115,16 @@ def _consume_otp(db: Session, phone: str, code: str) -> None:
 
 def verify_otp(db: Session, phone: str, code: str, full_name: str | None,
                user_agent: str | None, ip: str | None, *, birth_date=None, gender: str | None = None,
-               password: str | None = None) -> tuple[User, TokenPair, bool]:
+               password: str | None = None, link_token: str | None = None) -> tuple[User, TokenPair, bool]:
     _consume_otp(db, phone, code)
+    return _login_verified_phone(db, phone, full_name, user_agent, ip, birth_date=birth_date, gender=gender,
+                                 password=password, link_token=link_token)
+
+
+def _login_verified_phone(db: Session, phone: str, full_name: str | None, user_agent: str | None, ip: str | None,
+                          *, birth_date=None, gender: str | None = None, password: str | None = None,
+                          link_token: str | None = None) -> tuple[User, TokenPair, bool]:
+    """Raqam egasi tasdiqlangan (SMS kod yoki Telegram kontakti): kirish yoki yangi mijozni ro'yxatdan o'tkazish."""
     user = db.scalars(select(User).where(User.phone == phone).with_for_update()).first()
     is_new = user is None
     if is_new:
@@ -121,10 +139,153 @@ def verify_otp(db: Session, phone: str, code: str, full_name: str | None,
     if user.must_change_password:
         user.password_hash = None
         user.must_change_password = False
+    if link_token:
+        _link_identity(db, user, link_token)
     user.last_login_at = _now()
     tokens = _issue_tokens(db, user, user_agent=user_agent, ip=ip)
     db.commit()
     return user, tokens, is_new
+
+
+# ─── Telegram orqali kirish ─────────────────────────────────────────────────
+# Ilova nonce oladi va t.me/<bot>?start=<nonce> ni ochadi; bot foydalanuvchining O'Z kontaktini olgach
+# so'rov "ready" bo'ladi, ilova poll qilib tokenlarni oladi. Raqamni Telegram tasdiqlaydi — SMS kerak emas.
+def telegram_start(db: Session, ip: str | None, link_token: str | None = None) -> tuple[str, int]:
+    s = get_settings()
+    if not s.telegram_login_enabled:
+        raise SmsUnavailable("telegram_unavailable", "Telegram orqali kirish hozircha o'chiq")
+    if link_token:
+        _decode_link_token(link_token)                       # yaroqsiz bo'lsa — darhol xato
+    nonce = secrets.token_urlsafe(24)
+    db.execute(text("""
+        INSERT INTO telegram_logins (nonce_hash, ip, link_token, expires_at)
+        VALUES (:h, CAST(:ip AS inet), :lt, now() + make_interval(secs => :ttl))
+    """), {"h": security.hash_token(nonce), "ip": ip, "lt": link_token, "ttl": s.telegram_login_ttl_seconds})
+    try:
+        db.commit()
+    except DBAPIError as e:
+        db.rollback()
+        if getattr(e.orig, "sqlstate", None) == "P0429":
+            raise RateLimited("otp_rate_limited", "Juda ko'p urinish. Birozdan keyin qayta urinib ko'ring")
+        raise
+    return nonce, s.telegram_login_ttl_seconds
+
+
+def telegram_bind_chat(db: Session, nonce: str, tg_user_id: int, chat_id: int) -> bool:
+    """Bot /start <nonce> oldi: so'rov shu Telegram foydalanuvchisiga biriktiriladi (birinchi bosgan egallaydi)."""
+    row = db.execute(text("""
+        UPDATE telegram_logins SET tg_user_id = :u, tg_chat_id = :c
+         WHERE nonce_hash = :h AND status = 'pending' AND expires_at > now()
+           AND (tg_user_id IS NULL OR tg_user_id = :u)
+        RETURNING id
+    """), {"h": security.hash_token(nonce), "u": tg_user_id, "c": chat_id}).first()
+    db.commit()
+    return row is not None
+
+
+def telegram_contact(db: Session, tg_user_id: int, contact_user_id: int | None, raw_phone: str,
+                     full_name: str) -> str:
+    """Bot kontakt oldi. Natija: ok | not_own | bad_phone | no_request."""
+    if contact_user_id != tg_user_id:
+        return "not_own"                                     # boshqa odamning kontakti — rad
+    try:
+        phone = security.normalize_phone(raw_phone)
+    except ValueError:
+        return "bad_phone"
+    row = db.execute(text("""
+        UPDATE telegram_logins SET status = 'ready', phone = :p, full_name = :n
+         WHERE id = (SELECT id FROM telegram_logins
+                      WHERE tg_user_id = :u AND status = 'pending' AND expires_at > now()
+                      ORDER BY created_at DESC LIMIT 1 FOR UPDATE)
+        RETURNING id
+    """), {"p": phone, "n": full_name.strip()[:120], "u": tg_user_id}).first()
+    db.commit()
+    return "ok" if row else "no_request"
+
+
+def telegram_poll(db: Session, nonce: str, user_agent: str | None,
+                  ip: str | None) -> tuple[User, TokenPair, bool] | None:
+    """None — hali kutilmoqda. Tayyor bo'lsa bir martalik: kirish tokenlari."""
+    row = db.execute(text("""
+        SELECT id, status, phone, full_name, link_token, expires_at > now() AS alive
+          FROM telegram_logins WHERE nonce_hash = :h FOR UPDATE
+    """), {"h": security.hash_token(nonce)}).mappings().first()
+    if row is None or row["status"] == "used" or (row["status"] == "pending" and not row["alive"]):
+        db.rollback()
+        raise AuthError("login_expired", "Kirish so'rovi eskirgan. Qaytadan urinib ko'ring")
+    if row["status"] == "pending":
+        db.rollback()
+        return None
+    db.execute(text("UPDATE telegram_logins SET status = 'used' WHERE id = :i"), {"i": row["id"]})
+    return _login_verified_phone(db, row["phone"], row["full_name"], user_agent, ip, link_token=row["link_token"])
+
+
+# ─── Google orqali kirish ───────────────────────────────────────────────────
+_GOOGLE_ISSUERS = {"accounts.google.com", "https://accounts.google.com"}
+_google_jwks: jwt.PyJWKClient | None = None
+
+
+def _google_claims(id_token: str) -> dict:
+    global _google_jwks
+    s = get_settings()
+    if not s.google_audiences:
+        raise SmsUnavailable("google_unavailable", "Google orqali kirish hozircha o'chiq")
+    invalid = AuthError("google_invalid", "Google hisobini tasdiqlab bo'lmadi")
+    try:
+        if _google_jwks is None:
+            _google_jwks = jwt.PyJWKClient("https://www.googleapis.com/oauth2/v3/certs", cache_keys=True, timeout=10)
+        key = _google_jwks.get_signing_key_from_jwt(id_token).key
+        claims = jwt.decode(id_token, key, algorithms=["RS256"], audience=s.google_audiences,
+                            options={"require": ["exp", "iat", "iss", "sub", "aud"]})
+    except jwt.PyJWTError:
+        raise invalid from None
+    if claims.get("iss") not in _GOOGLE_ISSUERS or not claims.get("email_verified"):
+        raise invalid
+    return claims
+
+
+def _make_link_token(provider: str, subject: str, email: str | None) -> str:
+    s = get_settings()
+    now = _now()
+    return jwt.encode({"typ": "link", "prv": provider, "sub": subject, "email": email, "iss": s.jwt_issuer,
+                       "iat": now, "exp": now + timedelta(minutes=15)},
+                      s.jwt_secret.get_secret_value(), algorithm="HS256")
+
+
+def _decode_link_token(token: str) -> dict:
+    s = get_settings()
+    try:
+        c = jwt.decode(token, s.jwt_secret.get_secret_value(), algorithms=["HS256"], issuer=s.jwt_issuer)
+    except jwt.PyJWTError:
+        raise AuthError("link_expired", "Google bilan bog'lash muddati o'tdi. Qaytadan urinib ko'ring") from None
+    if c.get("typ") != "link" or c.get("prv") != "google":
+        raise AuthError("link_expired", "Google bilan bog'lash muddati o'tdi. Qaytadan urinib ko'ring")
+    return c
+
+
+def _link_identity(db: Session, user: User, link_token: str) -> None:
+    c = _decode_link_token(link_token)
+    db.execute(text("""
+        INSERT INTO user_identities (user_id, provider, subject, email) VALUES (:u, :p, :s, :e)
+        ON CONFLICT DO NOTHING
+    """), {"u": user.id, "p": c["prv"], "s": c["sub"], "e": c.get("email")})
+
+
+def google_login(db: Session, id_token: str, user_agent: str | None,
+                 ip: str | None) -> tuple[User, TokenPair] | str:
+    """Bog'langan hisob bo'lsa — kirish. Aks holda link_token (raqam bir marta tasdiqlanadi va bog'lanadi)."""
+    c = _google_claims(id_token)
+    uid = db.execute(text("SELECT user_id FROM user_identities WHERE provider = 'google' AND subject = :s"),
+                     {"s": c["sub"]}).scalar()
+    if uid is None:
+        db.rollback()
+        return _make_link_token("google", c["sub"], c.get("email"))
+    user = db.get(User, uid, with_for_update=True)
+    _ensure_can_login(user)
+    user.last_login_at = _now()
+    tokens = _issue_tokens(db, user, user_agent=user_agent, ip=ip)
+    db.commit()
+    return user, tokens
 
 
 # ─── Parol bilan kirish (veb-admin) ─────────────────────────────────────────
