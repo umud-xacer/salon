@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://ariqalqon.uz"><img src="docs/readme/card-chronix.png" alt="Chronix — bron platformasi" width="100%"></a>
+  <a href="https://chronix.uz"><img src="docs/readme/card-chronix.png" alt="Chronix — bron platformasi" width="100%"></a>
 </p>
 
 <h1 align="center">Chronix</h1>
@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="https://ariqalqon.uz"><img src="https://img.shields.io/badge/Sayt-ariqalqon.uz-D4A853?style=for-the-badge&labelColor=0b0b0d" alt="Sayt"></a>
+  <a href="https://chronix.uz"><img src="https://img.shields.io/badge/Sayt-chronix.uz-D4A853?style=for-the-badge&labelColor=0b0b0d" alt="Sayt"></a>
   <img src="https://img.shields.io/badge/Python-FastAPI-D4A853?style=for-the-badge&logo=fastapi&logoColor=white&labelColor=0b0b0d" alt="FastAPI">
   <img src="https://img.shields.io/badge/PostgreSQL-PostGIS%20%2B%20RLS-D4A853?style=for-the-badge&logo=postgresql&logoColor=white&labelColor=0b0b0d" alt="PostgreSQL">
   <img src="https://img.shields.io/badge/React-TypeScript-D4A853?style=for-the-badge&logo=react&logoColor=white&labelColor=0b0b0d" alt="React">
@@ -152,5 +152,5 @@ Serverga o'rnatish: [`deploy/`](deploy) papkasidagi `setup.sh` (birinchi marta) 
 ---
 
 <p align="center">
-  <a href="https://ariqalqon.uz">ariqalqon.uz</a> · Muallif: <a href="https://github.com/umud-xacer">@umud-xacer</a>
+  <a href="https://chronix.uz">chronix.uz</a> · Muallif: <a href="https://github.com/umud-xacer">@umud-xacer</a>
 </p>

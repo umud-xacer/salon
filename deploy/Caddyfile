@@ -84,7 +84,7 @@
 	}
 }
 
-# Salon rahbarlari va xodimlari (www.chronix.uz; WEB_ALIAS — o'tish davrida eski manzillar, masalan www.ariqalqon.uz)
+# Salon rahbarlari va xodimlari (www.chronix.uz; WEB_ALIAS — qo'shimcha manzil, masalan admin.chronix.uz)
 {$WEB_DOMAIN} {$WEB_ALIAS:} {
 	import web_panel
 }

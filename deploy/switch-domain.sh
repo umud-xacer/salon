@@ -1,6 +1,6 @@
 #!/bin/sh
 # Serverda: asosiy domenni almashtiradi, eski domen taxallus (alias) bo'lib ishlayveradi.
-# Foydalanish:  sh deploy/switch-domain.sh chronix.uz ariqalqon.uz
+# Foydalanish:  sh deploy/switch-domain.sh <yangi-domen> <eski-domen>
 #   1-argument — yangi domen, 2-argument — eski domen (u o'chirilmaydi: eski ilovalar va havolalar ishlayveradi)
 # Oldin: yangi domenning @, www, api, ega, admin A yozuvlari shu serverga qarashi va internetda ko'rinishi shart,
 # aks holda Caddy HTTPS sertifikatini ololmaydi.

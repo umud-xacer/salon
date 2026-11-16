@@ -3,7 +3,6 @@
   ega.chronix.uz    — faqat Super Admin
   www.chronix.uz    — direktorlar va xodimlar (Super Admin bu yerda kira olmaydi)
   api.chronix.uz    — mobil ilova (cheklov yo'q)
-  (2026-11 gacha ariqalqon.uz edi; eski manzillar o'tish davrida taxallus sifatida ishlaydi)
 
 Veb-panel API'ni o'z domeni orqali chaqiradi (Caddy /api ni uzatadi, Host o'zgarmaydi), shuning uchun
 server so'rov qaysi paneldan kelganini Host bo'yicha aniq biladi. Ro'yxatlar bo'sh bo'lsa (dev, testlar) — cheklov yo'q.
