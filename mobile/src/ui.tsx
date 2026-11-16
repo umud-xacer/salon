@@ -4,7 +4,7 @@ import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ComponentProps, ReactNode, useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator, Animated, Image, Modal, Platform, Pressable, PressableProps, ScrollView, ScrollViewProps, StyleProp,
+  ActivityIndicator, Animated, Image, Modal, Platform, Pressable, PressableProps, ScrollView, ScrollViewProps, StatusBar as RNStatusBar, StyleProp,
   Text, TextInput, TextInputProps, TextStyle, useWindowDimensions, View, ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -336,6 +336,14 @@ export function useBottomSpace(extra = 24) {
 }
 
 /** Tab ekranlari pastidagi bo'shliq (menyu endi kontent ostida emas, alohida qator) */
+/** Ekran yuqorisidagi xavfsiz bo'shliq: status bar (soat, batareya) ostiga tushmaslik uchun.
+ *  Ba'zi Android qurilmalarda birinchi kadrda insets.top 0 bo'ladi — StatusBar.currentHeight zaxira. */
+export function useTopInset(extra = 0) {
+  const insets = useSafeAreaInsets();
+  const bar = Platform.OS === 'android' ? (RNStatusBar.currentHeight ?? 24) : 0;
+  return Math.max(insets.top, bar) + extra;
+}
+
 export function useTabSpace() {
   return 28;
 }

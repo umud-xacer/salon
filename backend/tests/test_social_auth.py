@@ -22,7 +22,10 @@ def bot(monkeypatch):
     monkeypatch.setattr(s, "telegram_bot_username", "ChronixTestBot")
     monkeypatch.setattr(s, "telegram_webhook_secret", SecretStr(SECRET))
     sent: list[tuple[int, str]] = []
-    monkeypatch.setattr(telegram_bot, "send_message", lambda chat, msg, markup=None: sent.append((chat, msg)))
+    def fake_send(chat, msg, markup=None):
+        sent.append((chat, msg))
+        return True
+    monkeypatch.setattr(telegram_bot, "send_message", fake_send)
     return sent
 
 
@@ -236,3 +239,47 @@ def test_review_phone_fixed_code_without_sms(client, monkeypatch):
     other = new_phone()
     client.post(f"{API}/auth/otp/request", json={"phone": other})
     assert calls == [other]
+
+
+# ─── Kod Telegram orqali (SMS o'rniga) ──────────────────────────────────────
+def test_code_goes_to_telegram_after_telegram_login(client, bot, monkeypatch):
+    from app.services import sms
+    phone = new_phone()
+    telegram_login(client, phone)
+    sms_calls = []
+    monkeypatch.setattr(sms, "send_otp", lambda p, c: sms_calls.append(p))
+
+    r = client.post(f"{API}/auth/otp/request", json={"phone": phone})
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["channel"] == "telegram" and sms_calls == []
+    assert body["dev_code"] in bot[-1][1]
+    assert client.post(f"{API}/auth/otp/verify", json={"phone": phone, "code": body["dev_code"]}).status_code == 200
+
+    # Bot bloklangan (yuborilmadi) — SMS ga o'tadi
+    monkeypatch.setattr(telegram_bot, "send_message", lambda chat, msg, markup=None: False)
+    r = client.post(f"{API}/auth/otp/request", json={"phone": phone})
+    assert r.json()["channel"] == "sms" and sms_calls == [phone]
+
+    # Telegram'siz raqam — SMS
+    other = new_phone()
+    assert client.post(f"{API}/auth/otp/request", json={"phone": other}).json()["channel"] == "sms"
+
+
+def test_sms_failure_suggests_telegram(client, bot, monkeypatch):
+    from app.services import sms
+
+    def broken(p, c):
+        raise sms.SmsError("test rejimi")
+    monkeypatch.setattr(sms, "send_otp", broken)
+    r = client.post(f"{API}/auth/otp/request", json={"phone": new_phone()})
+    assert r.status_code == 503
+    d = r.json()["detail"]
+    assert d["code"] == "sms_unavailable" and "Telegram orqali kirish" in d["message"]
+
+
+def test_deleted_account_loses_telegram_link(client, bot):
+    phone = new_phone()
+    login = telegram_login(client, phone)
+    assert client.delete(f"{API}/auth/me", headers=auth_header(login)).status_code == 204
+    assert client.post(f"{API}/auth/otp/request", json={"phone": phone}).json()["channel"] == "sms"

@@ -28,15 +28,18 @@ def _call(method: str, payload: dict) -> dict:
     return data.get("result") or {}
 
 
-def send_message(chat_id: int, text: str, reply_markup: dict | None = None) -> None:
-    """Xatoni yutadi (log) — foydalanuvchiga javob yuborilmasa ham kirish jarayoni buzilmasin."""
+def send_message(chat_id: int, text: str, reply_markup: dict | None = None) -> bool:
+    """Xatoni yutadi (log) — foydalanuvchiga javob yuborilmasa ham kirish jarayoni buzilmasin.
+    False — yuborilmadi (masalan, foydalanuvchi botni bloklagan)."""
     payload: dict = {"chat_id": chat_id, "text": text, "disable_web_page_preview": True}
     if reply_markup is not None:
         payload["reply_markup"] = reply_markup
     try:
         _call("sendMessage", payload)
+        return True
     except TelegramError as e:
         log.warning("Telegram xabari yuborilmadi: %s", e)
+        return False
 
 
 def set_webhook(url: str) -> dict:

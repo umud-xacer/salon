@@ -9,13 +9,14 @@ import { api, ApiError, LoginOut } from '../src/api';
 import { useAuth } from '../src/auth';
 import { t } from '../src/i18n';
 import { getPendingLink, setPendingLink } from '../src/socialAuth';
-import { Button, ErrorText, Icon, IconButton, makeStyles, useTheme, useType } from '../src/ui';
+import { Button, ErrorText, Icon, IconButton, makeStyles, useTheme, useTopInset, useType } from '../src/ui';
 
 type Start = { nonce: string; url: string; expires_in: number };
 
 export default function TelegramWait() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const top = useTopInset(12);
   const { signIn } = useAuth();
   const { c } = useTheme();
   const s = useStyles();
@@ -68,7 +69,7 @@ export default function TelegramWait() {
   }, [req, poll]);
 
   return (
-    <View style={[s.screen, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 20 }]}>
+    <View style={[s.screen, { paddingTop: top, paddingBottom: insets.bottom + 20 }]}>
       <IconButton icon="chevron-back" label={t("Orqaga")} onPress={() => router.back()} />
       <View style={s.body}>
         <View style={s.badge}><Icon name="paper-plane" size={34} color="#FFFFFF" /></View>

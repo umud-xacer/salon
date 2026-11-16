@@ -24,9 +24,9 @@ def _login_out(user: User, tokens: auth_service.TokenPair, is_new: bool = False)
 def otp_request(body: OtpRequest, request: Request, db: Session = Depends(get_auth_db)):
     """SMS kod yuborish. Raqam ro'yxatda bormi-yo'qmi — javob bir xil (raqamlarni aniqlab bo'lmasin)."""
     _, ip = client_meta(request)
-    code = auth_service.request_otp(db, body.phone, ip)
+    code, channel = auth_service.request_otp(db, body.phone, ip)
     s = get_settings()
-    return OtpRequestOut(expires_in=s.otp_ttl_seconds, dev_code=code if s.expose_dev_otp else None)
+    return OtpRequestOut(expires_in=s.otp_ttl_seconds, channel=channel, dev_code=code if s.expose_dev_otp else None)
 
 
 @router.post("/otp/verify", response_model=LoginOut)

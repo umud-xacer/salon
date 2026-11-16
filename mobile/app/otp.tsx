@@ -8,14 +8,17 @@ import { api, ApiError, LoginOut } from '../src/api';
 import { useAuth } from '../src/auth';
 import { t } from '../src/i18n';
 import { getPendingLink, setPendingLink } from '../src/socialAuth';
-import { ErrorText, formatPhone, IconButton, makeStyles, useTheme, useType } from '../src/ui';
+import { ErrorText, formatPhone, IconButton, makeStyles, useTheme, useTopInset, useType } from '../src/ui';
 
 const WAIT = 59;
 
 export default function Otp() {
-  const { phone, dev } = useLocalSearchParams<{ phone: string; dev?: string }>();
+  const params = useLocalSearchParams<{ phone: string; dev?: string; channel?: string }>();
+  const { phone, dev } = params;
+  const [channel, setChannel] = useState(params.channel === 'telegram' ? 'telegram' : 'sms');
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const top = useTopInset(12);
   const { signIn } = useAuth();
   const { c } = useTheme();
   const s = useStyles();
@@ -64,8 +67,9 @@ export default function Otp() {
   const resend = async () => {
     setError(null);
     try {
-      const r = await api<{ dev_code: string | null }>('/auth/otp/request', { method: 'POST', body: { phone } });
+      const r = await api<{ dev_code: string | null; channel?: 'sms' | 'telegram' }>('/auth/otp/request', { method: 'POST', body: { phone } });
       if (r.dev_code) setCode(r.dev_code);
+      setChannel(r.channel === 'telegram' ? 'telegram' : 'sms');
       setLeft(WAIT);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : t("Xatolik yuz berdi"));
@@ -73,13 +77,13 @@ export default function Otp() {
   };
 
   return (
-    <View style={[s.screen, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 20 }]}>
+    <View style={[s.screen, { paddingTop: top, paddingBottom: insets.bottom + 20 }]}>
       <View style={[s.blob, { backgroundColor: c.accentSoft }]} />
       <IconButton icon="chevron-back" label={t("Orqaga")} onPress={() => router.back()} />
       <View style={{ marginTop: 28, gap: 10 }}>
         <Text style={ty.display}>{t("Kodni kiriting")}</Text>
         <Text style={[ty.body, { color: c.muted, lineHeight: 22 }]}>
-          {t("6 xonali kod yuborildi:")}{'\n'}
+          {channel === 'telegram' ? t("6 xonali kod Telegramingizga (@ChronixUzBot) yuborildi:") : t("6 xonali kod yuborildi:")}{'\n'}
           <Text style={{ color: c.text, fontWeight: '800' }}>+998 {formatPhone((phone ?? '').replace(/^\+998/, ''))}</Text>
           {'  ·  '}
           <Text style={{ color: c.accent, fontWeight: '700' }} onPress={() => router.back()}>{t("O'zgartirish")}</Text>

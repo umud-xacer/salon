@@ -9,13 +9,14 @@ import { useAuth } from '../src/auth';
 import { getPendingLink, loadLoginMethods, LoginMethods, setPendingLink, signInWithGoogle } from '../src/socialAuth';
 import { t } from '../src/i18n';
 import { LangSwitch } from '../src/LangSwitch';
-import { Button, ErrorText, formatPhone, Icon, makeStyles, Pressy, useTheme, useType } from '../src/ui';
+import { Button, ErrorText, formatPhone, Icon, makeStyles, Pressy, useTheme, useTopInset, useType } from '../src/ui';
 
 export const PRIVACY_URL = 'https://chronix.uz/privacy';
 
 export default function Login() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const top = useTopInset(16);
   const { c } = useTheme();
   const s = useStyles();
   const ty = useType();
@@ -55,10 +56,14 @@ export default function Login() {
     setError(null);
     try {
       const phone = `+998${digits}`;
-      const r = await api<{ dev_code: string | null }>('/auth/otp/request', { method: 'POST', body: { phone } });
-      router.push({ pathname: '/otp', params: { phone, dev: r.dev_code ?? '' } });
+      const r = await api<{ dev_code: string | null; channel?: 'sms' | 'telegram' }>('/auth/otp/request', { method: 'POST', body: { phone } });
+      router.push({ pathname: '/otp', params: { phone, dev: r.dev_code ?? '', channel: r.channel ?? 'sms' } });
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : t("Xatolik yuz berdi"));
+      if (e instanceof ApiError && e.code === 'sms_unavailable' && methods.telegram) {
+        setError(t("SMS xizmati vaqtincha band. Kodni olish uchun quyidagi «Telegram orqali kirish» tugmasini bosing"));
+      } else {
+        setError(e instanceof ApiError ? e.message : t("Xatolik yuz berdi"));
+      }
     } finally {
       setBusy(false);
     }
@@ -66,7 +71,7 @@ export default function Login() {
 
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: c.bg }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 24, paddingTop: insets.top + 12, paddingBottom: insets.bottom + 24 }}
+      <ScrollView contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 24, paddingTop: top, paddingBottom: insets.bottom + 24 }}
         keyboardShouldPersistTaps="handled">
         <View style={{ alignItems: 'flex-end' }}><LangSwitch /></View>
 

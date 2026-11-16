@@ -69,12 +69,39 @@ def _create_otp(db: Session, phone: str, ip: str | None, code: str | None = None
     return code
 
 
-def _deliver(send, phone: str, code: str) -> None:
+_TG_CODE = {
+    "otp": "🔐 Chronix'ga kirish kodi: {code}\n\n"
+           "Kodni hech kimga bermang. / Код для входа в Chronix. Никому его не сообщайте.",
+    "reset": "🔐 Chronix parolini tiklash kodi: {code}\n\n"
+             "Kodni hech kimga bermang. / Код для сброса пароля Chronix. Никому его не сообщайте.",
+}
+
+
+def _telegram_chat(db: Session, phone: str) -> int | None:
+    """Raqam egasi avval Telegram orqali kirgan bo'lsa — bot chat_id si (kontakt bilan tasdiqlangan)."""
+    if not get_settings().telegram_login_enabled:
+        return None
+    return db.execute(text("""
+        SELECT i.chat_id FROM user_identities i JOIN users u ON u.id = i.user_id
+         WHERE u.phone = :p AND u.status = 'active' AND i.provider = 'telegram' AND i.chat_id IS NOT NULL
+    """), {"p": phone}).scalar()
+
+
+def _deliver(db: Session, send, phone: str, code: str, purpose: str = "otp") -> str:
+    """Kodni yetkazadi: Telegram (bog'langan bo'lsa), aks holda SMS. Qaytaradi: 'telegram' | 'sms'."""
+    from app.services import telegram_bot
+    chat = _telegram_chat(db, phone)
+    if chat is not None and telegram_bot.send_message(chat, _TG_CODE[purpose].format(code=code)):
+        return "telegram"
     try:
         send(phone, code)
     except sms.SmsError as e:
         log.error("SMS yuborilmadi: %s", e)
+        if get_settings().telegram_login_enabled:
+            raise SmsUnavailable("sms_unavailable", "SMS xizmati vaqtincha band. Kodni olish uchun quyidagi "
+                                                    "«Telegram orqali kirish» tugmasini bosing")
         raise SmsUnavailable("sms_unavailable", "SMS yuborib bo'lmadi. Birozdan keyin qayta urinib ko'ring")
+    return "sms"
 
 
 def _is_review_phone(phone: str) -> bool:
@@ -82,13 +109,13 @@ def _is_review_phone(phone: str) -> bool:
     return bool(s.review_phone and s.review_code and phone == s.review_phone)
 
 
-def request_otp(db: Session, phone: str, ip: str | None) -> str:
+def request_otp(db: Session, phone: str, ip: str | None) -> tuple[str, str]:
+    """Qaytaradi: (kod, kanal) — kanal 'sms' yoki 'telegram'."""
     if _is_review_phone(phone):
         # Google Play tekshiruvchisi: SMS yuborilmaydi, kod o'zgarmas (qolgan tekshiruvlar odatdagidek)
-        return _create_otp(db, phone, ip, code=get_settings().review_code.get_secret_value())
+        return _create_otp(db, phone, ip, code=get_settings().review_code.get_secret_value()), "sms"
     code = _create_otp(db, phone, ip)
-    _deliver(sms.send_otp, phone, code)
-    return code
+    return code, _deliver(db, sms.send_otp, phone, code)
 
 
 def _consume_otp(db: Session, phone: str, code: str) -> None:
@@ -123,7 +150,8 @@ def verify_otp(db: Session, phone: str, code: str, full_name: str | None,
 
 def _login_verified_phone(db: Session, phone: str, full_name: str | None, user_agent: str | None, ip: str | None,
                           *, birth_date=None, gender: str | None = None, password: str | None = None,
-                          link_token: str | None = None) -> tuple[User, TokenPair, bool]:
+                          link_token: str | None = None,
+                          telegram: tuple[int, int] | None = None) -> tuple[User, TokenPair, bool]:
     """Raqam egasi tasdiqlangan (SMS kod yoki Telegram kontakti): kirish yoki yangi mijozni ro'yxatdan o'tkazish."""
     user = db.scalars(select(User).where(User.phone == phone).with_for_update()).first()
     is_new = user is None
@@ -141,6 +169,8 @@ def _login_verified_phone(db: Session, phone: str, full_name: str | None, user_a
         user.must_change_password = False
     if link_token:
         _link_identity(db, user, link_token)
+    if telegram and telegram[0] is not None:
+        _link_telegram(db, user, *telegram)
     user.last_login_at = _now()
     tokens = _issue_tokens(db, user, user_agent=user_agent, ip=ip)
     db.commit()
@@ -207,7 +237,7 @@ def telegram_poll(db: Session, nonce: str, user_agent: str | None,
                   ip: str | None) -> tuple[User, TokenPair, bool] | None:
     """None — hali kutilmoqda. Tayyor bo'lsa bir martalik: kirish tokenlari."""
     row = db.execute(text("""
-        SELECT id, status, phone, full_name, link_token, expires_at > now() AS alive
+        SELECT id, status, phone, full_name, link_token, tg_user_id, tg_chat_id, expires_at > now() AS alive
           FROM telegram_logins WHERE nonce_hash = :h FOR UPDATE
     """), {"h": security.hash_token(nonce)}).mappings().first()
     if row is None or row["status"] == "used" or (row["status"] == "pending" and not row["alive"]):
@@ -217,7 +247,8 @@ def telegram_poll(db: Session, nonce: str, user_agent: str | None,
         db.rollback()
         return None
     db.execute(text("UPDATE telegram_logins SET status = 'used' WHERE id = :i"), {"i": row["id"]})
-    return _login_verified_phone(db, row["phone"], row["full_name"], user_agent, ip, link_token=row["link_token"])
+    return _login_verified_phone(db, row["phone"], row["full_name"], user_agent, ip, link_token=row["link_token"],
+                                 telegram=(row["tg_user_id"], row["tg_chat_id"]))
 
 
 # ─── Google orqali kirish ───────────────────────────────────────────────────
@@ -261,6 +292,15 @@ def _decode_link_token(token: str) -> dict:
     if c.get("typ") != "link" or c.get("prv") != "google":
         raise AuthError("link_expired", "Google bilan bog'lash muddati o'tdi. Qaytadan urinib ko'ring")
     return c
+
+
+def _link_telegram(db: Session, user: User, tg_user_id: int, chat_id: int | None) -> None:
+    """Telegram hisobi shu foydalanuvchiga: keyingi kirish kodlari bot orqali keladi. Telegram hisobi
+    boshqa raqamga o'tsa (boshqa foydalanuvchi) — eski bog'lanish olib tashlanadi."""
+    db.execute(text("DELETE FROM user_identities WHERE provider = 'telegram' AND (user_id = :u OR subject = :s)"),
+               {"u": user.id, "s": str(tg_user_id)})
+    db.execute(text("INSERT INTO user_identities (user_id, provider, subject, chat_id) VALUES (:u, 'telegram', :s, :c)"),
+               {"u": user.id, "s": str(tg_user_id), "c": chat_id})
 
 
 def _link_identity(db: Session, user: User, link_token: str) -> None:
@@ -390,7 +430,7 @@ def request_password_reset(db: Session, phone: str, ip: str | None) -> str | Non
     if _managed(db, user.id):
         raise Forbidden("password_managed", _MANAGED)
     code = _create_otp(db, phone, ip)
-    _deliver(sms.send_password_reset, phone, code)
+    _deliver(db, sms.send_password_reset, phone, code, "reset")
     return code
 
 

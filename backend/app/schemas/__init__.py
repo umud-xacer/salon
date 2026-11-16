@@ -24,6 +24,7 @@ class OtpRequest(_Phone):
 class OtpRequestOut(BaseModel):
     sent: bool = True
     expires_in: int
+    channel: Literal["sms", "telegram"] = "sms"   # kod qayerga yuborildi (ilova yozuvi shunga qarab)
     dev_code: str | None = None            # faqat dev/test muhitida
 
 

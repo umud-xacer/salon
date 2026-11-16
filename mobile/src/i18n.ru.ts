@@ -645,4 +645,7 @@ export const RU: Record<string, string> = {
   "yoki": "или",
   "«Start» ni bosing": "Нажмите «Start»",
   "«📱 Raqamni yuborish» ni bosing": "Нажмите «📱 Отправить номер»",
+  // ── Kod Telegram orqali ──
+  "6 xonali kod Telegramingizga (@ChronixUzBot) yuborildi:": "6-значный код отправлен в ваш Telegram (@ChronixUzBot):",
+  "SMS xizmati vaqtincha band. Kodni olish uchun quyidagi «Telegram orqali kirish» tugmasini bosing": "SMS-сервис временно недоступен. Чтобы получить код, нажмите кнопку «Войти через Telegram» ниже",
 };
