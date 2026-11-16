@@ -14,6 +14,7 @@ import { pick, t } from '../../src/i18n';
 import { distanceM, getLastLocation } from '../../src/lastLocation';
 import { useMyLocation } from '../../src/location';
 import { PharmacyCatalog } from '../../src/PharmacyCatalog';
+import { BusinessDeals } from '../../src/promos';
 import { addRecent } from '../../src/recent';
 import { BusinessReviews } from '../../src/Reviews';
 import { distanceText, SalonCardBig } from '../../src/SalonCard';
@@ -203,6 +204,7 @@ export default function Business() {
 
         {/* Xizmatlar */}
         <View onLayout={mark('services')} style={s.section}>
+          {canBook && <BusinessDeals businessId={b.id} slug={b.slug} lat={b.lat} lng={b.lng} />}
           <Text style={ty.h2}>{kind === 'pharmacy' ? t("Katalog") : t("Xizmatlar")}</Text>
           {kind === 'pharmacy' && <PharmacyCatalog slug={b.slug} />}
           {b.service_groups.length > 1 && (

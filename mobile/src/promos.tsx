@@ -127,7 +127,82 @@ export function Perks({ refreshKey }: { refreshKey: number }) {
   );
 }
 
+/** Salon sahifasi: shu muassasaning bugungi chegirmali bo'sh vaqtlari va ochiq promokodlari (bo'lmasa — ko'rinmaydi). */
+export function BusinessDeals({ businessId, slug, lat, lng }: { businessId: number; slug: string; lat?: number; lng?: number }) {
+  const router = useRouter();
+  const { c } = useTheme();
+  const s = useStyles();
+  const [hot, setHot] = useState<HotSlot[]>([]);
+  const [codes, setCodes] = useState<Offer[]>([]);
+
+  useEffect(() => {
+    if (lat == null || lng == null) return;
+    const p = new URLSearchParams({ lat: String(lat), lng: String(lng), radius_m: '500' });
+    api<HotSlot[]>(`/catalog/hot-slots?${p}&limit=20`)
+      .then((l) => setHot(l.filter((x) => x.business_id === businessId).sort((a, b) => a.starts_at.localeCompare(b.starts_at))))
+      .catch(() => setHot([]));
+    api<Offer[]>(`/catalog/offers?${p}`).then((l) => setCodes(l.filter((x) => x.business_id === businessId))).catch(() => setCodes([]));
+  }, [businessId, lat, lng]);
+
+  const ends = hot.length ? hot.map((x) => x.ends_window.slice(0, 5)).sort()[0] : null;
+  const countdown = useCountdown(ends);
+  if (!hot.length && !codes.length) return null;
+
+  return (
+    <View style={{ gap: 12 }}>
+      {hot.length > 0 && (
+        <View style={s.dealsHead}>
+          <Icon name="flash" size={16} color={c.hot} />
+          <Text style={s.title}>{t("Bugungi chegirmalar")}</Text>
+          {countdown && <Text style={[s.muted, { color: c.hot, ...font('700') }]}>{countdown}</Text>}
+        </View>
+      )}
+      {hot.length > 0 && (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -24 }}
+          contentContainerStyle={{ paddingHorizontal: 24, gap: 10 }}>
+          {hot.map((h) => (
+            <Pressy key={`${h.service_id}-${h.starts_at}`} style={s.deal} scaleTo={0.96} accessibilityRole="button"
+              accessibilityLabel={t("{a}, {b}, {c} foiz chegirma", { a: pick(h.service_name, h.service_name_ru), b: h.time, c: h.percent })}
+              onPress={() => router.push({ pathname: '/book', params: {
+                slug, serviceId: String(h.service_id), memberId: String(h.member_id), startsAt: h.starts_at,
+              } })}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Text style={s.dealTime}>{h.time}</Text>
+                <View style={[s.pill, { backgroundColor: c.hot, paddingVertical: 3, paddingHorizontal: 8 }]}>
+                  <Text style={[s.pillText, { fontSize: 12 }]}>−{h.percent}%</Text>
+                </View>
+              </View>
+              <Text style={s.muted} numberOfLines={1}>{pick(h.service_name, h.service_name_ru)} · {h.member_name}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6 }}>
+                <Text style={s.price}>{money(h.final)}</Text>
+                <Text style={s.old}>{money(h.price)}</Text>
+              </View>
+            </Pressy>
+          ))}
+        </ScrollView>
+      )}
+      {codes.map((o) => (
+        <View key={o.code} style={s.codeRow}>
+          <View style={s.perkIcon}><Icon name="gift-outline" size={18} color={c.accent} /></View>
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text style={s.title} numberOfLines={1}>−{o.percent}% {o.title}</Text>
+            <Text style={s.muted} numberOfLines={1}>
+              {o.first_visit_only ? t("Birinchi tashrif uchun") : t("Bron qilishda kodni kiriting")}
+              {o.valid_to ? ` · ${t("{a} gacha", { a: o.valid_to.slice(0, 10).split('-').reverse().join('.') })}` : ''}
+            </Text>
+          </View>
+          <View style={s.codeBox}><Text style={s.code} selectable>{o.code}</Text></View>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 const useStyles = makeStyles((c) => ({
+  dealsHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  deal: { width: 170, padding: 12, gap: 4, borderRadius: 16, borderWidth: 1, borderColor: c.line, backgroundColor: c.bg },
+  dealTime: { fontSize: 18, fontWeight: '800', color: c.text },
+  codeRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: 16, backgroundColor: c.accentSoft },
   hot: { width: 250 },
   hotTop: { height: 150, borderRadius: 16, overflow: 'hidden', backgroundColor: c.surface2 },
   fill: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },

@@ -4,7 +4,7 @@ import { ReactNode, useCallback, useEffect, useState } from 'react';
 import { Alert, Image, Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { api, Appointment, BusinessCard } from '../../src/api';
+import { api, Appointment, BusinessCard, MyLoyalty } from '../../src/api';
 import { useAuth } from '../../src/auth';
 import { bioCheck, bioKind, bioLockEnabled, setBioAsked, setBioLock } from '../../src/biometric';
 import { useFavorites } from '../../src/favorites';
@@ -44,6 +44,7 @@ export default function Profile() {
   const user = me?.user;
   const [mine, setMine] = useState<Appointment[]>([]);
   const [favs, setFavs] = useState<BusinessCard[]>([]);
+  const [loyalty, setLoyalty] = useState<MyLoyalty[]>([]);
   const [bio, setBio] = useState<'face' | 'finger' | null>(null);
   const [lock, setLock] = useState(bioLockEnabled);
 
@@ -54,7 +55,10 @@ export default function Profile() {
   useFocusEffect(useCallback(() => {
     api<Appointment[]>('/appointments/mine?upcoming=false').then(setMine).catch(() => {});
     api<BusinessCard[]>('/me/favorites').then(setFavs).catch(() => {});
+    api<MyLoyalty[]>('/me/loyalty').then(setLoyalty).catch(() => {});
   }, []));
+  const readyBonus = loyalty.filter((l) => l.ready).length;
+  const bonusText = readyBonus > 0 ? t("{a} ta tayyor", { a: readyBonus }) : loyalty.length > 0 ? t("{a} ta seriya", { a: loyalty.length }) : undefined;
 
   const facts = [
     user?.phone,
@@ -130,6 +134,9 @@ export default function Profile() {
 
       <View style={[s.pad, { marginTop: 22, gap: 10 }]}>
         <Text style={ty.h2}>{t("Sozlamalar")}</Text>
+        <View style={s.group}>
+          <Row icon="ribbon-outline" label={t("Bonuslarim")} value={bonusText} onPress={() => router.push('/bonuses')} />
+        </View>
         <View style={s.group}>
           <Row icon="notifications-outline" label={t("Bildirishnomalar")} onPress={() => router.push('/inbox')} />
           <Row icon="alarm-outline" label={t("Eslatmalar va ovoz")} onPress={() => router.push('/settings')} />

@@ -212,6 +212,7 @@ function Navigator() {
       <Stack.Screen name="password" options={{ title: t("Parol bilan kirish") }} />
       <Stack.Screen name="search" options={{ headerShown: false, animation: 'fade_from_bottom' }} />
       <Stack.Screen name="inbox" options={{ title: t("Bildirishnomalar") }} />
+      <Stack.Screen name="bonuses" options={{ title: t("Bonuslarim") }} />
       <Stack.Screen name="profile-edit" options={{ title: t("Shaxsiy ma'lumotlar") }} />
       <Stack.Screen name="favorites" options={{ title: t("Sevimli salonlar") }} />
       <Stack.Screen name="settings" options={{ title: t("Sozlamalar") }} />
