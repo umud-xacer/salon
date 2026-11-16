@@ -72,6 +72,7 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - ./web-dist:/srv/web:ro
       - ./landing-dist:/srv/landing:ro
+      - ./market-dist:/srv/market:ro
       - ./sites:/etc/caddy/sites:ro
       - media:/srv/media:ro
       - caddy_data:/data

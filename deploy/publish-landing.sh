@@ -1,5 +1,5 @@
 #!/bin/sh
-# Taqdimot saytini (landing/) kompyuterda quradi va serverga qo'yadi.
+# Taqdimot saytini (landing/, chronix.uz/biznes/) kompyuterda quradi va serverga qo'yadi.
 # Foydalanish (Git Bash):  sh deploy/publish-landing.sh
 # Yangi fayllar avval yonidagi papkaga tushadi, keyin birdaniga almashadi.
 set -eu
