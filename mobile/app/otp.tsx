@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api, ApiError, LoginOut } from '../src/api';
 import { useAuth } from '../src/auth';
 import { t } from '../src/i18n';
+import { getPendingLink, setPendingLink } from '../src/socialAuth';
 import { ErrorText, formatPhone, IconButton, makeStyles, useTheme, useType } from '../src/ui';
 
 const WAIT = 59;
@@ -34,7 +35,10 @@ export default function Otp() {
     setBusy(true);
     setError(null);
     try {
-      await signIn(await api<LoginOut>('/auth/otp/verify', { method: 'POST', body: { phone, code: value } }));
+      const link_token = getPendingLink() ?? undefined;
+      const login = await api<LoginOut>('/auth/otp/verify', { method: 'POST', body: { phone, code: value, link_token } });
+      setPendingLink(null);
+      await signIn(login);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : t("Xatolik yuz berdi"));
       setCode('');

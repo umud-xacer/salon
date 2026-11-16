@@ -77,7 +77,7 @@ async function handleAction(router: ReturnType<typeof useRouter>, r: Notificatio
   openAlarm(router, data);
 }
 
-const AUTH_SCREENS = ['login', 'otp', 'password'];
+const AUTH_SCREENS = ['login', 'otp', 'password', 'telegram-wait'];
 const SETUP_SCREENS = { profile: 'onboarding', biometric: 'biometric' } as const;
 
 /** Face ID yoqilgan bo'lsa: ilova ochilganda (va fondan qaytganda) shaxs tasdiqlanadi */
@@ -207,6 +207,8 @@ function Navigator() {
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="login" options={{ headerShown: false }} />
       <Stack.Screen name="otp" options={{ headerShown: false }} />
+      <Stack.Screen name="telegram-wait" options={{ headerShown: false }} />
+      <Stack.Screen name="delete-account" options={{ title: t("Hisobni o'chirish") }} />
       <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false }} />
       <Stack.Screen name="biometric" options={{ headerShown: false, gestureEnabled: false }} />
       <Stack.Screen name="password" options={{ title: t("Parol bilan kirish") }} />

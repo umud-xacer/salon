@@ -1,7 +1,7 @@
 // Profil (prototip "11"): shaxsiy karta va statistika, sevimlilar, sozlamalar (mavzu, Face ID, til), chiqish.
 import { useFocusEffect, useRouter } from 'expo-router';
 import { ReactNode, useCallback, useEffect, useState } from 'react';
-import { Alert, Image, Pressable, ScrollView, Switch, Text, View } from 'react-native';
+import { Alert, Image, Linking, Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, Appointment, BusinessCard, MyLoyalty } from '../../src/api';
@@ -156,7 +156,14 @@ export default function Profile() {
           <Row icon="help-circle-outline" label={t("Yordam va aloqa")} onPress={() => router.push('/settings')} />
         </View>
         <View style={s.group}>
+          <Row icon="shield-checkmark-outline" label={t("Maxfiylik siyosati")}
+            onPress={() => { Linking.openURL('https://chronix.uz/privacy').catch(() => {}); }} />
+        </View>
+        <View style={s.group}>
           <Row icon="log-out-outline" label={t("Chiqish")} danger onPress={logout} />
+          {me?.workspace === 'client' && (
+            <Row icon="trash-outline" label={t("Hisobni o'chirish")} danger onPress={() => router.push('/delete-account')} />
+          )}
         </View>
         <Text style={[ty.small, { textAlign: 'center', marginTop: 4 }]}>{t("Chronix · Vaqtingiz – bizning ustuvorligimiz")}</Text>
       </View>
