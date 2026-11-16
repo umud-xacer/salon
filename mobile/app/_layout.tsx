@@ -1,5 +1,5 @@
 import * as Notifications from 'expo-notifications';
-import { Stack, usePathname, useRouter, useSegments } from 'expo-router';
+import { Stack, usePathname, useRootNavigationState, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, AppState, Platform, Text, View } from 'react-native';
@@ -7,6 +7,7 @@ import { ActivityIndicator, Alert, AppState, Platform, Text, View } from 'react-
 import { AnimatedSplash } from '../src/AnimatedSplash';
 import { api, ApiError, Appointment, Notification as ApiNotification } from '../src/api';
 import { AuthProvider, useAuth } from '../src/auth';
+import { AuthGateProvider } from '../src/authGate';
 import { FavoritesProvider } from '../src/favorites';
 import { cancelBookingReminder, syncBookingAlarms } from '../src/localReminders';
 import {
@@ -108,17 +109,41 @@ function Navigator() {
   const { c, dark } = useTheme();
   const router = useRouter();
   const segments = useSegments();
+  const nav = useRootNavigationState();
   const [locked, setLocked] = useState(bioLockEnabled);
   useOtaUpdates();
 
+  // "Lazy auth": mehmon ilovani erkin ko'radi (majburiy kirish yo'q). Kirgandan so'ng kirish/sozlash ekranlari
+  // yopiladi va foydalanuvchi qaysi ekrandan (salon, bron oynasi...) kirishga o'tgan bo'lsa, o'shanga qaytadi.
   useEffect(() => {
-    if (!ready) return;
+    if (!ready || !me) return;
     const here = segments[0] as string | undefined;
-    const onAuth = AUTH_SCREENS.includes(here ?? '');
-    if (!me && !onAuth) router.replace('/login');
-    else if (me && setup && here !== SETUP_SCREENS[setup]) router.replace(`/${SETUP_SCREENS[setup]}`);
-    else if (me && !setup && (onAuth || here === 'onboarding' || here === 'biometric')) router.replace('/');
-  }, [me, ready, setup, segments, router]);
+    const routes = nav?.routes ?? [];
+    const trailing = (names: string[]) => {
+      let n = 0;
+      for (let i = routes.length - 1; i >= 0 && names.includes(routes[i].name); i--) n++;
+      return n;
+    };
+    const setupNames = Object.values(SETUP_SCREENS) as string[];
+    const leave = (n: number) => {
+      if (n > 0 && routes.length > n) router.dismiss(n);
+      else router.replace('/');
+    };
+    if (AUTH_SCREENS.includes(here ?? '')) {
+      const n = trailing(AUTH_SCREENS);
+      if (setup) {
+        if (n > 1 && routes.length > n) router.dismiss(n - 1);
+        router.replace(`/${SETUP_SCREENS[setup]}`);
+      } else {
+        leave(n);
+      }
+    } else if (setup && here !== SETUP_SCREENS[setup]) {
+      if (setupNames.includes(here ?? '')) router.replace(`/${SETUP_SCREENS[setup]}`);
+      else router.push(`/${SETUP_SCREENS[setup]}`);
+    } else if (!setup && setupNames.includes(here ?? '')) {
+      leave(trailing(setupNames));
+    }
+  }, [me, ready, setup, segments, nav, router]);
 
   // Fondan qaytganda qayta qulflash (Face ID yoqilgan bo'lsa)
   useEffect(() => {
@@ -253,9 +278,11 @@ export default function RootLayout() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <FavoritesProvider>
-          <Navigator />
-        </FavoritesProvider>
+        <AuthGateProvider>
+          <FavoritesProvider>
+            <Navigator />
+          </FavoritesProvider>
+        </AuthGateProvider>
         {splash && <AnimatedSplash onReady={hideNative} onDone={finish} />}
       </AuthProvider>
     </ThemeProvider>

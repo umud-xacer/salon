@@ -648,4 +648,18 @@ export const RU: Record<string, string> = {
   // ── Kod Telegram orqali ──
   "6 xonali kod Telegramingizga (@ChronixUzBot) yuborildi:": "6-значный код отправлен в ваш Telegram (@ChronixUzBot):",
   "SMS xizmati vaqtincha band. Kodni olish uchun quyidagi «Telegram orqali kirish» tugmasini bosing": "SMS-сервис временно недоступен. Чтобы получить код, нажмите кнопку «Войти через Telegram» ниже",
+  // ── Mehmon rejimi (lazy auth) ──
+  "Bonuslaringizni ko'rish uchun kiring →": "Войдите, чтобы увидеть свои бонусы →",
+  "Bonuslaringizni ko'rish uchun profilingizga kiring yoki ro'yxatdan o'ting": "Войдите или зарегистрируйтесь, чтобы увидеть свои бонусы",
+  "Bron qilish uchun profilingizga kiring yoki ro'yxatdan o'ting": "Чтобы записаться, войдите в профиль или зарегистрируйтесь",
+  "Bron qilish, sevimlilar va bonuslar uchun profilingizga kiring": "Войдите в профиль, чтобы записываться, сохранять избранное и получать бонусы",
+  "Bronlar, sevimlilar va bonuslar uchun profilingizga kiring yoki ro'yxatdan o'ting": "Войдите или зарегистрируйтесь для записей, избранного и бонусов",
+  "Bronlaringiz shu yerda bo'ladi": "Здесь будут ваши записи",
+  "Bronlaringizni ko'rish uchun profilingizga kiring yoki ro'yxatdan o'ting": "Войдите или зарегистрируйтесь, чтобы увидеть свои записи",
+  "Bronlaringizni ko'rish va boshqarish uchun profilingizga kiring": "Войдите в профиль, чтобы видеть и управлять записями",
+  "Davom etish uchun profilingizga kiring yoki ro'yxatdan o'ting": "Чтобы продолжить, войдите в профиль или зарегистрируйтесь",
+  "Profilingizga kiring": "Войдите в профиль",
+  "Sevimli salonlarni saqlash uchun profilingizga kiring yoki ro'yxatdan o'ting": "Чтобы сохранять избранные салоны, войдите или зарегистрируйтесь",
+  "Telefon raqam bilan kirish": "Войти по номеру телефона",
+  "Xush kelibsiz!": "Добро пожаловать!",
 };

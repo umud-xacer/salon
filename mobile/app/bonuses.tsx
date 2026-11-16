@@ -5,6 +5,8 @@ import { useCallback, useState } from 'react';
 import { RefreshControl, ScrollView, Text, View } from 'react-native';
 
 import { api, MyLoyalty, Offer } from '../src/api';
+import { useAuth } from '../src/auth';
+import { useAuthGate } from '../src/authGate';
 import { t } from '../src/i18n';
 import { useMyLocation } from '../src/location';
 import { HotSlots } from '../src/promos';
@@ -23,13 +25,16 @@ export default function Bonuses() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [key, setKey] = useState(0);
+  const { me } = useAuth();
+  const { requireAuth } = useAuthGate();
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     const p = new URLSearchParams({ lat: String(coords.latitude), lng: String(coords.longitude), radius_m: '15000' });
     try {
-      const [l, o] = await Promise.all([api<MyLoyalty[]>('/me/loyalty'), api<Offer[]>(`/catalog/offers?${p}`)]);
+      const [l, o] = await Promise.all([me ? api<MyLoyalty[]>('/me/loyalty') : Promise.resolve([] as MyLoyalty[]),
+        api<Offer[]>(`/catalog/offers?${p}`)]);
       setLoyalty(l);
       setOffers(o);
     } catch {
@@ -38,7 +43,7 @@ export default function Bonuses() {
       setLoading(false);
       setKey((k) => k + 1);
     }
-  }, [coords]);
+  }, [coords, me]);
 
   useFocusEffect(useCallback(() => { void load(); }, [load]));
 
@@ -59,6 +64,12 @@ export default function Bonuses() {
               {ready > 0 ? t("{a} ta chegirma tayyor", { a: ready }) : t("Tashrif qiling — chegirma yig'ing")}
             </Text>
             <Text style={ty.small}>{t("Har bir yakunlangan tashrif seriyaga qo'shiladi. Seriya to'lganda keyingi bron avtomatik arzonlashadi.")}</Text>
+            {!me && (
+              <Text style={[ty.small, { color: c.accent, fontWeight: '700', marginTop: 4 }]} accessibilityRole="button"
+                onPress={() => { requireAuth(t("Bonuslaringizni ko'rish uchun profilingizga kiring yoki ro'yxatdan o'ting")); }}>
+                {t("Bonuslaringizni ko'rish uchun kiring →")}
+              </Text>
+            )}
           </View>
         </View>
       </View>

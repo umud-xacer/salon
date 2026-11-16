@@ -5,6 +5,8 @@ import { Alert, FlatList, Linking, Platform, RefreshControl, Text, View } from '
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, ApiError, Appointment } from '../../src/api';
+import { useAuth } from '../../src/auth';
+import { useAuthGate } from '../../src/authGate';
 import { pickList, t } from '../../src/i18n';
 import { cancelBookingReminder } from '../../src/localReminders';
 import {
@@ -63,8 +65,11 @@ export default function Bookings() {
   const [items, setItems] = useState<Appointment[]>([]);
   const [tab, setTab] = useState<Tab>('active');
   const [loading, setLoading] = useState(false);
+  const { me } = useAuth();
+  const { requireAuth } = useAuthGate();
 
   const load = useCallback(async () => {
+    if (!me) { setItems([]); return; }
     setLoading(true);
     try {
       setItems(await api<Appointment[]>('/appointments/mine?upcoming=false'));
@@ -73,7 +78,7 @@ export default function Bookings() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [me]);
 
   useFocusEffect(useCallback(() => {
     void load();
@@ -99,6 +104,18 @@ export default function Bookings() {
       }),
     },
   ]);
+
+  if (!me) {
+    return (
+      <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top + 12, paddingHorizontal: 16 }}>
+        <Text style={[ty.display, { marginBottom: 14 }]}>{t("Bronlarim")}</Text>
+        <EmptyState icon="calendar-outline" title={t("Bronlaringiz shu yerda bo'ladi")}
+          text={t("Bronlaringizni ko'rish va boshqarish uchun profilingizga kiring")}
+          action={t("Kirish yoki ro'yxatdan o'tish")}
+          onAction={() => { requireAuth(t("Bronlaringizni ko'rish uchun profilingizga kiring yoki ro'yxatdan o'ting")); }} />
+      </View>
+    );
+  }
 
   const shown = items.filter((a) => inTab(a, tab));
   const counts = { active: items.filter((a) => inTab(a, 'active')).length };

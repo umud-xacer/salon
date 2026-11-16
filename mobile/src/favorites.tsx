@@ -3,6 +3,8 @@ import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, 
 
 import { api } from './api';
 import { useAuth } from './auth';
+import { useAuthGate } from './authGate';
+import { t } from './i18n';
 
 type Favorites = { has: (id: number) => boolean; toggle: (id: number) => void; count: number };
 
@@ -23,7 +25,9 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
   }, [me]);
 
   // Tugma darhol javob beradi, server rad etsa holat qaytariladi
+  const { requireAuth } = useAuthGate();
   const toggle = useCallback((id: number) => {
+    if (!requireAuth(t("Sevimli salonlarni saqlash uchun profilingizga kiring yoki ro'yxatdan o'ting"))) return;
     setIds((current) => {
       const on = current.has(id);
       const next = new Set(current);
@@ -39,7 +43,7 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
       });
       return next;
     });
-  }, []);
+  }, [requireAuth]);
 
   const value = useMemo<Favorites>(() => ({ has: (id) => ids.has(id), toggle, count: ids.size }), [ids, toggle]);
   return <FavoritesContext.Provider value={value}>{children}</FavoritesContext.Provider>;

@@ -6,12 +6,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, Appointment, BusinessCard, MyLoyalty } from '../../src/api';
 import { useAuth } from '../../src/auth';
+import { useAuthGate } from '../../src/authGate';
 import { bioCheck, bioKind, bioLockEnabled, setBioAsked, setBioLock } from '../../src/biometric';
 import { useFavorites } from '../../src/favorites';
 import { getLang, pick, t } from '../../src/i18n';
 import { chooseLanguage, LANG_NAMES } from '../../src/LangSwitch';
 import {
-  ageOf, Avatar, Gradient, Icon, IconButton, IconName, makeStyles, Pressy, SectionHeader, useTabSpace, useTheme, useType,
+  ageOf, Avatar, Button, Gradient, Icon, IconButton, IconName, makeStyles, Pressy, SectionHeader, useTabSpace, useTheme, useType,
 } from '../../src/ui';
 
 function Row({ icon, label, value, onPress, right, danger }: {
@@ -52,11 +53,14 @@ export default function Profile() {
     bioKind().then(setBio);
   }, []);
 
+  const { requireAuth } = useAuthGate();
+
   useFocusEffect(useCallback(() => {
+    if (!me) return;
     api<Appointment[]>('/appointments/mine?upcoming=false').then(setMine).catch(() => {});
     api<BusinessCard[]>('/me/favorites').then(setFavs).catch(() => {});
     api<MyLoyalty[]>('/me/loyalty').then(setLoyalty).catch(() => {});
-  }, []));
+  }, [me]));
   const readyBonus = loyalty.filter((l) => l.ready).length;
   const bonusText = readyBonus > 0 ? t("{a} ta tayyor", { a: readyBonus }) : loyalty.length > 0 ? t("{a} ta seriya", { a: loyalty.length }) : undefined;
 
@@ -78,6 +82,46 @@ export default function Profile() {
     { text: t("Yo'q"), style: 'cancel' },
     { text: t("Chiqish"), style: 'destructive', onPress: () => { void signOut(); } },
   ]);
+
+  if (!me) {
+    const login = () => { requireAuth(t("Bronlar, sevimlilar va bonuslar uchun profilingizga kiring yoki ro'yxatdan o'ting")); };
+    return (
+      <ScrollView style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ paddingTop: insets.top + 12, paddingBottom: tabSpace }}>
+        <View style={[s.blob, { backgroundColor: c.accentSoft }]} />
+        <View style={s.pad}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Text style={ty.display}>{t("Profil")}</Text>
+            <IconButton icon={dark ? 'sunny-outline' : 'moon-outline'} label={t("Rejimni almashtirish")}
+              onPress={() => setMode(dark ? 'light' : 'dark')} />
+          </View>
+          <View style={[s.card, { gap: 14 }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+              <Avatar name="?" size={64} />
+              <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
+                <Text style={ty.h2}>{t("Xush kelibsiz!")}</Text>
+                <Text style={ty.small}>{t("Bron qilish, sevimlilar va bonuslar uchun profilingizga kiring")}</Text>
+              </View>
+            </View>
+            <Button title={t("Kirish yoki ro'yxatdan o'tish")} onPress={login} />
+          </View>
+        </View>
+        <View style={[s.pad, { marginTop: 22, gap: 10 }]}>
+          <Text style={ty.h2}>{t("Sozlamalar")}</Text>
+          <View style={s.group}>
+            <Row icon={dark ? 'moon-outline' : 'sunny-outline'} label={t("Mavzu")} value={dark ? t("Tungi") : t("Kunduzgi")}
+              onPress={() => router.push('/settings')} />
+            <Row icon="language-outline" label={t("Til")} value={LANG_NAMES[getLang()]} onPress={chooseLanguage} />
+          </View>
+          <View style={s.group}>
+            <Row icon="shield-checkmark-outline" label={t("Maxfiylik siyosati")}
+              onPress={() => { Linking.openURL('https://chronix.uz/privacy').catch(() => {}); }} />
+            <Row icon="help-circle-outline" label={t("Yordam va aloqa")} onPress={() => router.push('/settings')} />
+          </View>
+          <Text style={[ty.small, { textAlign: 'center', marginTop: 4 }]}>{t("Chronix · Vaqtingiz – bizning ustuvorligimiz")}</Text>
+        </View>
+      </ScrollView>
+    );
+  }
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ paddingTop: insets.top + 12, paddingBottom: tabSpace }}>

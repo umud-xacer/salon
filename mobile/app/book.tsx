@@ -10,6 +10,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, ApiError, Appointment, BusinessDetail, Quote, Service, Slot } from '../src/api';
+import { useAuth } from '../src/auth';
+import { useAuthGate } from '../src/authGate';
 import { pick, t } from '../src/i18n';
 import { scheduleBookingReminder } from '../src/localReminders';
 import {
@@ -49,6 +51,8 @@ export default function Book() {
   const bottom = useBottomSpace(12);
   const { height } = useWindowDimensions();
   const { c } = useTheme();
+  const { me } = useAuth();
+  const { requireAuth } = useAuthGate();
   const s = useStyles();
   const ty = useType();
   const reschedule = !!params.appointmentId;
@@ -145,7 +149,7 @@ export default function Book() {
 
   // Tasdiqlash: narx va chegirmani server hisoblaydi
   const loadQuote = useCallback(async (promo: string | null) => {
-    if (!slot || !service) return;
+    if (!slot || !service || !me) return;            // mehmon: chegirma kirgandan keyin hisoblanadi
     try {
       setQuote(await api<Quote>('/appointments/quote', { method: 'POST', body: {
         member_id: slot.member, service_id: service, starts_at: slot.starts_at, promo_code: promo,
@@ -153,7 +157,7 @@ export default function Book() {
     } catch {
       setQuote(null);
     }
-  }, [slot, service]);
+  }, [slot, service, me]);
 
   useEffect(() => {
     if (current === 'confirm' && !reschedule) void loadQuote(applied);
@@ -168,6 +172,8 @@ export default function Book() {
 
   const submit = async () => {
     if (!slot || !service) return;
+    // Lazy auth: tanlov saqlanadi, kirgandan keyin shu oynaga qaytib "Tasdiqlash" bosiladi
+    if (!requireAuth(t("Bron qilish uchun profilingizga kiring yoki ro'yxatdan o'ting"))) return;
     setBusy(true);
     setError(null);
     try {

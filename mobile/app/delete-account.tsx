@@ -1,4 +1,5 @@
 // Hisobni o'chirish (Google Play talabi): nima o'chishi tushuntiriladi, tasdiq so'zi yoziladi.
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Linking, ScrollView, Text, TextInput, View } from 'react-native';
 
@@ -11,6 +12,7 @@ export const DELETE_INFO_URL = 'https://chronix.uz/hisobni-ochirish';
 
 export default function DeleteAccount() {
   const { signOut } = useAuth();
+  const router = useRouter();
   const { c } = useTheme();
   const s = useStyles();
   const ty = useType();
@@ -27,6 +29,7 @@ export default function DeleteAccount() {
     try {
       await api('/auth/me', { method: 'DELETE' });
       await signOut();
+      if (router.canGoBack()) router.back();           // mehmon sifatida ilovada qoladi
     } catch (e) {
       setError(e instanceof ApiError ? e.message : t("Xatolik yuz berdi"));
       setBusy(false);

@@ -9,7 +9,7 @@ import { useAuth } from '../src/auth';
 import { getPendingLink, loadLoginMethods, LoginMethods, setPendingLink, signInWithGoogle } from '../src/socialAuth';
 import { t } from '../src/i18n';
 import { LangSwitch } from '../src/LangSwitch';
-import { Button, ErrorText, formatPhone, Icon, makeStyles, Pressy, useTheme, useTopInset, useType } from '../src/ui';
+import { Button, ErrorText, formatPhone, Icon, IconButton, makeStyles, Pressy, useTheme, useTopInset, useType } from '../src/ui';
 
 export const PRIVACY_URL = 'https://chronix.uz/privacy';
 
@@ -73,7 +73,12 @@ export default function Login() {
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: c.bg }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 24, paddingTop: top, paddingBottom: insets.bottom + 24 }}
         keyboardShouldPersistTaps="handled">
-        <View style={{ alignItems: 'flex-end' }}><LangSwitch /></View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          {router.canGoBack()
+            ? <IconButton icon="close" label={t("Yopish")} onPress={() => router.back()} />
+            : <View />}
+          <LangSwitch />
+        </View>
 
         <View style={s.brand}>
           <View style={s.logo}>
