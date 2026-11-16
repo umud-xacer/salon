@@ -53,8 +53,8 @@
 	}
 }
 
-# chronix.uz — mijozlar platformasi (market/), API shu domen ostida (/api, CORS kerak emas),
-# taqdimot sayti (landing/) — /biznes/. Kompyuterdan: sh deploy/publish-market.sh, sh deploy/publish-landing.sh
+# chronix.uz — mijozlar platformasi (market/; /biznes ham shu ilova ichida), API shu domen ostida (/api, CORS kerak emas).
+# Kompyuterdan: sh deploy/publish-market.sh
 {$LANDING_DOMAIN} {$LANDING_ALIAS:} {
 	encode gzip
 	header {
@@ -70,15 +70,6 @@
 
 	handle /api/* {
 		reverse_proxy api:8000
-	}
-
-	redir /biznes /biznes/ 308
-	handle_path /biznes/* {
-		root * /srv/landing
-		@lassets path /assets/*
-		header @lassets Cache-Control "public, max-age=31536000, immutable"
-		try_files {path} /index.html
-		file_server
 	}
 
 	handle {

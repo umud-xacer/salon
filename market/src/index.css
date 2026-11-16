@@ -59,3 +59,22 @@ body {
   transform: translate(-50%, -50%); display: inline-block; transition: transform .15s;
 }
 .chx-pin.on { background: #1f5bff; transform: translate(-50%, -50%) scale(1.18); }
+
+/* ── Ilova ko'rgazmasi animatsiyalari ── */
+@keyframes chx-screen { from { opacity: 0; transform: translateX(28px) scale(.98); } to { opacity: 1; transform: none; } }
+.chx-screen { animation: chx-screen .55s cubic-bezier(.22,1,.36,1) both; }
+@keyframes chx-pop { from { opacity: 0; transform: translateY(8px) scale(.96); } to { opacity: 1; transform: none; } }
+.chx-pop { animation: chx-pop .45s cubic-bezier(.22,1,.36,1) both; }
+@keyframes chx-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+.chx-float { animation: chx-float 6s ease-in-out infinite; }
+.chx-float-2 { animation: chx-float 5s ease-in-out infinite .8s; }
+.chx-float-3 { animation: chx-float 5.5s ease-in-out infinite 1.6s; }
+@keyframes chx-ring { 0% { box-shadow: 0 0 0 0 rgba(43,210,255,.6); transform: scale(.6); } 60% { transform: scale(1.05); } 100% { box-shadow: 0 0 0 22px rgba(43,210,255,0); transform: scale(1); } }
+.chx-ring { animation: chx-ring .9s cubic-bezier(.22,1,.36,1) both; }
+@keyframes chx-drop { from { opacity: 0; transform: translateY(-24px); } to { opacity: 1; transform: none; } }
+.chx-drop { animation: chx-drop .6s cubic-bezier(.22,1,.36,1) .25s both; }
+@keyframes chx-progress { from { width: 0; } to { width: 100%; } }
+.chx-progress { animation: chx-progress 3.2s linear both; }
+@media (prefers-reduced-motion: reduce) {
+  .chx-screen, .chx-pop, .chx-float, .chx-float-2, .chx-float-3, .chx-ring, .chx-drop, .chx-progress, .rise, .sheet { animation: none !important; }
+}

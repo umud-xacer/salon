@@ -85,5 +85,5 @@ export function getRecent(): string[] {
 }
 
 export const PLAY_URL = "";            // Play Market havolasi ilova chiqqach qo'yiladi
-export const BIZ_URL = "/biznes/";
+export const BIZ_URL = "/biznes";
 export const PANEL_URL = "https://www.chronix.uz/";

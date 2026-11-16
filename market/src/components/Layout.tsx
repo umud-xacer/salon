@@ -42,7 +42,7 @@ function Header() {
           </button>
         )}
         <nav className="hidden items-center gap-2 md:flex">
-          <a href={BIZ_URL} className="rounded-full px-4 py-2.5 text-sm font-semibold hover:bg-soft">Biznes uchun</a>
+          <Link to={BIZ_URL} className="rounded-full px-4 py-2.5 text-sm font-semibold hover:bg-soft">Biznes uchun</Link>
           {me ? (
             <>
               <NavLink to="/bronlarim" className="rounded-full px-4 py-2.5 text-sm font-semibold hover:bg-soft">Bronlarim</NavLink>
@@ -71,7 +71,7 @@ function Header() {
             <button onClick={() => { setMenu(false); requireAuth("Bronlaringizni boshqarish uchun profilingizga kiring yoki ro'yxatdan o'ting"); }}
               className="mt-2 flex h-12 w-full items-center justify-center rounded-full bg-brand font-bold text-white">Kirish yoki ro'yxatdan o'tish</button>
           )}
-          <a href={BIZ_URL} className="mt-2 flex h-12 items-center gap-3 rounded-xl px-2 font-semibold">Biznes uchun Chronix</a>
+          <Link to={BIZ_URL} className="mt-2 flex h-12 items-center gap-3 rounded-xl px-2 font-semibold">Biznes uchun Chronix</Link>
           {me && (
             <button onClick={() => { void signOut(); setMenu(false); }} className="flex h-12 w-full items-center gap-3 rounded-xl px-2 font-semibold text-hot">
               <LogOut size={18} /> Chiqish
@@ -106,8 +106,8 @@ function Footer() {
         <div>
           <h4 className="mb-3 font-bold">Biznes uchun</h4>
           <ul className="space-y-2 text-sm text-white/60">
-            <li><a href={BIZ_URL} className="hover:text-white">Chronix biznes uchun</a></li>
-            <li><a href={`${BIZ_URL}#narxlar`} className="hover:text-white">Narxlar</a></li>
+            <li><Link to={BIZ_URL} className="hover:text-white">Chronix biznes uchun</Link></li>
+            <li><Link to={`${BIZ_URL}#narxlar`} className="hover:text-white">Narxlar</Link></li>
             <li><a href={PANEL_URL} className="hover:text-white">Panelga kirish</a></li>
           </ul>
         </div>

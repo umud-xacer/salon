@@ -10,6 +10,7 @@ import { AuthModal } from "./components/AuthModal";
 import { Layout } from "./components/Layout";
 import { Bookings, Profile } from "./pages/Account";
 import Booking from "./pages/Booking";
+import Business from "./pages/Business";
 import Home from "./pages/Home";
 import Salon from "./pages/Salon";
 import Search from "./pages/Search";
@@ -39,6 +40,7 @@ createRoot(document.getElementById("root")!).render(
                 <Routes>
                   <Route path="/" element={<Home />} />
                   <Route path="/qidiruv" element={<Search />} />
+                  <Route path="/biznes" element={<Business />} />
                   <Route path="/s/:slug" element={<Salon />} />
                   <Route path="/bronlarim" element={<Bookings />} />
                   <Route path="/profil" element={<Profile />} />

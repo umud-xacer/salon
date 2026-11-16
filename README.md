@@ -112,7 +112,7 @@ Interfeys o'zbek va rus tillarida. Muassasa turiga qarab so'zlar ham moslashadi:
 ```
 mobile/    React Native (Expo) — mijoz ilovasi
 web/       React + TypeScript + Vite — biznes paneli va Super Admin
-landing/   Tanishtiruv sayti (3D)
+market/    chronix.uz — mijozlar platformasi va /biznes sahifasi
 backend/   FastAPI + PostgreSQL/PostGIS
   sql/       sxema, xavfsizlik siyosatlari va funksiyalar (manba shu yerda)
   tests/     haqiqiy PostgreSQL ustida ishlaydigan testlar

@@ -1,10 +1,11 @@
 // Bosh sahifa (Fresha tuzilishi, Chronix uslubi): to'q ko'k hero + qidiruv, yo'nalishlar, tavsiya etilganlar,
 // bugungi chegirmalar (Hot Slots), yaqin atrofdagilar, yangilar, ilova va biznes bloklari.
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, BadgeCheck, CalendarCheck2, Clock3, Flame, Smartphone, Star } from "lucide-react";
+import { ArrowRight, BadgeCheck, CalendarCheck2, Clock3, Flame, Smartphone } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { api, BusinessCard, Category, HotSlot } from "../api";
+import { AppShowcase } from "../components/AppShowcase";
 import { SalonCard } from "../components/SalonCard";
 import { SearchBar } from "../components/SearchBar";
 import { Carousel, Img, Section } from "../components/ui";
@@ -130,28 +131,11 @@ export default function Home() {
         </Section>
       )}
 
-      {/* ── Qanday ishlaydi ────────────────────────────────────────────── */}
-      <Section title="Qanday ishlaydi">
-        <div className="grid gap-4 sm:grid-cols-3">
-          {[
-            [Star, "Tanlang", "Reyting, haqiqiy sharhlar va narxlarni solishtiring"],
-            [CalendarCheck2, "Band qiling", "Xizmat, usta va qulay vaqtni tanlang — bron darhol yuboriladi"],
-            [Clock3, "Kelishni unutmang", "Tashrifdan oldin eslatma keladi, kerak bo'lsa vaqtni ko'chirasiz"],
-          ].map(([Icon, t, d], i) => {
-            const I = Icon as typeof Star;
-            return (
-              <div key={i} className="rounded-3xl bg-soft p-6">
-                <span className="bg-brand-grad mb-4 flex h-12 w-12 items-center justify-center rounded-2xl text-white"><I size={22} /></span>
-                <h3 className="text-lg font-bold">{t as string}</h3>
-                <p className="mt-1 text-muted">{d as string}</p>
-              </div>
-            );
-          })}
-        </div>
-      </Section>
+      {/* ── Ilova qanday ishlaydi (animatsiya) ───────────────────────── */}
+      <AppShowcase />
 
       {/* ── Ilova va biznes ────────────────────────────────────────────── */}
-      <section className="mx-auto grid max-w-7xl gap-5 px-4 py-8 sm:px-6 lg:grid-cols-2 lg:px-8">
+      <section className="mx-auto grid max-w-7xl gap-5 px-4 py-12 sm:px-6 lg:grid-cols-2 lg:px-8">
         <div className="hero-bg relative overflow-hidden rounded-[32px] p-8 text-white sm:p-10">
           <Smartphone size={34} className="text-cyan" />
           <h3 className="mt-4 text-3xl font-extrabold">Chronix ilovasi</h3>
@@ -164,7 +148,7 @@ export default function Home() {
           <p className="text-sm font-bold uppercase tracking-wide text-brand">Biznes uchun</p>
           <h3 className="mt-2 text-3xl font-extrabold text-navy">Salon, klinika yoki SPA egasimisiz?</h3>
           <p className="mt-2 max-w-md text-muted">Onlayn bron, kalendar, kassa, ombor va oylik hisob-kitob — bitta Chronix panelida.</p>
-          <a href={BIZ_URL} className="mt-6 inline-flex h-12 items-center gap-2 rounded-full bg-navy px-6 font-bold text-white">Batafsil <ArrowRight size={18} /></a>
+          <Link to={BIZ_URL} className="mt-6 inline-flex h-12 items-center gap-2 rounded-full bg-navy px-6 font-bold text-white">Batafsil <ArrowRight size={18} /></Link>
         </div>
       </section>
     </>
