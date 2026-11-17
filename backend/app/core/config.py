@@ -45,6 +45,9 @@ class Settings(BaseSettings):
     support_phone: str | None = None
     support_telegram: str | None = None
     dev_otp_in_response: bool = True                      # ochiq havolada sinash uchun false qilinadi
+    # SMS orqali kirish (telefon + kod) ilova va chronix.uz da ko'rinadimi. false — faqat Telegram/Google
+    # (masalan, Eskiz hali test rejimida). Qayta yoqish: .env da SMS_LOGIN_ENABLED=true, ilova yangilanishi shart emas
+    sms_login_enabled: bool = True
     sms_provider: Literal["console", "eskiz"] = "console"
     eskiz_email: str | None = None
     eskiz_password: SecretStr | None = None

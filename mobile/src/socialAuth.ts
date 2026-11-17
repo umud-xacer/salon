@@ -8,19 +8,25 @@ let pendingLink: string | null = null;
 export const getPendingLink = () => pendingLink;
 export const setPendingLink = (v: string | null) => { pendingLink = v; };
 
-export type LoginMethods = { telegram: boolean; google: boolean };
-export type AppInfo = { login_methods?: LoginMethods; google_web_client_id?: string | null };
+// sms: telefon + kod bilan kirish. Server o'chirib qo'yishi mumkin (SMS_LOGIN_ENABLED=false, masalan Eskiz
+// hali test rejimida) — u holda kirish faqat Telegram/Google orqali. Eski server javobida bo'lmasa — yoqiq.
+export type LoginMethods = { sms: boolean; telegram: boolean; google: boolean };
+export type AppInfo = { login_methods?: Partial<LoginMethods>; google_web_client_id?: string | null };
 
 export async function loadLoginMethods(): Promise<{ methods: LoginMethods; googleClientId: string | null }> {
   try {
     const info = await api<AppInfo>('/catalog/app-info');
     const googleClientId = info.google_web_client_id ?? null;
     return {
-      methods: { telegram: !!info.login_methods?.telegram, google: !!info.login_methods?.google && !!googleClientId && googleAvailable() },
+      methods: {
+        sms: info.login_methods?.sms !== false,
+        telegram: !!info.login_methods?.telegram,
+        google: !!info.login_methods?.google && !!googleClientId && googleAvailable(),
+      },
       googleClientId,
     };
   } catch {
-    return { methods: { telegram: false, google: false }, googleClientId: null };
+    return { methods: { sms: true, telegram: false, google: false }, googleClientId: null };
   }
 }
 

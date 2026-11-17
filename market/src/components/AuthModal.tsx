@@ -6,7 +6,8 @@ import { api, ApiError, LoginOut } from "../api";
 import { useAuth } from "../auth";
 import { btn, ErrorText, Modal, Spinner } from "./ui";
 
-type AppInfo = { login_methods?: { telegram: boolean; google: boolean }; google_web_client_id?: string | null };
+// sms=false — telefon+SMS kod bilan kirish vaqtincha o'chiq (server SMS_LOGIN_ENABLED), faqat Telegram/Google
+type AppInfo = { login_methods?: { sms?: boolean; telegram: boolean; google: boolean }; google_web_client_id?: string | null };
 type Step = "choose" | "phone" | "code" | "name" | "telegram";
 
 declare global {
@@ -49,7 +50,8 @@ export function AuthModal() {
   useEffect(() => {
     if (!gate.open) return;
     setStep("choose"); setError(null); setCode(""); setTg(null);
-    api<AppInfo>("/catalog/app-info").then(setInfo).catch(() => {});
+    api<AppInfo>("/catalog/app-info").then(setInfo)
+      .catch(() => setInfo({ login_methods: { sms: true, telegram: false, google: false } }));
   }, [gate.open]);
 
   const done = useCallback(async (l: LoginOut) => {
@@ -102,6 +104,7 @@ export function AuthModal() {
 
   if (me && step !== "name") return null;
   const open = gate.open || (step === "name" && !!me);
+  const smsOn = !!info.login_methods && info.login_methods.sms !== false;
 
   const requestCode = async () => {
     setBusy(true); setError(null);
@@ -155,8 +158,14 @@ export function AuthModal() {
             <h2 className="text-2xl font-extrabold leading-tight">Bron qilish uchun kiring yoki ro'yxatdan o'ting</h2>
             <p className="mt-2 text-muted">{gate.reason}</p>
           </div>
-          {link && <p className="rounded-xl bg-brand-soft p-3 text-sm">Google hisobingizni bog'lash uchun raqamingizni bir marta tasdiqlang.</p>}
-          <button className={`${btn.primary} w-full`} onClick={() => setStep("phone")}><Phone size={18} /> Telefon raqam bilan</button>
+          {link && (
+            <p className="rounded-xl bg-brand-soft p-3 text-sm">
+              {smsOn ? "Google hisobingizni bog'lash uchun raqamingizni bir marta tasdiqlang."
+                : "Google hisobingizni bog'lash uchun raqamingizni Telegram orqali bir marta tasdiqlang."}
+            </p>
+          )}
+          {!info.login_methods && <div className="flex justify-center"><Spinner /></div>}
+          {smsOn && <button className={`${btn.primary} w-full`} onClick={() => setStep("phone")}><Phone size={18} /> Telefon raqam bilan</button>}
           {info.login_methods?.telegram && (
             <button className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[#229ED9] font-bold text-white transition hover:brightness-95"
               onClick={startTelegram} disabled={busy}><Send size={18} /> Telegram orqali</button>

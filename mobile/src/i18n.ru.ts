@@ -662,4 +662,7 @@ export const RU: Record<string, string> = {
   "Sevimli salonlarni saqlash uchun profilingizga kiring yoki ro'yxatdan o'ting": "Чтобы сохранять избранные салоны, войдите или зарегистрируйтесь",
   "Telefon raqam bilan kirish": "Войти по номеру телефона",
   "Xush kelibsiz!": "Добро пожаловать!",
+  "Raqamingizni Telegram orqali tasdiqlang — Google hisobingiz unga bog'lanadi.":
+    "Подтвердите номер через Telegram — к нему привяжется ваш Google-аккаунт.",
+  "Telegram yoki Google orqali bir bosishda kiring.": "Войдите в один клик через Telegram или Google.",
 };

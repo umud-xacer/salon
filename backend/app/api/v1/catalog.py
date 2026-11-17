@@ -91,7 +91,8 @@ def app_info():
             "yandex_maps_key": s.yandex_maps_js_key or None,
             "yandex_maps_panel_key": s.yandex_maps_panel_key or None,
             # Ilova faqat yoqilgan kirish usullarining tugmasini ko'rsatadi
-            "login_methods": {"telegram": s.telegram_login_enabled, "google": bool(s.google_web_client_id)},
+            "login_methods": {"sms": s.sms_login_enabled, "telegram": s.telegram_login_enabled,
+                              "google": bool(s.google_web_client_id)},
             "google_web_client_id": s.google_web_client_id or None}
 
 

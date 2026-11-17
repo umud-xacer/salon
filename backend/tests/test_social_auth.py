@@ -70,7 +70,7 @@ def test_telegram_disabled_without_token(client):
     r = client.post(f"{API}/auth/telegram/start", json={})
     assert r.status_code == 503 and r.json()["detail"]["code"] == "telegram_unavailable"
     info = client.get(f"{API}/catalog/app-info").json()
-    assert info["login_methods"] == {"telegram": False, "google": False}
+    assert info["login_methods"] == {"sms": True, "telegram": False, "google": False}
 
 
 def test_telegram_login_registers_and_logs_in(client, bot):

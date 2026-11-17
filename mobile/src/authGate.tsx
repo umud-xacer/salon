@@ -27,7 +27,8 @@ export function AuthGateProvider({ children }: { children: ReactNode }) {
   const ty = useType();
   const [visible, setVisible] = useState(false);
   const [reason, setReason] = useState('');
-  const [methods, setMethods] = useState<LoginMethods>({ telegram: false, google: false });
+  // Serverdan kelguncha telefon tugmasi ko'rinmaydi: SMS o'chiq bo'lsa bir lahza chiqib yo'qolmasin
+  const [methods, setMethods] = useState<LoginMethods>({ sms: false, telegram: false, google: false });
   const [googleId, setGoogleId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -79,7 +80,7 @@ export function AuthGateProvider({ children }: { children: ReactNode }) {
           </View>
         )}>
         <View style={{ gap: 10 }}>
-          <Button title={t("Telefon raqam bilan kirish")} icon="call-outline" onPress={() => go('/login')} />
+          {methods.sms && <Button title={t("Telefon raqam bilan kirish")} icon="call-outline" onPress={() => go('/login')} />}
           {methods.telegram && (
             <Pressy onPress={() => go('/telegram-wait')} style={[s.social, { backgroundColor: '#229ED9', borderColor: '#229ED9' }]}
               accessibilityRole="button">

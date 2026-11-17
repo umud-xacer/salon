@@ -1,7 +1,7 @@
 // Kirish (Fresha/Figma uslubi): oq fon, logo, telefon raqam, qora "Davom etish". SMS kod ekraniga o'tiladi.
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Image, KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Image, KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, ApiError } from '../src/api';
@@ -24,7 +24,7 @@ export default function Login() {
   const [focus, setFocus] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [methods, setMethods] = useState<LoginMethods>({ telegram: false, google: false });
+  const [methods, setMethods] = useState<LoginMethods | null>(null);   // null — serverdan hali kelmadi
   const [googleId, setGoogleId] = useState<string | null>(null);
   const [googleBusy, setGoogleBusy] = useState(false);
   const [linking, setLinking] = useState(!!getPendingLink());
@@ -59,7 +59,7 @@ export default function Login() {
       const r = await api<{ dev_code: string | null; channel?: 'sms' | 'telegram' }>('/auth/otp/request', { method: 'POST', body: { phone } });
       router.push({ pathname: '/otp', params: { phone, dev: r.dev_code ?? '', channel: r.channel ?? 'sms' } });
     } catch (e) {
-      if (e instanceof ApiError && e.code === 'sms_unavailable' && methods.telegram) {
+      if (e instanceof ApiError && e.code === 'sms_unavailable' && methods?.telegram) {
         setError(t("SMS xizmati vaqtincha band. Kodni olish uchun quyidagi «Telegram orqali kirish» tugmasini bosing"));
       } else {
         setError(e instanceof ApiError ? e.message : t("Xatolik yuz berdi"));
@@ -103,36 +103,50 @@ export default function Login() {
               </Pressable>
             </View>
           )}
-          <Text style={ty.h3}>{t("Telefon raqamingiz")}</Text>
-          <View style={[s.phone, (focus || ready) && { borderColor: c.text }]}>
-            <Text style={s.prefix}>+998</Text>
-            <View style={s.divider} />
-            <TextInput value={formatPhone(digits)} onChangeText={(x) => setDigits(x.replace(/\D/g, '').slice(0, 9))}
-              keyboardType="phone-pad" placeholder="90 123 45 67" placeholderTextColor={c.muted}
-              onFocus={() => setFocus(true)} onBlur={() => setFocus(false)} accessibilityLabel={t("Telefon raqam")}
-              onSubmitEditing={() => ready && request()} style={s.phoneInput} maxLength={12} />
-          </View>
-          <Text style={ty.small}>{t("Raqamingizga 6 xonali kod yuboramiz")}</Text>
+          {!methods && <ActivityIndicator color={c.muted} style={{ paddingVertical: 24 }} />}
+          {methods?.sms && (
+            <>
+              <Text style={ty.h3}>{t("Telefon raqamingiz")}</Text>
+              <View style={[s.phone, (focus || ready) && { borderColor: c.text }]}>
+                <Text style={s.prefix}>+998</Text>
+                <View style={s.divider} />
+                <TextInput value={formatPhone(digits)} onChangeText={(x) => setDigits(x.replace(/\D/g, '').slice(0, 9))}
+                  keyboardType="phone-pad" placeholder="90 123 45 67" placeholderTextColor={c.muted}
+                  onFocus={() => setFocus(true)} onBlur={() => setFocus(false)} accessibilityLabel={t("Telefon raqam")}
+                  onSubmitEditing={() => ready && request()} style={s.phoneInput} maxLength={12} />
+              </View>
+              <Text style={ty.small}>{t("Raqamingizga 6 xonali kod yuboramiz")}</Text>
+            </>
+          )}
+          {methods && !methods.sms && (
+            <Text style={[ty.body, { color: c.muted }]}>
+              {linking
+                ? t("Raqamingizni Telegram orqali tasdiqlang — Google hisobingiz unga bog'lanadi.")
+                : t("Telegram yoki Google orqali bir bosishda kiring.")}
+            </Text>
+          )}
           <ErrorText text={error} />
-          <Button title={t("Davom etish")} onPress={request} busy={busy} disabled={!ready} />
-          <Pressable onPress={() => router.push('/password')} hitSlop={6} style={{ alignItems: 'center', paddingVertical: 6 }}
-            accessibilityRole="button">
-            <Text style={[ty.link, { fontSize: 15 }]}>{t("Parol bilan kirish")}</Text>
-          </Pressable>
+          {methods?.sms && <Button title={t("Davom etish")} onPress={request} busy={busy} disabled={!ready} />}
+          {methods && (
+            <Pressable onPress={() => router.push('/password')} hitSlop={6} style={{ alignItems: 'center', paddingVertical: 6 }}
+              accessibilityRole="button">
+              <Text style={[ty.link, { fontSize: 15 }]}>{t("Parol bilan kirish")}</Text>
+            </Pressable>
+          )}
 
-          {(methods.telegram || (methods.google && !linking)) && (
+          {methods && (methods.telegram || (methods.google && !linking)) && (
             <View style={s.or}>
               <View style={s.orLine} /><Text style={ty.small}>{t("yoki")}</Text><View style={s.orLine} />
             </View>
           )}
-          {methods.telegram && (
+          {methods?.telegram && (
             <Pressy onPress={() => router.push('/telegram-wait')} style={[s.social, { backgroundColor: '#229ED9', borderColor: '#229ED9' }]}
               accessibilityRole="button">
               <Icon name="paper-plane" size={20} color="#FFFFFF" />
               <Text style={[s.socialText, { color: '#FFFFFF' }]}>{t("Telegram orqali kirish")}</Text>
             </Pressy>
           )}
-          {methods.google && !linking && (
+          {methods?.google && !linking && (
             <Pressy onPress={google} disabled={googleBusy} style={[s.social, googleBusy && { opacity: 0.6 }]} accessibilityRole="button">
               <Icon name="logo-google" size={20} color={c.text} />
               <Text style={s.socialText}>{t("Google orqali kirish")}</Text>
