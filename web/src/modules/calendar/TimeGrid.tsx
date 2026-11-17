@@ -1,5 +1,5 @@
 // Vaqt to'ri. Kunlik ko'rinishda ustun = usta, haftalikda ustun = kun; komponent buni bilmaydi.
-import type { MouseEvent } from "react";
+import { Fragment, type MouseEvent } from "react";
 
 import type { Appointment, CalendarBlock } from "../../api/types";
 import { clock, dayOf, formatTime, minutesOf } from "../../components/format";
@@ -135,11 +135,19 @@ export function TimeGrid({ columns, hourFrom, hourTo, onEmptyClick, onOpen, onOp
                 {placed.map(({ a, lane }) => {
                   const top = ((minutesOf(a.starts_at) - hourFrom * 60) / 60) * HOUR_PX;
                   const blockHeight = ((minutesOf(a.ends_at) - minutesOf(a.starts_at)) / 60) * HOUR_PX;
+                  const lanePos = { left: `${(lane / lanes) * 100}%`, width: `${100 / lanes}%` };
+                  const proc = a.processing_min ?? 0;
+                  const buffer = a.buffer_min ?? 0;
                   return (
+                    <Fragment key={a.id}>
+                    {buffer > 0 && (
+                      <div aria-hidden className="pointer-events-none absolute rounded-b-md border-l-4 border-line bg-line/40"
+                           title={t("Bufer {n} daq", { n: buffer })}
+                           style={{ top: top + blockHeight - 2, height: (buffer / 60) * HOUR_PX, ...lanePos }} />
+                    )}
                     <button
-                      key={a.id}
                       onClick={() => onOpen(a)}
-                      className={`absolute overflow-hidden rounded-md border-l-4 px-1.5 py-0.5 text-left text-xs hover:z-10 hover:shadow ${isArrived(a) ? ARRIVED_STYLE : STATUS_STYLE[a.status] ?? "border-line bg-page"}`}
+                      className={`absolute flex flex-col justify-start overflow-hidden rounded-md border-l-4 px-1.5 py-0.5 text-left text-xs hover:z-10 hover:shadow ${isArrived(a) ? ARRIVED_STYLE : STATUS_STYLE[a.status] ?? "border-line bg-page"}`}
                       style={{
                         top,
                         height: Math.max(blockHeight - 2, 20),
@@ -147,15 +155,27 @@ export function TimeGrid({ columns, hourFrom, hourTo, onEmptyClick, onOpen, onOp
                         width: `${100 / lanes}%`,
                       }}
                     >
-                      <span className="block font-medium tabular-nums">
+                      <span className="relative z-[1] block font-medium tabular-nums">
                         {isArrived(a) && <span aria-hidden className="text-success">✓ </span>}
                         {(a.client_alert || a.client_allergies) && (
                           <span className="text-amber-600" title={[a.client_allergies, a.client_alert].filter(Boolean).join(" · ")}>⚠ </span>
                         )}
                         {formatTime(a.starts_at)} {a.client_name ?? v.clientOne}
                       </span>
-                      <span className="block truncate text-muted">{label(a)}</span>
+                      <span className="relative z-[1] block truncate text-muted">{label(a)}</span>
+                      {proc > 0 && (
+                        // Kutish oynasi: usta bo'sh — shu yerga boshqa bron qo'yish mumkin
+                        <span aria-hidden className="pointer-events-none absolute inset-x-0 border-y border-dashed border-current/30 text-[10px] text-muted"
+                              style={{
+                                top: ((a.processing_offset_min ?? 0) / 60) * HOUR_PX,
+                                height: (proc / 60) * HOUR_PX,
+                                backgroundImage: "repeating-linear-gradient(135deg, rgba(255,255,255,.75) 0 5px, transparent 5px 10px)",
+                              }}>
+                          {(proc / 60) * HOUR_PX >= 16 && <span className="absolute right-1.5 bottom-0.5">{t("kutish")}</span>}
+                        </span>
+                      )}
                     </button>
+                    </Fragment>
                   );
                 })}
               </div>

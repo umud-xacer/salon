@@ -227,7 +227,8 @@ def delete_category(category_id: int = Path(ge=1), move_to: int | None = Query(d
 
 
 # ─── Xizmatlar va narxlar ───────────────────────────────────────────────────
-_SERVICE_COLS = "id, name, name_ru, description, category_id, duration_min, price, is_active"
+_SERVICE_COLS = ("id, name, name_ru, description, category_id, duration_min, price, is_active, "
+                 "processing_offset_min, processing_min, buffer_min")
 
 
 @router.get("/services", response_model=list[ServiceAdminOut])
@@ -241,8 +242,10 @@ def list_services(business_id: int = Depends(_services), db: Session = Depends(g
 @router.post("/services", response_model=ServiceAdminOut, status_code=201)
 def create_service(body: ServiceCreate, business_id: int = Depends(_services), db: Session = Depends(get_db)):
     row = db.execute(text(f"""
-        INSERT INTO services (business_id, category_id, name, name_ru, description, duration_min, price)
-        VALUES (:b, :category_id, :name, :name_ru, :description, :duration_min, :price)
+        INSERT INTO services (business_id, category_id, name, name_ru, description, duration_min, price,
+                              processing_offset_min, processing_min, buffer_min)
+        VALUES (:b, :category_id, :name, :name_ru, :description, :duration_min, :price,
+                :processing_offset_min, :processing_min, :buffer_min)
         RETURNING {_SERVICE_COLS}
     """), {"b": business_id, **body.model_dump()}).mappings().one()
     audit.log(db, business_id, "create", "service", row["id"], body.model_dump())

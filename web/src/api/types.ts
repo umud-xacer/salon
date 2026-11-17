@@ -67,6 +67,9 @@ export interface Appointment {
   confirm_by?: string | null;        // 'pending': shu vaqtgacha tasdiqlanmasa — avtomatik bekor qilinadi
   cancel_reason?: string | null;
   arrived_at?: string | null;        // "Mijoz keldi" belgisi
+  processing_offset_min?: number;    // kutish oynasi (usta bo'sh) — bron boshidan daqiqa
+  processing_min?: number;
+  buffer_min?: number;               // tugagach usta band (tozalash)
   client_alert?: string | null;      // jamoa uchun ogohlantirish (mijoz kartochkasidan)
   client_allergies?: string | null;
 }
@@ -176,6 +179,9 @@ export interface Service {
   duration_min: number;
   price: number;
   is_active: boolean;
+  processing_offset_min?: number;   // kutish oynasi boshlanishi (daqiqa)
+  processing_min?: number;          // kutish: usta bo'sh
+  buffer_min?: number;              // tugagach usta band (tozalash)
 }
 
 export interface ServiceCategory {

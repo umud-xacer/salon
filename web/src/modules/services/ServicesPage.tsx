@@ -289,6 +289,13 @@ function ServiceDialog({ businessId, service, defaultCategory = null, categories
     service?.category_id ? String(service.category_id) : defaultCategory ? String(defaultCategory) : "",
   );
   const [description, setDescription] = useState(service?.description ?? "");
+  // Qo'shimcha vaqt: kutish (usta bo'sh, masalan bo'yoq ta'sir qilayotganda) va bufer (tugagach tozalash)
+  const [procOffset, setProcOffset] = useState(String(service?.processing_offset_min ?? 0));
+  const [procMin, setProcMin] = useState(String(service?.processing_min ?? 0));
+  const [buffer, setBuffer] = useState(String(service?.buffer_min ?? 0));
+  const [extraOpen, setExtraOpen] = useState(!!(service?.processing_min || service?.buffer_min));
+  const procOk = Number(procMin) === 0
+    || (Number(procOffset) > 0 && Number(procOffset) + Number(procMin) < Number(duration));
   const url = `/businesses/${businessId}/services`;
 
   const done = async () => {
@@ -306,6 +313,9 @@ function ServiceDialog({ businessId, service, defaultCategory = null, categories
         price: Number(price),
         category_id: category ? Number(category) : null,
         description: description.trim() || null,
+        processing_offset_min: Number(procMin) > 0 ? Number(procOffset) : 0,
+        processing_min: Number(procMin),
+        buffer_min: Number(buffer),
         ...extra,
       };
       return service ? api(`${url}/${service.id}`, json("PATCH", body)) : api(url, json("POST", body));
@@ -355,6 +365,49 @@ function ServiceDialog({ businessId, service, defaultCategory = null, categories
               onChange={(e) => setPrice(e.target.value)} />
           </label>
         </div>
+        <div className="rounded-lg border border-line">
+          <button type="button" onClick={() => setExtraOpen(!extraOpen)} aria-expanded={extraOpen}
+                  className="flex w-full items-center justify-between px-3 py-2 text-left text-sm">
+            <span>
+              {t("Qo'shimcha vaqt")}
+              {(Number(procMin) > 0 || Number(buffer) > 0) && (
+                <span className="ml-2 text-xs text-muted">
+                  {[Number(procMin) > 0 && t("kutish {n} daq", { n: procMin }), Number(buffer) > 0 && t("bufer {n} daq", { n: buffer })]
+                    .filter(Boolean).join(" · ")}
+                </span>
+              )}
+            </span>
+            <span className="text-muted" aria-hidden>{extraOpen ? "−" : "+"}</span>
+          </button>
+          {extraOpen && (
+            <div className="space-y-3 border-t border-line px-3 py-3">
+              <p className="text-xs text-muted">
+                {t("Kutish vaqti — masalan, bo'yoq ta'sir qilayotganda: mijoz o'tiradi, usta shu oraliqda boshqa mijozni olishi mumkin. Bufer — xizmatdan keyin tozalash: mijoz ketgan, usta hali band.")}
+              </p>
+              <div className="grid grid-cols-3 gap-3">
+                <label className="block text-sm">{t("Kutish boshlanishi (daq)")}
+                  <input className={inputClass} type="number" min={0} max={715} step={5} value={procOffset}
+                    disabled={Number(procMin) === 0} onChange={(e) => setProcOffset(e.target.value)} />
+                </label>
+                <label className="block text-sm">{t("Kutish (daq)")}
+                  <input className={inputClass} type="number" min={0} max={710} step={5} value={procMin}
+                    onChange={(e) => setProcMin(e.target.value)} />
+                </label>
+                <label className="block text-sm">{t("Bufer (daq)")}
+                  <input className={inputClass} type="number" min={0} max={120} step={5} value={buffer}
+                    onChange={(e) => setBuffer(e.target.value)} />
+                </label>
+              </div>
+              {Number(procMin) > 0 && (procOk ? (
+                <p className="text-xs text-muted tabular-nums">
+                  {t("Usta {a}–{b} daqiqalar oralig'ida bo'sh", { a: procOffset, b: Number(procOffset) + Number(procMin) })}
+                </p>
+              ) : (
+                <p className="text-xs text-danger">{t("Kutish xizmat ichida bo'lishi kerak: boshidan keyin boshlanib, oxiridan oldin tugasin")}</p>
+              ))}
+            </div>
+          )}
+        </div>
         <label className="block text-sm">{t("Bo'lim")}
           <select className={inputClass} value={category} onChange={(e) => setCategory(e.target.value)}>
             <option value="">{t("Boshqa")}</option>
@@ -367,7 +420,7 @@ function ServiceDialog({ businessId, service, defaultCategory = null, categories
         </label>
         {(save.error || hide.error) && <ErrorNote error={save.error ?? hide.error} />}
         <div className="flex flex-wrap gap-2">
-          <Button type="submit" disabled={save.isPending}>{t("Saqlash")}</Button>
+          <Button type="submit" disabled={save.isPending || !procOk}>{t("Saqlash")}</Button>
           {service?.is_active && (
             <Button type="button" variant="danger" disabled={hide.isPending} onClick={() => hide.mutate()}>
               {t("Yashirish")}

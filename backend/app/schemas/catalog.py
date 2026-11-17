@@ -327,6 +327,10 @@ class ServiceCreate(BaseModel):
     category_id: int | None = Field(default=None, ge=1)
     duration_min: int = Duration
     price: int = Price
+    # Qo'shimcha vaqt (051): kutish — xizmat ichida, usta bo'sh; bufer — xizmatdan keyin, usta band
+    processing_offset_min: int = Field(default=0, ge=0, le=715)
+    processing_min: int = Field(default=0, ge=0, le=710)
+    buffer_min: int = Field(default=0, ge=0, le=120)
 
     @field_validator("name_ru", mode="before")
     @classmethod
@@ -345,6 +349,10 @@ class ServiceUpdate(BaseModel):
     duration_min: int | None = Field(default=None, ge=5, le=720)
     price: int | None = Field(default=None, ge=0, le=100_000_000)
     is_active: bool | None = None
+    # Qo'shimcha vaqt (051): kutish — xizmat ichida, usta bo'sh; bufer — xizmatdan keyin, usta band
+    processing_offset_min: int | None = Field(default=None, ge=0, le=715)
+    processing_min: int | None = Field(default=None, ge=0, le=710)
+    buffer_min: int | None = Field(default=None, ge=0, le=120)
 
     @field_validator("name_ru", mode="before")
     @classmethod
@@ -358,6 +366,9 @@ class ServiceUpdate(BaseModel):
 class ServiceAdminOut(ServiceOut):
     category_id: int | None
     is_active: bool
+    processing_offset_min: int = 0
+    processing_min: int = 0
+    buffer_min: int = 0
 
 
 # ─── Muassasa turlari (Super Admin) ─────────────────────────────────────────

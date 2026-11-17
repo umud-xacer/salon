@@ -91,7 +91,7 @@ def add_block(body: TimeBlockIn, business_id: int = Depends(_blocker), db: Sessi
         SELECT EXISTS (SELECT 1 FROM appointments a
                         WHERE a.member_id = :m AND a.business_id = :b
                           AND a.status IN ('pending', 'confirmed', 'in_progress')
-                          AND tstzrange(a.starts_at, a.ends_at) && tstzrange(:s, :e))
+                          AND a.busy && tstzmultirange(tstzrange(:s, :e)))   -- kutish oynasiga blok qo'yish mumkin
     """), {"m": body.member_id, "b": business_id, "s": body.starts_at, "e": body.ends_at})
     if clash:
         raise HTTPException(409, detail={"code": "time_conflict",

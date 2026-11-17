@@ -1067,6 +1067,15 @@ export const RU_PAGES: Record<string, string> = {
   "Yangi eslatma": "Новая заметка", "VIP, doimiy, talaba... (Enter)": "VIP, постоянный, студент... (Enter)",
   "Teg bo'yicha": "По тегу", "Ogohlantirish bor": "Есть предупреждение", "Bugun tug'ilgan kuni": "Сегодня день рождения",
   "{n} kundan keyin tug'ilgan kuni": "День рождения через {n} дн.",
+  // ── Xizmatga qo'shimcha vaqt (051) ──
+  "Qo'shimcha vaqt": "Дополнительное время", "kutish {n} daq": "выдержка {n} мин", "bufer {n} daq": "буфер {n} мин",
+  "Kutish vaqti — masalan, bo'yoq ta'sir qilayotganda: mijoz o'tiradi, usta shu oraliqda boshqa mijozni olishi mumkin. Bufer — xizmatdan keyin tozalash: mijoz ketgan, usta hali band.":
+    "Время выдержки — например, пока действует краска: клиент ждёт, а мастер может принять другого клиента. Буфер — уборка после услуги: клиент ушёл, мастер ещё занят.",
+  "Kutish boshlanishi (daq)": "Начало выдержки (мин)", "Kutish (daq)": "Выдержка (мин)", "Bufer (daq)": "Буфер (мин)",
+  "Usta {a}–{b} daqiqalar oralig'ida bo'sh": "Мастер свободен с {a} по {b} минуту",
+  "Kutish xizmat ichida bo'lishi kerak: boshidan keyin boshlanib, oxiridan oldin tugasin":
+    "Выдержка должна быть внутри услуги: начинаться после начала и заканчиваться до конца",
+  "Bufer {n} daq": "Буфер {n} мин", "kutish": "выдержка",
   "Jamoa uchun: bronda {a}ga ham ko'rinadi, {b}ning o'ziga ko'rinmaydi":
     "Для команды: видно в записи (в т.ч. сотруднику), клиенту не показывается",
 };

@@ -97,6 +97,9 @@ class AppointmentOut(BaseModel):
     client_note: str | None
     cancel_reason: str | None
     arrived_at: dt.datetime | None = None               # "Mijoz keldi" belgisi (qabulxona yoki usta bosgan vaqt)
+    processing_offset_min: int = 0                      # kutish oynasi boshlanishi (bron boshidan, daqiqa)
+    processing_min: int = 0                             # kutish davomiyligi: usta bo'sh, boshqa mijozni olishi mumkin
+    buffer_min: int = 0                                 # tugagandan keyin usta band (tozalash)
     attendance: Literal["reminded", "confirmed", "no_response"] | None = None
     needs_contact: bool = False                         # ochiq ogohlantirish: qo'ng'iroq tugmasi faol
     review_rating: int | None = None                    # mijoz qo'ygan baho (bo'lsa)
