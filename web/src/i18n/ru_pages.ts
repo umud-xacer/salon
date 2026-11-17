@@ -1037,4 +1037,13 @@ export const RU_PAGES: Record<string, string> = {
   "100% — bepul xizmat": "100% — бесплатная услуга",
   "Dastur faol": "Программа активна",
   "Misol: mijoz {a} marta kelsa, {b}-tashrifi {c}% arzon bo'ladi.": "Пример: после {a} визитов {b}-й визит будет дешевле на {c}%.",
+  // ── "Mijoz keldi" va bekor qilish sabablari (048) ──
+  "Keldi {a}": "Пришёл в {a}", "Boshlash": "Начать", "\"Keldi\" belgisini olib tashlash": "Снять отметку «Пришёл»",
+  "Bekor qilish sababi": "Причина отмены", "Boshqa...": "Другое...", "Sababni yozing": "Укажите причину",
+  "Orqaga": "Назад", "Bekor qilish sabablari": "Причины отмены", "Sabablar yo'q": "Причин нет",
+  "Yangi sabab": "Новая причина", "Sabab ko'rsatilmagan": "Причина не указана",
+  "Bron bekor qilinganda shu ro'yxatdan tanlanadi. Hisobotda qaysi sabab ko'pligi ko'rinadi.":
+    "При отмене записи причина выбирается из этого списка. В отчёте видно, какая причина чаще.",
+  "Mijozning rejasi o'zgardi": "У клиента изменились планы", "Mijoz kasal bo'lib qoldi": "Клиент заболел",
+  "Usta ishga chiqmadi": "Мастер не вышел на работу", "Xato yozilgan": "Записан по ошибке", "Boshqa sabab": "Другая причина",
 };

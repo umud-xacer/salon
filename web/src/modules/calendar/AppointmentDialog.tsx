@@ -1,17 +1,18 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
 import { api, json } from "../../api/client";
-import type { Appointment, Membership } from "../../api/types";
+import type { Appointment, CancelReason, Membership } from "../../api/types";
 import { formatDate, formatMoney, formatTime, STATUS_LABELS } from "../../components/format";
-import { Button, ErrorNote } from "../../components/ui";
+import { Button, ErrorNote, inputClass, Spinner } from "../../components/ui";
 import { Modal } from "../../components/Modal";
 import { PaymentPanel } from "../finance/PaymentPanel";
 import { useVocab } from "../vocab";
 import { VisitPanel } from "./VisitPanel";
 
-import { pickList, t } from "../../i18n";
+import { dyn, pickList, t } from "../../i18n";
 const OPEN = ["pending", "confirmed"];
+const OTHER = "__other__";
 
 export function AppointmentDialog({ membership, appointment: a, masterName, onClose }: {
   membership: Membership;
@@ -41,10 +42,17 @@ export function AppointmentDialog({ membership, appointment: a, masterName, onCl
     onSuccess: done,
   });
   const cancel = useMutation({
-    mutationFn: () => api(`/appointments/${a.id}/cancel`, json("POST", {})),
+    mutationFn: (reason: string | null) => api(`/appointments/${a.id}/cancel`, json("POST", { reason })),
     onSuccess: done,
   });
-  const busy = setStatus.isPending || cancel.isPending;
+  // "Mijoz keldi" — alohida belgi: bron hali boshlanmagan, usta va qabulxona mijoz kutayotganini ko'radi
+  const arrive = useMutation({
+    mutationFn: (arrived: boolean) =>
+      api(`/businesses/${b}/appointments/${a.id}/arrived`, json("POST", { arrived })),
+    onSuccess: done,
+  });
+  const canArrive = canManage || membership.permissions.includes("appointments.manage_own");
+  const busy = setStatus.isPending || cancel.isPending || arrive.isPending;
 
   return (
     <Modal title={a.client_name ?? v.clientOne} onClose={onClose}>
@@ -68,7 +76,14 @@ export function AppointmentDialog({ membership, appointment: a, masterName, onCl
           </>
         )}
         <dt className="text-muted">{t("Holat")}</dt>
-        <dd>{STATUS_LABELS[a.status] ?? a.status}</dd>
+        <dd>
+          {STATUS_LABELS[a.status] ?? a.status}
+          {a.arrived_at && OPEN.includes(a.status) && (
+            <span className="ml-2 rounded bg-emerald-50 px-1.5 py-0.5 text-xs font-medium text-emerald-700">
+              {t("Keldi {a}", { a: formatTime(a.arrived_at) })}
+            </span>
+          )}
+        </dd>
         {a.cancel_reason && a.status === "cancelled" && <><dt className="text-muted">{t("Sabab")}</dt><dd className="break-words">{a.cancel_reason}</dd></>}
       </dl>
 
@@ -81,39 +96,51 @@ export function AppointmentDialog({ membership, appointment: a, masterName, onCl
       {showLines && <VisitPanel membership={membership} appointmentId={a.id} />}
       {showPayments && <PaymentPanel membership={membership} appointmentId={a.id} />}
 
-      {(setStatus.error || cancel.error) && (
+      {(setStatus.error || cancel.error || arrive.error) && (
         <div className="mt-3">
-          <ErrorNote error={setStatus.error ?? cancel.error} />
+          <ErrorNote error={setStatus.error ?? cancel.error ?? arrive.error} />
         </div>
       )}
 
-      {canManage && (OPEN.includes(a.status) || a.status === "in_progress") && (
+      {canManage && confirmCancel && OPEN.includes(a.status) && (
+        <CancelForm businessId={b} busy={busy} onBack={() => setConfirmCancel(false)}
+                    onConfirm={(reason) => cancel.mutate(reason)} />
+      )}
+
+      {!confirmCancel && (canManage || canArrive) && (OPEN.includes(a.status) || a.status === "in_progress") && (
         <div className="mt-5 flex flex-wrap gap-2 border-t border-line pt-4">
-          {a.status === "pending" && (
+          {canManage && a.status === "pending" && !a.arrived_at && (
             <Button disabled={busy} onClick={() => setStatus.mutate("confirmed")}>
               {t("Tasdiqlash")}
             </Button>
           )}
-          {OPEN.includes(a.status) && (
+          {OPEN.includes(a.status) && canArrive && !a.arrived_at && (
+            <Button disabled={busy} onClick={() => arrive.mutate(true)}>
+              {t("{a} keldi", { a: v.clientOne })}
+            </Button>
+          )}
+          {OPEN.includes(a.status) && canManage && (
             <>
-              <Button disabled={busy} variant="secondary" onClick={() => setStatus.mutate("in_progress")}>
-                {t("{a} keldi", { a: v.clientOne })}
+              <Button disabled={busy} variant={a.arrived_at ? "primary" : "secondary"}
+                      onClick={() => setStatus.mutate("in_progress")}>
+                {t("Boshlash")}
               </Button>
-              <Button disabled={busy} variant="secondary" onClick={() => setStatus.mutate("no_show")}>
-                {t("Kelmadi")}
-              </Button>
-              {confirmCancel ? (
-                <Button disabled={busy} variant="danger" onClick={() => cancel.mutate()}>
-                  {t("Ha, bekor qilish")}
-                </Button>
-              ) : (
-                <Button variant="danger" onClick={() => setConfirmCancel(true)}>
-                  {t("Bekor qilish")}
+              {!a.arrived_at && (
+                <Button disabled={busy} variant="secondary" onClick={() => setStatus.mutate("no_show")}>
+                  {t("Kelmadi")}
                 </Button>
               )}
+              <Button variant="danger" onClick={() => setConfirmCancel(true)}>
+                {t("Bekor qilish")}
+              </Button>
             </>
           )}
-          {a.status === "in_progress" && (
+          {OPEN.includes(a.status) && canArrive && a.arrived_at && (
+            <Button disabled={busy} variant="secondary" onClick={() => arrive.mutate(false)}>
+              {t("\"Keldi\" belgisini olib tashlash")}
+            </Button>
+          )}
+          {canManage && a.status === "in_progress" && (
             <Button disabled={busy} onClick={() => setStatus.mutate("completed")}>
               {t("Yakunlash")}
             </Button>
@@ -121,5 +148,48 @@ export function AppointmentDialog({ membership, appointment: a, masterName, onCl
         </div>
       )}
     </Modal>
+  );
+}
+
+/** Bekor qilish: salon ro'yxatidan sabab (Sozlamalar → Bekor qilish sabablari) yoki o'z matni */
+function CancelForm({ businessId, busy, onBack, onConfirm }: {
+  businessId: number;
+  busy: boolean;
+  onBack: () => void;
+  onConfirm: (reason: string | null) => void;
+}) {
+  const reasons = useQuery({
+    queryKey: ["cancel-reasons", businessId],
+    queryFn: () => api<CancelReason[]>(`/businesses/${businessId}/cancel-reasons`),
+  });
+  const [picked, setPicked] = useState<string | null>(null);
+  const [other, setOther] = useState("");
+  const reason = picked === OTHER ? other.trim() || null : picked;
+
+  return (
+    <div className="mt-5 border-t border-line pt-4">
+      <p className="mb-2 text-sm font-medium">{t("Bekor qilish sababi")}</p>
+      {reasons.isLoading && <Spinner />}
+      <div className="flex flex-wrap gap-2">
+        {[...(reasons.data ?? []).map((r) => r.name), OTHER].map((name) => (
+          <button key={name} type="button" onClick={() => setPicked(name)}
+                  className={`rounded-full border px-3 py-1.5 text-sm ${picked === name
+                    ? "border-primary bg-primary text-white" : "border-line hover:bg-page"}`}>
+            {name === OTHER ? t("Boshqa...") : dyn(name)}
+          </button>
+        ))}
+      </div>
+      {picked === OTHER && (
+        <input className={`${inputClass} mt-3`} maxLength={300} autoFocus value={other}
+               placeholder={t("Sababni yozing")} onChange={(e) => setOther(e.target.value)} />
+      )}
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Button variant="danger" disabled={busy || !picked || (picked === OTHER && !reason)}
+                onClick={() => onConfirm(reason)}>
+          {t("Ha, bekor qilish")}
+        </Button>
+        <Button variant="secondary" disabled={busy} onClick={onBack}>{t("Orqaga")}</Button>
+      </div>
+    </div>
   );
 }

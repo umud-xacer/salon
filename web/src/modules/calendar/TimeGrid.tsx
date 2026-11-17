@@ -22,6 +22,9 @@ const STATUS_STYLE: Record<string, string> = {
   completed: "border-success bg-success/10",
   no_show: "border-danger bg-danger/10",
 };
+// "Mijoz keldi" — bron hali boshlanmagan, lekin mijoz zalda kutmoqda
+const ARRIVED_STYLE = "border-success bg-success/20";
+const isArrived = (a: Appointment) => !!a.arrived_at && (a.status === "pending" || a.status === "confirmed");
 
 // Vaqti ustma-ust tushgan bronlar yonma-yon turadi (haftalikda ikki usta bir vaqtda bo'lishi mumkin)
 function layOut(items: Appointment[]) {
@@ -98,7 +101,7 @@ export function TimeGrid({ columns, hourFrom, hourTo, onEmptyClick, onOpen, labe
                     <button
                       key={a.id}
                       onClick={() => onOpen(a)}
-                      className={`absolute overflow-hidden rounded-md border-l-4 px-1.5 py-0.5 text-left text-xs hover:z-10 hover:shadow ${STATUS_STYLE[a.status] ?? "border-line bg-page"}`}
+                      className={`absolute overflow-hidden rounded-md border-l-4 px-1.5 py-0.5 text-left text-xs hover:z-10 hover:shadow ${isArrived(a) ? ARRIVED_STYLE : STATUS_STYLE[a.status] ?? "border-line bg-page"}`}
                       style={{
                         top,
                         height: Math.max(blockHeight - 2, 20),
@@ -107,6 +110,7 @@ export function TimeGrid({ columns, hourFrom, hourTo, onEmptyClick, onOpen, labe
                       }}
                     >
                       <span className="block font-medium tabular-nums">
+                        {isArrived(a) && <span aria-hidden className="text-success">✓ </span>}
                         {formatTime(a.starts_at)} {a.client_name ?? v.clientOne}
                       </span>
                       <span className="block truncate text-muted">{label(a)}</span>

@@ -13,7 +13,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, require_permission
-from app.schemas.reports import (BookingStats, CategoryRow, ClientStats, DayRow, ExpenseRow, MethodRow, MoneyStats, ReportOut,
+from app.schemas.reports import (BookingStats, CancelReasonRow, CategoryRow, ClientStats, DayRow, ExpenseRow, MethodRow, MoneyStats, ReportOut,
                                  ServiceRow, StaffRow)
 
 router = APIRouter(prefix="/businesses/{business_id}/reports", tags=["reports"])
@@ -122,6 +122,14 @@ def build_report(db: Session, business_id: int, f: date, t: date) -> ReportOut:
          GROUP BY a.member_id, u.full_name ORDER BY revenue DESC, completed DESC, name
     """), p).mappings()
 
+    # Sabab matni bron paytidagicha saqlanadi (ro'yxatdan o'chirilgan sabab ham hisobotda qoladi)
+    cancel_reasons = db.execute(text(f"""
+        SELECT nullif(btrim(a.cancel_reason), '') AS reason, count(*) AS count
+          FROM appointments a CROSS JOIN {_TZ}
+         WHERE a.business_id = :b AND {in_period} AND a.status = 'cancelled'
+         GROUP BY 1 ORDER BY count DESC, reason NULLS LAST LIMIT 20
+    """), p).mappings()
+
     clients = db.execute(text(f"""
         WITH seen AS (
             SELECT DISTINCT a.client_id FROM appointments a CROSS JOIN {_TZ}
@@ -173,6 +181,7 @@ def build_report(db: Session, business_id: int, f: date, t: date) -> ReportOut:
         services=[ServiceRow(**s) for s in services],
         categories=[CategoryRow(**c) for c in categories],
         staff=[StaffRow(**s) for s in staff],
+        cancel_reasons=[CancelReasonRow(**c) for c in cancel_reasons],
         clients=ClientStats(total=clients["total"], new=clients["new"], returning=clients["total"] - clients["new"]),
         daily=[DayRow(**d) for d in daily],
     )

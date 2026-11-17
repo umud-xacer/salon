@@ -64,6 +64,11 @@ class ClientStats(BaseModel):
     returning: int
 
 
+class CancelReasonRow(BaseModel):
+    reason: str | None             # None = sababsiz bekor qilingan
+    count: int
+
+
 class DayRow(BaseModel):
     date: date
     income: int
@@ -82,5 +87,6 @@ class ReportOut(BaseModel):
     services: list[ServiceRow]
     categories: list[CategoryRow] = []     # bo'limlar bo'yicha (bajarilgan bronlardagi xizmatlar)
     staff: list[StaffRow]
+    cancel_reasons: list[CancelReasonRow] = []   # bekor qilingan bronlar sabablari bo'yicha
     clients: ClientStats
     daily: list[DayRow]

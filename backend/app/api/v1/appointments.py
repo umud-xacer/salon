@@ -9,9 +9,9 @@ from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db
-from app.schemas.appointments import (AppointmentOut, BookingCreate, CancelIn, QuoteIn, QuoteOut, RescheduleIn,
-                                      StatusIn)
+from app.api.deps import get_db, require_any_permission, require_permission
+from app.schemas.appointments import (AppointmentOut, ArrivedIn, BookingCreate, CancelIn, CancelReasonIn,
+                                      CancelReasonOut, QuoteIn, QuoteOut, RescheduleIn, StatusIn)
 from app.services import audit
 
 router = APIRouter(tags=["appointments"])
@@ -24,6 +24,7 @@ _SELECT = """
            ST_Y(b.location::geometry) AS business_lat, ST_X(b.location::geometry) AS business_lng,
            a.member_id, ps.full_name AS member_name,
            a.status::text AS status, a.starts_at, a.ends_at, a.total_price, a.discount, a.discount_source, a.client_note, a.cancel_reason,
+           a.checked_in_at AS arrived_at,
            coalesce(c.full_name, app.own_client_name(a.id)) AS client_name, c.phone AS client_phone,  -- usta: faqat ism
            CASE WHEN r.confirmed_at IS NOT NULL THEN 'confirmed'
                 WHEN r.alerted_at IS NOT NULL THEN 'no_response'
@@ -131,7 +132,7 @@ def set_status(body: StatusIn, appointment_id: int = Path(ge=1), business_id: in
     updated = db.execute(text("""
         UPDATE appointments
            SET status = CAST(:st AS appointment_status),
-               checked_in_at = CASE WHEN :st = 'in_progress' THEN now() ELSE checked_in_at END,
+               checked_in_at = CASE WHEN :st = 'in_progress' THEN coalesce(checked_in_at, now()) ELSE checked_in_at END,
                completed_at  = CASE WHEN :st = 'completed'   THEN now() ELSE completed_at END
          WHERE id = :id AND business_id = :b AND status IN ('pending', 'confirmed', 'in_progress')
     """), {"st": body.status, "id": appointment_id, "b": business_id}).rowcount
@@ -140,3 +141,59 @@ def set_status(body: StatusIn, appointment_id: int = Path(ge=1), business_id: in
     audit.log(db, business_id, "status", "appointment", appointment_id, {"status": body.status})
     db.commit()
     return _get(db, appointment_id)
+
+
+@router.post("/businesses/{business_id}/appointments/{appointment_id}/arrived", response_model=AppointmentOut)
+def mark_arrived(body: ArrivedIn, appointment_id: int = Path(ge=1), business_id: int = Depends(_require_viewer),
+                 db: Session = Depends(get_db)):
+    """'Mijoz keldi' belgisi. Kim bosishi mumkinligini app.mark_arrived hal qiladi (048)."""
+    db.execute(text("SELECT app.mark_arrived(:b, :id, :v)"), {"b": business_id, "id": appointment_id, "v": body.arrived})
+    db.commit()
+    return _get(db, appointment_id)
+
+
+# ─── Bekor qilish sabablari (Sozlamalar) ───────────────────────────────────────────────────────
+# O'qish: bronni bekor qila oladiganlar; yozish: 'business.manage' (RLS — 048_arrival_cancel_reasons.sql)
+
+_REASON_NOT_FOUND = HTTPException(404, detail={"code": "not_found", "message": "Sabab topilmadi"})
+
+
+@router.get("/businesses/{business_id}/cancel-reasons", response_model=list[CancelReasonOut])
+def list_cancel_reasons(business_id: int = Depends(require_any_permission("appointments.manage", "business.manage")),
+                        db: Session = Depends(get_db)):
+    rows = db.execute(text("SELECT id, name, sort_order FROM cancel_reasons WHERE business_id = :b "
+                           "ORDER BY sort_order, id"), {"b": business_id}).mappings()
+    return [CancelReasonOut(**r) for r in rows]
+
+
+@router.post("/businesses/{business_id}/cancel-reasons", response_model=CancelReasonOut, status_code=201)
+def add_cancel_reason(body: CancelReasonIn, business_id: int = Depends(require_permission("business.manage")),
+                      db: Session = Depends(get_db)):
+    row = db.execute(text("INSERT INTO cancel_reasons (business_id, name, sort_order) VALUES (:b, :n, :o) "
+                          "RETURNING id, name, sort_order"),
+                     {"b": business_id, "n": body.name, "o": body.sort_order}).mappings().one()
+    db.commit()
+    return CancelReasonOut(**row)
+
+
+@router.put("/businesses/{business_id}/cancel-reasons/{reason_id}", response_model=CancelReasonOut)
+def update_cancel_reason(body: CancelReasonIn, reason_id: int = Path(ge=1),
+                         business_id: int = Depends(require_permission("business.manage")),
+                         db: Session = Depends(get_db)):
+    row = db.execute(text("UPDATE cancel_reasons SET name = :n, sort_order = :o WHERE id = :id AND business_id = :b "
+                          "RETURNING id, name, sort_order"),
+                     {"b": business_id, "id": reason_id, "n": body.name, "o": body.sort_order}).mappings().first()
+    if row is None:
+        raise _REASON_NOT_FOUND
+    db.commit()
+    return CancelReasonOut(**row)
+
+
+@router.delete("/businesses/{business_id}/cancel-reasons/{reason_id}", status_code=204)
+def delete_cancel_reason(reason_id: int = Path(ge=1), business_id: int = Depends(require_permission("business.manage")),
+                         db: Session = Depends(get_db)):
+    deleted = db.execute(text("DELETE FROM cancel_reasons WHERE id = :id AND business_id = :b"),
+                         {"b": business_id, "id": reason_id}).rowcount
+    if not deleted:
+        raise _REASON_NOT_FOUND
+    db.commit()

@@ -259,3 +259,52 @@ def test_only_superadmin_writes_business_types(world, superadmin):
     with api_session(uid(superadmin)) as db:
         assert db.execute(text("UPDATE business_categories SET sort_order = sort_order WHERE slug = 'pharmacy'")).rowcount == 1
         db.rollback()
+
+
+# ─── Bekor qilish sabablari (048) ──────────────────────────────────────────
+def test_cancel_reasons_rls(world):
+    a, b = world["a"], world["b"]
+    with api_session(uid(b["owner"])) as db:
+        b_reason = db.execute(text("SELECT id FROM cancel_reasons WHERE business_id = :b LIMIT 1"),
+                              {"b": b["id"]}).scalar()
+    assert b_reason is not None                          # yangi muassasaga standart ro'yxat
+    with api_session(uid(a["owner"])) as db:
+        # Boshqa muassasa sabablari ko'rinmaydi va o'zgarmaydi
+        assert {r[0] for r in db.execute(text("SELECT DISTINCT business_id FROM cancel_reasons"))} == {a["id"]}
+        assert db.execute(text("UPDATE cancel_reasons SET name = 'xx' WHERE id = :id"), {"id": b_reason}).rowcount == 0
+        assert db.execute(text("DELETE FROM cancel_reasons WHERE id = :id"), {"id": b_reason}).rowcount == 0
+        with pytest.raises(DBAPIError) as e:
+            db.execute(text("INSERT INTO cancel_reasons (business_id, name) VALUES (:b, 'Begona')"), {"b": b["id"]})
+        assert sqlstate(e) == "42501"
+        db.rollback()
+        # O'z sababini boshqa muassasaga "ko'chirish" — yo'q
+        own = db.execute(text("SELECT id FROM cancel_reasons LIMIT 1")).scalar()
+        with pytest.raises(DBAPIError) as e:
+            db.execute(text("UPDATE cancel_reasons SET business_id = :b WHERE id = :id"), {"b": b["id"], "id": own})
+        assert sqlstate(e) == "42501"
+        db.rollback()
+    # Qabulxona o'qiydi, yoza olmaydi; usta umuman ko'rmaydi
+    with api_session(uid(world["rec"]["tokens"])) as db:
+        assert db.execute(text("SELECT count(*) FROM cancel_reasons")).scalar() > 0
+        with pytest.raises(DBAPIError) as e:
+            db.execute(text("INSERT INTO cancel_reasons (business_id, name) VALUES (:b, 'Qabul')"), {"b": a["id"]})
+        assert sqlstate(e) == "42501"
+        db.rollback()
+    with api_session(uid(world["usta"]["tokens"])) as db:
+        assert db.execute(text("SELECT count(*) FROM cancel_reasons")).scalar() == 0
+
+
+def test_arrival_only_through_function_for_staff(world):
+    """Usta checked_in_at ni faqat o'z broniga qo'ya oladi (RLS), mark_arrived ham shu qoidada."""
+    a, usta = world["a"], world["usta"]
+    with api_session(uid(a["owner"])) as db:
+        other = add_staff_member_sql(db, a["id"])
+        foreign = book(db, a["id"], world["client_a"], other, "2026-12-20 10:00+05", "2026-12-20 11:00+05")
+        db.commit()
+    with api_session(uid(usta["tokens"])) as db:
+        with pytest.raises(DBAPIError) as e:
+            db.execute(text("SELECT app.mark_arrived(:b, :id)"), {"b": a["id"], "id": foreign})
+        assert sqlstate(e) == "P0002"
+        db.rollback()
+        assert db.execute(text("UPDATE appointments SET checked_in_at = now() WHERE id = :id"),
+                          {"id": foreign}).rowcount == 0

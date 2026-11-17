@@ -66,6 +66,13 @@ export interface Appointment {
   client_phone: string | null;
   confirm_by?: string | null;        // 'pending': shu vaqtgacha tasdiqlanmasa — avtomatik bekor qilinadi
   cancel_reason?: string | null;
+  arrived_at?: string | null;        // "Mijoz keldi" belgisi
+}
+
+export interface CancelReason {
+  id: number;
+  name: string;
+  sort_order: number;
 }
 
 export interface CalendarStaff {
@@ -223,6 +230,7 @@ export interface Report {
   categories?: { category_id: number | null; name: string | null; name_ru?: string | null; count: number;
                  revenue: number }[];
   staff: { member_id: number; name: string; bookings: number; completed: number; no_show: number; revenue: number }[];
+  cancel_reasons?: { reason: string | null; count: number }[];
   clients: { total: number; new: number; returning: number };
   daily: ReportDay[];
 }

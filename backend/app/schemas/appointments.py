@@ -36,6 +36,21 @@ class RescheduleIn(BaseModel):
     starts_at: AwareDatetime
 
 
+class ArrivedIn(BaseModel):
+    arrived: bool = True                                # false — xato bosilgan belgini olib tashlash
+
+
+class CancelReasonIn(BaseModel):
+    name: str = Field(min_length=2, max_length=80)
+    sort_order: int = Field(default=0, ge=0, le=999)
+
+
+class CancelReasonOut(BaseModel):
+    id: int
+    name: str
+    sort_order: int
+
+
 class StatusIn(BaseModel):
     status: Literal["confirmed", "in_progress", "completed", "no_show"]
 
@@ -81,6 +96,7 @@ class AppointmentOut(BaseModel):
     service_ids: list[int]
     client_note: str | None
     cancel_reason: str | None
+    arrived_at: dt.datetime | None = None               # "Mijoz keldi" belgisi (qabulxona yoki usta bosgan vaqt)
     attendance: Literal["reminded", "confirmed", "no_response"] | None = None
     needs_contact: bool = False                         # ochiq ogohlantirish: qo'ng'iroq tugmasi faol
     review_rating: int | None = None                    # mijoz qo'ygan baho (bo'lsa)

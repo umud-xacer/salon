@@ -170,6 +170,16 @@ function ReportView({ r }: { r: Report }) {
               ))}
             </dl>
           )}
+          {(r.cancel_reasons?.length ?? 0) > 0 && (
+            <>
+              <h3 className="mb-2 mt-4 text-xs font-medium uppercase tracking-wide text-muted">{t("Bekor qilish sabablari")}</h3>
+              <dl className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-2 text-sm">
+                {r.cancel_reasons!.map((c) => (
+                  <Row key={c.reason ?? ""} label={c.reason ? dyn(c.reason) : t("Sabab ko'rsatilmagan")} value={c.count} />
+                ))}
+              </dl>
+            </>
+          )}
         </Card>
         <Card>
           <h2 className="mb-3 text-sm font-medium">{v.clients}</h2>

@@ -11,6 +11,7 @@ import { checkImage, IMAGE_ACCEPT, ImageError, MAX_IMAGE_MB, shrinkImage } from 
 import { useVocab } from "../vocab";
 import { useAuth } from "../../auth/AuthProvider";
 import { chainMemberships } from "../../components/BranchSwitcher";
+import { CancelReasonsCard } from "./CancelReasonsCard";
 
 import { t } from "../../i18n";
 export function BusinessPage({ membership }: { membership: Membership }) {
@@ -62,6 +63,7 @@ export function BusinessPage({ membership }: { membership: Membership }) {
         <HoursCard businessId={b} hours={hours.data ?? []}
           defaults={[profile.data.default_opens_at.slice(0, 5), profile.data.default_closes_at.slice(0, 5)]} />
         <PhotosCard businessId={b} photos={photos.data ?? []} />
+        {membership.modules.includes("booking") && <CancelReasonsCard businessId={b} />}
       </div>
     </>
   );
