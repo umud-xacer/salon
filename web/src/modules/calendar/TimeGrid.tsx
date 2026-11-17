@@ -1,8 +1,9 @@
 // Vaqt to'ri. Kunlik ko'rinishda ustun = usta, haftalikda ustun = kun; komponent buni bilmaydi.
 import type { MouseEvent } from "react";
 
-import type { Appointment } from "../../api/types";
-import { clock, formatTime, minutesOf } from "../../components/format";
+import type { Appointment, CalendarBlock } from "../../api/types";
+import { clock, dayOf, formatTime, minutesOf } from "../../components/format";
+import { dyn, t } from "../../i18n";
 import { useVocab } from "../vocab";
 
 const HOUR_PX = 64;
@@ -13,6 +14,15 @@ export interface Column {
   title: string;
   subtitle?: string | null;
   items: Appointment[];
+  day: string;                       // ustun kuni (YYYY-MM-DD): ko'p kunlik ta'til shu kunga qirqiladi
+  blocks?: CalendarBlock[];
+}
+
+// Blokning shu kundagi qismi (daqiqalarda). Kundan oldin boshlangan / keyin tugagan ta'til qirqiladi.
+function blockSpan(b: CalendarBlock, day: string): [number, number] {
+  const from = dayOf(b.starts_at) < day ? 0 : minutesOf(b.starts_at);
+  const to = dayOf(b.ends_at) > day ? 24 * 60 : minutesOf(b.ends_at);
+  return [from, to];
 }
 
 const STATUS_STYLE: Record<string, string> = {
@@ -39,12 +49,13 @@ function layOut(items: Appointment[]) {
   return { placed, lanes: Math.max(laneEnds.length, 1) };
 }
 
-export function TimeGrid({ columns, hourFrom, hourTo, onEmptyClick, onOpen, label }: {
+export function TimeGrid({ columns, hourFrom, hourTo, onEmptyClick, onOpen, onOpenBlock, label }: {
   columns: Column[];
   hourFrom: number;
   hourTo: number;
   onEmptyClick?: (columnKey: string, minutes: number) => void;
   onOpen: (a: Appointment) => void;
+  onOpenBlock?: (b: CalendarBlock) => void;
   label: (a: Appointment) => string;
 }) {
   const v = useVocab();
@@ -94,6 +105,33 @@ export function TimeGrid({ columns, hourFrom, hourTo, onEmptyClick, onOpen, labe
                   backgroundSize: `100% ${HOUR_PX}px`,
                 }}
               >
+                {c.blocks?.map((bl) => {
+                  const [from, to] = blockSpan(bl, c.day);
+                  const top = ((Math.max(from, hourFrom * 60) - hourFrom * 60) / 60) * HOUR_PX;
+                  const bottom = ((Math.min(to, hourTo * 60) - hourFrom * 60) / 60) * HOUR_PX;
+                  if (bottom <= top) return null;
+                  return (
+                    <button
+                      key={`b${bl.id}`}
+                      type="button"
+                      onClick={() => onOpenBlock?.(bl)}
+                      className="absolute inset-x-0 overflow-hidden border-y border-line px-1.5 py-0.5 text-left text-xs text-muted hover:z-10"
+                      style={{
+                        top,
+                        height: Math.max(bottom - top - 1, 14),
+                        backgroundImage: "repeating-linear-gradient(135deg, var(--color-page) 0 6px, transparent 6px 12px)",
+                        backgroundColor: "color-mix(in srgb, var(--color-line) 45%, transparent)",
+                      }}
+                    >
+                      <span className="block truncate font-medium">
+                        {bl.title ? dyn(bl.title) : bl.is_block ? t("Blok") : t("Ta'til")}
+                      </span>
+                      {bottom - top > 30 && (
+                        <span className="block truncate tabular-nums">{clock(from)}–{to >= 24 * 60 ? "24:00" : clock(to)}</span>
+                      )}
+                    </button>
+                  );
+                })}
                 {placed.map(({ a, lane }) => {
                   const top = ((minutesOf(a.starts_at) - hourFrom * 60) / 60) * HOUR_PX;
                   const blockHeight = ((minutesOf(a.ends_at) - minutesOf(a.starts_at)) / 60) * HOUR_PX;

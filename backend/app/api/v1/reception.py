@@ -9,6 +9,8 @@ from app.api.deps import get_db, require_any_permission, require_permission
 from app.schemas.schedule import SlotsOut
 from app.services.slots import available_slots
 from app.api.v1.appointments import _SELECT, _get
+from app.api.v1.blocks import BLOCK_SELECT
+from app.schemas.blocks import CalendarBlock
 from app.schemas.appointments import AppointmentOut
 from app.schemas.reception import (AnySlot, CalendarOut, CalendarStaff, MyClientOut, OptionService, OptionStaff,
                                    ReceptionBooking, ReceptionOptions)
@@ -63,9 +65,17 @@ def calendar(start: date, days: int = Query(default=1, ge=1, le=31), business_id
          WHERE a.business_id = :b AND a.status <> 'cancelled' AND {period}
          ORDER BY a.starts_at
     """), params).mappings()
+    blocks = db.execute(text(f"""{BLOCK_SELECT}
+         CROSS JOIN {tz}
+         WHERE t.business_id = :b
+           AND tstzrange(t.starts_at, t.ends_at) && tstzrange(CAST(:s AS timestamp) AT TIME ZONE z.timezone,
+                                                              CAST(:e AS timestamp) AT TIME ZONE z.timezone)
+         ORDER BY t.starts_at
+    """), params).mappings()
     hour_from, hour_to = _hours(db, business_id)
     return CalendarOut(start=start, days=days, hour_from=hour_from, hour_to=hour_to,
-                       staff=[CalendarStaff(**s) for s in staff], appointments=[AppointmentOut(**r) for r in rows])
+                       staff=[CalendarStaff(**s) for s in staff], appointments=[AppointmentOut(**r) for r in rows],
+                       blocks=[CalendarBlock(**b) for b in blocks])
 
 
 @router.get("/reception/options", response_model=ReceptionOptions)

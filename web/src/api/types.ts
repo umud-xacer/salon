@@ -88,6 +88,26 @@ export interface CalendarData {
   hour_to: number;
   staff: CalendarStaff[];
   appointments: Appointment[];
+  blocks?: CalendarBlock[];
+}
+
+/** Band oraliq: blok (tushlik, tozalash...) yoki ta'til */
+export interface CalendarBlock {
+  id: number;
+  member_id: number;
+  starts_at: string;
+  ends_at: string;
+  is_block: boolean;               // false — ta'til (Xodimlar bo'limida)
+  type_id: number | null;
+  title: string | null;
+  note: string | null;
+}
+
+export interface BlockType {
+  id: number;
+  name: string;
+  duration_min: number;
+  sort_order: number;
 }
 
 export interface ReceptionOptions {

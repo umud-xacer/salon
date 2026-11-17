@@ -1039,11 +1039,21 @@ export const RU_PAGES: Record<string, string> = {
   "Misol: mijoz {a} marta kelsa, {b}-tashrifi {c}% arzon bo'ladi.": "Пример: после {a} визитов {b}-й визит будет дешевле на {c}%.",
   // ── "Mijoz keldi" va bekor qilish sabablari (048) ──
   "Keldi {a}": "Пришёл в {a}", "Boshlash": "Начать", "\"Keldi\" belgisini olib tashlash": "Снять отметку «Пришёл»",
-  "Bekor qilish sababi": "Причина отмены", "Boshqa...": "Другое...", "Sababni yozing": "Укажите причину",
+  "Bekor qilish sababi": "Причина отмены", "O'z sababim...": "Своя причина...", "Sababni yozing": "Укажите причину",
   "Orqaga": "Назад", "Bekor qilish sabablari": "Причины отмены", "Sabablar yo'q": "Причин нет",
   "Yangi sabab": "Новая причина", "Sabab ko'rsatilmagan": "Причина не указана",
   "Bron bekor qilinganda shu ro'yxatdan tanlanadi. Hisobotda qaysi sabab ko'pligi ko'rinadi.":
     "При отмене записи причина выбирается из этого списка. В отчёте видно, какая причина чаще.",
   "Mijozning rejasi o'zgardi": "У клиента изменились планы", "Mijoz kasal bo'lib qoldi": "Клиент заболел",
   "Usta ishga chiqmadi": "Мастер не вышел на работу", "Xato yozilgan": "Записан по ошибке", "Boshqa sabab": "Другая причина",
+  // ── Kalendar bloklari (049) ──
+  "Vaqtni bloklash": "Заблокировать время", "Izoh (tur tanlanmasa — majburiy)": "Комментарий (обязателен, если тип не выбран)",
+  "Blok": "Блок", "Ta'til": "Отпуск", "Blokni olib tashlash": "Снять блок",
+  "Ta'til Xodimlar bo'limida o'zgartiriladi.": "Отпуск меняется в разделе «Сотрудники».",
+  "{n} daq": "{n} мин", "{h} soat": "{h} ч", "{h} soat {m} daq": "{h} ч {m} мин",
+  "Vaqtni bloklash turlari": "Типы блокировки времени",
+  "yoki shu vaqtni bloklash (tushlik, tozalash...)": "или заблокировать это время (обед, уборка...)",
+  "Kalendarda vaqt bloklanganda (tushlik, tozalash...) shu ro'yxatdan tanlanadi. Blok vaqtiga bron qilib bo'lmaydi.":
+    "При блокировке времени в календаре (обед, уборка...) тип выбирается из этого списка. На заблокированное время записаться нельзя.",
+  "Tushlik": "Обед", "Tanaffus": "Перерыв", "Tozalash": "Уборка", "Majlis": "Совещание", "Shaxsiy ish": "Личные дела",
 };

@@ -175,7 +175,7 @@ function CancelForm({ businessId, busy, onBack, onConfirm }: {
           <button key={name} type="button" onClick={() => setPicked(name)}
                   className={`rounded-full border px-3 py-1.5 text-sm ${picked === name
                     ? "border-primary bg-primary text-white" : "border-line hover:bg-page"}`}>
-            {name === OTHER ? t("Boshqa...") : dyn(name)}
+            {name === OTHER ? t("O'z sababim...") : dyn(name)}
           </button>
         ))}
       </div>

@@ -308,3 +308,38 @@ def test_arrival_only_through_function_for_staff(world):
         db.rollback()
         assert db.execute(text("UPDATE appointments SET checked_in_at = now() WHERE id = :id"),
                           {"id": foreign}).rowcount == 0
+
+
+# ─── Kalendar bloklari (049) ───────────────────────────────────────────────
+def test_reception_can_block_but_not_grant_vacation(world):
+    a, rec, usta = world["a"], world["rec"], world["usta"]["member"]["id"]
+    with api_session(uid(rec["tokens"])) as db:
+        db.execute(text("INSERT INTO staff_time_off (business_id, member_id, starts_at, ends_at, reason, is_block) "
+                        "VALUES (:b, :m, '2026-12-21 13:00+05', '2026-12-21 14:00+05', 'Tushlik', TRUE)"),
+                   {"b": a["id"], "m": usta})
+        db.commit()
+        # Ta'til (is_block = false) — faqat 'staff.manage' yoki xodimning o'zi
+        with pytest.raises(DBAPIError) as e:
+            db.execute(text("INSERT INTO staff_time_off (business_id, member_id, starts_at, ends_at, is_block) "
+                            "VALUES (:b, :m, '2026-12-22', '2026-12-25', FALSE)"), {"b": a["id"], "m": usta})
+        assert sqlstate(e) == "42501"
+        db.rollback()
+        # Blokni ta'tilga aylantirib bo'lmaydi
+        with pytest.raises(DBAPIError) as e:
+            db.execute(text("UPDATE staff_time_off SET is_block = FALSE WHERE member_id = :m AND is_block"), {"m": usta})
+        assert sqlstate(e) == "42501"
+        db.rollback()
+
+
+def test_block_type_must_belong_to_same_business(world):
+    a, b = world["a"], world["b"]
+    with api_session(uid(b["owner"])) as db:
+        b_type = db.execute(text("SELECT id FROM time_block_types LIMIT 1")).scalar()
+    with api_session(uid(a["owner"])) as db:
+        with pytest.raises(DBAPIError) as e:
+            db.execute(text("INSERT INTO staff_time_off (business_id, member_id, starts_at, ends_at, is_block, block_type_id) "
+                            "VALUES (:b, :m, '2026-12-23 10:00+05', '2026-12-23 11:00+05', TRUE, :t)"),
+                       {"b": a["id"], "m": world["usta"]["member"]["id"], "t": b_type})
+        assert sqlstate(e) == "23503"
+        db.rollback()
+        assert db.execute(text("UPDATE time_block_types SET name = 'xx' WHERE id = :id"), {"id": b_type}).rowcount == 0

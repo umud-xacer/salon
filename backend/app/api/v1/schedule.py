@@ -70,9 +70,9 @@ def replace_schedule(body: ScheduleReplace, member_id: int = Path(ge=1), busines
 
 @router.get("/members/{member_id}/time-off", response_model=list[TimeOffOut])
 def list_time_off(member_id: int = Depends(_manager_or_self), db: Session = Depends(get_db)):
-    """Hali tugamagan ta'tillar."""
+    """Hali tugamagan ta'tillar (kalendar bloklari — /time-blocks, bu yerda emas)."""
     rows = db.execute(text("SELECT id, starts_at, ends_at, reason FROM staff_time_off "
-                           "WHERE member_id = :m AND ends_at > now() ORDER BY starts_at"), {"m": member_id}).mappings()
+                           "WHERE member_id = :m AND ends_at > now() AND NOT is_block ORDER BY starts_at"), {"m": member_id}).mappings()
     return [TimeOffOut(**r) for r in rows]
 
 

@@ -27,10 +27,11 @@ function useDebounced(value: string, ms = 300) {
   return debounced;
 }
 
-export function BookingDialog({ membership, preset, onClose }: {
+export function BookingDialog({ membership, preset, onClose, onBlockInstead }: {
   membership: Membership;
   preset: BookingPreset;
   onClose: () => void;
+  onBlockInstead?: () => void;        // shu vaqtni bron o'rniga bloklash (tushlik, tozalash...)
 }) {
   const b = membership.business_id;
   const v = useVocab();
@@ -131,6 +132,11 @@ export function BookingDialog({ membership, preset, onClose }: {
 
   return (
     <Modal title={t("Yangi bron")} onClose={onClose}>
+      {onBlockInstead && (
+        <button type="button" onClick={onBlockInstead} className="-mt-2 mb-3 text-sm text-primary hover:underline">
+          {t("yoki shu vaqtni bloklash (tushlik, tozalash...)")}
+        </button>
+      )}
       {options.isPending && <Spinner />}
       {options.error && <ErrorNote error={options.error} />}
       {options.data && services.length === 0 && <Empty>{t("Avval xizmat qo'shing, keyin bron qilish mumkin.")}</Empty>}

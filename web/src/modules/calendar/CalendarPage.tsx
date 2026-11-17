@@ -1,9 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, Plus, Zap } from "lucide-react";
+import { Ban, ChevronLeft, ChevronRight, Plus, Zap } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { api } from "../../api/client";
-import type { Appointment, CalendarData, Membership } from "../../api/types";
+import type { Appointment, CalendarBlock, CalendarData, Membership } from "../../api/types";
 import {
   addDays,
   clock,
@@ -17,6 +17,7 @@ import {
 } from "../../components/format";
 import { Button, Empty, ErrorNote, PageTitle, Spinner } from "../../components/ui";
 import { AppointmentDialog } from "./AppointmentDialog";
+import { BlockDialog, BlockInfoDialog, type BlockPreset } from "./BlockDialog";
 import { BookingDialog, type BookingPreset } from "./BookingDialog";
 import { TimeGrid, type Column } from "./TimeGrid";
 import { WalkInDialog } from "./WalkInDialog";
@@ -34,6 +35,8 @@ export function CalendarPage({ membership }: { membership: Membership }) {
   const [booking, setBooking] = useState<BookingPreset | null>(null);
   const [opened, setOpened] = useState<Appointment | null>(null);
   const [walkIn, setWalkIn] = useState(false);
+  const [blocking, setBlocking] = useState<BlockPreset | null>(null);
+  const [openedBlock, setOpenedBlock] = useState<CalendarBlock | null>(null);
 
   const start = view === "day" ? day : mondayOf(day);
   const days = view === "day" ? 1 : 7;
@@ -53,26 +56,33 @@ export function CalendarPage({ membership }: { membership: Membership }) {
 
   const columns = useMemo<Column[]>(() => {
     if (!data) return [];
+    const blocks = data.blocks ?? [];
     if (view === "day") {
       return data.staff.map((s) => ({
         key: String(s.id),
         title: s.full_name,
         subtitle: dyn(s.title),
+        day,
         items: data.appointments.filter((a) => a.member_id === s.id),
+        blocks: blocks.filter((bl) => bl.member_id === s.id),
       }));
     }
+    // Haftalikda blok faqat bitta usta tanlanganda ko'rsatiladi — aks holda kimniki ekani noaniq
     return Array.from({ length: 7 }, (_, i) => {
       const d = addDays(start, i);
       return {
         key: d,
         title: WEEKDAYS[weekdayOf(d)],
         subtitle: shortDate(d),
+        day: d,
         items: data.appointments.filter(
           (a) => dayOf(a.starts_at) === d && (memberFilter === null || a.member_id === memberFilter),
         ),
+        blocks: memberFilter === null ? [] : blocks.filter(
+          (bl) => bl.member_id === memberFilter && dayOf(bl.starts_at) <= d && dayOf(bl.ends_at) >= d),
       };
     });
-  }, [data, view, start, memberFilter]);
+  }, [data, view, start, day, memberFilter]);
 
   // Ish vaqtidan tashqaridagi bron ham ko'rinsin
   const [hourFrom, hourTo] = useMemo(() => {
@@ -106,6 +116,10 @@ export function CalendarPage({ membership }: { membership: Membership }) {
             <div className="flex w-full flex-wrap gap-2 sm:w-auto">
               <Button variant="secondary" className="flex flex-1 items-center justify-center gap-1 sm:flex-none" onClick={() => setWalkIn(true)}>
                 <Zap size={16} aria-hidden /> {t("Tezkor qabul")}
+              </Button>
+              <Button variant="secondary" className="flex flex-1 items-center justify-center gap-1 sm:flex-none"
+                      onClick={() => setBlocking({ day, memberId: memberFilter ?? undefined })}>
+                <Ban size={16} aria-hidden /> {t("Vaqtni bloklash")}
               </Button>
               <Button className="flex flex-1 items-center justify-center gap-1 sm:flex-none" onClick={() => setBooking({ day: day < todayIso() ? todayIso() : day })}>
                 <Plus size={16} aria-hidden /> {v.newBooking}
@@ -173,11 +187,22 @@ export function CalendarPage({ membership }: { membership: Membership }) {
           hourTo={hourTo}
           onEmptyClick={canBook ? openNew : undefined}
           onOpen={setOpened}
+          onOpenBlock={setOpenedBlock}
           label={(a) => (view === "week" ? masterName(a.member_id) : pickList(a.services, a.services_ru).join(", "))}
         />
       )}
 
-      {booking && <BookingDialog membership={membership} preset={booking} onClose={() => setBooking(null)} />}
+      {booking && (
+        <BookingDialog membership={membership} preset={booking} onClose={() => setBooking(null)}
+                       onBlockInstead={() => { setBlocking(booking); setBooking(null); }} />
+      )}
+      {blocking && data && (
+        <BlockDialog membership={membership} staff={data.staff} preset={blocking} onClose={() => setBlocking(null)} />
+      )}
+      {openedBlock && (
+        <BlockInfoDialog membership={membership} block={openedBlock} masterName={masterName(openedBlock.member_id)}
+                         onClose={() => setOpenedBlock(null)} />
+      )}
       {walkIn && (
         <WalkInDialog
           membership={membership}

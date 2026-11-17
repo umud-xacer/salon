@@ -4,6 +4,7 @@ from pydantic import AwareDatetime, BaseModel, Field, field_validator
 
 from app.core.security import normalize_phone
 from app.schemas.appointments import AppointmentOut
+from app.schemas.blocks import CalendarBlock
 
 
 class CalendarStaff(BaseModel):
@@ -19,6 +20,7 @@ class CalendarOut(BaseModel):
     hour_to: int
     staff: list[CalendarStaff]
     appointments: list[AppointmentOut]
+    blocks: list[CalendarBlock] = []          # tushlik, tozalash, ta'til — band oraliqlar
 
 
 class OptionService(BaseModel):
