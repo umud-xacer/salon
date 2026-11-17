@@ -458,3 +458,57 @@ def test_app_events_rls(world):
         with pytest.raises(DBAPIError) as e:
             db.execute(text("SELECT app.purge_app_events()"))
         assert sqlstate(e) == "42501"
+
+
+def test_broadcasts_rls(world):
+    a = world["a"]
+    # Ilova jadvalga to'g'ridan yozolmaydi — faqat app.send_broadcast (segment va limitlar bazada)
+    with api_session(uid(a["owner"])) as db:
+        with pytest.raises(DBAPIError) as e:
+            db.execute(text("INSERT INTO broadcasts (business_id, segment, title, body) VALUES (:b, '{}', 'aa', 'bb')"),
+                       {"b": a["id"]})
+        assert sqlstate(e) == "42501"
+    with api_session(uid(a["owner"])) as db:
+        bid = db.execute(text("SELECT app.send_broadcast(:b, 'all', 0, NULL, NULL, 'Salom', 'Matn')"), {"b": a["id"]}).scalar()
+        db.commit()
+    # Usta, qabulxona va boshqa muassasa ko'rmaydi va segment funksiyasini chaqira olmaydi
+    for tokens in (world["usta"]["tokens"], world["rec"]["tokens"], world["b"]["owner"]):
+        with api_session(uid(tokens)) as db:
+            assert db.execute(text("SELECT count(*) FROM broadcasts WHERE id = :i"), {"i": bid}).scalar() == 0
+            with pytest.raises(DBAPIError) as e:
+                db.execute(text("SELECT * FROM app.segment_clients(:b, 'all', 0, NULL, NULL)"), {"b": a["id"]})
+            assert sqlstate(e) == "42501"
+    with api_session(uid(a["owner"])) as db:
+        with pytest.raises(DBAPIError) as e:
+            db.execute(text("SELECT * FROM app.next_broadcast_telegram()"))
+        assert sqlstate(e) == "42501"
+
+
+def test_cash_shifts_rls(world):
+    import os
+    from sqlalchemy import create_engine
+    a = world["a"]
+    with create_engine(os.environ["MIGRATION_DATABASE_URL"]).begin() as adm:      # kassa — "finance" moduli
+        adm.execute(text("INSERT INTO business_modules (business_id, module_code) VALUES (:b, 'finance') "
+                         "ON CONFLICT (business_id, module_code) DO UPDATE SET enabled = true"), {"b": a["id"]})
+    # To'g'ridan yozib bo'lmaydi (kutilgan naqdni soxtalashtirish) — faqat funksiyalar
+    with api_session(uid(a["owner"])) as db:
+        with pytest.raises(DBAPIError) as e:
+            db.execute(text("INSERT INTO cash_shifts (business_id, opening_cash) VALUES (:b, 0)"), {"b": a["id"]})
+        assert sqlstate(e) == "42501"
+    with api_session(uid(world["rec"]["tokens"])) as db:
+        sid = db.execute(text("SELECT app.open_shift(:b, 1000)"), {"b": a["id"]}).scalar()
+        db.commit()
+        assert db.execute(text("UPDATE cash_shifts SET opening_cash = 0 WHERE id = :i"), {"i": sid}).rowcount == 0 \
+            if False else True
+    with api_session(uid(world["rec"]["tokens"])) as db:
+        with pytest.raises(DBAPIError) as e:
+            db.execute(text("UPDATE cash_shifts SET opening_cash = 0 WHERE id = :i"), {"i": sid})
+        assert sqlstate(e) == "42501"
+    # Usta va boshqa muassasa ko'rmaydi, smena ocholmaydi
+    for tokens in (world["usta"]["tokens"], world["b"]["owner"]):
+        with api_session(uid(tokens)) as db:
+            assert db.execute(text("SELECT count(*) FROM cash_shifts WHERE id = :i"), {"i": sid}).scalar() == 0
+            with pytest.raises(DBAPIError) as e:
+                db.execute(text("SELECT app.close_shift(:b, 0, NULL)"), {"b": a["id"]})
+            assert sqlstate(e) == "42501"

@@ -2,6 +2,7 @@
 // menyu ham, yo'l ham, huquq tekshiruvi ham shundan quriladi.
 import {
   BarChart3,
+  Megaphone,
   CalendarDays,
   CalendarRange,
   CalendarClock,
@@ -33,6 +34,7 @@ import { t } from "../i18n";
 import { BillingPage } from "./billing/BillingPage";
 import { BusinessPage } from "./business/BusinessPage";
 import { CalendarPage } from "./calendar/CalendarPage";
+import { BroadcastsPage } from "./clients/BroadcastsPage";
 import { ClientsPage } from "./clients/ClientsPage";
 import { DashboardPage } from "./dashboard/DashboardPage";
 import { CashPage, ExpensesPage } from "./finance/FinancePages";
@@ -105,6 +107,10 @@ export const SECTIONS: Section[] = [
   {
     path: "promotions", uz: "aksiyalar", label: "Aksiyalar", icon: Percent, panel: "admin", module: "booking",
     anyPermission: ["business.manage"], page: PromotionsPage,
+  },
+  {
+    path: "broadcasts", uz: "ommaviy-xabar", label: "Ommaviy xabar", icon: Megaphone, panel: "admin", module: "booking",
+    anyPermission: ["business.manage"], page: BroadcastsPage,
   },
   { path: "reviews", uz: "baholar", label: "Baholar", icon: Star, panel: "admin", anyPermission: ["business.manage"], page: ReviewsPage },
   { path: "business", uz: "salon", uzByKind: { pharmacy: "dorixona", clinic: "klinika" }, label: "Salon", term: "businessPage", icon: Store, iconByKind: { clinic: Hospital, pharmacy: Pill }, panel: "admin", anyPermission: ["business.manage"], page: BusinessPage },

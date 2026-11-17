@@ -58,7 +58,7 @@ export default function Inbox() {
       router.push({ pathname: '/review', params: { appointmentId: String(n.data.appointment_id) } });
     }
     // Avtomatik xabarlar (tug'ilgan kun, qaytarish) va kutish ro'yxati taklifi — salon sahifasi
-    if ((n.type === 'promo_birthday' || n.type === 'promo_winback') && typeof n.data?.slug === 'string') {
+    if (n.type.startsWith('promo_') && typeof n.data?.slug === 'string') {
       router.push({ pathname: '/business/[slug]', params: { slug: n.data.slug } });
     }
     if (n.read_at) return;

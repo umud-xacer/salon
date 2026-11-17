@@ -75,6 +75,22 @@ def auto_messages() -> int:
     return len(rows)
 
 
+def broadcast_telegram() -> int:
+    """Ommaviy xabarlarning Telegram navbati (sql/056): bir aylanishda 50 tadan."""
+    if not get_settings().telegram_login_enabled:
+        return 0
+    from app.services import telegram_bot
+    with worker_session() as db:
+        rows = db.execute(text("SELECT * FROM app.next_broadcast_telegram()")).mappings().all()
+        db.commit()
+    for r in rows:
+        try:
+            telegram_bot.send_message(r["chat_id"], f"{r['business_name']}\n\n{r['title']}\n{r['body']}")
+        except Exception:
+            log.exception("Telegram (ommaviy xabar) yuborilmadi")
+    return len(rows)
+
+
 def purge_events() -> int:
     """Analitika: 180 kundan eski hodisalar (sql/055)."""
     with worker_session() as db:
@@ -114,6 +130,7 @@ def run_once() -> dict:
     waitlist = scan_waitlist()            # pushdan oldin: taklif xabari shu aylanishda ketsin
     auto = auto_messages()
     purge_events()
+    broadcast_telegram()
     pushes = send_pushes()                 # yetkazilmagan eslatma shu aylanishda ogohlantirishga aylansin
     alerts = raise_alerts()
     return {"expired": expired, "auto_cancelled": auto_cancelled, "reminders": reminders, "waitlist": waitlist, "auto": auto, "alerts": alerts,

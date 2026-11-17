@@ -8,6 +8,7 @@ import { addDays, formatDate, formatMoney, formatTime, METHOD_LABELS, STATUS_LAB
 import { Modal } from "../../components/Modal";
 import { Button, Card, Empty, ErrorNote, inputClass, PageTitle, Spinner } from "../../components/ui";
 import { PaymentPanel, PaymentRow } from "./PaymentPanel";
+import { ShiftCard } from "./ShiftCard";
 import { useVocab } from "../vocab";
 
 import { dyn, expenseNote, pickList, t } from "../../i18n";
@@ -54,6 +55,9 @@ export function CashPage({ membership }: { membership: Membership }) {
           </div>
         }
       />
+      <div className="mb-4">
+        <ShiftCard businessId={b} canManage={membership.permissions.includes("payments.accept")} />
+      </div>
       {query.isPending && <Spinner />}
       {query.error && <ErrorNote error={query.error} />}
       {data && (

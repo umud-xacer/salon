@@ -76,7 +76,7 @@ async function handleAction(router: ReturnType<typeof useRouter>, r: Notificatio
     router.push({ pathname: '/review', params: { appointmentId: String(data.appointment_id) } });
     return;
   }
-  if ((data.type === 'promo_birthday' || data.type === 'promo_winback') && typeof data.slug === 'string') {
+  if (typeof data.type === 'string' && data.type.startsWith('promo_') && typeof data.slug === 'string') {
     router.push({ pathname: '/business/[slug]', params: { slug: data.slug } });
     return;
   }
