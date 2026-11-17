@@ -31,6 +31,8 @@ export function CalendarPage({ membership }: { membership: Membership }) {
   const b = membership.business_id;
   const canBook = membership.permissions.includes("appointments.manage");
   const [view, setView] = useState<View>("day");
+  // Kun ko'rinishida ustunlar: xodimlar yoki xonalar/kreslolar (059)
+  const [group, setGroup] = useState<"staff" | "resources">("staff");
   const [day, setDay] = useState(todayIso());
   const [memberFilter, setMemberFilter] = useState<number | null>(null);
   const [booking, setBooking] = useState<BookingPreset | null>(null);
@@ -68,6 +70,19 @@ export function CalendarPage({ membership }: { membership: Membership }) {
   const columns = useMemo<Column[]>(() => {
     if (!data) return [];
     const blocks = data.blocks ?? [];
+    if (view === "day" && group === "resources" && (data.resources?.length ?? 0) > 0) {
+      const res = data.resources!;
+      const cols: Column[] = res.map((r) => ({
+        key: `r${r.id}`,
+        title: r.name,
+        subtitle: r.status === "maintenance" ? t("Ta'mirda") : r.capacity > 1 ? t("{a} o'rin", { a: r.capacity }) : null,
+        day,
+        items: data.appointments.filter((a) => a.resource_id === r.id),
+      }));
+      const loose = data.appointments.filter((a) => !a.resource_id);
+      if (loose.length) cols.push({ key: "r0", title: t("Xonasiz"), subtitle: null, day, items: loose });
+      return cols;
+    }
     if (view === "day") {
       return data.staff.map((s) => ({
         key: String(s.id),
@@ -93,7 +108,7 @@ export function CalendarPage({ membership }: { membership: Membership }) {
           (bl) => bl.member_id === memberFilter && dayOf(bl.starts_at) <= d && dayOf(bl.ends_at) >= d),
       };
     });
-  }, [data, view, start, day, memberFilter]);
+  }, [data, view, start, day, memberFilter, group]);
 
   // Ish vaqtidan tashqaridagi bron ham ko'rinsin
   const [hourFrom, hourTo] = useMemo(() => {
@@ -107,7 +122,8 @@ export function CalendarPage({ membership }: { membership: Membership }) {
 
   const openNew = (columnKey: string, minutes: number) => {
     const time = clock(minutes);
-    if (view === "day") setBooking({ day, memberId: Number(columnKey), time });
+    if (view === "day" && columnKey.startsWith("r")) setBooking({ day, time, resourceId: Number(columnKey.slice(1)) || undefined });
+    else if (view === "day") setBooking({ day, memberId: Number(columnKey), time });
     else setBooking({ day: columnKey, memberId: memberFilter ?? undefined, time });
   };
 
@@ -162,6 +178,16 @@ export function CalendarPage({ membership }: { membership: Membership }) {
             </button>
           ))}
         </div>
+        {view === "day" && (data?.resources?.length ?? 0) > 0 && (
+          <div className="flex rounded-lg border border-line bg-white p-0.5 text-sm" role="group" aria-label={t("Ustunlar")}>
+            {(["staff", "resources"] as const).map((g) => (
+              <button key={g} aria-pressed={group === g} onClick={() => setGroup(g)}
+                className={`rounded-md px-3 py-1 ${group === g ? "bg-primary text-white" : "text-muted"}`}>
+                {g === "staff" ? v.staffMany.charAt(0).toUpperCase() + v.staffMany.slice(1) : t("Xonalar")}
+              </button>
+            ))}
+          </div>
+        )}
         <div className="flex items-center gap-1">
           <Button variant="secondary" aria-label={t("Oldingi")} onClick={() => step(-1)}>
             <ChevronLeft size={16} />
@@ -216,7 +242,8 @@ export function CalendarPage({ membership }: { membership: Membership }) {
           onEmptyClick={canBook ? openNew : undefined}
           onOpen={setOpened}
           onOpenBlock={setOpenedBlock}
-          label={(a) => (view === "week" ? masterName(a.member_id) : pickList(a.services, a.services_ru).join(", "))}
+          label={(a) => (view === "week" || group === "resources" ? `${masterName(a.member_id)} · ${pickList(a.services, a.services_ru).join(", ")}`
+            : pickList(a.services, a.services_ru).join(", "))}
         />
       )}
 

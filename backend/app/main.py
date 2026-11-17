@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import DBAPIError
 
-from app.api.v1 import (analytics, appointments, auth, auto_messages, billing, broadcasts, cash_shifts, forms, blocks, waitlist, business_admin, catalog, clients, finance, geo, inventory, me, members,
+from app.api.v1 import (analytics, appointments, auth, auto_messages, billing, broadcasts, cash_shifts, forms, resources, blocks, waitlist, business_admin, catalog, clients, finance, geo, inventory, me, members,
                         payroll, promotions, reception, reminders, reports, reviews, schedule, superadmin, telegram, visits)
 from app.core.config import get_settings
 from app.services.auth_service import AuthError
@@ -76,6 +76,8 @@ _DB_ERRORS = {
     "P0421": (409, "line_not_removable", "Bu xizmatni olib tashlab bo'lmaydi: oxirgi xizmat yoki puli to'langan"),
     "P0422": (409, "advance_settled", "Bu avans oylikdan ayirilgan, endi bekor qilib bo'lmaydi"),
     "P0423": (409, "nobody_free", "Hozir bo'sh mutaxassis yo'q"),
+    "P0424": (409, "resource_busy", "Bu vaqtda bo'sh xona yoki kreslo yo'q. Boshqa vaqt yoki resursni tanlang"),
+    "P0425": (409, "resource_not_suitable", "Tanlangan xona yoki kreslo bu xizmatga mos emas"),
     "P0450": (409, "business_account", "Salon xodimi yoki direktori hisobini ilovadan o'chirib bo'lmaydi. "
                                        "Qo'llab-quvvatlash xizmatiga yozing"),
     "P0440": (409, "promo_not_found", "Promokod topilmadi yoki muddati tugagan"),
@@ -117,6 +119,7 @@ app.include_router(analytics.admin_router, prefix="/api/v1")
 app.include_router(broadcasts.router, prefix="/api/v1")
 app.include_router(cash_shifts.router, prefix="/api/v1")
 app.include_router(forms.router, prefix="/api/v1")
+app.include_router(resources.router, prefix="/api/v1")
 app.include_router(visits.router, prefix="/api/v1")
 app.include_router(clients.router, prefix="/api/v1")
 app.include_router(finance.router, prefix="/api/v1")

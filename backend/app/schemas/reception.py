@@ -13,6 +13,14 @@ class CalendarStaff(BaseModel):
     title: str | None
 
 
+class CalendarResource(BaseModel):
+    id: int
+    name: str
+    kind: str
+    capacity: int
+    status: str
+
+
 class CalendarOut(BaseModel):
     start: dt.date
     days: int
@@ -21,6 +29,7 @@ class CalendarOut(BaseModel):
     staff: list[CalendarStaff]
     appointments: list[AppointmentOut]
     blocks: list[CalendarBlock] = []          # tushlik, tozalash, ta'til — band oraliqlar
+    resources: list["CalendarResource"] = []  # xona/kreslo ko'rinishi uchun (059)
 
 
 class OptionService(BaseModel):
@@ -53,6 +62,7 @@ class ReceptionBooking(BaseModel):
     client_name: str = Field(min_length=2, max_length=120)
     client_phone: str
     note: str | None = Field(default=None, max_length=500)
+    resource_id: int | None = Field(default=None, ge=1)   # qo'lda tanlangan xona/kreslo (bo'lmasa — avtomatik)
 
     @field_validator("client_phone")
     @classmethod

@@ -1,6 +1,7 @@
 // Panel bo'limlari ro'yxati. Yangi bo'lim qo'shish uchun shu yerga bitta yozuv kifoya:
 // menyu ham, yo'l ham, huquq tekshiruvi ham shundan quriladi.
 import {
+  Armchair,
   BarChart3,
   Megaphone,
   CalendarDays,
@@ -34,6 +35,7 @@ import { t } from "../i18n";
 import { BillingPage } from "./billing/BillingPage";
 import { BusinessPage } from "./business/BusinessPage";
 import { CalendarPage } from "./calendar/CalendarPage";
+import { ResourcesPage } from "./business/ResourcesPage";
 import { BroadcastsPage } from "./clients/BroadcastsPage";
 import { FormsPage } from "./clients/FormsPage";
 import { ClientsPage } from "./clients/ClientsPage";
@@ -108,6 +110,11 @@ export const SECTIONS: Section[] = [
   {
     path: "promotions", uz: "aksiyalar", label: "Aksiyalar", icon: Percent, panel: "admin", module: "booking",
     anyPermission: ["business.manage"], page: PromotionsPage,
+  },
+  {
+    path: "resources", uz: "zallar-kreslolar", uzByKind: { clinic: "kabinetlar" }, label: "Zallar va kreslolar",
+    labelByKind: { clinic: "Kabinetlar va kreslolar" }, icon: Armchair, panel: "admin", module: "booking",
+    anyPermission: ["business.manage"], page: ResourcesPage,
   },
   {
     path: "forms", uz: "anketalar", uzByKind: { clinic: "bemor-kartalari" }, label: "Mijoz anketalari",

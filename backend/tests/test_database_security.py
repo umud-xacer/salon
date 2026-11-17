@@ -536,3 +536,21 @@ def test_forms_rls(world):
             assert db.execute(text("SELECT count(*) FROM client_files WHERE business_id = :b"), {"b": a["id"]}).scalar() == 0
     with api_session(uid(world["rec"]["tokens"])) as db:
         assert db.execute(text("UPDATE form_templates SET title = 'x' WHERE id = :t"), {"t": tid}).rowcount == 0
+
+
+def test_resources_rls(world):
+    a = world["a"]
+    with api_session(uid(a["owner"])) as db:
+        rid = db.execute(text("INSERT INTO resources (business_id, name) VALUES (:b, 'Kreslo') RETURNING id"), {"b": a["id"]}).scalar()
+        appt = book(db, a["id"], world["client_a"], world["usta"]["member"]["id"], "2026-12-03 10:00+05", "2026-12-03 11:00+05")
+        db.commit()
+        # Bronga resurs faqat app.assign_resource orqali (sig'im tekshiruvi chetlab o'tilmaydi)
+        with pytest.raises(DBAPIError) as e:
+            db.execute(text("UPDATE appointments SET resource_id = :r WHERE id = :a"), {"r": rid, "a": appt})
+        assert sqlstate(e) == "42501"
+    # Usta ko'radi, lekin o'zgartira olmaydi; boshqa muassasa ko'rmaydi
+    with api_session(uid(world["usta"]["tokens"])) as db:
+        assert db.execute(text("SELECT count(*) FROM resources WHERE id = :r"), {"r": rid}).scalar() == 1
+        assert db.execute(text("UPDATE resources SET capacity = 9 WHERE id = :r"), {"r": rid}).rowcount == 0
+    with api_session(uid(world["b"]["owner"])) as db:
+        assert db.execute(text("SELECT count(*) FROM resources WHERE id = :r"), {"r": rid}).scalar() == 0

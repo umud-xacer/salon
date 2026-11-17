@@ -74,6 +74,8 @@ export interface Appointment {
   client_allergies?: string | null;
   client_backup_phone?: string | null; // mijoz ilovada kiritgan zaxira raqam
   client_medical?: string[];          // anketadagi tibbiy ogohlantirishlar
+  resource_id?: number | null;        // xona / kreslo / apparat
+  resource_name?: string | null;
 }
 
 export interface CancelReason {
@@ -96,6 +98,24 @@ export interface CalendarData {
   staff: CalendarStaff[];
   appointments: Appointment[];
   blocks?: CalendarBlock[];
+  resources?: CalendarResource[];
+}
+
+export interface CalendarResource {
+  id: number;
+  name: string;
+  kind: "chair" | "room" | "device";
+  capacity: number;
+  status: "active" | "maintenance";
+}
+
+export interface Resource extends CalendarResource {
+  cleanup_min: number;
+  opens_at: string | null;
+  closes_at: string | null;
+  service_ids: number[];
+  member_ids: number[];
+  upcoming: number;
 }
 
 /** Band oraliq: blok (tushlik, tozalash...) yoki ta'til */

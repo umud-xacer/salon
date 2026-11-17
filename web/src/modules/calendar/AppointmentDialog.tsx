@@ -3,7 +3,7 @@ import { MedicalAlerts } from "../clients/ClientMedical";
 import { useState } from "react";
 
 import { api, json } from "../../api/client";
-import type { Appointment, CancelReason, Membership } from "../../api/types";
+import type { Appointment, CancelReason, Membership, Resource } from "../../api/types";
 import { formatDate, formatMoney, formatTime, STATUS_LABELS } from "../../components/format";
 import { Button, ErrorNote, inputClass, Spinner } from "../../components/ui";
 import { Modal } from "../../components/Modal";
@@ -26,6 +26,11 @@ export function AppointmentDialog({ membership, appointment: a, masterName, onCl
   const queryClient = useQueryClient();
   const [confirmCancel, setConfirmCancel] = useState(false);
   const canManage = membership.permissions.includes("appointments.manage");
+  const resources = useQuery({ queryKey: ["resources", b], queryFn: () => api<Resource[]>(`/businesses/${b}/resources`) });
+  const moveResource = useMutation({
+    mutationFn: (rid: number) => api<Appointment>(`/businesses/${b}/appointments/${a.id}/resource`, json("PUT", { resource_id: rid })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["calendar", b] }),
+  });
   const showPayments = membership.modules.includes("finance")
     && (membership.permissions.includes("payments.accept") || membership.permissions.includes("finance.view"))
     && a.status !== "cancelled" && a.status !== "no_show";     // oldindan to'lov: mijoz kelmasidan ham olinadi
@@ -68,6 +73,24 @@ export function AppointmentDialog({ membership, appointment: a, masterName, onCl
         {!showLines && <><dt className="text-muted">{t("Xizmat")}</dt><dd>{pickList(a.services, a.services_ru).join(", ")}</dd></>}
         <dt className="text-muted">{v.staffOne}</dt>
         <dd>{masterName}</dd>
+        {(a.resource_id || (canManage && (resources.data?.length ?? 0) > 0 && ["pending", "confirmed", "in_progress"].includes(a.status))) && (
+          <>
+            <dt className="text-muted">{t("Xona / kreslo")}</dt>
+            <dd>
+              {canManage && ["pending", "confirmed", "in_progress"].includes(a.status) && (resources.data?.length ?? 0) > 0 ? (
+                <select className="rounded border border-line bg-white px-1 py-0.5 text-sm" value={a.resource_id ?? ""}
+                  disabled={moveResource.isPending} aria-label={t("Xona / kreslo")}
+                  onChange={(e) => e.target.value && moveResource.mutate(Number(e.target.value))}>
+                  {!a.resource_id && <option value="">—</option>}
+                  {resources.data!.map((r) => (
+                    <option key={r.id} value={r.id} disabled={r.status !== "active"}>{r.name}{r.status !== "active" ? ` (${t("Ta'mirda")})` : ""}</option>
+                  ))}
+                </select>
+              ) : a.resource_name}
+              {moveResource.error && <ErrorNote error={moveResource.error} />}
+            </dd>
+          </>
+        )}
         {!showLines && <><dt className="text-muted">{t("Narx")}</dt><dd>{formatMoney(a.total_price)}</dd></>}
         {a.client_phone && (
           <>

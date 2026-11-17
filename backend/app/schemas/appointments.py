@@ -112,3 +112,5 @@ class AppointmentOut(BaseModel):
     client_allergies: str | None = None
     client_medical: list[str] = []                      # anketadagi tibbiy ogohlantirishlar (058)
     client_backup_phone: str | None = None              # mijozning zaxira raqami (faqat 'clients.view')
+    resource_id: int | None = None                      # xona / kreslo / apparat (059)
+    resource_name: str | None = None

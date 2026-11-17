@@ -12,7 +12,7 @@ from app.api.v1.appointments import _SELECT, _get
 from app.api.v1.blocks import BLOCK_SELECT
 from app.schemas.blocks import CalendarBlock
 from app.schemas.appointments import AppointmentOut
-from app.schemas.reception import (AnySlot, CalendarOut, CalendarStaff, MyClientOut, OptionService, OptionStaff,
+from app.schemas.reception import (AnySlot, CalendarOut, CalendarResource, CalendarStaff, MyClientOut, OptionService, OptionStaff,
                                    ReceptionBooking, ReceptionOptions)
 
 router = APIRouter(prefix="/businesses/{business_id}", tags=["reception"])
@@ -72,10 +72,13 @@ def calendar(start: date, days: int = Query(default=1, ge=1, le=31), business_id
                                                               CAST(:e AS timestamp) AT TIME ZONE z.timezone)
          ORDER BY t.starts_at
     """), params).mappings()
+    resources = db.execute(text("""
+        SELECT id, name, kind, capacity, status FROM resources WHERE business_id = :b ORDER BY sort_order, id
+    """), params).mappings()
     hour_from, hour_to = _hours(db, business_id)
     return CalendarOut(start=start, days=days, hour_from=hour_from, hour_to=hour_to,
                        staff=[CalendarStaff(**s) for s in staff], appointments=[AppointmentOut(**r) for r in rows],
-                       blocks=[CalendarBlock(**b) for b in blocks])
+                       blocks=[CalendarBlock(**b) for b in blocks], resources=[CalendarResource(**r) for r in resources])
 
 
 @router.get("/reception/options", response_model=ReceptionOptions)
@@ -115,6 +118,8 @@ def book_for_client(body: ReceptionBooking, business_id: int = Depends(_booking_
         SELECT app.reception_book(:b, :m, :s, :t, :name, :phone, :note)
     """), {"b": business_id, "m": body.member_id, "s": body.service_id, "t": body.starts_at,
            "name": body.client_name, "phone": body.client_phone, "note": body.note})
+    if body.resource_id:
+        db.execute(text("SELECT app.assign_resource(:a, :r)"), {"a": appointment_id, "r": body.resource_id})
     db.commit()
     return _get(db, appointment_id)
 

@@ -15,6 +15,7 @@ export interface BookingPreset {
   day: string;
   memberId?: number;
   time?: string;
+  resourceId?: number;               // "Xonalar" ko'rinishida bosilgan xona/kreslo
 }
 
 const field = "mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm outline-none focus:border-primary";
@@ -99,6 +100,7 @@ export function BookingDialog({ membership, preset, onClose, onBlockInstead, onW
           client_name: name,
           client_phone: normalizePhone(phone),
           note: note.trim() || null,
+          resource_id: preset.resourceId ?? null,
         }),
       ),
     onSuccess: async () => {
