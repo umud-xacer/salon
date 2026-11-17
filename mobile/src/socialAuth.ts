@@ -2,6 +2,8 @@
 // * pendingLink — Google hisobi hali raqamga bog'lanmagan: raqam (SMS yoki Telegram) tasdiqlanganda
 //   shu token yuboriladi va Google hisobi bog'lanadi. Keyingi safar Google bilan bir bosishda kirish.
 // * Google native moduli faqat yangi APK/AAB da bor: eski ilovada (OTA bilan kelgan kod) tugma ko'rinmaydi.
+import { NativeModules, TurboModuleRegistry } from 'react-native';
+
 import { api, LoginOut } from './api';
 
 let pendingLink: string | null = null;
@@ -35,6 +37,19 @@ let google: GoogleModule | null | undefined;
 
 function loadGoogle(): GoogleModule | null {
   if (google !== undefined) return google;
+  // Avval native modul borligini XATO TASHLAMAYDIGAN usulda tekshiramiz. Kutubxona import paytida
+  // getEnforcing('RNGoogleSignin') chaqiradi — modulsiz APK'da (1.0.1 preview) bu yangi arxitekturada
+  // ilovani yopib yuborishi mumkin, try/catch ham qutqarmaydi. Modul yo'q bo'lsa — umuman yuklamaymiz.
+  let present = false;
+  try {
+    present = !!(TurboModuleRegistry.get('RNGoogleSignin') ?? NativeModules.RNGoogleSignin);
+  } catch {
+    present = false;
+  }
+  if (!present) {
+    google = null;
+    return google;
+  }
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const m = require('@react-native-google-signin/google-signin') as GoogleModule;
