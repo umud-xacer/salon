@@ -1,6 +1,6 @@
 # Play Console anketalari — Chronix uchun tayyor javoblar
 
-Kod va server holatiga asoslangan (2026-11-16). Javoblar haqiqatga mos bo'lishi shart — ilova o'zgarsa, shu fayl ham yangilanadi.
+Kod va server holatiga asoslangan (yangilangan 2026-11-17, ilova 1.0.2). Javoblar haqiqatga mos bo'lishi shart — ilova o'zgarsa, shu fayl ham yangilanadi.
 
 ## 0. Chiqarish tartibi (2026-11-17)
 1. **Dasturchi hisobi** (play.google.com/console/signup): turini tanlash, 25 $ to'lov (karta — egasi o'zi kiritadi), shaxsni tasdiqlash (pasport/ID, 1–3 kun).
@@ -8,8 +8,8 @@ Kod va server holatiga asoslangan (2026-11-16). Javoblar haqiqatga mos bo'lishi 
    - **Tashkilot** ("Для организации"): yopiq test talabi yo'q, lekin **D-U-N-S raqami** kerak (bepul, 1–4 hafta).
 2. **Ilova yaratish**: nomi "Chronix", til o'zbek (yoki rus), App, Free.
 3. **App content** anketalari — quyidagi 1–6 bandlar.
-4. **Store listing** — `STORE_LISTING.md`, `icon-512.png`, `feature-graphic-1024x500.png`, telefon skrinshotlari (2–8 ta).
-5. **Testing → Internal testing**: .aab yuklash (EAS build, `uz.chronix.app`), o'zini sinovchi qilib qo'shish.
+4. **Store listing** — `STORE_LISTING.md` (nom, qisqa/to'liq tavsif uz+ru), `icon-512.png`, `feature-graphic-1024x500.png`, `screenshots/` (8 ta, 1080×1920).
+5. **Testing → Internal testing**: .aab yuklash — versiya **1.0.2**, versionCode 5, EAS build `8ab9976c-a810-4020-90a0-527df77b9c6c` (qulf-ekran tuzatishi, zaxira telefon, analitika bilan). O'zini sinovchi qilib qo'shish.
 6. **App integrity → App signing**: SHA-1 ni olib, Google Cloud (loyiha `chronix-514914`) da 2-Android OAuth client "Chronix Play" yaratish — aks holda Play'dan o'rnatilgan ilovada Google bilan kirish ishlamaydi.
 7. Shaxsiy hisob bo'lsa: **Closed testing** (12+ sinovchi, 14 kun) → **Production** ga ariza.
 
@@ -31,7 +31,8 @@ Kod va server holatiga asoslangan (2026-11-16). Javoblar haqiqatga mos bo'lishi 
 - Kutilgan natija: **3+ / Everyone** (sharhlar sababli "Users Interact" belgisi bo'lishi mumkin).
 
 ## 4. Target audience
-- Yosh guruhi: **18+** (yoki 16+ dan yuqori). Bolalarga mo'ljallanmagan. Privacy policy'da "16 yoshdan katta" deyilgan.
+- Yosh guruhlari: **16–17** va **18+** (maxfiylik siyosatida "16 yoshdan katta"). 15 va undan kichiklar — belgilanmaydi.
+- "Appeals to children?" — **No**. Ilova bolalarga mo'ljallanmagan.
 
 ## 5. Data safety
 **Data collected and shared**
@@ -56,10 +57,19 @@ Kod va server holatiga asoslangan (2026-11-16). Javoblar haqiqatga mos bo'lishi 
 - Financial info, health, contacts, photos, audio, files, calendar, web history: **No**.
 - Privacy policy URL: https://chronix.uz/privacy
 
+## 5a. Ruxsatlar deklaratsiyasi — to'liq ekranli bildirishnoma (USE_FULL_SCREEN_INTENT)
+Play Console: **App content → Full-screen intent permission** (yoki .aab yuklagach so'raladi).
+- "Does your app's core functionality require full-screen intent?" → **No** (asosiy funksiya — bron; budilnik — qo'shimcha eslatma).
+- Natija: Android 14+ da ruxsat avtomatik berilmaydi — budilnik oddiy yuqori ustuvor bildirishnoma bo'lib keladi; foydalanuvchi xohlasa
+  Sozlamalar ekranidagi tugma orqali o'zi yoqadi (kodda `canUseFullScreen` / `openFullScreenSettings`). Ilova buzilmaydi.
+- Tavsif (so'ralsa): "Chronix shows an optional alarm-style reminder before a booked appointment. It is not the core function of the app;
+  without this permission the reminder is delivered as a regular high-priority notification."
+- Qulflangan ekran: ilova qulf ustida faqat budilnik ekrani uchun ochiladi (1.0.2 dan; boshqa ekranlar qulfni ochmasdan ko'rinmaydi).
+
 ## 6. Boshqa deklaratsiyalar
 - Government app: No. Financial features: No. Health app: No (stomatologiya/LOR — faqat bron, tibbiy ma'lumot yo'q).
 - News app: No. COVID: No.
 - Account deletion URL: https://chronix.uz/hisobni-ochirish
 
 ## 7. Store listing
-Matnlar va grafikalar: `docs/play-store/STORE_LISTING.md`, `icon-512.png`, `feature-graphic-1024x500.png`. Telefon skrinshotlari (2–8 ta, 1080×2400) hali olinmagan.
+Matnlar va grafikalar: `docs/play-store/STORE_LISTING.md`, `icon-512.png`, `feature-graphic-1024x500.png`. Telefon skrinshotlari: `docs/play-store/screenshots/` — 8 ta, 1080×1920 ✅.

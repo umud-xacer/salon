@@ -1,6 +1,6 @@
 # Chronix — Google Play'ga chiqarish
 
-Ilova: **Chronix** · paket: `uz.chronix.app` · versiya 1.0.1 · Expo SDK 58.
+Ilova: **Chronix** · paket: `uz.chronix.app` · versiya **1.0.2** (versionCode 5, build `8ab9976c`) · Expo SDK 58.
 
 ## 1. Production build (.aab)
 
@@ -26,20 +26,22 @@ Olib tashlangan (`blockedPermissions`): RECORD_AUDIO, FOREGROUND_SERVICE(_MEDIA_
 |---|---|---|
 | Ilova ikonkasi | 512×512 PNG, 32-bit, ≤1 MB | `docs/play-store/icon-512.png` ✅ |
 | Feature graphic | 1024×500 JPG/PNG, shaffofliksiz | `docs/play-store/feature-graphic-1024x500.png` ✅ |
-| Telefon skrinshotlari | 2–8 ta, 16:9 yoki 9:16, har tomoni 320–3840 px; tavsiya: 1080×1920 (yoki 1080×2400) | telefondan olinadi ⬜ |
+| Telefon skrinshotlari | 2–8 ta, 16:9 yoki 9:16, har tomoni 320–3840 px | `docs/play-store/screenshots/` — 8 ta, 1080×1920 ✅ |
 | Planshet skrinshotlari | Ixtiyoriy (planshet qo'llab-quvvatlanmaydi) | — |
 
 Ilovadagi ikonka (`assets/icon.png` 1024, adaptive foreground/background/monochrome 1024) va splash (`#010D49` fonda logotip) sozlangan.
 
-**Skrinshotlar tartibi** (telefonda, kunduzgi mavzu, 1080×2400):
-1. Bosh sahifa — "Tavsiya etilganlar"
-2. Qidiruv — xarita va salonlar ro'yxati
-3. Salon sahifasi — rasm, reyting, "Bugungi chegirmalar"
-4. Xizmatlar va ustalar
-5. Bron: vaqt tanlash
-6. Bronlarim
-7. Sharhlar
-8. Profil → Bonuslarim
+**Skrinshotlar** (`screenshots/`, 1080×1920, kunduzgi mavzu, shu tartibda yuklanadi):
+1. `01_bosh_sahifa` — yo'nalishlar va "Tavsiya etilganlar"
+2. `02_qidiruv` — qidiruv, filtrlar, natijalar
+3. `03_salon_sahifasi` — rasm, reyting, ish vaqti, tavsif
+4. `04_xizmat_tanlash` — bron: xizmat tanlash
+5. `05_vaqt_tanlash` — bron: sana va bo'sh vaqtlar
+6. `06_bronlarim` — kelgusi bronlar (tasdiqlangan / kutilmoqda)
+7. `07_xabarlar_kutish_royxati` — kutish ro'yxati taklifi, tug'ilgan kun tabrigi, sharh so'rovi
+8. `08_profil` — profil, sevimlilar
+
+Skrinshotlar lokal ko'rik bazasidagi namuna ma'lumotlar bilan olingan (haqiqiy mijoz ma'lumoti yo'q).
 
 Ixtiyoriy: har skrinshot ustiga 1 qatorli sarlavha ("Yaqin salonni xaritada toping" kabi).
 
@@ -64,10 +66,11 @@ Imkoniyatlar:
 • Bugungi chegirmalar — bo'sh qolgan vaqtlarga arzonroq narx
 • Promokodlar va tashriflar seriyasi: muntazam mijozlarga avtomatik chegirma
 • Bron eslatmalari — tashrifni unutmaysiz
+• Kutish ro'yxati — kerakli vaqt bo'shasa, darhol xabar olasiz
 • Bronni bekor qilish yoki boshqa vaqtga ko'chirish
 • Tashrifdan keyin baho va sharh qoldirish
 • Sevimli salonlar, yaqinda ko'rilganlar
-• SMS kod bilan tez ro'yxatdan o'tish, Face ID / barmoq izi bilan kirish
+• Telegram yoki Google orqali bir bosishda kirish, Face ID / barmoq izi
 • Kunduzgi va tungi mavzu, o'zbek va rus tillari
 
 Chronix — vaqtingiz bizning ustuvorligimiz.
@@ -92,10 +95,11 @@ Chronix — приложение для записи в салоны красо�
 • Скидки сегодня — свободные окна дешевле
 • Промокоды и серия визитов: постоянным клиентам скидка автоматически
 • Напоминания о записи
+• Лист ожидания — сообщим, как только освободится нужное время
 • Отмена и перенос записи
 • Оценка и отзыв после визита
 • Избранные заведения, недавно просмотренные
-• Быстрая регистрация по SMS-коду, вход по Face ID / отпечатку
+• Вход в один клик через Telegram или Google, Face ID / отпечаток
 • Светлая и тёмная тема, узбекский и русский языки
 
 Chronix — ваше время в приоритете.
@@ -110,9 +114,9 @@ Chronix — ваше время в приоритете.
 |---|---|
 | Maxfiylik siyosati (privacy policy) URL | ✅ https://chronix.uz/privacy (uz/ru) |
 | Hisobni o'chirish (ilova ichida + veb havola) | ✅ Profil → Hisobni o'chirish; veb: https://chronix.uz/hisobni-ochirish |
-| Data safety formasi | ⬜ Tayyorlash: telefon raqami, ism, taxminiy/aniq joylashuv, bronlar tarixi, qurilma push tokeni; shifrlangan uzatish (HTTPS); o'chirish so'rovi mumkin |
-| Ko'rib chiquvchi uchun kirish (App access) | ✅ Doimiy sinov raqami + kod serverda (`REVIEW_PHONE`/`REVIEW_CODE`); qiymatlar repoda emas — `loyxalar/PLAY_TEST_LOGIN.md` |
-| Kontent reytingi anketasi | ⬜ Play Console'da to'ldiriladi (zo'ravonliksiz, "Everyone") |
-| Maqsadli auditoriya | ⬜ 18+ (yoki 13+), bolalarga mo'ljallanmagan |
+| Data safety formasi | ✅ Javoblar: `PLAY_CONSOLE_JAVOBLAR.md` 5-band (analitika qatorlari bilan) |
+| Ko'rib chiquvchi uchun kirish (App access) | ✅ Sinov raqami + parol («Parol bilan kirish»); qiymatlar repoda emas — `loyxalar/PLAY_TEST_LOGIN.md` |
+| Kontent reytingi anketasi | ✅ Javoblar: `PLAY_CONSOLE_JAVOBLAR.md` 3-band |
+| Maqsadli auditoriya | ✅ 16–17 va 18+ (maxfiylik siyosatidagi "16 yoshdan katta" bilan mos) |
 | Reklama bormi | Yo'q |
 | Yangi shaxsiy dasturchi hisobi | Agar hisob 2023-11-dan keyin ochilgan shaxsiy hisob bo'lsa: **12 sinovchi × 14 kun yopiq test** talab qilinadi |
