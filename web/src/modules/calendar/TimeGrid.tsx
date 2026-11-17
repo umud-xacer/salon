@@ -149,6 +149,9 @@ export function TimeGrid({ columns, hourFrom, hourTo, onEmptyClick, onOpen, onOp
                     >
                       <span className="block font-medium tabular-nums">
                         {isArrived(a) && <span aria-hidden className="text-success">✓ </span>}
+                        {(a.client_alert || a.client_allergies) && (
+                          <span className="text-amber-600" title={[a.client_allergies, a.client_alert].filter(Boolean).join(" · ")}>⚠ </span>
+                        )}
                         {formatTime(a.starts_at)} {a.client_name ?? v.clientOne}
                       </span>
                       <span className="block truncate text-muted">{label(a)}</span>

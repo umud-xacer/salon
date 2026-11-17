@@ -343,3 +343,50 @@ def test_block_type_must_belong_to_same_business(world):
         assert sqlstate(e) == "23503"
         db.rollback()
         assert db.execute(text("UPDATE time_block_types SET name = 'xx' WHERE id = :id"), {"id": b_type}).rowcount == 0
+
+
+# ─── Mijoz kartochkasi (050) ───────────────────────────────────────────────
+def test_client_internal_card_hidden_from_customer_and_staff(world):
+    a = world["a"]
+    with api_session(uid(a["owner"])) as db:
+        db.execute(text("INSERT INTO client_internal (business_id, client_id, tags, alert) "
+                        "VALUES (:b, :c, ARRAY['VIP'], 'Maxfiy ogohlantirish') "
+                        "ON CONFLICT (client_id) DO UPDATE SET alert = EXCLUDED.alert"),
+                   {"b": a["id"], "c": world["client_a"]})
+        db.execute(text("INSERT INTO client_notes (business_id, client_id, body) VALUES (:b, :c, 'Ichki eslatma')"),
+                   {"b": a["id"], "c": world["client_a"]})
+        db.commit()
+    # Mijozning o'zi o'z business_clients qatorini ko'radi, lekin ichki kartochkani emas
+    with api_session(uid(world["customer"])) as db:
+        assert db.execute(text("SELECT count(*) FROM business_clients")).scalar() >= 1
+        assert db.execute(text("SELECT count(*) FROM client_internal")).scalar() == 0
+        assert db.execute(text("SELECT count(*) FROM client_notes")).scalar() == 0
+    # Usta mijozlar bazasini ko'rmaydi
+    with api_session(uid(world["usta"]["tokens"])) as db:
+        assert db.execute(text("SELECT count(*) FROM client_internal")).scalar() == 0
+        with pytest.raises(DBAPIError) as e:
+            db.execute(text("INSERT INTO client_notes (business_id, client_id, body) VALUES (:b, :c, 'x')"),
+                       {"b": a["id"], "c": world["client_a"]})
+        assert sqlstate(e) == "42501"
+        db.rollback()
+    # Boshqa muassasa
+    with api_session(uid(world["b"]["owner"])) as db:
+        assert db.execute(text("SELECT count(*) FROM client_internal WHERE client_id = :c"),
+                          {"c": world["client_a"]}).scalar() == 0
+        with pytest.raises(DBAPIError) as e:
+            db.execute(text("INSERT INTO client_internal (business_id, client_id, alert) VALUES (:b, :c, 'x')"),
+                       {"b": a["id"], "c": world["client_a"]})
+        assert sqlstate(e) == "42501"
+        db.rollback()
+
+
+def test_client_note_author_is_forced(world):
+    """Eslatmani boshqa xodim nomidan yozib bo'lmaydi."""
+    a = world["a"]
+    with api_session(uid(world["rec"]["tokens"])) as db:
+        with pytest.raises(DBAPIError) as e:
+            db.execute(text("INSERT INTO client_notes (business_id, client_id, body, created_by) "
+                            "VALUES (:b, :c, 'Soxta', :u)"),
+                       {"b": a["id"], "c": world["client_a"], "u": uid(a["owner"])})
+        assert sqlstate(e) == "42501"
+        db.rollback()

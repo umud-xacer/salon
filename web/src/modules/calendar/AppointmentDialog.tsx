@@ -87,6 +87,13 @@ export function AppointmentDialog({ membership, appointment: a, masterName, onCl
         {a.cancel_reason && a.status === "cancelled" && <><dt className="text-muted">{t("Sabab")}</dt><dd className="break-words">{a.cancel_reason}</dd></>}
       </dl>
 
+      {(a.client_allergies || a.client_alert) && (
+        <div className="mt-3 space-y-1 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          {a.client_allergies && <p><span className="font-medium">{t("Allergiya")}:</span> {a.client_allergies}</p>}
+          {a.client_alert && <p><span className="font-medium">{t("Ogohlantirish")}:</span> {a.client_alert}</p>}
+        </div>
+      )}
+
       {a.status === "pending" && a.confirm_by && (
         <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
           {t("{a} ilovadan bron qildi. {b} {c} gacha tasdiqlanmasa, bron avtomatik bekor qilinadi va vaqt bo'shaydi.", { a: v.clientOne, b: formatDate(a.confirm_by), c: formatTime(a.confirm_by) })}

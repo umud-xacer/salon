@@ -25,6 +25,7 @@ _SELECT = """
            a.member_id, ps.full_name AS member_name,
            a.status::text AS status, a.starts_at, a.ends_at, a.total_price, a.discount, a.discount_source, a.client_note, a.cancel_reason,
            a.checked_in_at AS arrived_at,
+           cf.f ->> 'alert' AS client_alert, cf.f ->> 'allergies' AS client_allergies,
            coalesce(c.full_name, app.own_client_name(a.id)) AS client_name, c.phone AS client_phone,  -- usta: faqat ism
            CASE WHEN r.confirmed_at IS NOT NULL THEN 'confirmed'
                 WHEN r.alerted_at IS NOT NULL THEN 'no_response'
@@ -49,6 +50,7 @@ _SELECT = """
       LEFT JOIN public_staff ps    ON ps.member_id = a.member_id
       LEFT JOIN business_clients c ON c.id = a.client_id
       LEFT JOIN appointment_reminders r ON r.appointment_id = a.id
+      LEFT JOIN LATERAL (SELECT app.client_flags(a.id) AS f) cf ON true    -- ogohlantirish/allergiya (050)
 """
 
 

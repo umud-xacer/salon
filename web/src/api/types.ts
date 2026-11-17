@@ -67,6 +67,8 @@ export interface Appointment {
   confirm_by?: string | null;        // 'pending': shu vaqtgacha tasdiqlanmasa — avtomatik bekor qilinadi
   cancel_reason?: string | null;
   arrived_at?: string | null;        // "Mijoz keldi" belgisi
+  client_alert?: string | null;      // jamoa uchun ogohlantirish (mijoz kartochkasidan)
+  client_allergies?: string | null;
 }
 
 export interface CancelReason {
@@ -191,12 +193,32 @@ export interface TimeOff {
   reason: string | null;
 }
 
+export type ClientGender = "male" | "female";
+export type ClientSource = "instagram" | "telegram" | "recommendation" | "walk_by" | "google" | "chronix" | "advert" | "other";
+
 export interface ClientRecord extends Client {
   notes: string | null;
   has_account: boolean;
   visits: number;
   total_spent: number;
   last_visit: string | null;
+  created_at?: string;
+  birth_date?: string | null;
+  gender?: ClientGender | null;
+  source?: ClientSource | null;
+  // Salonning ichki ma'lumoti (mijoz ko'rmaydi)
+  tags?: string[];
+  alert?: string | null;
+  allergies?: string | null;
+  notes_count?: number;
+}
+
+export interface ClientNote {
+  id: number;
+  body: string;
+  author: string | null;
+  created_at: string;
+  can_delete: boolean;
 }
 
 export interface Region {

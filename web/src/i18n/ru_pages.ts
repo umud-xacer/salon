@@ -1056,4 +1056,17 @@ export const RU_PAGES: Record<string, string> = {
   "Kalendarda vaqt bloklanganda (tushlik, tozalash...) shu ro'yxatdan tanlanadi. Blok vaqtiga bron qilib bo'lmaydi.":
     "При блокировке времени в календаре (обед, уборка...) тип выбирается из этого списка. На заблокированное время записаться нельзя.",
   "Tushlik": "Обед", "Tanaffus": "Перерыв", "Tozalash": "Уборка", "Majlis": "Совещание", "Shaxsiy ish": "Личные дела",
+  // ── Mijoz kartochkasi (050) ──
+  "Tug'ilgan sana": "Дата рождения", "Jinsi": "Пол", "Qayerdan keldi": "Откуда узнал(а)", "Ayol": "Женщина", "Erkak": "Мужчина",
+  "Tanishlar tavsiyasi": "Рекомендация знакомых", "O'tib ketayotib ko'rgan": "Проходил(а) мимо",
+  "Google / Yandex xarita": "Google / Яндекс Карты", "Chronix ilovasi": "Приложение Chronix", "Reklama": "Реклама",
+  "Teglar": "Теги", "Allergiya": "Аллергия", "Ogohlantirish": "Предупреждение",
+  "Masalan: ammiakli bo'yoq, lateks": "Например: аммиачная краска, латекс",
+  "Masalan: ko'p kechikadi, oldindan qo'ng'iroq qiling": "Например: часто опаздывает, позвоните заранее",
+  "Eslatma": "Заметка", "Afzalliklar, kelishuvlar": "Предпочтения, договорённости", "Eslatmalar": "Заметки",
+  "Yangi eslatma": "Новая заметка", "VIP, doimiy, talaba... (Enter)": "VIP, постоянный, студент... (Enter)",
+  "Teg bo'yicha": "По тегу", "Ogohlantirish bor": "Есть предупреждение", "Bugun tug'ilgan kuni": "Сегодня день рождения",
+  "{n} kundan keyin tug'ilgan kuni": "День рождения через {n} дн.",
+  "Jamoa uchun: bronda {a}ga ham ko'rinadi, {b}ning o'ziga ko'rinmaydi":
+    "Для команды: видно в записи (в т.ч. сотруднику), клиенту не показывается",
 };

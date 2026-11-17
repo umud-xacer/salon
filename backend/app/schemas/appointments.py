@@ -105,3 +105,5 @@ class AppointmentOut(BaseModel):
     confirm_by: dt.datetime | None = None               # 'pending': salon shu vaqtgacha tasdiqlamasa — avtomatik bekor
     client_name: str | None = None                      # faqat 'clients.view' huquqi borlarga
     client_phone: str | None = None
+    client_alert: str | None = None                     # jamoa uchun ogohlantirish (mijozlar bazasi yoki shu bron ustasi)
+    client_allergies: str | None = None

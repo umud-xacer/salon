@@ -1,16 +1,27 @@
-import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Search } from "lucide-react";
-import { useEffect, useState, type FormEvent } from "react";
+import { keepPreviousData, useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { AlertTriangle, Cake, Plus, Search } from "lucide-react";
+import { useEffect, useState } from "react";
 
-import { api, json } from "../../api/client";
-import type { Appointment, ClientRecord, Membership } from "../../api/types";
-import { formatDate, formatMoney, formatTime, normalizePhone, STATUS_LABELS } from "../../components/format";
-import { Modal } from "../../components/Modal";
-import { Badge, Button, Card, Empty, ErrorNote, inputClass, PageTitle, Spinner } from "../../components/ui";
+import { api } from "../../api/client";
+import type { ClientRecord, Membership } from "../../api/types";
+import { formatMoney, todayIso } from "../../components/format";
+import { Badge, Button, Card, Empty, ErrorNote, PageTitle, Spinner } from "../../components/ui";
 import { vocabFor } from "../vocab";
 import { useVocab } from "../vocab";
+import { ClientDialog } from "./ClientDialog";
 
-import { pickList, t } from "../../i18n";
+import { t } from "../../i18n";
+
+/** Tug'ilgan kuniga necha kun qoldi (0 — bugun); 7 kundan uzoq bo'lsa null */
+function birthdaySoon(birth?: string | null): number | null {
+  if (!birth) return null;
+  const today = new Date(`${todayIso()}T00:00:00Z`);
+  for (let i = 0; i <= 7; i++) {
+    const d = new Date(today.getTime() + i * 86_400_000);
+    if (d.getUTCMonth() + 1 === Number(birth.slice(5, 7)) && d.getUTCDate() === Number(birth.slice(8, 10))) return i;
+  }
+  return null;
+}
 const PAGE = 50;
 
 export function ClientsPage({ membership }: { membership: Membership }) {
@@ -19,6 +30,11 @@ export function ClientsPage({ membership }: { membership: Membership }) {
   const [text, setText] = useState("");
   const [q, setQ] = useState("");
   const [editing, setEditing] = useState<ClientRecord | "new" | null>(null);
+  const [tag, setTag] = useState<string | null>(null);
+  const tags = useQuery({
+    queryKey: ["client-tags", b],
+    queryFn: () => api<{ tag: string; count: number }[]>(`/businesses/${b}/clients/tags`),
+  });
 
   useEffect(() => {
     const tx = setTimeout(() => setQ(text.trim()), 300);
@@ -26,11 +42,12 @@ export function ClientsPage({ membership }: { membership: Membership }) {
   }, [text]);
 
   const query = useInfiniteQuery({
-    queryKey: ["client-list", b, q],
+    queryKey: ["client-list", b, q, tag],
     initialPageParam: 0,
     placeholderData: keepPreviousData,
     queryFn: ({ pageParam }) =>
-      api<ClientRecord[]>(`/businesses/${b}/clients?q=${encodeURIComponent(q)}&limit=${PAGE}&offset=${pageParam}`),
+      api<ClientRecord[]>(`/businesses/${b}/clients?q=${encodeURIComponent(q)}&limit=${PAGE}&offset=${pageParam}`
+        + (tag ? `&tag=${encodeURIComponent(tag)}` : "")),
     getNextPageParam: (last, pages) => (last.length === PAGE ? pages.length * PAGE : undefined),
   });
   const clients = query.data?.pages.flat();
@@ -57,6 +74,18 @@ export function ClientsPage({ membership }: { membership: Membership }) {
           onChange={(e) => setText(e.target.value)}
         />
       </label>
+      {(tags.data?.length ?? 0) > 0 && (
+        <div className="mb-3 flex flex-wrap gap-1.5" role="group" aria-label={t("Teg bo'yicha")}>
+          {tags.data!.slice(0, 15).map((x) => (
+            <button key={x.tag} type="button" aria-pressed={tag === x.tag}
+                    onClick={() => setTag(tag === x.tag ? null : x.tag)}
+                    className={`rounded-full border px-2.5 py-1 text-xs ${tag === x.tag
+                      ? "border-primary bg-primary text-white" : "border-line bg-white text-muted hover:bg-page"}`}>
+              {x.tag} <span className="opacity-70">{x.count}</span>
+            </button>
+          ))}
+        </div>
+      )}
       {query.isPending && <Spinner />}
       {query.error && <ErrorNote error={query.error} />}
       {clients?.length === 0 && <Card><Empty>{q ? t("Topilmadi") : t("Hali {a} yo'q", { a: v.clientOne.toLowerCase() })}</Empty></Card>}
@@ -69,9 +98,25 @@ export function ClientsPage({ membership }: { membership: Membership }) {
                 className="flex w-full flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 text-left text-sm hover:bg-page"
               >
                 <span className="min-w-0 basis-full sm:basis-auto sm:flex-1">
-                  <span className="block font-medium break-words">{c.full_name}</span>
+                  <span className="flex items-center gap-1.5 font-medium break-words">
+                    {c.full_name}
+                    {(c.alert || c.allergies) && (
+                      <AlertTriangle size={14} className="shrink-0 text-amber-600" aria-label={t("Ogohlantirish bor")} />
+                    )}
+                  </span>
                   <span className="block text-muted tabular-nums">{c.phone}</span>
+                  {(c.tags?.length ?? 0) > 0 && (
+                    <span className="mt-1 flex flex-wrap gap-1">
+                      {c.tags!.map((x) => <span key={x} className="rounded-full bg-primary/10 px-1.5 text-xs text-primary">{x}</span>)}
+                    </span>
+                  )}
                 </span>
+                {birthdaySoon(c.birth_date) !== null && (
+                  <Badge tone="amber">
+                    <Cake size={12} className="mr-1 inline" aria-hidden />
+                    {birthdaySoon(c.birth_date) === 0 ? t("Bugun tug'ilgan kuni") : t("{n} kundan keyin tug'ilgan kuni", { n: birthdaySoon(c.birth_date) })}
+                  </Badge>
+                )}
                 {c.has_account && <Badge tone="green">{t("Ilovada")}</Badge>}
                 <span className="text-muted">{t("{a} tashrif", { a: c.visits })}</span>
                 <span className="tabular-nums sm:w-28 sm:text-right">{formatMoney(c.total_spent)}</span>
@@ -94,82 +139,3 @@ export function ClientsPage({ membership }: { membership: Membership }) {
   );
 }
 
-function ClientDialog({ businessId, client, onClose }: {
-  businessId: number;
-  client: ClientRecord | null;
-  onClose: () => void;
-}) {
-  const v = useVocab();
-  const queryClient = useQueryClient();
-  const url = `/businesses/${businessId}/clients`;
-  const [name, setName] = useState(client?.full_name ?? "");
-  const [phone, setPhone] = useState(client?.phone ?? "");
-  const [notes, setNotes] = useState(client?.notes ?? "");
-
-  const history = useQuery({
-    queryKey: ["client-history", businessId, client?.id],
-    enabled: client !== null,
-    queryFn: () => api<Appointment[]>(`${url}/${client!.id}/appointments`),
-  });
-
-  const save = useMutation({
-    mutationFn: () => {
-      const body: Record<string, unknown> = { full_name: name.trim(), notes: notes.trim() || null };
-      if (!client?.has_account) body.phone = normalizePhone(phone);
-      return client ? api(`${url}/${client.id}`, json("PATCH", body)) : api(url, json("POST", body));
-    },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["client-list", businessId] });
-      onClose();
-    },
-  });
-
-  const submit = (e: FormEvent) => {
-    e.preventDefault();
-    save.mutate();
-  };
-
-  return (
-    <Modal title={client ? client.full_name : t("Yangi {a}", { a: v.clientOne.toLowerCase() })} onClose={onClose}>
-      <form onSubmit={submit} className="space-y-3">
-        <div className="grid gap-3 sm:grid-cols-2">
-          <label className="block text-sm">{t("Ism familiya")}
-            <input className={inputClass} required minLength={2} maxLength={120} value={name}
-              onChange={(e) => setName(e.target.value)} />
-          </label>
-          <label className="block text-sm">{t("Telefon")}
-            <input className={inputClass} type="tel" required disabled={client?.has_account} value={phone}
-              onChange={(e) => setPhone(e.target.value)} />
-          </label>
-        </div>
-        {client?.has_account && (
-          <p className="text-xs text-muted">{t("{a} ilovadan foydalanadi, telefonini faqat o'zi o'zgartiradi.", { a: v.clientOne })}</p>
-        )}
-        <label className="block text-sm">{t("Izoh")}
-          <textarea className={inputClass} rows={2} maxLength={2000} placeholder={t("Allergiya, afzalliklar")} value={notes}
-            onChange={(e) => setNotes(e.target.value)} />
-        </label>
-        {save.error && <ErrorNote error={save.error} />}
-        <Button type="submit" disabled={save.isPending}>{t("Saqlash")}</Button>
-      </form>
-
-      {client && (
-        <section className="mt-5 border-t border-line pt-4">
-          <h3 className="mb-1 text-sm font-medium">{t("Bronlar tarixi")}</h3>
-          {history.isPending && <Spinner />}
-          {history.error && <ErrorNote error={history.error} />}
-          {history.data?.length === 0 && <Empty>{t("Bron yo'q")}</Empty>}
-          <ul className="max-h-56 divide-y divide-line overflow-y-auto text-sm">
-            {history.data?.map((a) => (
-              <li key={a.id} className="flex flex-wrap justify-between gap-2 py-2">
-                <span className="tabular-nums">{formatDate(a.starts_at)} {formatTime(a.starts_at)}</span>
-                <span className="min-w-32 flex-1 truncate">{pickList(a.services, a.services_ru).join(", ")}</span>
-                <span className="text-muted">{STATUS_LABELS[a.status] ?? a.status}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-    </Modal>
-  );
-}

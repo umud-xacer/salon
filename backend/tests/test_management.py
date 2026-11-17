@@ -87,7 +87,9 @@ def test_client_create_edit_and_stats(client, biz):
     r = client.post(url, headers=h, json={"full_name": "Ra'no Karimova", "phone": phone, "notes": "Allergiya bor"})
     assert r.status_code == 201, r.text
     c = r.json()
-    assert c["visits"] == 0 and c["notes"] == "Allergiya bor" and c["has_account"] is False
+    # Yaratishdagi izoh eslatmalar tarixiga birinchi yozuv bo'lib tushadi (050_client_card.sql)
+    assert c["visits"] == 0 and c["notes_count"] == 1 and c["has_account"] is False
+    assert [n["body"] for n in client.get(f"{url}/{c['id']}/notes", headers=h).json()] == ["Allergiya bor"]
     assert client.post(url, headers=h, json={"full_name": "Dublikat", "phone": phone}).status_code == 409
 
     r = client.patch(f"{url}/{c['id']}", headers=h, json={"full_name": "Rano Karimova", "notes": None})
