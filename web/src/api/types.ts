@@ -520,6 +520,11 @@ export interface Compensation {
   title: string | null;
   base_salary: number;
   commission_percent: number;
+  pay_type?: "monthly" | "daily" | "hourly";
+  daily_rate?: number;
+  hourly_rate?: number;
+  late_penalty?: number;
+  absence_penalty?: number;
 }
 
 export interface Payroll {
@@ -537,6 +542,12 @@ export interface Payroll {
   deductions: number;
   advances: number;                  // shu oylikdan ayirilgan (qoralamada — ayiriladigan) avanslar
   clients: number;                   // shu davrda pul tushgan tashriflar soni
+  pay_type?: "monthly" | "daily" | "hourly";
+  worked_days?: number;              // tabel ko'rsatkichlari
+  worked_minutes?: number;
+  late_count?: number;
+  absent_days?: number;
+  penalties?: number;                // asosiy maoshdan ayirilgan jarimalar
   total: number;
   status: "draft" | "approved" | "paid";
   note: string | null;
@@ -895,4 +906,47 @@ export interface TimelineItem {
   status: string | null;
   amount: number | null;
   alerts: string[];
+}
+
+// ─── Tabel (060_timesheet.sql) ────────────────────────────────────────────────
+export type TimesheetStatus = "work" | "late" | "absent" | "day_off" | "vacation" | "sick" | "off" | "planned" | "today";
+export interface TimesheetCell {
+  day: string;
+  status: TimesheetStatus;
+  code: string;
+  planned_start: string | null;
+  planned_end: string | null;
+  check_in: string | null;
+  check_out: string | null;
+  worked_min: number;
+  late_min: number;
+  early_min: number;
+  note: string | null;
+  source: string | null;
+}
+export interface TimesheetTotals {
+  worked_days: number;
+  worked_hours: number;
+  late_count: number;
+  late_minutes: number;
+  absent_days: number;
+  day_off: number;
+  vacation: number;
+  sick: number;
+}
+export interface TimesheetRow {
+  member_id: number;
+  full_name: string;
+  title: string | null;
+  cells: TimesheetCell[];
+  totals: TimesheetTotals;
+}
+export interface Timesheet {
+  month: string;
+  late_grace_min: number;
+  members: TimesheetRow[];
+}
+export interface MyAttendance {
+  today: TimesheetCell | null;
+  month: TimesheetRow | null;
 }

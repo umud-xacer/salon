@@ -554,3 +554,28 @@ def test_resources_rls(world):
         assert db.execute(text("UPDATE resources SET capacity = 9 WHERE id = :r"), {"r": rid}).rowcount == 0
     with api_session(uid(world["b"]["owner"])) as db:
         assert db.execute(text("SELECT count(*) FROM resources WHERE id = :r"), {"r": rid}).scalar() == 0
+
+
+def test_timesheet_rls(world):
+    a, usta = world["a"], world["usta"]
+    # Xodim keldi vaqtini o'zi yozolmaydi (soxtalashtirish) — faqat app.attendance_mark (vaqtni server qo'yadi)
+    with api_session(uid(usta["tokens"])) as db:
+        with pytest.raises(DBAPIError) as e:
+            db.execute(text("INSERT INTO staff_attendance (business_id, member_id, day, check_in) "
+                            "VALUES (:b, :m, current_date, now() - INTERVAL '3 hours')"),
+                       {"b": a["id"], "m": usta["member"]["id"]})
+        assert sqlstate(e) == "42501"
+    with api_session(uid(usta["tokens"])) as db:
+        aid = db.execute(text("SELECT app.attendance_mark(:b, 'in')"), {"b": a["id"]}).scalar()
+        db.commit()
+        assert db.execute(text("SELECT count(*) FROM staff_attendance WHERE id = :i"), {"i": aid}).scalar() == 1
+        assert db.execute(text("UPDATE staff_attendance SET check_in = now() - INTERVAL '5 hours' WHERE id = :i"),
+                          {"i": aid}).rowcount == 0
+    # Boshqa muassasa ko'rmaydi; direktor tuzata oladi
+    with api_session(uid(world["b"]["owner"])) as db:
+        assert db.execute(text("SELECT count(*) FROM staff_attendance WHERE id = :i"), {"i": aid}).scalar() == 0
+        with pytest.raises(DBAPIError) as e:
+            db.execute(text("SELECT * FROM app.timesheet_days(:b, current_date, current_date)"), {"b": a["id"]})
+        assert sqlstate(e) == "42501"
+    with api_session(uid(a["owner"])) as db:
+        assert db.execute(text("UPDATE staff_attendance SET note = 'tuzatildi' WHERE id = :i"), {"i": aid}).rowcount == 1

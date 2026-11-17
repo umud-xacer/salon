@@ -1,14 +1,25 @@
 from datetime import date, datetime
 from decimal import Decimal
 
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 MAX_MONEY = 1_000_000_000_000
 
 
+PayType = Literal["monthly", "daily", "hourly"]
+
+
 class CompensationIn(BaseModel):
     base_salary: int = Field(ge=0, le=MAX_MONEY)
     commission_percent: Decimal = Field(ge=0, le=100, decimal_places=2)
+    # Tabel bilan bog'lanish (060): oylik / kunbay / soatbay va jarimalar
+    pay_type: PayType = "monthly"
+    daily_rate: int = Field(default=0, ge=0, le=MAX_MONEY)
+    hourly_rate: int = Field(default=0, ge=0, le=MAX_MONEY)
+    late_penalty: int = Field(default=0, ge=0, le=MAX_MONEY)
+    absence_penalty: int = Field(default=0, ge=0, le=MAX_MONEY)
 
 
 class CompensationOut(BaseModel):
@@ -18,6 +29,11 @@ class CompensationOut(BaseModel):
     title: str | None
     base_salary: int
     commission_percent: float
+    pay_type: PayType = "monthly"
+    daily_rate: int = 0
+    hourly_rate: int = 0
+    late_penalty: int = 0
+    absence_penalty: int = 0
 
 
 class GenerateIn(BaseModel):
@@ -49,6 +65,12 @@ class PayrollOut(BaseModel):
     deductions: int
     advances: int = 0              # shu oylikdan ayirilgan (qoralamada — ayiriladigan) avanslar
     clients: int = 0               # shu davrda pul tushgan tashriflar soni
+    pay_type: str = "monthly"      # tabel ko'rsatkichlari (060)
+    worked_days: int = 0
+    worked_minutes: int = 0
+    late_count: int = 0
+    absent_days: int = 0
+    penalties: int = 0             # asosiy maoshdan ayirilgan jarimalar
     total: int
     status: str
     note: str | None

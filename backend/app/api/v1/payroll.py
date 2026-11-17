@@ -21,6 +21,7 @@ _MONTH = Query(pattern=r"^\d{4}-(0[1-9]|1[0-2])$")
 _SELECT = """
     SELECT p.id, p.member_id, u.full_name, m.title, p.period_start, p.period_end, p.base_salary, p.revenue,
            p.commission_percent, p.commission, p.bonus, p.deductions, p.advances, p.clients, p.total,
+           p.pay_type, p.worked_days, p.worked_minutes, p.late_count, p.absent_days, p.penalties,
            p.status::text AS status, p.note,
            p.approved_at, p.paid_at
       FROM payrolls p
@@ -29,7 +30,10 @@ _SELECT = """
 """
 _COMPENSATION = """
     SELECT m.id AS member_id, u.full_name, m.role::text AS role, m.title,
-           coalesce(c.base_salary, 0) AS base_salary, coalesce(c.commission_percent, 0) AS commission_percent
+           coalesce(c.base_salary, 0) AS base_salary, coalesce(c.commission_percent, 0) AS commission_percent,
+           coalesce(c.pay_type, 'monthly') AS pay_type, coalesce(c.daily_rate, 0) AS daily_rate,
+           coalesce(c.hourly_rate, 0) AS hourly_rate, coalesce(c.late_penalty, 0) AS late_penalty,
+           coalesce(c.absence_penalty, 0) AS absence_penalty
       FROM business_members m
       JOIN users u ON u.id = m.user_id
       LEFT JOIN member_compensation c ON c.member_id = m.id
@@ -65,13 +69,17 @@ def set_compensation(body: CompensationIn, member_id: int = Path(ge=1), business
     if exists is None:
         raise _NOT_FOUND
     db.execute(text("""
-        INSERT INTO member_compensation (member_id, business_id, base_salary, commission_percent)
-        VALUES (:m, :b, :s, :p)
+        INSERT INTO member_compensation (member_id, business_id, base_salary, commission_percent, pay_type, daily_rate,
+                                         hourly_rate, late_penalty, absence_penalty)
+        VALUES (:m, :b, :s, :p, :pt, :dr, :hr, :lp, :ap)
         ON CONFLICT (member_id) DO UPDATE
-           SET base_salary = EXCLUDED.base_salary, commission_percent = EXCLUDED.commission_percent, updated_at = now()
-    """), {"m": member_id, "b": business_id, "s": body.base_salary, "p": body.commission_percent})
+           SET base_salary = EXCLUDED.base_salary, commission_percent = EXCLUDED.commission_percent,
+               pay_type = EXCLUDED.pay_type, daily_rate = EXCLUDED.daily_rate, hourly_rate = EXCLUDED.hourly_rate,
+               late_penalty = EXCLUDED.late_penalty, absence_penalty = EXCLUDED.absence_penalty, updated_at = now()
+    """), {"m": member_id, "b": business_id, "s": body.base_salary, "p": body.commission_percent, "pt": body.pay_type,
+           "dr": body.daily_rate, "hr": body.hourly_rate, "lp": body.late_penalty, "ap": body.absence_penalty})
     audit.log(db, business_id, "update", "compensation", member_id,
-              {"base_salary": body.base_salary, "commission_percent": str(body.commission_percent)})
+              {"base_salary": body.base_salary, "commission_percent": str(body.commission_percent), "pay_type": body.pay_type})
     db.commit()
     row = db.execute(text(f"{_COMPENSATION} WHERE m.id = :m"), {"m": member_id}).mappings().one()
     return CompensationOut(**row)

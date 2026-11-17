@@ -1,4 +1,5 @@
 // Usta paneli: faqat o'z bronlari va ish jadvali. Moliya bu yerda umuman yo'q.
+import { AttendanceCard } from "../staff/TimesheetPage";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api, json } from "../../api/client";
@@ -42,6 +43,7 @@ export function MySchedulePage({ membership }: { membership: Membership }) {
   return (
     <>
       <PageTitle title={t("Ish jadvalim")} />
+      <AttendanceCard businessId={b} />
       <Card>
         {query.isPending && <Spinner />}
         {query.error && <ErrorNote error={query.error} />}

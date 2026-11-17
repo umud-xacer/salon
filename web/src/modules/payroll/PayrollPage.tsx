@@ -261,6 +261,24 @@ function PayrollDialog({ businessId, payroll: p, month, onClose }: {
   return (
     <Modal title={p.full_name} onClose={onClose}>
       <dl className="grid grid-cols-[1fr_auto] gap-y-1 text-sm">
+        {((p.worked_days ?? 0) > 0 || (p.penalties ?? 0) > 0) && (
+          <>
+            <dt className="text-muted">{t("Tabel")}</dt>
+            <dd className="text-right tabular-nums">{t("{a} kun · {b} soat", { a: p.worked_days ?? 0, b: Math.round((p.worked_minutes ?? 0) / 6) / 10 })}</dd>
+            {((p.late_count ?? 0) > 0 || (p.absent_days ?? 0) > 0) && (
+              <>
+                <dt className="text-muted">{t("Kechikish / kelmagan")}</dt>
+                <dd className="text-right tabular-nums text-danger">{p.late_count ?? 0} / {p.absent_days ?? 0}</dd>
+              </>
+            )}
+            {(p.penalties ?? 0) > 0 && (
+              <>
+                <dt className="text-muted">{t("Jarima (stavkadan ayirildi)")}</dt>
+                <dd className="text-right tabular-nums text-danger">−{formatMoney(p.penalties ?? 0)}</dd>
+              </>
+            )}
+          </>
+        )}
         <dt className="text-muted">{t("Stavka")}</dt>
         <dd className="text-right tabular-nums">{formatMoney(p.base_salary)}</dd>
         <dt className="text-muted">{t("Tushum ({a}% foiz)", { a: formatQty(p.commission_percent) })}</dt>
@@ -346,7 +364,10 @@ function Rates({ businessId }: { businessId: number }) {
                 <span className="block font-medium break-words">{c.full_name}</span>
                 <span className="block text-xs text-muted">{roleLabel(c.role, v)}{c.title ? ` · ${dyn(c.title)}` : ""}</span>
               </span>
-              <span className="tabular-nums">{formatMoney(c.base_salary)}</span>
+              <span className="tabular-nums">
+                {c.pay_type === "daily" ? t("{a} / kun", { a: formatMoney(c.daily_rate ?? 0) })
+                  : c.pay_type === "hourly" ? t("{a} / soat", { a: formatMoney(c.hourly_rate ?? 0) }) : formatMoney(c.base_salary)}
+              </span>
               <span className="text-muted tabular-nums">{formatQty(c.commission_percent)}%</span>
             </button>
           </li>
@@ -362,9 +383,16 @@ function RateDialog({ businessId, rate, onClose }: { businessId: number; rate: C
   const queryClient = useQueryClient();
   const [base, setBase] = useState(String(rate.base_salary));
   const [percent, setPercent] = useState(String(rate.commission_percent));
+  const [payType, setPayType] = useState(rate.pay_type ?? "monthly");
+  const [daily, setDaily] = useState(String(rate.daily_rate ?? 0));
+  const [hourly, setHourly] = useState(String(rate.hourly_rate ?? 0));
+  const [latePen, setLatePen] = useState(String(rate.late_penalty ?? 0));
+  const [absentPen, setAbsentPen] = useState(String(rate.absence_penalty ?? 0));
   const save = useMutation({
     mutationFn: () => api(`/businesses/${businessId}/payroll/compensation/${rate.member_id}`,
-      json("PUT", { base_salary: Number(base), commission_percent: Number(percent) })),
+      json("PUT", { base_salary: Number(base), commission_percent: Number(percent), pay_type: payType,
+                    daily_rate: Number(daily), hourly_rate: Number(hourly), late_penalty: Number(latePen),
+                    absence_penalty: Number(absentPen) })),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["compensation", businessId] });
       onClose();
@@ -378,16 +406,44 @@ function RateDialog({ businessId, rate, onClose }: { businessId: number; rate: C
   return (
     <Modal title={rate.full_name} onClose={onClose}>
       <form onSubmit={submit} className="space-y-3">
+        <label className="block text-sm">{t("Ish haqi turi")}
+          <select className={inputClass} value={payType} onChange={(e) => setPayType(e.target.value as typeof payType)}>
+            <option value="monthly">{t("Oylik (belgilangan)")}</option>
+            <option value="daily">{t("Kunbay — tabeldagi ishlagan kunlar bo'yicha")}</option>
+            <option value="hourly">{t("Soatbay — tabeldagi ishlagan soatlar bo'yicha")}</option>
+          </select>
+        </label>
         <div className="grid gap-3 sm:grid-cols-2">
-          <label className="block text-sm">{t("Oylik stavka (so'm)")}
-            <input className={inputClass} type="number" inputMode="numeric" required data-autofocus min={0} step={1}
-              value={base} onChange={(e) => setBase(e.target.value)} />
-          </label>
+          {payType === "monthly" && (
+            <label className="block text-sm">{t("Oylik stavka (so'm)")}
+              <input className={inputClass} type="number" inputMode="numeric" required data-autofocus min={0} step={1}
+                value={base} onChange={(e) => setBase(e.target.value)} />
+            </label>
+          )}
+          {payType === "daily" && (
+            <label className="block text-sm">{t("Bir kunlik stavka (so'm)")}
+              <input className={inputClass} type="number" inputMode="numeric" required min={0} value={daily} onChange={(e) => setDaily(e.target.value)} />
+            </label>
+          )}
+          {payType === "hourly" && (
+            <label className="block text-sm">{t("Bir soatlik stavka (so'm)")}
+              <input className={inputClass} type="number" inputMode="numeric" required min={0} value={hourly} onChange={(e) => setHourly(e.target.value)} />
+            </label>
+          )}
           <label className="block text-sm">{t("Foiz (%)")}
             <input className={inputClass} type="number" inputMode="decimal" required min={0} max={100} step={0.01}
               value={percent} onChange={(e) => setPercent(e.target.value)} />
           </label>
         </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="block text-sm">{t("Har kechikish uchun jarima (so'm)")}
+            <input className={inputClass} type="number" inputMode="numeric" min={0} value={latePen} onChange={(e) => setLatePen(e.target.value)} />
+          </label>
+          <label className="block text-sm">{t("Har kelmagan kun uchun jarima (so'm)")}
+            <input className={inputClass} type="number" inputMode="numeric" min={0} value={absentPen} onChange={(e) => setAbsentPen(e.target.value)} />
+          </label>
+        </div>
+        <p className="text-xs text-muted">{t("Jarimalar tabeldan olinadi (Xodimlar tabeli bo'limi) va asosiy maoshdan ayiriladi.")}</p>
         {save.error && <ErrorNote error={save.error} />}
         <Button type="submit" disabled={save.isPending}>{t("Saqlash")}</Button>
       </form>

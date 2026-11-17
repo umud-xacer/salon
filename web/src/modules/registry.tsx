@@ -1,6 +1,7 @@
 // Panel bo'limlari ro'yxati. Yangi bo'lim qo'shish uchun shu yerga bitta yozuv kifoya:
 // menyu ham, yo'l ham, huquq tekshiruvi ham shundan quriladi.
 import {
+  UserCheck,
   Armchair,
   BarChart3,
   Megaphone,
@@ -51,6 +52,7 @@ import { MyClientsPage } from "./schedule/StaffSelfService";
 import { ServicesPage } from "./services/ServicesPage";
 import { StaffPage } from "./staff/StaffPage";
 import { WorkSchedulePage } from "./staff/WorkSchedulePage";
+import { TimesheetPage } from "./staff/TimesheetPage";
 
 export interface Section {
   path: string;
@@ -99,6 +101,10 @@ export const SECTIONS: Section[] = [
     anyPermission: ["clients.view"], page: ClientsPage,
   },
   { path: "staff", uz: "xodimlar", uzByKind: { pharmacy: "farmatsevtlar", clinic: "shifokorlar" }, label: "Xodimlar", term: "staff", icon: Users, panel: "admin", anyPermission: ["staff.manage"], page: StaffPage },
+  {
+    path: "timesheet", uz: "tabel", label: "Xodimlar tabeli", icon: UserCheck, panel: "admin",
+    anyPermission: ["staff.manage", "payroll.manage"], page: TimesheetPage,
+  },
   {
     path: "work-schedule", uz: "ish-jadvali", label: "Ish jadvali", icon: CalendarClock, panel: "admin",
     anyPermission: ["staff.manage"], page: WorkSchedulePage,

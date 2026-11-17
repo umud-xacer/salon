@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { AttendanceCard } from "../staff/TimesheetPage";
 import { AlertTriangle, CreditCard } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -63,6 +64,7 @@ export function DashboardPage({ membership }: { membership: Membership }) {
   return (
     <>
       <PageTitle title={membership.business_name} hint={roleLabel(membership.role, vocabFor(membership.business_kind))} />
+      {membership.role !== "owner" && <AttendanceCard businessId={membership.business_id} />}
       <SubscriptionCard m={membership} />
       {showStock && <LowStockCard businessId={membership.business_id} kind={membership.business_kind} slug={membership.business_slug} />}
       {membership.permissions.includes("appointments.view_all") && (

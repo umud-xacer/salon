@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import DBAPIError
 
-from app.api.v1 import (analytics, appointments, auth, auto_messages, billing, broadcasts, cash_shifts, forms, resources, blocks, waitlist, business_admin, catalog, clients, finance, geo, inventory, me, members,
+from app.api.v1 import (analytics, appointments, auth, auto_messages, billing, broadcasts, cash_shifts, forms, resources, timesheet, blocks, waitlist, business_admin, catalog, clients, finance, geo, inventory, me, members,
                         payroll, promotions, reception, reminders, reports, reviews, schedule, superadmin, telegram, visits)
 from app.core.config import get_settings
 from app.services.auth_service import AuthError
@@ -78,6 +78,8 @@ _DB_ERRORS = {
     "P0423": (409, "nobody_free", "Hozir bo'sh mutaxassis yo'q"),
     "P0424": (409, "resource_busy", "Bu vaqtda bo'sh xona yoki kreslo yo'q. Boshqa vaqt yoki resursni tanlang"),
     "P0425": (409, "resource_not_suitable", "Tanlangan xona yoki kreslo bu xizmatga mos emas"),
+    "P0426": (409, "already_checked_in", "Bugun allaqachon kelganingiz belgilangan"),
+    "P0427": (409, "not_checked_in", "Avval \"Keldim\" tugmasini bosing"),
     "P0450": (409, "business_account", "Salon xodimi yoki direktori hisobini ilovadan o'chirib bo'lmaydi. "
                                        "Qo'llab-quvvatlash xizmatiga yozing"),
     "P0440": (409, "promo_not_found", "Promokod topilmadi yoki muddati tugagan"),
@@ -120,6 +122,7 @@ app.include_router(broadcasts.router, prefix="/api/v1")
 app.include_router(cash_shifts.router, prefix="/api/v1")
 app.include_router(forms.router, prefix="/api/v1")
 app.include_router(resources.router, prefix="/api/v1")
+app.include_router(timesheet.router, prefix="/api/v1")
 app.include_router(visits.router, prefix="/api/v1")
 app.include_router(clients.router, prefix="/api/v1")
 app.include_router(finance.router, prefix="/api/v1")
