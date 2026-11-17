@@ -33,34 +33,74 @@ def resolve(lat: float, lng: float) -> tuple[str | None, str | None, str | None]
     return r.region, city_of(r.region, r.district), r.district
 
 
-@lru_cache(maxsize=1)
+# Ochiq baza va uning fayl vaqti: oylik yangilangan faylni (deploy/update-geoip.sh) server qayta
+# ishga tushirilmasdan o'qiydi — har 10 daqiqada fayl o'zgarganmi tekshiriladi.
+_db: dict = {"reader": None, "mtime": None, "checked": 0.0}
+_RECHECK_SECONDS = 600
+
+
 def _reader():
+    import os
+    import time
+
     path = get_settings().geoip_db_path
     if not path:
         return None
-    try:
-        import maxminddb
-        return maxminddb.open_database(path)
-    except Exception:
-        log.warning("GeoIP bazasi ochilmadi: %s", path)
-        return None
+    now = time.monotonic()
+    if _db["reader"] is not None and now - _db["checked"] < _RECHECK_SECONDS:
+        return _db["reader"]
+    with _reader_lock:
+        _db["checked"] = now
+        try:
+            mtime = os.path.getmtime(path)
+        except OSError:
+            if _db["reader"] is None:
+                log.warning("GeoIP bazasi topilmadi: %s", path)
+            return _db["reader"]
+        if mtime != _db["mtime"]:
+            try:
+                import maxminddb
+                fresh = maxminddb.open_database(path)
+            except Exception:
+                log.warning("GeoIP bazasi ochilmadi: %s", path)
+                return _db["reader"]
+            old, _db["reader"], _db["mtime"] = _db["reader"], fresh, mtime
+            _lookup.cache_clear()
+            if old is not None:
+                old.close()
+            log.info("GeoIP bazasi yuklandi: %s", path)
+        return _db["reader"]
 
 
-def by_ip(ip: str | None) -> tuple[str | None, str | None]:
-    """IP → (viloyat, shahar). O'zbekistondan tashqari — ("Xorij", None)."""
-    if not ip:
-        return None, None
+def _subnet(ip: str) -> str | None:
+    """Kesh kaliti: IPv4 /24, IPv6 /48 — bir provayder tarmog'idagi qo'shni manzillar bitta joyda."""
     try:
         addr = ipaddress.ip_address(ip)
     except ValueError:
-        return None, None
-    if addr.is_private or addr.is_loopback:
+        return None
+    if addr.is_private or addr.is_loopback or addr.is_link_local or addr.is_reserved:
+        return None
+    return str(ipaddress.ip_network(f"{ip}/{24 if addr.version == 4 else 48}", strict=False).network_address)
+
+
+def by_ip(ip: str | None) -> tuple[str | None, str | None]:
+    """IP → (viloyat, shahar). O'zbekistondan tashqari — ("Xorij", None). Baza yo'q bo'lsa — (None, None)."""
+    key = _subnet(ip) if ip else None
+    if key is None:
         return None, None
     reader = _reader()
     if reader is None:
         return None, None
+    return _lookup(key, id(reader))
+
+
+@lru_cache(maxsize=20000)
+def _lookup(subnet: str, _reader_id: int) -> tuple[str | None, str | None]:
+    reader = _db["reader"] or _reader()
+    if reader is None:
+        return None, None
     with _reader_lock:
-        rec = reader.get(ip) or {}
+        rec = reader.get(subnet) or {}
     country = (rec.get("country") or {}).get("iso_code")
     if country and country != "UZ":
         return "Xorij", None

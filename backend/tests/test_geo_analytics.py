@@ -164,3 +164,38 @@ def test_ip_lookup_normalizes_names(monkeypatch):
     assert g.by_ip("192.168.1.5") == (None, None)                                 # ichki tarmoq
     monkeypatch.setattr(g, "_reader", lambda: None)
     assert g.by_ip("84.54.70.1") == (None, None)                                  # baza yo'q — buzilmaydi
+
+
+def test_ip_subnet_cache_and_hot_reload(monkeypatch):
+    """Bir /24 tarmoqdagi IP'lar bazadan bir marta o'qiladi; fayl yangilansa — qayta ishga tushirmasdan yangisi."""
+    import maxminddb
+
+    from app.services import geo_analytics as g
+
+    class Reader:
+        def __init__(self, city):
+            self.city, self.calls = city, 0
+
+        def get(self, ip):
+            self.calls += 1
+            return {"country": {"iso_code": "UZ"}, "city": {"names": {"en": self.city}}}
+
+        def close(self):
+            pass
+
+    first, second = Reader("Tashkent"), Reader("Samarkand")
+    files = {"mtime": 1.0, "reader": first}
+    monkeypatch.setattr(g.get_settings(), "geoip_db_path", "/fake/dbip.mmdb")
+    monkeypatch.setattr("os.path.getmtime", lambda p: files["mtime"])
+    monkeypatch.setattr(maxminddb, "open_database", lambda p: files["reader"])
+    monkeypatch.setattr(g, "_db", {"reader": None, "mtime": None, "checked": 0.0})
+    g._lookup.cache_clear()
+
+    assert g.by_ip("84.54.70.10") == ("Toshkent shahri", "Toshkent")
+    assert g.by_ip("84.54.70.200") == ("Toshkent shahri", "Toshkent")
+    assert first.calls == 1                                                       # bitta /24 — bitta o'qish
+    assert g.by_ip("10.0.0.1") == (None, None) and g.by_ip("garbage") == (None, None)
+
+    files.update(mtime=2.0, reader=second)                                       # oylik yangilanish
+    g._db["checked"] = -10_000.0                                                  # tekshirish vaqti keldi
+    assert g.by_ip("84.54.70.10") == ("Samarqand viloyati", "Samarqand")

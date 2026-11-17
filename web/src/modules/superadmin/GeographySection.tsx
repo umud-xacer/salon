@@ -100,7 +100,8 @@ export function GeographySection({ days }: { days: number }) {
         <div className="grid gap-4 lg:grid-cols-[1.1fr_1fr]">
           <div>
             <GeoMap points={g.points} focus={!!region} />
-            <p className="mt-1 text-xs text-muted">{t("Nuqtalar ~1 km katakda, kamida 3 ta qurilma bo'lgan joyda ko'rsatiladi.")}</p>
+            <p className="mt-1 text-xs text-muted">{t("Nuqtalar ~1 km katakda, kamida 3 ta qurilma bo'lgan joyda ko'rsatiladi.")}
+              {" "}<a href="https://db-ip.com" target="_blank" rel="noreferrer" className="underline">IP Geolocation by DB-IP</a></p>
             {!region && g.regions.length > 0 && (
               <ul className="mt-3 space-y-1 text-sm">
                 {g.regions.slice(0, 8).map((r) => (

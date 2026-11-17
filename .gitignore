@@ -37,3 +37,4 @@ deploy/.env.bak
 deploy/sites/
 backend/media/
 backend/.pytest_media/
+deploy/geoip/

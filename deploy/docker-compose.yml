@@ -32,8 +32,11 @@ services:
     environment:
       MEDIA_DIR: /media
       MEDIA_BASE_URL: https://${API_DOMAIN:?}/media
+      # IP → hudud (DB-IP Lite, CC BY 4.0). Fayl deploy/update-geoip.sh bilan yuklanadi; bo'lmasa — "Aniqlanmagan"
+      GEOIP_DB_PATH: /geoip/dbip-city-lite.mmdb
     volumes:
       - media:/media
+      - ./geoip:/geoip:ro
     depends_on:
       migrate:
         condition: service_completed_successfully
