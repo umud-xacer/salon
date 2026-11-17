@@ -42,7 +42,7 @@ export function AuthGateProvider({ children }: { children: ReactNode }) {
     return false;
   }, [me]);
 
-  const go = (path: '/login' | '/telegram-wait') => {
+  const go = (path: '/login' | '/telegram-wait' | '/password') => {
     setVisible(false);
     router.push(path);
   };
@@ -93,6 +93,10 @@ export function AuthGateProvider({ children }: { children: ReactNode }) {
               <Icon name="logo-google" size={20} color={c.text} />
               <Text style={s.socialText}>{t("Google orqali kirish")}</Text>
             </Pressy>
+          )}
+          {/* SMS o'chiq paytda ham parolli hisoblar (masalan, Google Play tekshiruvchisi) kira olsin */}
+          {!methods.sms && (methods.telegram || methods.google) && (
+            <Button title={t("Parol bilan kirish")} kind="ghost" onPress={() => go('/password')} />
           )}
           <ErrorText text={error} />
           <Button title={t("Keyinroq")} kind="ghost" onPress={() => setVisible(false)} />

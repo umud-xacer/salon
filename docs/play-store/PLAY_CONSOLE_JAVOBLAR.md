@@ -2,9 +2,22 @@
 
 Kod va server holatiga asoslangan (2026-11-16). Javoblar haqiqatga mos bo'lishi shart — ilova o'zgarsa, shu fayl ham yangilanadi.
 
+## 0. Chiqarish tartibi (2026-11-17)
+1. **Dasturchi hisobi** (play.google.com/console/signup): turini tanlash, 25 $ to'lov (karta — egasi o'zi kiritadi), shaxsni tasdiqlash (pasport/ID, 1–3 kun).
+   - **Shaxsiy hisob** ("Для себя"): ochiq chiqarishdan oldin **yopiq test — kamida 12 sinovchi, 14 kun uzluksiz** (Google talabi).
+   - **Tashkilot** ("Для организации"): yopiq test talabi yo'q, lekin **D-U-N-S raqami** kerak (bepul, 1–4 hafta).
+2. **Ilova yaratish**: nomi "Chronix", til o'zbek (yoki rus), App, Free.
+3. **App content** anketalari — quyidagi 1–6 bandlar.
+4. **Store listing** — `STORE_LISTING.md`, `icon-512.png`, `feature-graphic-1024x500.png`, telefon skrinshotlari (2–8 ta).
+5. **Testing → Internal testing**: .aab yuklash (EAS build, `uz.chronix.app`), o'zini sinovchi qilib qo'shish.
+6. **App integrity → App signing**: SHA-1 ni olib, Google Cloud (loyiha `chronix-514914`) da 2-Android OAuth client "Chronix Play" yaratish — aks holda Play'dan o'rnatilgan ilovada Google bilan kirish ishlamaydi.
+7. Shaxsiy hisob bo'lsa: **Closed testing** (12+ sinovchi, 14 kun) → **Production** ga ariza.
+
 ## 1. App access (kirish)
 - "All or some functionality is restricted" → ko'rsatma: `loyxalar/PLAY_TEST_LOGIN.md` (repo'da emas).
+- 2026-11-17 dan SMS orqali kirish o'chiq (`SMS_LOGIN_ENABLED=false`): tekshiruvchi **«Parol bilan kirish»** orqali kiradi (sinov raqami + parol). Telegram va Google ham bor.
 - Izoh: ilova mehmon rejimida ochiladi; bron, profil, sevimlilar uchun kirish kerak.
+- Ro'yxatdan o'tish: Telegram (raqam Telegram kontaktidan, tasdiqlangan) yoki Google (raqamni bir marta **Telegram bot orqali** tasdiqlaydi — @ChronixUzBot). Tasdiqlash kodlari ham botga keladi.
 
 ## 2. Ads
 - **No**, ilovada reklama yo'q.
@@ -26,7 +39,7 @@ Kod va server holatiga asoslangan (2026-11-16). Javoblar haqiqatga mos bo'lishi 
 | Ma'lumot turi | Yig'iladi | Uchinchi tomonga beriladi | Majburiymi | Maqsad |
 |---|---|---|---|---|
 | Personal info → Name | Ha | Ha (siz bron qilgan salon) | Majburiy (bron uchun) | App functionality, Account management |
-| Personal info → Phone number | Ha | Ha (salon; SMS uchun Eskiz) | Majburiy | App functionality, Account management, Fraud prevention |
+| Personal info → Phone number | Ha | Ha (salon; SMS yoqilsa — Eskiz; kod Telegram bot orqali yuboriladi) | Majburiy | App functionality, Account management, Fraud prevention |
 | Personal info → Email address | Ha (faqat Google bilan kirsa) | Yo'q | Ixtiyoriy | Account management |
 | Personal info → Other (tug'ilgan sana, jins) | Ha | Yo'q | Ixtiyoriy | Personalization |
 | Location → Approximate + Precise | Ha (faqat ilova ochiq paytda, ruxsat bilan) | Yo'q | Ixtiyoriy | App functionality (yaqin salonlar) |
