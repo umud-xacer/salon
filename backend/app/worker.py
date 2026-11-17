@@ -51,6 +51,14 @@ def raise_alerts() -> int:
         return count
 
 
+def scan_waitlist() -> int:
+    """Kutish ro'yxati: bo'shagan vaqtlarni navbatdagilarga taklif qilish (sql/052)."""
+    with worker_session() as db:
+        count = db.scalar(text("SELECT app.waitlist_scan()"))
+        db.commit()
+        return count
+
+
 def send_pushes() -> int:
     """Har bir xabar alohida tranzaksiyada: yarim yo'lda to'xtasa, yuborilganlari qayta ketmaydi."""
     count = 0
@@ -79,9 +87,10 @@ def run_once() -> dict:
     expired = expire_subscriptions()
     auto_cancelled = expire_pending()      # eslatmadan oldin: bekor bo'lgan bronga eslatma ketmasin
     reminders = create_reminders()
+    waitlist = scan_waitlist()            # pushdan oldin: taklif xabari shu aylanishda ketsin
     pushes = send_pushes()                 # yetkazilmagan eslatma shu aylanishda ogohlantirishga aylansin
     alerts = raise_alerts()
-    return {"expired": expired, "auto_cancelled": auto_cancelled, "reminders": reminders, "alerts": alerts,
+    return {"expired": expired, "auto_cancelled": auto_cancelled, "reminders": reminders, "waitlist": waitlist, "alerts": alerts,
             "pushes": pushes + send_pushes()}
 
 

@@ -95,7 +95,14 @@ def get_booking(appointment_id: int = Path(ge=1), db: Session = Depends(get_db))
 def cancel_booking(body: CancelIn, appointment_id: int = Path(ge=1), db: Session = Depends(get_db)):
     db.execute(text("SELECT app.cancel_appointment(:id, :r)"), {"id": appointment_id, "r": body.reason})
     db.commit()
-    return _get(db, appointment_id)
+    out = _get(db, appointment_id)
+    # Vaqt bo'shadi — kutish ro'yxatidagi navbatdagi mijozga darhol taklif (052). Xato bekor qilishni buzmasin.
+    try:
+        db.execute(text("SELECT app.waitlist_scan(:b)"), {"b": out.business_id})
+        db.commit()
+    except Exception:
+        db.rollback()
+    return out
 
 
 @router.post("/appointments/{appointment_id}/reschedule", response_model=AppointmentOut)

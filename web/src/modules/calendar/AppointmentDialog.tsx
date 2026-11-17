@@ -34,6 +34,9 @@ export function AppointmentDialog({ membership, appointment: a, masterName, onCl
   const done = async () => {
     await queryClient.invalidateQueries({ queryKey: ["calendar", b] });
     await queryClient.invalidateQueries({ queryKey: ["appointments", b] });
+    // Bekor qilinsa server kutish ro'yxatini darhol tekshiradi — banner yangilansin
+    await queryClient.invalidateQueries({ queryKey: ["waitlist-summary", b] });
+    await queryClient.invalidateQueries({ queryKey: ["waitlist", b] });
     onClose();
   };
   const setStatus = useMutation({

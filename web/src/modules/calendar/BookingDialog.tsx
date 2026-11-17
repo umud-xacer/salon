@@ -7,6 +7,7 @@ import type { Appointment, Client, Membership, ReceptionOptions, Slot } from "..
 import { formatMoney, normalizePhone, todayIso } from "../../components/format";
 import { Button, Empty, ErrorNote, Spinner } from "../../components/ui";
 import { Modal } from "../../components/Modal";
+import type { WaitlistPrefill } from "./WaitlistDialog";
 import { useVocab } from "../vocab";
 
 import { t } from "../../i18n";
@@ -27,11 +28,12 @@ function useDebounced(value: string, ms = 300) {
   return debounced;
 }
 
-export function BookingDialog({ membership, preset, onClose, onBlockInstead }: {
+export function BookingDialog({ membership, preset, onClose, onBlockInstead, onWaitlist }: {
   membership: Membership;
   preset: BookingPreset;
   onClose: () => void;
   onBlockInstead?: () => void;        // shu vaqtni bron o'rniga bloklash (tushlik, tozalash...)
+  onWaitlist?: (prefill: WaitlistPrefill) => void;   // bo'sh vaqt yo'q — kutish ro'yxatiga
 }) {
   const b = membership.business_id;
   const v = useVocab();
@@ -236,6 +238,13 @@ export function BookingDialog({ membership, preset, onClose, onBlockInstead }: {
             {slots.isFetching && !slots.data && <Spinner />}
             {slots.error && <ErrorNote error={slots.error} />}
             {slots.data?.length === 0 && <Empty>{t("Bu kunga bo'sh vaqt yo'q")}</Empty>}
+            {slots.data?.length === 0 && onWaitlist && selectedService !== null && (
+              <button type="button" className="mt-1 text-sm text-primary hover:underline"
+                      onClick={() => onWaitlist({ serviceId: selectedService, memberId: selectedMember, day,
+                                                  name: name.trim(), phone: phone.trim() })}>
+                {t("Kutish ro'yxatiga qo'shish — vaqt bo'shasa xabar beramiz")}
+              </button>
+            )}
             <div className="mt-1 grid max-h-40 grid-cols-4 gap-2 overflow-y-auto sm:grid-cols-6">
               {slots.data?.map((s) => (
                 <button

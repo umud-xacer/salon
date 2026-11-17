@@ -1067,6 +1067,21 @@ export const RU_PAGES: Record<string, string> = {
   "Yangi eslatma": "Новая заметка", "VIP, doimiy, talaba... (Enter)": "VIP, постоянный, студент... (Enter)",
   "Teg bo'yicha": "По тегу", "Ogohlantirish bor": "Есть предупреждение", "Bugun tug'ilgan kuni": "Сегодня день рождения",
   "{n} kundan keyin tug'ilgan kuni": "День рождения через {n} дн.",
+  // ── Kutish ro'yxati (052) ──
+  "Kutish ro'yxati": "Лист ожидания", "Kutmoqda": "Ожидает", "Bo'sh vaqt topildi": "Найдено свободное время",
+  "Bron qilindi": "Записан", "Muddati o'tdi": "Срок истёк", "Bekor qilindi": "Отменено", "Navbatda": "В очереди",
+  "Yopilgan": "Закрытые", "Bo'sh vaqtni tekshirish": "Проверить свободное время",
+  "Bron bekor qilinsa yoki vaqt bo'shasa, tizim navbat tartibida mos mijozni topadi. Ilovasi bor mijozga xabar o'zi boradi.":
+    "Когда запись отменяется или время освобождается, система по очереди подбирает подходящего клиента. Клиенту с приложением уведомление придёт автоматически.",
+  "Navbatda hech kim yo'q": "В очереди никого нет", "Yopilgan yozuvlar yo'q": "Закрытых записей нет",
+  "Ilovadan": "Из приложения", "istalgan usta": "любой мастер", "kun bo'yi": "весь день",
+  "Bo'sh vaqt: {a}, {b} · {c}": "Свободно: {a}, {b} · {c}", "Navbatdan chiqarish": "Убрать из очереди",
+  "Mijoz ismi": "Имя клиента", "Qaysi kundan": "С какого дня", "Qaysi kungacha": "По какой день",
+  "Kun bo'yi istalgan vaqt": "Любое время в течение дня", "Soat ...dan": "С (время)", "Soat ...gacha": "До (время)",
+  "Navbatga qo'shish": "Добавить в очередь",
+  "Kutish ro'yxatiga qo'shish — vaqt bo'shasa xabar beramiz": "Добавить в лист ожидания — сообщим, когда время освободится",
+  "Kutish ro'yxatidagi {n} ta mijozga bo'sh vaqt topildi": "Для {n} клиентов из листа ожидания найдено свободное время",
+  "Ko'rish": "Смотреть",
   // ── Bron havolasi va QR ──
   "Bron havolasi va QR-kod": "Ссылка на запись и QR-код",
   "Instagram bio, Telegram, vitrina yoki vizitka uchun. Mijoz havolani ochib, darhol bron qiladi.":

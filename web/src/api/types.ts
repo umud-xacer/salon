@@ -108,6 +108,39 @@ export interface CalendarBlock {
   note: string | null;
 }
 
+export interface WaitlistEntry {
+  id: number;
+  business_id: number;
+  business_name?: string | null;
+  client_id: number;
+  client_name: string | null;
+  client_phone: string | null;
+  has_account: boolean;
+  service_id: number;
+  service_name: string;
+  member_id: number | null;
+  member_name: string | null;
+  date_from: string;
+  date_to: string;
+  time_from: string | null;
+  time_to: string | null;
+  note: string | null;
+  status: "waiting" | "offered" | "booked" | "expired" | "cancelled";
+  source: "admin" | "app";
+  offered_member_id: number | null;
+  offered_member_name: string | null;
+  offered_starts_at: string | null;
+  offered_at: string | null;
+  appointment_id: number | null;
+  created_at: string;
+  position: number | null;
+}
+
+export interface WaitlistSummary {
+  waiting: number;
+  offered: number;
+}
+
 export interface BlockType {
   id: number;
   name: string;

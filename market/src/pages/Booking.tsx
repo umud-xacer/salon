@@ -40,6 +40,7 @@ export default function Booking() {
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [waited, setWaited] = useState<string | null>(null);     // shu kunga navbatga yozildi
   const [done, setDone] = useState<Appointment | null>(null);
 
   const services = useMemo(() => b?.service_groups.flatMap((g) => g.services) ?? [], [b]);
@@ -84,6 +85,22 @@ export default function Booking() {
     promo_not_found: "Promokod topilmadi yoki muddati tugagan", promo_used: "Bu promokoddan allaqachon foydalangansiz",
     promo_limit: "Promokod limiti tugagan", promo_first_visit: "Bu promokod faqat birinchi tashrif uchun",
   }[quote.code_error] : null;
+
+  // Bo'sh vaqt yo'q kun: kutish ro'yxatiga (vaqt bo'shasa salon taklif qiladi, ilovaga push)
+  const joinWaitlist = async () => {
+    if (!service || !b) return;
+    if (!requireAuth("Navbatga yozilish uchun profilingizga kiring yoki ro'yxatdan o'ting")) return;
+    setBusy(true); setError(null);
+    try {
+      await api("/waitlist", { method: "POST", body: {
+        business_id: b.id, service_id: service, member_id: member !== null && member !== ANY ? member : null,
+        date_from: day, date_to: day,
+      } });
+      setWaited(day);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Bajarib bo'lmadi");
+    } finally { setBusy(false); }
+  };
 
   const submit = async () => {
     if (!slot || !service) return;
@@ -211,7 +228,18 @@ export default function Booking() {
                 ))}
               </div>
               {slots === null ? <div className="flex justify-center py-10"><Spinner /></div>
-                : slots.length === 0 ? <p className="rounded-2xl bg-soft p-6 text-center text-muted">Bu kunda bo'sh vaqt yo'q. Boshqa kunni tanlang.</p>
+                : slots.length === 0 ? (
+                  <div className="rounded-2xl bg-soft p-6 text-center">
+                    <p className="text-muted">Bu kunda bo'sh vaqt yo'q. Boshqa kunni tanlang yoki navbatga yoziling.</p>
+                    {waited === day ? (
+                      <p className="mt-4 font-semibold text-brand">Navbatga yozildingiz. Vaqt bo'shasa — darhol xabar beramiz.</p>
+                    ) : (
+                      <button onClick={joinWaitlist} disabled={busy} className={`${btn.outline} mt-4`}>
+                        Kutish ro'yxatiga yozilish
+                      </button>
+                    )}
+                  </div>
+                )
                   : (
                     <div className="space-y-6">
                       {[["Ertalab", 0, 12], ["Kunduzi", 12, 17], ["Kechqurun", 17, 24]].map(([label, from, to]) => {

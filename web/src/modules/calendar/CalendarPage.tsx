@@ -1,9 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import { Ban, ChevronLeft, ChevronRight, Plus, Zap } from "lucide-react";
+import { Ban, ChevronLeft, ChevronRight, ListOrdered, Plus, Zap } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { api } from "../../api/client";
-import type { Appointment, CalendarBlock, CalendarData, Membership } from "../../api/types";
+import type { Appointment, CalendarBlock, CalendarData, Membership, WaitlistSummary } from "../../api/types";
 import {
   addDays,
   clock,
@@ -18,6 +18,7 @@ import {
 import { Button, Empty, ErrorNote, PageTitle, Spinner } from "../../components/ui";
 import { AppointmentDialog } from "./AppointmentDialog";
 import { BlockDialog, BlockInfoDialog, type BlockPreset } from "./BlockDialog";
+import { WaitlistDialog, type WaitlistPrefill } from "./WaitlistDialog";
 import { BookingDialog, type BookingPreset } from "./BookingDialog";
 import { TimeGrid, type Column } from "./TimeGrid";
 import { WalkInDialog } from "./WalkInDialog";
@@ -37,6 +38,16 @@ export function CalendarPage({ membership }: { membership: Membership }) {
   const [walkIn, setWalkIn] = useState(false);
   const [blocking, setBlocking] = useState<BlockPreset | null>(null);
   const [openedBlock, setOpenedBlock] = useState<CalendarBlock | null>(null);
+  const [waitlist, setWaitlist] = useState<{ prefill: WaitlistPrefill | null } | null>(null);
+  // Kutish ro'yxati: bo'sh vaqt topilganlar soni (server bron bekor qilinganda va har daqiqada tekshiradi)
+  const waitSummary = useQuery({
+    queryKey: ["waitlist-summary", b],
+    enabled: canBook,
+    queryFn: () => api<WaitlistSummary>(`/businesses/${b}/waitlist/summary`),
+    refetchInterval: 45_000,
+  });
+  const offered = waitSummary.data?.offered ?? 0;
+  const waitingTotal = offered + (waitSummary.data?.waiting ?? 0);
 
   const start = view === "day" ? day : mondayOf(day);
   const days = view === "day" ? 1 : 7;
@@ -117,6 +128,15 @@ export function CalendarPage({ membership }: { membership: Membership }) {
               <Button variant="secondary" className="flex flex-1 items-center justify-center gap-1 sm:flex-none" onClick={() => setWalkIn(true)}>
                 <Zap size={16} aria-hidden /> {t("Tezkor qabul")}
               </Button>
+              <Button variant="secondary" className="relative flex flex-1 items-center justify-center gap-1 sm:flex-none"
+                      onClick={() => setWaitlist({ prefill: null })}>
+                <ListOrdered size={16} aria-hidden /> {t("Kutish ro'yxati")}
+                {waitingTotal > 0 && (
+                  <span className={`ml-1 rounded-full px-1.5 text-xs text-white tabular-nums ${offered > 0 ? "bg-success" : "bg-muted"}`}>
+                    {waitingTotal}
+                  </span>
+                )}
+              </Button>
               <Button variant="secondary" className="flex flex-1 items-center justify-center gap-1 sm:flex-none"
                       onClick={() => setBlocking({ day, memberId: memberFilter ?? undefined })}>
                 <Ban size={16} aria-hidden /> {t("Vaqtni bloklash")}
@@ -177,6 +197,14 @@ export function CalendarPage({ membership }: { membership: Membership }) {
         )}
       </div>
 
+      {canBook && offered > 0 && (
+        <button type="button" onClick={() => setWaitlist({ prefill: null })}
+                className="mb-3 flex w-full items-center gap-2 rounded-lg border border-success bg-success/10 px-3 py-2 text-left text-sm">
+          <ListOrdered size={16} className="shrink-0 text-success" aria-hidden />
+          <span className="flex-1">{t("Kutish ro'yxatidagi {n} ta mijozga bo'sh vaqt topildi", { n: offered })}</span>
+          <span className="font-medium text-success">{t("Ko'rish")}</span>
+        </button>
+      )}
       {query.isPending && <Spinner />}
       {query.error && <ErrorNote error={query.error} />}
       {data && data.staff.length === 0 && <Empty>{t("Hali {a} qo'shilmagan", { a: v.staffMany })}</Empty>}
@@ -194,10 +222,14 @@ export function CalendarPage({ membership }: { membership: Membership }) {
 
       {booking && (
         <BookingDialog membership={membership} preset={booking} onClose={() => setBooking(null)}
-                       onBlockInstead={() => { setBlocking(booking); setBooking(null); }} />
+                       onBlockInstead={() => { setBlocking(booking); setBooking(null); }}
+                       onWaitlist={(prefill) => { setWaitlist({ prefill }); setBooking(null); }} />
       )}
       {blocking && data && (
         <BlockDialog membership={membership} staff={data.staff} preset={blocking} onClose={() => setBlocking(null)} />
+      )}
+      {waitlist && (
+        <WaitlistDialog membership={membership} prefill={waitlist.prefill} onClose={() => setWaitlist(null)} />
       )}
       {openedBlock && (
         <BlockInfoDialog membership={membership} block={openedBlock} masterName={masterName(openedBlock.member_id)}

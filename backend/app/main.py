@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import DBAPIError
 
-from app.api.v1 import (appointments, auth, billing, blocks, business_admin, catalog, clients, finance, geo, inventory, me, members,
+from app.api.v1 import (appointments, auth, billing, blocks, waitlist, business_admin, catalog, clients, finance, geo, inventory, me, members,
                         payroll, promotions, reception, reminders, reports, reviews, schedule, superadmin, telegram, visits)
 from app.core.config import get_settings
 from app.services.auth_service import AuthError
@@ -109,6 +109,8 @@ app.include_router(schedule.router, prefix="/api/v1")
 app.include_router(appointments.router, prefix="/api/v1")
 app.include_router(reception.router, prefix="/api/v1")
 app.include_router(blocks.router, prefix="/api/v1")
+app.include_router(waitlist.router, prefix="/api/v1")
+app.include_router(waitlist.my_router, prefix="/api/v1")
 app.include_router(visits.router, prefix="/api/v1")
 app.include_router(clients.router, prefix="/api/v1")
 app.include_router(finance.router, prefix="/api/v1")

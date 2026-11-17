@@ -390,3 +390,28 @@ def test_client_note_author_is_forced(world):
                        {"b": a["id"], "c": world["client_a"], "u": uid(a["owner"])})
         assert sqlstate(e) == "42501"
         db.rollback()
+
+
+# ─── Kutish ro'yxati (052) ─────────────────────────────────────────────────
+def test_waitlist_rls(world):
+    a = world["a"]
+    with api_session(uid(a["owner"])) as db:
+        svc = db.execute(text("INSERT INTO services (business_id, name, duration_min, price) "
+                              "VALUES (:b, 'Navbat xizmati', 30, 1000) RETURNING id"), {"b": a["id"]}).scalar()
+        entry = db.execute(text("INSERT INTO waitlist_entries (business_id, client_id, service_id, date_from, date_to) "
+                                "VALUES (:b, :c, :s, current_date + 1, current_date + 2) RETURNING id"),
+                           {"b": a["id"], "c": world["client_a"], "s": svc}).scalar()
+        db.commit()
+    # Mijoz o'z yozuvini ko'radi, lekin o'zgartira olmaydi (faqat funksiya orqali bekor qiladi)
+    with api_session(uid(world["customer"])) as db:
+        assert db.execute(text("SELECT count(*) FROM waitlist_entries WHERE id = :id"), {"id": entry}).scalar() == 1
+        assert db.execute(text("UPDATE waitlist_entries SET status = 'booked' WHERE id = :id"), {"id": entry}).rowcount == 0
+    # Usta va boshqa muassasa ko'rmaydi
+    for tokens in (world["usta"]["tokens"], world["b"]["owner"]):
+        with api_session(uid(tokens)) as db:
+            assert db.execute(text("SELECT count(*) FROM waitlist_entries WHERE id = :id"), {"id": entry}).scalar() == 0
+    # Ichki bo'sh vaqt yadrosi ilovaga yopiq
+    with api_session(uid(a["owner"])) as db:
+        with pytest.raises(DBAPIError) as e:
+            db.execute(text("SELECT * FROM app.slots_core(1, 1, current_date, 30, NULL)"))
+        assert sqlstate(e) == "42501"
