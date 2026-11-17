@@ -12,6 +12,7 @@ import { useVocab } from "../vocab";
 import { useAuth } from "../../auth/AuthProvider";
 import { chainMemberships } from "../../components/BranchSwitcher";
 import { BlockTypesCard } from "./BlockTypesCard";
+import { BookingLinksCard } from "./BookingLinksCard";
 import { CancelReasonsCard } from "./CancelReasonsCard";
 
 import { t } from "../../i18n";
@@ -64,6 +65,9 @@ export function BusinessPage({ membership }: { membership: Membership }) {
         <HoursCard businessId={b} hours={hours.data ?? []}
           defaults={[profile.data.default_opens_at.slice(0, 5), profile.data.default_closes_at.slice(0, 5)]} />
         <PhotosCard businessId={b} photos={photos.data ?? []} />
+        {membership.modules.includes("booking") && membership.permissions.includes("appointments.manage") && (
+          <BookingLinksCard businessId={b} slug={membership.business_slug} listed={profile.data.is_listed} />
+        )}
         {membership.modules.includes("booking") && (
           <div className="grid gap-4 lg:grid-cols-2">
             <BlockTypesCard businessId={b} />

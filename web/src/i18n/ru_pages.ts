@@ -1067,6 +1067,15 @@ export const RU_PAGES: Record<string, string> = {
   "Yangi eslatma": "Новая заметка", "VIP, doimiy, talaba... (Enter)": "VIP, постоянный, студент... (Enter)",
   "Teg bo'yicha": "По тегу", "Ogohlantirish bor": "Есть предупреждение", "Bugun tug'ilgan kuni": "Сегодня день рождения",
   "{n} kundan keyin tug'ilgan kuni": "День рождения через {n} дн.",
+  // ── Bron havolasi va QR ──
+  "Bron havolasi va QR-kod": "Ссылка на запись и QR-код",
+  "Instagram bio, Telegram, vitrina yoki vizitka uchun. Mijoz havolani ochib, darhol bron qiladi.":
+    "Для Instagram, Telegram, витрины или визитки. Клиент открывает ссылку и сразу записывается.",
+  "Havola ishlashi uchun Ma'lumotlar bo'limida \"Ilovada ochiq\" ni yoqing.":
+    "Чтобы ссылка работала, включите «Открыто в приложении» в разделе «Данные».",
+  "Hammasi (butun salon)": "Все (весь салон)", "Mijoz o'zi tanlaydi": "Клиент выберет сам",
+  "Nusxa olindi": "Скопировано", "Havolani nusxalash": "Скопировать ссылку",
+  "QR-kodni yuklab olish": "Скачать QR-код", "Ochib ko'rish": "Открыть", "QR-kod": "QR-код",
   // ── Xizmatga qo'shimcha vaqt (051) ──
   "Qo'shimcha vaqt": "Дополнительное время", "kutish {n} daq": "выдержка {n} мин", "bufer {n} daq": "буфер {n} мин",
   "Kutish vaqti — masalan, bo'yoq ta'sir qilayotganda: mijoz o'tiradi, usta shu oraliqda boshqa mijozni olishi mumkin. Bufer — xizmatdan keyin tozalash: mijoz ketgan, usta hali band.":

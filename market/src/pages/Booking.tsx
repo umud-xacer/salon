@@ -26,7 +26,9 @@ export default function Booking() {
   const hotAt = sp.get("at");
   const [service, setService] = useState<number | null>(sp.get("service") ? Number(sp.get("service")) : null);
   const [member, setMember] = useState<number | null>(sp.get("member") ? Number(sp.get("member")) : null);
-  const [step, setStep] = useState<Step>(hotAt ? "confirm" : sp.get("service") ? "master" : "service");
+  // Usta havolasi (?member=): mutaxassis oldindan tanlangan — faqat uning xizmatlari, "mutaxassis" qadami o'tkaziladi
+  const pinned = !hotAt && sp.get("member") ? Number(sp.get("member")) : null;
+  const [step, setStep] = useState<Step>(hotAt ? "confirm" : sp.get("service") ? (pinned ? "time" : "master") : "service");
   const days = nextDays(21);
   const [day, setDay] = useState(sp.get("day") ?? days[0].iso);
   const [slot, setSlot] = useState<PickSlot | null>(hotAt && sp.get("member") ? { starts_at: hotAt, time: timeOf(hotAt), member: Number(sp.get("member")) } : null);
@@ -100,9 +102,11 @@ export default function Booking() {
   const next = () => {
     setError(null);
     if (step === "confirm") return void submit();
+    if (step === "service" && pinnedStaff) return setStep("time");
     setStep(STEPS[idx + 1][0]);
   };
-  const back = () => (idx === 0 || hotAt ? nav(`/s/${b.slug}`) : setStep(STEPS[idx - 1][0]));
+  const back = () => (idx === 0 || hotAt ? nav(`/s/${b.slug}`)
+    : step === "time" && pinnedStaff ? setStep("service") : setStep(STEPS[idx - 1][0]));
 
   if (done) {
     return (
@@ -119,7 +123,9 @@ export default function Booking() {
   }
 
   const groups = b.service_groups;
-  const visible = group === "all" ? services : groups.find((g) => (g.category_id ?? 0) === group)?.services ?? [];
+  const pinnedStaff = pinned !== null ? b.staff.find((m) => m.member_id === pinned) : undefined;
+  const visible = (group === "all" ? services : groups.find((g) => (g.category_id ?? 0) === group)?.services ?? [])
+    .filter((s) => !pinnedStaff || pinnedStaff.service_ids.includes(s.id));
 
   return (
     <div className="min-h-screen bg-white">
@@ -155,7 +161,7 @@ export default function Booking() {
                 {visible.map((s) => {
                   const on = s.id === service;
                   return (
-                    <button key={s.id} onClick={() => { setService(s.id); setMember(null); setSlot(null); }}
+                    <button key={s.id} onClick={() => { setService(s.id); setMember(pinnedStaff ? pinned : null); setSlot(null); }}
                       className={`flex w-full items-center gap-4 rounded-2xl border-2 p-5 text-left transition ${on ? "border-brand bg-brand-soft/40" : "border-line hover:border-brand/40"}`}>
                       <span className="min-w-0 flex-1">
                         <b className="block">{s.name}</b>
