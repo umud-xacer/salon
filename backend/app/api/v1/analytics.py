@@ -12,7 +12,7 @@ from typing import Iterator, Literal
 import jwt
 from fastapi import APIRouter, Depends, Query
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -250,3 +250,183 @@ def events_stats(days: int = Query(default=30, ge=1, le=180), platform: Platform
          GROUP BY 1, 2 ORDER BY count DESC LIMIT 60
     """), p).mappings().all()
     return EventsStatsOut(events=[EventRow(**r) for r in events], screens=[ScreenRow(**r) for r in screens])
+
+
+# ─── Hududiy analitika (061_geo_analytics.sql) ────────────────────────────────────────────────────
+from fastapi import Request  # noqa: E402
+
+from app.api.deps import get_public_db  # noqa: E402
+from app.services import geo_analytics  # noqa: E402
+
+
+class LocationPing(BaseModel):
+    device_id: str = Field(min_length=8, max_length=64)
+    platform: Platform
+    latitude: float | None = Field(default=None, ge=-90, le=90)
+    longitude: float | None = Field(default=None, ge=-180, le=180)
+
+    @model_validator(mode="after")
+    def _pair(self):
+        if (self.latitude is None) != (self.longitude is None):
+            raise ValueError("Kenglik va uzunlik birga yuboriladi")
+        return self
+
+
+class LocationPingOut(BaseModel):
+    logged: bool                                        # false — shu qurilmadan 15 daqiqa ichida allaqachon yozilgan
+
+
+@router.post("/analytics/location-ping", response_model=LocationPingOut)
+def location_ping(body: LocationPing, request: Request, db: Session = Depends(get_public_db)):
+    """Ilova ochilganda. Koordinata bo'lsa — yaxlitlanib (~110 m) yoziladi, hudud keshdan yoki keyin worker'dan;
+    bo'lmasa — IP bo'yicha taxminiy hudud. Shaxsga bog'lanmaydi (faqat qurilmaning anon ID si)."""
+    gps = body.latitude is not None and body.longitude is not None
+    region = city = None
+    if not gps:
+        ip = request.client.host if request.client else None
+        region, city = geo_analytics.by_ip(None if ip == "testclient" else ip)
+    logged = db.scalar(text("SELECT app.log_location(:d, CAST(:lat AS numeric), CAST(:lng AS numeric), :p, :r, :c)"), {
+        "d": body.device_id, "lat": body.latitude if gps else None, "lng": body.longitude if gps else None,
+        "p": body.platform, "r": region, "c": city})
+    db.commit()
+    return LocationPingOut(logged=bool(logged))
+
+
+class GeoRegion(BaseModel):
+    region: str
+    devices: int
+    sessions: int
+    share: float                                        # qurilmalar ulushi, %
+
+
+class GeoDistrict(BaseModel):
+    region: str
+    city: str | None
+    district: str
+    devices: int
+    sessions: int
+    share: float                                        # tanlangan hudud ichidagi ulush, %
+    businesses: int                                     # shu tumanga ulangan (ilovada ko'rinadigan) muassasalar
+    high_demand: bool                                   # foydalanuvchi ko'p, muassasa kam — sotuv hududi
+
+
+class GeoPoint(BaseModel):
+    lat: float
+    lng: float
+    weight: int                                         # sessiyalar (kamida 3 ta qurilma bo'lgan katakda)
+
+
+class GeographyOut(BaseModel):
+    days: int
+    region: str | None
+    devices: int
+    sessions: int
+    gps_share: float
+    pending: int                                        # hali hududi aniqlanmagan yozuvlar (worker to'ldiradi)
+    regions: list[GeoRegion]
+    districts: list[GeoDistrict]
+    points: list[GeoPoint]
+
+
+MIN_DEVICES_PER_POINT = 3                               # k-anonimlik: bitta odamning uyi xaritada ko'rinmasin
+HIGH_DEMAND_DEVICES = 20                                # "sotuv hududi": kamida shuncha qurilma
+HIGH_DEMAND_PER_BUSINESS = 50                           # va muassasa yo'q yoki har muassasaga shundan ko'p qurilma
+
+
+def _geography(db: Session, days: int, region: str | None, source: str) -> GeographyOut:
+    p = {"d": days, "r": region, "s": None if source == "all" else source, "k": MIN_DEVICES_PER_POINT}
+    where = ("l.created_at > now() - make_interval(days => :d) "
+             "AND (CAST(:s AS text) IS NULL OR l.source = :s)")
+    tot = db.execute(text(f"""
+        SELECT count(DISTINCT l.device_id)::int AS devices, count(*)::int AS sessions,
+               coalesce(round(100.0 * count(*) FILTER (WHERE l.source = 'gps') / nullif(count(*), 0), 1), 0)::float AS gps_share,
+               count(*) FILTER (WHERE l.region IS NULL AND l.lat_grid IS NOT NULL)::int AS pending
+          FROM user_location_logs l WHERE {where}
+    """), p).mappings().one()
+    regions = db.execute(text(f"""
+        SELECT coalesce(l.region, 'Aniqlanmagan') AS region, count(DISTINCT l.device_id)::int AS devices, count(*)::int AS sessions
+          FROM user_location_logs l WHERE {where} GROUP BY 1 ORDER BY devices DESC, sessions DESC
+    """), p).mappings().all()
+    total = tot["devices"] or 1
+    districts = db.execute(text(f"""
+        WITH d AS (
+            SELECT l.region, min(l.city) AS city,
+                   coalesce(l.district, coalesce(l.city, l.region) || ' (tuman aniqlanmagan)') AS district,
+                   count(DISTINCT l.device_id)::int AS devices, count(*)::int AS sessions
+              FROM user_location_logs l
+             WHERE {where} AND l.region IS NOT NULL AND l.region NOT IN ('Aniqlanmagan', 'Xorij')
+               AND (CAST(:r AS text) IS NULL OR l.region = :r)
+             GROUP BY l.region, 3
+        ), biz AS (
+            SELECT c.region, c.district, count(*)::int AS n
+              FROM businesses b
+              JOIN geo_cache c ON c.lat_grid = round(ST_Y(b.location::geometry)::numeric, 3)
+                              AND c.lng_grid = round(ST_X(b.location::geometry)::numeric, 3)
+             WHERE b.location IS NOT NULL AND b.status = 'active' AND b.is_listed
+             GROUP BY 1, 2
+        )
+        SELECT d.*, coalesce(biz.n, 0) AS businesses
+          FROM d LEFT JOIN biz ON biz.region = d.region AND biz.district = d.district
+         ORDER BY d.devices DESC, d.sessions DESC LIMIT 200
+    """), p).mappings().all()
+    in_scope = sum(x["devices"] for x in districts) or 1
+    points = db.execute(text(f"""
+        SELECT round(l.lat_grid, 2)::float AS lat, round(l.lng_grid, 2)::float AS lng, count(*)::int AS weight
+          FROM user_location_logs l
+         WHERE {where} AND l.lat_grid IS NOT NULL AND (CAST(:r AS text) IS NULL OR l.region = :r)
+         GROUP BY 1, 2 HAVING count(DISTINCT l.device_id) >= :k
+         ORDER BY weight DESC LIMIT 2000
+    """), p).mappings().all()
+    return GeographyOut(
+        days=days, region=region, **tot,
+        regions=[GeoRegion(**r, share=round(100 * r["devices"] / total, 1)) for r in regions],
+        districts=[GeoDistrict(**x, share=round(100 * x["devices"] / in_scope, 1),
+                               high_demand=x["devices"] >= HIGH_DEMAND_DEVICES
+                               and (x["businesses"] == 0 or x["devices"] / x["businesses"] >= HIGH_DEMAND_PER_BUSINESS))
+                   for x in districts],
+        points=[GeoPoint(**pt) for pt in points])
+
+
+@admin_router.get("/geography", response_model=GeographyOut)
+def geography(days: int = Query(default=30, ge=1, le=180), region: str | None = Query(default=None, max_length=60),
+              source: Literal["all", "gps", "ip"] = "all", db: Session = Depends(get_db)):
+    return _geography(db, days, region, source)
+
+
+@admin_router.get("/geography/export")
+def geography_export(days: int = Query(default=30, ge=1, le=180), region: str | None = Query(default=None, max_length=60),
+                     source: Literal["all", "gps", "ip"] = "all", db: Session = Depends(get_db)):
+    """Sotuv bo'limi uchun: tumanlar va viloyatlar jadvali Excel'da."""
+    import io
+
+    from fastapi.responses import Response
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill
+
+    g = _geography(db, days, region, source)
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Tumanlar"
+    ws.append([f"Chronix — hududiy faollik, oxirgi {days} kun" + (f", {region}" if region else "")])
+    ws["A1"].font = Font(bold=True, size=13)
+    ws.append(["Viloyat / shahar", "Tuman", "Foydalanuvchilar (qurilma)", "Ilova ochilishi", "Ulush, %",
+               "Ulangan muassasalar", "Sotuv hududi"])
+    for c in ws[2]:
+        c.font = Font(bold=True)
+    hot = PatternFill("solid", fgColor="DCFCE7")
+    for x in g.districts:
+        ws.append([x.region, x.district, x.devices, x.sessions, x.share, x.businesses, "Ha" if x.high_demand else ""])
+        if x.high_demand:
+            for c in ws[ws.max_row]:
+                c.fill = hot
+    ws2 = wb.create_sheet("Viloyatlar")
+    ws2.append(["Viloyat / shahar", "Foydalanuvchilar (qurilma)", "Ilova ochilishi", "Ulush, %"])
+    for r in g.regions:
+        ws2.append([r.region, r.devices, r.sessions, r.share])
+    for sheet, widths in ((ws, [24, 30, 14, 14, 10, 14, 12]), (ws2, [24, 14, 14, 10])):
+        for i, w in enumerate(widths):
+            sheet.column_dimensions[chr(65 + i)].width = w
+    buf = io.BytesIO()
+    wb.save(buf)
+    return Response(content=buf.getvalue(), media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    headers={"Content-Disposition": f'attachment; filename="hududlar-{days}kun.xlsx"'})

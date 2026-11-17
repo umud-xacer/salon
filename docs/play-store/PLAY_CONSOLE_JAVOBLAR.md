@@ -43,7 +43,7 @@ Kod va server holatiga asoslangan (yangilangan 2026-11-17, ilova 1.0.2). Javobla
 | Personal info → Phone number | Ha | Ha (salon; SMS yoqilsa — Eskiz; kod Telegram bot orqali yuboriladi) | Majburiy | App functionality, Account management, Fraud prevention |
 | Personal info → Email address | Ha (faqat Google bilan kirsa) | Yo'q | Ixtiyoriy | Account management |
 | Personal info → Other (tug'ilgan sana, jins) | Ha | Yo'q | Ixtiyoriy | Personalization |
-| Location → Approximate + Precise | Ha (faqat ilova ochiq paytda, ruxsat bilan) | Yo'q | Ixtiyoriy | App functionality (yaqin salonlar) |
+| Location → Approximate + Precise | Ha (faqat ilova ochiq paytda, ruxsat bilan; analitika uchun ~100 m yaxlitlanadi, shaxsga bog'lanmaydi, 180 kun) | Yo'q (geokodlash: OpenStreetMap Nominatim — faqat yaxlitlangan nuqta, shaxssiz) | Ixtiyoriy | App functionality (yaqin salonlar), Analytics (hududiy statistika) |
 | App activity → Other user-generated content (sharhlar) | Ha | Ha (ochiq ko'rinadi) | Ixtiyoriy | App functionality |
 | App activity → In-app actions / Other (bronlar tarixi) | Ha | Ha (tegishli salon) | Majburiy | App functionality |
 | Personal info → Phone number (zaxira raqam) | Ha | Ha (siz bron qilgan salon) | Ixtiyoriy | App functionality |

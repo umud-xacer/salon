@@ -39,6 +39,7 @@ class Settings(BaseSettings):
 
     # Yuklangan rasmlar: papka va ochiq manzil (prod'da Caddy /media ni beradi, https bo'lishi shart)
     media_dir: str = "media"
+    geoip_db_path: str = ""          # DB-IP Lite / MaxMind city .mmdb (ixtiyoriy): IP -> hudud (061)
     media_base_url: str = "https://127.0.0.1:8002/media"
 
     # Ilovadagi Qo'llab-quvvatlash bo'limi. Bo'sh bo'lsa, ilova kontaktni ko'rsatmaydi

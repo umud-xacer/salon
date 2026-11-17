@@ -579,3 +579,18 @@ def test_timesheet_rls(world):
         assert sqlstate(e) == "42501"
     with api_session(uid(a["owner"])) as db:
         assert db.execute(text("UPDATE staff_attendance SET note = 'tuzatildi' WHERE id = :i"), {"i": aid}).rowcount == 1
+
+
+def test_location_logs_rls(world):
+    # Joylashuv jurnali: ilova to'g'ridan yozolmaydi (faqat app.log_location), hatto direktor ham o'qiy olmaydi
+    with api_session(uid(world["a"]["owner"])) as db:
+        assert db.execute(text("SELECT app.log_location('rls-device-01', 41.3, 69.2, 'android')")).scalar() is True
+        db.commit()
+        assert db.execute(text("SELECT count(*) FROM user_location_logs")).scalar() == 0
+        with pytest.raises(DBAPIError) as e:
+            db.execute(text("INSERT INTO user_location_logs (device_id, source, platform) VALUES ('rls-device-02', 'ip', 'web')"))
+        assert sqlstate(e) == "42501"
+    with api_session(uid(world["a"]["owner"])) as db:
+        with pytest.raises(DBAPIError) as e:
+            db.execute(text("SELECT app.geo_resolve(41.3, 69.2, 'X', NULL, NULL)"))
+        assert sqlstate(e) == "42501"

@@ -91,6 +91,32 @@ def broadcast_telegram() -> int:
     return len(rows)
 
 
+GEO_PER_CYCLE = 15        # Nominatim: sekundiga 1 ta — bir aylanishda ~17 soniya
+
+
+def resolve_locations(force: bool = False) -> int:
+    """Hududiy analitika (sql/061): keshda yo'q nuqtalarni viloyat/shahar/tumanga o'giradi va yozuvlarni to'ldiradi.
+    Tarmoq xatosida to'xtaydi (keyingi aylanishda qayta urinadi); nuqta umuman aniqlanmasa — 'failed' bo'lib qoladi."""
+    from app.services import geo_analytics, nominatim
+    if get_settings().env == "test" and not force:     # testlar tashqi xizmatga so'rov yubormasin
+        return 0
+    with worker_session() as db:
+        pending = db.execute(text("SELECT * FROM app.geo_pending(:n)"), {"n": GEO_PER_CYCLE}).all()
+    done = 0
+    for lat, lng in pending:
+        try:
+            region, city, district = geo_analytics.resolve(float(lat), float(lng))
+        except nominatim.AddressUnavailable:
+            log.warning("Nominatim javob bermadi, keyingi aylanishda qayta urinamiz")
+            break
+        with worker_session() as db:
+            db.execute(text("SELECT app.geo_resolve(CAST(:a AS numeric), CAST(:b AS numeric), :r, :c, :d)"),
+                       {"a": lat, "b": lng, "r": region, "c": city, "d": district})
+            db.commit()
+        done += 1
+    return done
+
+
 def purge_events() -> int:
     """Analitika: 180 kundan eski hodisalar (sql/055)."""
     with worker_session() as db:
@@ -130,6 +156,7 @@ def run_once() -> dict:
     waitlist = scan_waitlist()            # pushdan oldin: taklif xabari shu aylanishda ketsin
     auto = auto_messages()
     purge_events()
+    resolve_locations()
     broadcast_telegram()
     pushes = send_pushes()                 # yetkazilmagan eslatma shu aylanishda ogohlantirishga aylansin
     alerts = raise_alerts()

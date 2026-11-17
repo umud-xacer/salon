@@ -2,7 +2,7 @@ import { KeyRound, LogOut, Menu, Pencil, X, type LucideIcon } from "lucide-react
 import { useEffect, useState, type ReactNode } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 
-import { normalizePath, track } from "../analytics";
+import { locationPing, normalizePath, track } from "../analytics";
 
 import { useAuth } from "../auth/AuthProvider";
 import { ChangePasswordDialog } from "../components/ChangePasswordDialog";
@@ -33,6 +33,9 @@ export function AppShell({ nav, title, header, mobileTitle, children }: {
   const [changingPassword, setChangingPassword] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const { pathname } = useLocation();
+
+  // Hududiy analitika: panel faqat IP bo'yicha (joylashuv so'ralmaydi)
+  useEffect(() => { void locationPing(false); }, []);
 
   // Analitika: qaysi bo'lim (kalendar, kassa, mijozlar...) ochildi
   useEffect(() => {

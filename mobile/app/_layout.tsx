@@ -1,5 +1,5 @@
 import * as Notifications from 'expo-notifications';
-import { screenPath, track } from '../src/analytics';
+import { locationPing, screenPath, track } from '../src/analytics';
 import { Stack, usePathname, useRootNavigationState, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useCallback, useEffect, useState } from 'react';
@@ -119,7 +119,7 @@ function Navigator() {
   useOtaUpdates();
 
   // Analitika: ilova ochildi va qaysi ekran ko'rildi (salon nomi emas — "[slug]" ko'rinishida)
-  useEffect(() => { track('app_open'); }, []);
+  useEffect(() => { track('app_open'); void locationPing(); }, []);
   const path = screenPath(segments as string[]);
   useEffect(() => { track('screen', { path }); }, [path]);
 

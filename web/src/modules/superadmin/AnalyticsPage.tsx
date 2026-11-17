@@ -6,6 +6,7 @@ import { useState } from "react";
 import { api } from "../../api/client";
 import { shortDate } from "../../components/format";
 import { Card, Empty, ErrorNote, PageTitle, Spinner, Tabs } from "../../components/ui";
+import { GeographySection } from "./GeographySection";
 import { BarList, ColumnChart, Stat } from "./StatsPage";
 
 import { t } from "../../i18n";
@@ -105,6 +106,8 @@ export function AnalyticsPage() {
           </div>
         </>
       )}
+
+      <GeographySection days={d} />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>

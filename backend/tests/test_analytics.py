@@ -93,3 +93,13 @@ def test_rls_and_account_deletion_unlinks(client, superadmin):
     with admin.connect() as c:
         assert c.execute(text("SELECT count(*) FROM app_events WHERE user_id = :u OR anon_id = :a"),
                          {"u": user["user"]["id"], "a": anon}).scalar() == 0
+
+
+def test_phone_rule_keeps_ordinary_numbers(client, superadmin):
+    """Faqat telefon (kamida 9 raqam) o'chadi; "2024", "1234567" kabi oddiy sonlar qoladi."""
+    tag = "zz" + uuid.uuid4().hex[:4].replace("0", "a")
+    send(client, [{"name": "search", "props": {"q": f"{tag} salon 1234567", "results": 1}},
+                  {"name": "search", "props": {"q": f"{tag}b 901234567", "results": 1}},
+                  {"name": "search", "props": {"q": f"{tag}c +998 (90) 123-45-67", "results": 1}}])
+    top = {x["query"] for x in client.get("/api/v1/admin/analytics/searches", headers=auth_header(superadmin)).json()["top"]}
+    assert f"{tag} salon 1234567" in top and f"{tag}b" in top and f"{tag}c" in top

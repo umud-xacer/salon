@@ -4,6 +4,7 @@
 // Analitika hech qachon ilovani buzmasligi kerak: barcha xatolar yutiladi.
 import Constants from 'expo-constants';
 import * as SecureStore from 'expo-secure-store';
+import * as Location from 'expo-location';
 import { AppState, Platform } from 'react-native';
 
 import { api } from './api';
@@ -61,4 +62,30 @@ export function track(name: string, props?: Ev['props']) {
 /** Expo Router yo'li: dinamik qismlar ([slug]) nom bilan, aniq salon nomi emas */
 export const screenPath = (segments: string[]) => `/${segments.join('/')}`.slice(0, 120);
 
-AppState.addEventListener('change', (s) => { if (s !== 'active') void flush(); });
+AppState.addEventListener('change', (s) => {
+  if (s !== 'active') void flush();
+  else void locationPing();
+});
+
+// Hududiy analitika (server: 061): qaysi viloyat/tumanda foydalaniladi. Joylashuv ruxsati SO'RALMAYDI —
+// foydalanuvchi "yaqin salonlar" uchun bergan bo'lsa ishlatiladi. Server ~110 m gacha yaxlitlaydi, shaxsga bog'lamaydi.
+let lastPing = 0;
+export async function locationPing() {
+  if (Date.now() - lastPing < 15 * 60_000) return;
+  lastPing = Date.now();
+  try {
+    let coords: { latitude: number; longitude: number } | null = null;
+    const perm = await Location.getForegroundPermissionsAsync();
+    if (perm.granted) {
+      const pos = (await Location.getLastKnownPositionAsync({ maxAge: 10 * 60_000 }))
+        ?? (await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }));
+      if (pos) coords = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+    }
+    await api('/analytics/location-ping', { method: 'POST', body: {
+      device_id: await anonId(), platform: Platform.OS === 'ios' ? 'ios' : Platform.OS === 'web' ? 'web' : 'android',
+      ...(coords ?? {}),
+    } });
+  } catch {
+    // e'tiborsiz: analitika ilovani buzmasin
+  }
+}

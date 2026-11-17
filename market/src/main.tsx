@@ -6,7 +6,7 @@ import { createRoot } from "react-dom/client";
 import { useEffect } from "react";
 import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 
-import { normalizePath, track } from "./analytics";
+import { locationPing, normalizePath, track } from "./analytics";
 
 import { AuthProvider } from "./auth";
 import { AuthModal } from "./components/AuthModal";
@@ -34,6 +34,7 @@ function NotFound() {
 function RouteTracker() {
   const { pathname } = useLocation();
   useEffect(() => { track("screen", { path: normalizePath(pathname) }); }, [pathname]);
+  useEffect(() => { void locationPing(true); }, []);
   return null;
 }
 
