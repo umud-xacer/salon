@@ -1,6 +1,7 @@
 // Bron oldidan: "Sizning raqamingiz +998 .. — to'g'rimi?" (7 kunda bir marta).
 // Asosiy raqam kirish uchun tasdiqlangan, shu yerda o'zgarmaydi; hozir boshqa raqamdan foydalansa —
 // uni zaxira (aloqa) raqami qilib yozadi, salon shunga qo'ng'iroq qiladi.
+import { track } from './analytics';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Text, View } from 'react-native';
 
@@ -33,6 +34,7 @@ export function PhoneConfirm({ user, visible, onDone, onClose }: {
     setError(null);
     try {
       await api<User>('/auth/me/confirm-phone', { method: 'POST', body: { backup_phone: withBackup ? `+998${backup}` : null } });
+      track('phone_confirm', { changed: withBackup });
       onDone();
     } catch (e) {
       setError(e instanceof ApiError ? e.message : t("Saqlab bo'lmadi"));

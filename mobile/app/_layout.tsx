@@ -1,4 +1,5 @@
 import * as Notifications from 'expo-notifications';
+import { screenPath, track } from '../src/analytics';
 import { Stack, usePathname, useRootNavigationState, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useCallback, useEffect, useState } from 'react';
@@ -116,6 +117,11 @@ function Navigator() {
   const nav = useRootNavigationState();
   const [locked, setLocked] = useState(bioLockEnabled);
   useOtaUpdates();
+
+  // Analitika: ilova ochildi va qaysi ekran ko'rildi (salon nomi emas — "[slug]" ko'rinishida)
+  useEffect(() => { track('app_open'); }, []);
+  const path = screenPath(segments as string[]);
+  useEffect(() => { track('screen', { path }); }, [path]);
 
   // "Lazy auth": mehmon ilovani erkin ko'radi (majburiy kirish yo'q). Kirgandan so'ng kirish/sozlash ekranlari
   // yopiladi va foydalanuvchi qaysi ekrandan (salon, bron oynasi...) kirishga o'tgan bo'lsa, o'shanga qaytadi.

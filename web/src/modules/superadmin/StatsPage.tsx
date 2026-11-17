@@ -164,7 +164,7 @@ function Delta({ now, prev, what }: { now: number; prev: number; what: string })
   );
 }
 
-function Stat({ label, value, sub }: { label: string; value: string; sub?: ReactNode }) {
+export function Stat({ label, value, sub }: { label: string; value: string; sub?: ReactNode }) {
   return (
     <Card className="min-w-0">
       <p className="text-xs text-muted">{label}</p>
@@ -183,7 +183,7 @@ function Row({ label, value }: { label: string; value: number }) {
   );
 }
 
-function BarList({ rows, empty, format }: { rows: { label: string; value: number }[]; empty: string; format: (v: number) => string }) {
+export function BarList({ rows, empty, format }: { rows: { label: string; value: number }[]; empty: string; format: (v: number) => string }) {
   const max = Math.max(...rows.map((r) => r.value), 0);
   if (rows.length === 0 || max <= 0) return <Empty>{empty}</Empty>;
   return (
@@ -206,7 +206,7 @@ function BarList({ rows, empty, format }: { rows: { label: string; value: number
 type Point = { key: string; label: string; value: number; extra: number };
 
 // Ustunli grafik (bitta rang), kursor bilan tooltip, "Jadval" ko'rinishi ham bor
-function ColumnChart({ points, valueName, extraName, format, empty }: {
+export function ColumnChart({ points, valueName, extraName, format, empty }: {
   points: Point[]; valueName: string; extraName: string; format: (v: number) => string; empty: string;
 }) {
   const [view, setView] = useState<"chart" | "table">("chart");

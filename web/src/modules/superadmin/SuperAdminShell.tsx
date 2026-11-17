@@ -1,5 +1,5 @@
 // Super Admin chap menyusi: "Salonlar" (hammasi), uning ostida har bir muassasa turi, keyin "Muassasa turlari".
-import { BadgeDollarSign, BarChart3, Building2, CalendarClock, Ear, Layers, Leaf, Pill, Scissors, ScrollText, Smile, Sparkles, Stethoscope, Store, Users, type LucideIcon } from "lucide-react";
+import { Activity, BadgeDollarSign, BarChart3, Building2, CalendarClock, Ear, Layers, Leaf, Pill, Scissors, ScrollText, Smile, Sparkles, Stethoscope, Store, Users, type LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { AppShell, type NavItem } from "../../layouts/AppShell";
@@ -15,6 +15,7 @@ export function SuperAdminShell({ children }: { children: ReactNode }) {
   const types = useBusinessTypes();
   const nav: NavItem[] = [
     { to: "/superadmin/statistika", label: t("Statistika"), icon: BarChart3 },
+    { to: "/superadmin/analitika", label: t("Analitika"), icon: Activity },
     { to: "/superadmin", label: t("Muassasalar"), icon: Building2, end: true,
       badge: types.data?.reduce((n, tx) => n + tx.business_count, 0) },
     ...(types.data ?? []).filter((tx) => tx.is_active || tx.business_count > 0).map((tx) => ({

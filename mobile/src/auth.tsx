@@ -1,5 +1,6 @@
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
+import { track } from './analytics';
 import { api, clearTokens, getRefreshToken, loadTokens, LoginOut, Me, saveTokens, setSessionLostHandler } from './api';
 import { bioAsked, bioKind } from './biometric';
 import { registerForPush, unregisterPush } from './notifications';
@@ -57,6 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refresh: async () => setMe(await api<Me>('/auth/me')),
     signIn: async (login) => {
       await saveTokens(login);
+      track('login_success', { is_new: login.is_new });
       // Bosqich "me" dan oldin qo'yiladi: navigator kirish ekranidan to'g'ri joyga yo'naltiradi
       if (login.is_new || !login.user.full_name?.trim()) setSetup('profile');
       else if (!bioAsked() && (await bioKind())) setSetup('biometric');

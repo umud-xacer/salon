@@ -1,5 +1,6 @@
 // Bron oqimi (Fresha tuzilishi): to'liq sahifa, qadamlar Xizmat › Mutaxassis › Vaqt › Tasdiqlash, o'ngda savat.
 // Kirish faqat tasdiqlashdan oldin so'raladi. Hot Slot havolasi (service+member+at) to'g'ridan-to'g'ri tasdiqqa olib keladi.
+import { track } from "../analytics";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Check, ChevronRight, Shuffle, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -97,6 +98,7 @@ export default function Booking() {
         date_from: day, date_to: day,
       } });
       setWaited(day);
+      track("waitlist_join");
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Bajarib bo'lmadi");
     } finally { setBusy(false); }
@@ -111,6 +113,7 @@ export default function Booking() {
         member_id: slot.member, service_id: service, starts_at: slot.starts_at, note: note.trim() || null,
         promo_code: applied && !quote?.code_error ? applied : null,
       } }));
+      track("booking_confirm", { discount: quote?.source ?? null });
     } catch (e) {
       if (e instanceof ApiError && e.code === "time_conflict") { setSlot(null); setStep("time"); }
       setError(e instanceof ApiError ? e.message : "Bajarib bo'lmadi");

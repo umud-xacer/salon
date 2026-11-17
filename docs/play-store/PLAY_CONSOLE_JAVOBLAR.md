@@ -45,6 +45,9 @@ Kod va server holatiga asoslangan (2026-11-16). Javoblar haqiqatga mos bo'lishi 
 | Location → Approximate + Precise | Ha (faqat ilova ochiq paytda, ruxsat bilan) | Yo'q | Ixtiyoriy | App functionality (yaqin salonlar) |
 | App activity → Other user-generated content (sharhlar) | Ha | Ha (ochiq ko'rinadi) | Ixtiyoriy | App functionality |
 | App activity → In-app actions / Other (bronlar tarixi) | Ha | Ha (tegishli salon) | Majburiy | App functionality |
+| Personal info → Phone number (zaxira raqam) | Ha | Ha (siz bron qilgan salon) | Ixtiyoriy | App functionality |
+| App activity → App interactions (ekran/tugma), In-app search history | Ha (o'z serverimizda, 180 kun) | Yo'q | Majburiy emas (avtomatik, o'chirib bo'lmaydi) | Analytics |
+| Device or other IDs (tasodifiy anon_id — analitika) | Ha | Yo'q | Majburiy | Analytics |
 | Device or other IDs (push token) | Ha | Yo'q (Expo/FCM yetkazish uchun ishlov beruvchi) | Ixtiyoriy | App functionality (eslatmalar) |
 
 - Is all user data encrypted in transit? **Yes** (HTTPS).

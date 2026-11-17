@@ -1,4 +1,5 @@
 // Qidiruv va filtrlar (prototip "6"): matn, tezkor filtrlar, yo'nalish, narx, natijalar jonli yangilanadi.
+import { track } from '../src/analytics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, ScrollView, Text, TextInput, View } from 'react-native';
@@ -62,6 +63,17 @@ export default function Search() {
     }, 300);
     return () => clearTimeout(timer);
   }, [coords, q, category, sort, openNow, near, maxPrice]);
+
+  // Analitika: yozib bo'lingan qidiruv (1,5 soniya to'xtagach) va tanlangan yo'nalish
+  useEffect(() => {
+    const word = q.trim();
+    if (word.length < 2) return;
+    const timer = setTimeout(() => track('search', { q: word, results: total, category: category ?? null }), 1500);
+    return () => clearTimeout(timer);
+  }, [q, total, category]);
+  useEffect(() => {
+    if (category) track('category_open', { category });
+  }, [category]);
 
   const reset = () => {
     setQ(''); setCategory(null); setSort('distance'); setOpenNow(false); setNear(false); setMaxPrice(null);

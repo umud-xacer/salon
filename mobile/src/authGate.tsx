@@ -1,6 +1,7 @@
 // "Lazy auth": ilovani kirmasdan ko'rish mumkin. Bron, sevimlilar, bonuslar kabi shaxsiy amal bosilganda
 // pastdan oyna chiqadi: telefon / Telegram / Google orqali kirish. Kirgach foydalanuvchi o'sha joyiga qaytadi
 // (kirish ekranlarini Navigator yopadi — app/_layout.tsx).
+import { track } from './analytics';
 import { useRouter } from 'expo-router';
 import { createContext, ReactNode, useCallback, useContext, useMemo, useState } from 'react';
 import { Text, View } from 'react-native';
@@ -38,17 +39,20 @@ export function AuthGateProvider({ children }: { children: ReactNode }) {
     setReason(why ?? t("Davom etish uchun profilingizga kiring yoki ro'yxatdan o'ting"));
     setError(null);
     setVisible(true);
+    track('login_open');
     loadLoginMethods().then(({ methods: m, googleClientId }) => { setMethods(m); setGoogleId(googleClientId); });
     return false;
   }, [me]);
 
   const go = (path: '/login' | '/telegram-wait' | '/password') => {
     setVisible(false);
+    track('login_method', { method: path.slice(1) });
     router.push(path);
   };
 
   const google = async () => {
     if (!googleId) return;
+    track('login_method', { method: 'google' });
     setBusy(true);
     setError(null);
     try {

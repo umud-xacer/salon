@@ -439,3 +439,22 @@ def test_auto_messages_rls(world):
         with pytest.raises(DBAPIError) as e:
             db.execute(text("SELECT * FROM app.auto_messages_scan()"))
         assert sqlstate(e) == "42501"
+
+
+def test_app_events_rls(world):
+    a = world["a"]
+    # Hodisa faqat funksiya orqali yoziladi; muallif app.uid() dan (boshqa nomidan yozib bo'lmaydi)
+    with api_session(uid(world["customer"])) as db:
+        assert db.execute(text("SELECT app.log_events('dev1', 'android', '1.0', '[{\"name\": \"rls_probe\"}]')")).scalar() == 1
+        db.commit()
+        with pytest.raises(DBAPIError) as e:
+            db.execute(text("INSERT INTO app_events (platform, name) VALUES ('android', 'hack')"))
+        assert sqlstate(e) == "42501"
+    # Direktor ham (o'z muassasasi bo'lsa ham) ilova analitikasini ko'rmaydi
+    for tokens in (world["customer"], a["owner"], world["usta"]["tokens"]):
+        with api_session(uid(tokens)) as db:
+            assert db.execute(text("SELECT count(*) FROM app_events WHERE name = 'rls_probe'")).scalar() == 0
+    with api_session(uid(a["owner"])) as db:
+        with pytest.raises(DBAPIError) as e:
+            db.execute(text("SELECT app.purge_app_events()"))
+        assert sqlstate(e) == "42501"

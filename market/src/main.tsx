@@ -3,7 +3,10 @@ import "./index.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { useEffect } from "react";
+import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
+
+import { normalizePath, track } from "./analytics";
 
 import { AuthProvider } from "./auth";
 import { AuthModal } from "./components/AuthModal";
@@ -27,11 +30,19 @@ function NotFound() {
   );
 }
 
+// Analitika: qaysi sahifa ochildi (salon nomi emas — /s/:slug)
+function RouteTracker() {
+  const { pathname } = useLocation();
+  useEffect(() => { track("screen", { path: normalizePath(pathname) }); }, [pathname]);
+  return null;
+}
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={qc}>
       <AuthProvider>
         <BrowserRouter>
+          <RouteTracker />
           <Routes>
             {/* Bron — alohida to'liq sahifa (header/footer'siz), lekin kirish oynasi kerak */}
             <Route path="/s/:slug/bron" element={<><Booking /><AuthModalOnly /></>} />

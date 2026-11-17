@@ -14,6 +14,9 @@ const BusinessesPage = lazy(() =>
 const BusinessTypesPage = lazy(() =>
   import("./modules/superadmin/BusinessTypesPage").then((m) => ({ default: m.BusinessTypesPage })),
 );
+const AnalyticsPage = lazy(() =>
+  import("./modules/superadmin/AnalyticsPage").then((m) => ({ default: m.AnalyticsPage })),
+);
 const StatsPage = lazy(() =>
   import("./modules/superadmin/StatsPage").then((m) => ({ default: m.StatsPage })),
 );
@@ -60,6 +63,7 @@ export function App() {
                 <Routes>
                   <Route index element={<BusinessesPage />} />
                   <Route path="statistika" element={<StatsPage />} />
+                  <Route path="analitika" element={<AnalyticsPage />} />
                   <Route path="direktorlar" element={<DirectorsPage />} />
                   <Route path="foydalanuvchilar" element={<Navigate to="/superadmin/direktorlar" replace />} />
                   <Route path="jurnal" element={<AuditPage />} />

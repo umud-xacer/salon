@@ -1,5 +1,6 @@
 // Xizmatdan keyingi baho: muassasaga (umumiy, tozalik, qabul va xizmat) va xizmat ko'rsatgan ustaga / shifokorga.
 // Usta bronning o'zidan olinadi — mijoz boshqa ustani tanlay olmaydi (soxta baholardan himoya).
+import { track } from '../src/analytics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Text, View } from 'react-native';
@@ -43,6 +44,7 @@ export default function Review() {
           staff_rating: staffRating || null, staff_comment: staffRating ? staffComment.trim() || null : null,
         },
       });
+      track('review_submit', { rating });
       Alert.alert(t("Rahmat!"), t("Bahoyingiz boshqa mijozlarga yaxshi joy tanlashda yordam beradi."));
       router.back();
     } catch (e) {

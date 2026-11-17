@@ -75,6 +75,14 @@ def auto_messages() -> int:
     return len(rows)
 
 
+def purge_events() -> int:
+    """Analitika: 180 kundan eski hodisalar (sql/055)."""
+    with worker_session() as db:
+        count = db.scalar(text("SELECT app.purge_app_events()"))
+        db.commit()
+        return count
+
+
 def send_pushes() -> int:
     """Har bir xabar alohida tranzaksiyada: yarim yo'lda to'xtasa, yuborilganlari qayta ketmaydi."""
     count = 0
@@ -105,6 +113,7 @@ def run_once() -> dict:
     reminders = create_reminders()
     waitlist = scan_waitlist()            # pushdan oldin: taklif xabari shu aylanishda ketsin
     auto = auto_messages()
+    purge_events()
     pushes = send_pushes()                 # yetkazilmagan eslatma shu aylanishda ogohlantirishga aylansin
     alerts = raise_alerts()
     return {"expired": expired, "auto_cancelled": auto_cancelled, "reminders": reminders, "waitlist": waitlist, "auto": auto, "alerts": alerts,

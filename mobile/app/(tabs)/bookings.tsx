@@ -1,4 +1,5 @@
 // Mening bronlarim (prototip "10"): kelgusi / tarix / bekor qilingan; ko'chirish, bekor qilish, yo'nalish, baholash.
+import { track } from '../../src/analytics';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Alert, FlatList, Linking, Platform, RefreshControl, Text, View } from 'react-native';
@@ -100,6 +101,7 @@ export default function Bookings() {
       style: 'destructive',
       onPress: () => act(async () => {
         await api(`/appointments/${a.id}/cancel`, { method: 'POST', body: {} });
+        track('booking_cancel');
         await cancelBookingReminder(a.id);
       }),
     },

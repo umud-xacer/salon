@@ -1,6 +1,8 @@
 import { KeyRound, LogOut, Menu, Pencil, X, type LucideIcon } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
+
+import { normalizePath, track } from "../analytics";
 
 import { useAuth } from "../auth/AuthProvider";
 import { ChangePasswordDialog } from "../components/ChangePasswordDialog";
@@ -30,6 +32,12 @@ export function AppShell({ nav, title, header, mobileTitle, children }: {
   const [open, setOpen] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
   const [editingName, setEditingName] = useState(false);
+  const { pathname } = useLocation();
+
+  // Analitika: qaysi bo'lim (kalendar, kassa, mijozlar...) ochildi
+  useEffect(() => {
+    track("screen", { path: normalizePath(pathname) });
+  }, [pathname]);
 
   useEffect(() => {
     if (!open) return;

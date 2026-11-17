@@ -1,6 +1,7 @@
 // Bron qilish (prototip "9", Immersive Booking): pastdan prujina bilan chiquvchi oyna, qadamlar orasida silliq o'tish.
 // Salon: xizmat -> usta ("Farqi yo'q" ham) -> sana va vaqt (bitta ekranda) -> tasdiq (promokod, chegirma).
 // Klinika: shifokor -> xizmat -> vaqt -> tasdiq. Ko'chirish: vaqt -> tasdiq. Hot Slot: darhol tasdiq.
+import { track } from '../src/analytics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -188,6 +189,7 @@ export default function Book() {
           promo_code: applied && !quote?.code_error ? applied : null,
         } });
       void scheduleBookingReminder(saved.id, saved.starts_at, saved.business_name ?? t("Salon"));
+      track(reschedule ? 'booking_reschedule' : 'booking_confirm', { discount: quote?.source ?? null, hot });
       setDone(saved);
     } catch (e) {
       // Vaqtni shu orada boshqa mijoz olgan: vaqt tanlashga qaytamiz (Hot Slot'da — yopib, qayta tanlashga)
@@ -399,7 +401,7 @@ export default function Book() {
               <TextInput value={code} onChangeText={(x) => setCode(x.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 20))}
                 placeholder={t("Promokod")} placeholderTextColor={c.muted} autoCapitalize="characters" style={s.promoInput}
                 accessibilityLabel={t("Promokod")} />
-              <Pressable onPress={() => setApplied(code || null)} disabled={code.length < 3} hitSlop={8} accessibilityRole="button">
+              <Pressable onPress={() => { track('promo_apply'); setApplied(code || null); }} disabled={code.length < 3} hitSlop={8} accessibilityRole="button">
                 <Text style={[ty.link, code.length < 3 && { color: c.muted }]}>{t("Qo'llash")}</Text>
               </Pressable>
             </View>

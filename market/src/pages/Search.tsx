@@ -1,7 +1,8 @@
 // Qidiruv natijalari (Fresha tuzilishi): yo'nalish chiplari, kun chiplari, filtrlar oynasi, ro'yxat + xarita.
+import { track } from "../analytics";
 import { useQuery } from "@tanstack/react-query";
 import { Map as MapIcon, SlidersHorizontal, X } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { api, BusinessCard } from "../api";
@@ -56,6 +57,11 @@ export default function Search() {
     id: b.id, lat: b.lat, lng: b.lng, slug: b.slug, label: b.rating_count ? `★ ${b.rating_avg.toFixed(1).replace(".", ",")}` : "Yangi",
   })), [items]);
   const onSelect = useCallback((p: Pin) => p.slug && nav(`/s/${p.slug}${day ? `?day=${day}` : ""}`), [nav, day]);
+  // Analitika: yuborilgan qidiruv so'zi va natijalar soni
+  const found = res.data?.total;
+  useEffect(() => {
+    if (q.trim().length >= 2 && found !== undefined) track("search", { q: q.trim(), results: found, category: category || null });
+  }, [q, found, category]);
   const catName = cats.data?.find((c) => c.slug === category)?.name_uz;
   const activeFilters = (sort !== "distance" ? 1 : 0) + (radius !== 50000 ? 1 : 0) + (maxPrice ? 1 : 0) + (openNow ? 1 : 0);
 

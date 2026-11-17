@@ -1,5 +1,6 @@
 // Salon sahifasi (Figma 03–07): rasm, ma'lumot, yopishqoq tablar (Xizmatlar / Jamoa / Sharhlar / Ma'lumot),
 // pastda "O'xshash salonlar" (yoqmasa — shunga o'xshashlari) va doim ko'rinadigan "Band qilish" paneli.
+import { track } from '../../src/analytics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -70,6 +71,7 @@ export default function Business() {
     api<BusinessDetail>(`/catalog/businesses/${slug}`)
       .then((d) => {
         setB(d);
+        track('business_open', { category: d.category ?? null });
         const here = getLastLocation();
         addRecent(d, here && d.lat != null && d.lng != null ? distanceM(here, d.lat, d.lng) : null);
       })
@@ -106,10 +108,10 @@ export default function Business() {
 
   const fav = favorites.has(b.id);
   const canBook = kind !== 'pharmacy' && allServices.length > 0 && b.staff.length > 0;
-  const book = (service?: Service, memberId?: number) => router.push({ pathname: '/book', params: {
+  const book = (service?: Service, memberId?: number) => { track('booking_open'); router.push({ pathname: '/book', params: {
     slug: b.slug, ...(service ? { serviceId: String(service.id) } : {}), ...(memberId ? { memberId: String(memberId) } : {}),
-  } });
-  const share = () => { void Share.share({ message: `${b.name}${b.address ? `, ${b.address}` : ''} — Chronix: https://chronix.uz` }); };
+  } }); };
+  const share = () => { track('share'); void Share.share({ message: `${b.name}${b.address ? `, ${b.address}` : ''} — Chronix: https://chronix.uz` }); };
   const heroH = Math.min(330, Math.round(width * 0.85));
   const barTop = insets.top + 56;
 
@@ -299,13 +301,13 @@ export default function Business() {
             {b.lat != null && b.lng != null && (
               <View style={{ flex: 1 }}>
                 <Button title={t("Yo'nalish")} icon="navigate-outline" kind="outline" compact
-                  onPress={() => Linking.openURL(`geo:${b.lat},${b.lng}?q=${b.lat},${b.lng}(${encodeURIComponent(b.name)})`).catch(() =>
-                    Linking.openURL(`https://www.openstreetmap.org/?mlat=${b.lat}&mlon=${b.lng}#map=17/${b.lat}/${b.lng}`))} />
+                  onPress={() => { track('route_open'); return Linking.openURL(`geo:${b.lat},${b.lng}?q=${b.lat},${b.lng}(${encodeURIComponent(b.name)})`).catch(() =>
+                    Linking.openURL(`https://www.openstreetmap.org/?mlat=${b.lat}&mlon=${b.lng}#map=17/${b.lat}/${b.lng}`)); }} />
               </View>
             )}
             {b.phone && (
               <View style={{ flex: 1 }}>
-                <Button title={t("Qo'ng'iroq")} icon="call-outline" kind="outline" compact onPress={() => Linking.openURL(`tel:${b.phone}`)} />
+                <Button title={t("Qo'ng'iroq")} icon="call-outline" kind="outline" compact onPress={() => { track('call_business'); void Linking.openURL(`tel:${b.phone}`); }} />
               </View>
             )}
           </View>
@@ -355,7 +357,7 @@ export default function Business() {
         <View style={{ flexDirection: 'row', gap: 10 }}>
           <RoundButton icon="share-social-outline" label={t("Ulashish")} onPress={share} />
           <RoundButton icon={fav ? 'heart' : 'heart-outline'} color={fav ? '#E0245E' : undefined}
-            label={fav ? t("Sevimlilardan olib tashlash") : t("Sevimlilarga qo'shish")} onPress={() => favorites.toggle(b.id)} />
+            label={fav ? t("Sevimlilardan olib tashlash") : t("Sevimlilarga qo'shish")} onPress={() => { track('favorite_toggle', { on: !fav }); favorites.toggle(b.id); }} />
         </View>
       </View>
 
