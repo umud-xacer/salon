@@ -246,7 +246,7 @@ export type Notification = {
   type: string;
   title: string;
   body: string | null;
-  data: { appointment_id?: number; action?: string } | null;
+  data: { appointment_id?: number; action?: string; slug?: string } | null;
   read_at: string | null;
   created_at: string;
 };

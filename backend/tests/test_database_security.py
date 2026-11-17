@@ -415,3 +415,27 @@ def test_waitlist_rls(world):
         with pytest.raises(DBAPIError) as e:
             db.execute(text("SELECT * FROM app.slots_core(1, 1, current_date, 30, NULL)"))
         assert sqlstate(e) == "42501"
+
+
+def test_auto_messages_rls(world):
+    a = world["a"]
+    with api_session(uid(a["owner"])) as db:
+        db.execute(text("INSERT INTO auto_message_settings (business_id, birthday_enabled) VALUES (:b, true)"), {"b": a["id"]})
+        db.commit()
+    # Usta, qabulxona va boshqa muassasa sozlamani ko'rmaydi va o'zgartira olmaydi (faqat direktor)
+    for tokens in (world["usta"]["tokens"], world["b"]["owner"]):
+        with api_session(uid(tokens)) as db:
+            assert db.execute(text("SELECT count(*) FROM auto_message_settings WHERE business_id = :b"),
+                              {"b": a["id"]}).scalar() == 0
+            assert db.execute(text("UPDATE auto_message_settings SET winback_enabled = true WHERE business_id = :b"),
+                              {"b": a["id"]}).rowcount == 0
+    # Yuborilganlar jurnaliga ilova yozolmaydi (faqat skaner), skanerni chaqira olmaydi
+    with api_session(uid(a["owner"])) as db:
+        with pytest.raises(DBAPIError) as e:
+            db.execute(text("INSERT INTO auto_messages_sent (business_id, client_id, kind, ref_key) "
+                            "VALUES (:b, :c, 'birthday', '2026')"), {"b": a["id"], "c": world["client_a"]})
+        assert sqlstate(e) == "42501"
+    with api_session(uid(a["owner"])) as db:
+        with pytest.raises(DBAPIError) as e:
+            db.execute(text("SELECT * FROM app.auto_messages_scan()"))
+        assert sqlstate(e) == "42501"

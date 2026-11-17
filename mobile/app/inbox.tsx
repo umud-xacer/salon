@@ -57,6 +57,10 @@ export default function Inbox() {
     if (n.type === 'review_request' && n.data?.appointment_id) {
       router.push({ pathname: '/review', params: { appointmentId: String(n.data.appointment_id) } });
     }
+    // Avtomatik xabarlar (tug'ilgan kun, qaytarish) va kutish ro'yxati taklifi — salon sahifasi
+    if ((n.type === 'promo_birthday' || n.type === 'promo_winback') && typeof n.data?.slug === 'string') {
+      router.push({ pathname: '/business/[slug]', params: { slug: n.data.slug } });
+    }
     if (n.read_at) return;
     setItems((list) => list.map((x) => (x.id === n.id ? { ...x, read_at: new Date().toISOString() } : x)));
     await api(`/notifications/${n.id}/read`, { method: 'POST' }).catch(() => {});

@@ -13,6 +13,7 @@ import { useAuth } from "../../auth/AuthProvider";
 import { chainMemberships } from "../../components/BranchSwitcher";
 import { BlockTypesCard } from "./BlockTypesCard";
 import { BookingLinksCard } from "./BookingLinksCard";
+import { AutoMessagesCard } from "./AutoMessagesCard";
 import { CancelReasonsCard } from "./CancelReasonsCard";
 
 import { t } from "../../i18n";
@@ -74,6 +75,7 @@ export function BusinessPage({ membership }: { membership: Membership }) {
             <CancelReasonsCard businessId={b} />
           </div>
         )}
+        {membership.permissions.includes("business.manage") && <AutoMessagesCard businessId={b} />}
       </div>
     </>
   );

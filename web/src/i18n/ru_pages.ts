@@ -1103,4 +1103,20 @@ export const RU_PAGES: Record<string, string> = {
   "Jamoa uchun: bronda {a}ga ham ko'rinadi, {b}ning o'ziga ko'rinmaydi":
     "Для команды: видно в записи (в т.ч. сотруднику), клиенту не показывается",
   "Zaxira raqam": "Запасной номер",
+  "Avtomatik xabarlar": "Автоматические сообщения",
+  "Ilovadagi mijozlarga o'zi yuboriladi: push va Xabarlar bo'limi, Telegram ulangan bo'lsa — Telegram'ga ham. Kunduzi 10:00–20:00 orasida.":
+    "Отправляются клиентам приложения автоматически: push и раздел «Сообщения», при подключённом Telegram — и в Telegram. Днём, с 10:00 до 20:00.",
+  "30 kunda: {a}": "За 30 дней: {a}",
+  "Tug'ilgan kun tabrigi": "Поздравление с днём рождения",
+  "Mijozning tug'ilgan kunida tabrik va sovg'a taklifi": "Поздравление и подарок в день рождения клиента",
+  "Masalan: Tug'ilgan kuningiz bilan! Shu hafta barcha xizmatlarga 20% chegirma.": "Например: С днём рождения! На этой неделе скидка 20% на все услуги.",
+  "Tashrifdan keyin sharh so'rash": "Запрос отзыва после визита",
+  "Rahmat aytib, xizmat va ustani baholashni so'raydi": "Благодарит и просит оценить услугу и мастера",
+  "Qachon yuborilsin": "Когда отправить",
+  "Xizmat yakunlanishi bilan": "Сразу после завершения услуги",
+  "{a} soatdan keyin": "Через {a} ч",
+  "Uzoq kelmagan mijozni qaytarish": "Возврат давно не приходивших клиентов",
+  "Oxirgi tashrifdan keyin belgilangan kun o'tsa va yangi broni bo'lmasa — bir marta eslatma": "Одно напоминание, если с последнего визита прошло N дней и новой записи нет",
+  "Necha kundan keyin": "Через сколько дней",
+  "Masalan: Sizni sog'indik! Qaytsangiz — 10% chegirma.": "Например: Мы скучаем! При возвращении — скидка 10%.",
 };
