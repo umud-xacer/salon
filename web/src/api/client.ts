@@ -127,6 +127,11 @@ export async function downloadFile(path: string, filename: string): Promise<void
   setTimeout(() => URL.revokeObjectURL(href), 1000);
 }
 
+/** Himoyalangan rasm (masalan, bemor rentgeni) — token bilan olinadi, <img> uchun vaqtinchalik blob: manzil. */
+export async function apiBlobUrl(path: string): Promise<string> {
+  return URL.createObjectURL(await (await authed(path, {})).blob());
+}
+
 export const json = (method: string, body: unknown): RequestInit => ({ method, body: JSON.stringify(body) });
 
 export function uploadFile<T>(path: string, file: File): Promise<T> {

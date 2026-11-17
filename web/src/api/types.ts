@@ -73,6 +73,7 @@ export interface Appointment {
   client_alert?: string | null;      // jamoa uchun ogohlantirish (mijoz kartochkasidan)
   client_allergies?: string | null;
   client_backup_phone?: string | null; // mijoz ilovada kiritgan zaxira raqam
+  client_medical?: string[];          // anketadagi tibbiy ogohlantirishlar
 }
 
 export interface CancelReason {
@@ -240,6 +241,7 @@ export interface ClientRecord extends Client {
   notes: string | null;
   has_account: boolean;
   backup_phone?: string | null;      // ilovadagi mijozning zaxira raqami
+  medical_alerts?: string[];         // anketalardagi xavfli javoblar
   visits: number;
   total_spent: number;
   last_visit: string | null;
@@ -819,3 +821,58 @@ export interface ReviewsPage {
 }
 
 export interface RatingRow { id: number; name: string; category: string; category_ru?: string | null; rating_avg: number; rating_count: number }
+
+// ─── Anketalar (058_forms.sql) ────────────────────────────────────────────────
+export type FormFieldType = "text" | "textarea" | "radio" | "checkbox" | "boolean" | "date" | "number" | "file";
+export interface FormField {
+  id?: number;
+  label: string;
+  help?: string | null;
+  type: FormFieldType;
+  options: string[];
+  required: boolean;
+  alert_values: string[];
+  alert_label?: string | null;
+}
+export interface FormTemplate {
+  id: number;
+  title: string;
+  description: string | null;
+  is_active: boolean;
+  require_signature: boolean;
+  fields: (FormField & { id: number })[];
+  submissions: number;
+}
+export interface FormSubmission {
+  id: number;
+  template_id: number | null;
+  title: string;
+  fields: (FormField & { id: number })[];
+  answers: Record<string, unknown>;
+  alerts: string[];
+  appointment_id: number | null;
+  signature_file: number | null;
+  signed_at: string | null;
+  filled_by_name: string | null;
+  created_at: string;
+}
+export interface ClientFile {
+  id: number;
+  kind: string;
+  caption: string | null;
+  submission_id: number | null;
+  appointment_id: number | null;
+  created_by_name: string | null;
+  created_at: string;
+}
+export interface TimelineItem {
+  kind: "visit" | "form" | "note" | "file";
+  at: string;
+  id: number;
+  title: string;
+  detail: string | null;
+  member_name: string | null;
+  status: string | null;
+  amount: number | null;
+  alerts: string[];
+}

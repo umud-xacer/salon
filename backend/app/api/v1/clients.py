@@ -25,7 +25,7 @@ _INTERNAL_FIELDS = ("tags", "alert", "allergies")
 _CLIENT_SELECT = """
     SELECT c.id, c.full_name, c.phone, c.notes, c.user_id IS NOT NULL AS has_account, c.created_at,
            c.birth_date, c.gender, c.source, app.client_backup_phone(c.id) AS backup_phone,
-           coalesce(ci.tags, '{}') AS tags, ci.alert, ci.allergies,
+           coalesce(ci.tags, '{}') AS tags, ci.alert, ci.allergies, app.client_medical_alerts(c.id) AS medical_alerts,
            (SELECT count(*) FROM client_notes n WHERE n.client_id = c.id)::int AS notes_count,
            count(a.id) FILTER (WHERE a.status = 'completed')::int AS visits,
            coalesce(sum(a.total_price - a.discount) FILTER (WHERE a.status = 'completed'), 0)::bigint AS total_spent,

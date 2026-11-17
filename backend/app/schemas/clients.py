@@ -28,6 +28,7 @@ class ClientOut(BaseModel):
     tags: list[str] = []
     alert: str | None = None                            # jamoa uchun ogohlantirish (kalendarda ko'rinadi)
     allergies: str | None = None
+    medical_alerts: list[str] = []                      # anketalardagi xavfli javoblar (058)
     notes_count: int = 0
 
 

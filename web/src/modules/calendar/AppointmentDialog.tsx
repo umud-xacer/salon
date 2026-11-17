@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { MedicalAlerts } from "../clients/ClientMedical";
 import { useState } from "react";
 
 import { api, json } from "../../api/client";
@@ -96,6 +97,7 @@ export function AppointmentDialog({ membership, appointment: a, masterName, onCl
         {a.cancel_reason && a.status === "cancelled" && <><dt className="text-muted">{t("Sabab")}</dt><dd className="break-words">{a.cancel_reason}</dd></>}
       </dl>
 
+      {(a.client_medical?.length ?? 0) > 0 && <div className="mt-3"><MedicalAlerts alerts={a.client_medical} /></div>}
       {(a.client_allergies || a.client_alert) && (
         <div className="mt-3 space-y-1 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
           {a.client_allergies && <p><span className="font-medium">{t("Allergiya")}:</span> {a.client_allergies}</p>}

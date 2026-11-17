@@ -512,3 +512,27 @@ def test_cash_shifts_rls(world):
             with pytest.raises(DBAPIError) as e:
                 db.execute(text("SELECT app.close_shift(:b, 0, NULL)"), {"b": a["id"]})
             assert sqlstate(e) == "42501"
+
+
+def test_forms_rls(world):
+    a = world["a"]
+    with api_session(uid(a["owner"])) as db:
+        tid = db.execute(text("INSERT INTO form_templates (business_id, title) VALUES (:b, 'Karta') RETURNING id"),
+                         {"b": a["id"]}).scalar()
+        sid = db.execute(text("""INSERT INTO client_form_submissions (business_id, client_id, template_id, title, fields, answers, filled_by)
+                                 VALUES (:b, :c, :t, 'Karta', '[]', '{"1": "x"}', 999999) RETURNING id"""),
+                         {"b": a["id"], "c": world["client_a"], "t": tid}).scalar()
+        db.commit()
+        # Muallif soxtalashtirilmaydi (trigger app.uid() qo'yadi)
+        assert db.execute(text("SELECT filled_by FROM client_form_submissions WHERE id = :s"), {"s": sid}).scalar() == uid(a["owner"])
+        # Javob o'zgarmaydi (tibbiy hujjat)
+        with pytest.raises(DBAPIError) as e:
+            db.execute(text("UPDATE client_form_submissions SET answers = '{}' WHERE id = :s"), {"s": sid})
+        assert sqlstate(e) == "42501"
+    # Usta (mijozlar bazasiz) va boshqa muassasa ko'rmaydi; qabulxona shablonni o'zgartira olmaydi
+    for tokens in (world["usta"]["tokens"], world["b"]["owner"]):
+        with api_session(uid(tokens)) as db:
+            assert db.execute(text("SELECT count(*) FROM client_form_submissions WHERE id = :s"), {"s": sid}).scalar() == 0
+            assert db.execute(text("SELECT count(*) FROM client_files WHERE business_id = :b"), {"b": a["id"]}).scalar() == 0
+    with api_session(uid(world["rec"]["tokens"])) as db:
+        assert db.execute(text("UPDATE form_templates SET title = 'x' WHERE id = :t"), {"t": tid}).rowcount == 0

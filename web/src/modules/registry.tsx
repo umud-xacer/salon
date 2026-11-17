@@ -35,6 +35,7 @@ import { BillingPage } from "./billing/BillingPage";
 import { BusinessPage } from "./business/BusinessPage";
 import { CalendarPage } from "./calendar/CalendarPage";
 import { BroadcastsPage } from "./clients/BroadcastsPage";
+import { FormsPage } from "./clients/FormsPage";
 import { ClientsPage } from "./clients/ClientsPage";
 import { DashboardPage } from "./dashboard/DashboardPage";
 import { CashPage, ExpensesPage } from "./finance/FinancePages";
@@ -107,6 +108,11 @@ export const SECTIONS: Section[] = [
   {
     path: "promotions", uz: "aksiyalar", label: "Aksiyalar", icon: Percent, panel: "admin", module: "booking",
     anyPermission: ["business.manage"], page: PromotionsPage,
+  },
+  {
+    path: "forms", uz: "anketalar", uzByKind: { clinic: "bemor-kartalari" }, label: "Mijoz anketalari",
+    labelByKind: { clinic: "Bemor kartalari" }, icon: ClipboardList, panel: "admin", module: "booking",
+    anyPermission: ["business.manage"], page: FormsPage,
   },
   {
     path: "broadcasts", uz: "ommaviy-xabar", label: "Ommaviy xabar", icon: Megaphone, panel: "admin", module: "booking",

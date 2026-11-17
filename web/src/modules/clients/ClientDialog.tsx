@@ -5,13 +5,14 @@ import { AlertTriangle, Trash2, X } from "lucide-react";
 import { useState, type FormEvent, type KeyboardEvent } from "react";
 
 import { api, json } from "../../api/client";
-import type { Appointment, ClientGender, ClientNote, ClientRecord, ClientSource } from "../../api/types";
-import { formatDate, formatTime, normalizePhone, STATUS_LABELS, todayIso } from "../../components/format";
+import type { ClientGender, ClientNote, ClientRecord, ClientSource } from "../../api/types";
+import { formatDate, formatTime, normalizePhone, todayIso } from "../../components/format";
 import { Modal } from "../../components/Modal";
-import { Button, Empty, ErrorNote, inputClass, Spinner } from "../../components/ui";
+import { Button, ErrorNote, inputClass, Spinner } from "../../components/ui";
 import { useVocab } from "../vocab";
+import { ClientRecords, MedicalAlerts } from "./ClientMedical";
 
-import { localized, pickList, t } from "../../i18n";
+import { localized, t } from "../../i18n";
 
 export const SOURCE_LABELS: Record<ClientSource, string> = localized({
   instagram: "Instagram",
@@ -43,12 +44,6 @@ export function ClientDialog({ businessId, client, onClose }: {
   const [allergies, setAllergies] = useState(client?.allergies ?? "");
   const [firstNote, setFirstNote] = useState("");
 
-  const history = useQuery({
-    queryKey: ["client-history", businessId, client?.id],
-    enabled: client !== null,
-    queryFn: () => api<Appointment[]>(`${url}/${client!.id}/appointments`),
-  });
-
   const save = useMutation({
     mutationFn: () => {
       const body: Record<string, unknown> = {
@@ -75,6 +70,7 @@ export function ClientDialog({ businessId, client, onClose }: {
   return (
     <Modal title={client ? client.full_name : t("Yangi {a}", { a: v.clientOne.toLowerCase() })} onClose={onClose}>
       <form onSubmit={submit} className="space-y-3">
+        <MedicalAlerts alerts={client?.medical_alerts} />
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="block text-sm">{t("Ism familiya")}
             <input className={inputClass} required minLength={2} maxLength={120} value={name}
@@ -140,23 +136,7 @@ export function ClientDialog({ businessId, client, onClose }: {
 
       {client && <NotesSection businessId={businessId} clientId={client.id} />}
 
-      {client && (
-        <section className="mt-5 border-t border-line pt-4">
-          <h3 className="mb-1 text-sm font-medium">{t("Bronlar tarixi")}</h3>
-          {history.isPending && <Spinner />}
-          {history.error && <ErrorNote error={history.error} />}
-          {history.data?.length === 0 && <Empty>{t("Bron yo'q")}</Empty>}
-          <ul className="max-h-56 divide-y divide-line overflow-y-auto text-sm">
-            {history.data?.map((a) => (
-              <li key={a.id} className="flex flex-wrap justify-between gap-2 py-2">
-                <span className="tabular-nums">{formatDate(a.starts_at)} {formatTime(a.starts_at)}</span>
-                <span className="min-w-32 flex-1 truncate">{pickList(a.services, a.services_ru).join(", ")}</span>
-                <span className="text-muted">{STATUS_LABELS[a.status] ?? a.status}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+      {client && <ClientRecords businessId={businessId} clientId={client.id} clientName={client.full_name} />}
     </Modal>
   );
 }
