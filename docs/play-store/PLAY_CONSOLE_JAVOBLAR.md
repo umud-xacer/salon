@@ -66,6 +66,11 @@ Play Console: **App content → Full-screen intent permission** (yoki .aab yukla
   without this permission the reminder is delivered as a regular high-priority notification."
 - Qulflangan ekran: ilova qulf ustida faqat budilnik ekrani uchun ochiladi (1.0.2 dan; boshqa ekranlar qulfni ochmasdan ko'rinmaydi).
 
+## 5b. Sotuvchi maqomi (Trader status) — ilova uchun
+Hisob darajasida "Продавец" deklaratsiya qilingan va tasdiqlangan (2026-11-18 email).
+App content → **"Статус продавца"**: **Ha — ilova sotuvchi maqomim doirasida tarqatiladi** (Chronix — tijorat loyihasi,
+salonlar obuna to'laydi). Ochiq profilda: UMIDJON JABBORKULOV, chronixuz@gmail.com, +998200035599, Qarshi manzili.
+
 ## 6. Boshqa deklaratsiyalar
 - Government app: No. Financial features: No. Health app: No (stomatologiya/LOR — faqat bron, tibbiy ma'lumot yo'q).
 - News app: No. COVID: No.
