@@ -31,6 +31,8 @@ class User(Base):
     birth_date: Mapped[date | None] = mapped_column(Date)
     gender: Mapped[str | None] = mapped_column(String(10))
     language: Mapped[str] = mapped_column(String(5), server_default="uz")
+    backup_phone: Mapped[str | None] = mapped_column(String(13))                  # zaxira aloqa raqami (053)
+    phone_confirmed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     is_superadmin: Mapped[bool] = mapped_column(Boolean, server_default="false")
     status: Mapped[str] = mapped_column(UserStatus, server_default="active")
     token_version: Mapped[int] = mapped_column(Integer, server_default="0")

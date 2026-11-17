@@ -7,7 +7,7 @@ from app.api.deps import client_meta, current_user, get_auth_db, get_db
 from app.core.config import get_settings
 from app.models import User
 from app.schemas import (GoogleLoginIn, GoogleLoginOut, LoginOut, MembershipOut, MeOut, OtpRequest, OtpRequestOut,
-                         OtpVerify, PasswordForgot, PasswordLogin, PasswordReset, ProfileUpdate, RefreshIn,
+                         OtpVerify, PasswordForgot, PasswordLogin, PasswordReset, PhoneConfirm, ProfileUpdate, RefreshIn,
                          SetPasswordIn, TelegramPollIn, TelegramPollOut, TelegramStartIn, TelegramStartOut,
                          TokenOut, UserOut)
 from app.services import auth_service
@@ -137,7 +137,28 @@ def update_me(body: ProfileUpdate, db: Session = Depends(get_db)):
                 raise HTTPException(422, detail={"code": "invalid_name", "message": "Ismni kiriting"})
         if field == "language" and value is None:
             continue
+        if field == "backup_phone" and value == user.phone:
+            raise _SAME_PHONE
         setattr(user, field, value)
+    db.commit()
+    db.refresh(user)
+    return UserOut.model_validate(user)
+
+
+_SAME_PHONE = HTTPException(422, detail={"code": "backup_same_as_phone",
+                                         "message": "Zaxira raqam asosiy raqamdan farq qilishi kerak"})
+
+
+@router.post("/me/confirm-phone", response_model=UserOut)
+def confirm_phone(body: PhoneConfirm, db: Session = Depends(get_db)):
+    """Bron oldidan: "raqamim hamon shu" (053). Ilova oxirgi tasdiqdan 7 kun o'tsa so'raydi.
+    Xohlasa zaxira raqamni ham shu yerda qo'shadi/yangilaydi (bo'sh yuborilsa — o'zgarmaydi)."""
+    user: User = db.info["user"]
+    if body.backup_phone is not None:
+        if body.backup_phone == user.phone:
+            raise _SAME_PHONE
+        user.backup_phone = body.backup_phone
+    user.phone_confirmed_at = db.scalar(text("SELECT now()"))
     db.commit()
     db.refresh(user)
     return UserOut.model_validate(user)

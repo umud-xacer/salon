@@ -64,11 +64,27 @@ class ProfileUpdate(BaseModel):
     birth_date: date | None = None
     gender: Gender | None = None
     language: Literal["uz", "ru", "en"] | None = None
+    backup_phone: str | None = None                     # "" yoki null — o'chirish
+
+    @field_validator("backup_phone")
+    @classmethod
+    def _backup(cls, v: str | None) -> str | None:
+        return normalize_phone(v) if v and v.strip() else None
 
     @field_validator("birth_date")
     @classmethod
     def _birth(cls, v: date | None) -> date | None:
         return _past_date(v)
+
+
+class PhoneConfirm(BaseModel):
+    """Bron oldidan: asosiy raqam hamon to'g'ri; xohlasa zaxira raqamni ham yangilaydi."""
+    backup_phone: str | None = None
+
+    @field_validator("backup_phone")
+    @classmethod
+    def _backup(cls, v: str | None) -> str | None:
+        return normalize_phone(v) if v and v.strip() else None
 
 
 class PasswordForgot(_Phone):
@@ -123,6 +139,8 @@ class UserOut(BaseModel):
     language: str
     is_superadmin: bool
     must_change_password: bool
+    backup_phone: str | None = None                     # zaxira aloqa raqami
+    phone_confirmed_at: datetime | None = None          # oxirgi marta "raqamim hamon shu" deb tasdiqlagan
 
 
 class LoginOut(TokenOut):

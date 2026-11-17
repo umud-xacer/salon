@@ -78,6 +78,12 @@ export function AppointmentDialog({ membership, appointment: a, masterName, onCl
             </dd>
           </>
         )}
+        {a.client_backup_phone && (
+          <>
+            <dt className="text-muted">{t("Zaxira raqam")}</dt>
+            <dd><a className="text-primary" href={`tel:${a.client_backup_phone}`}>{a.client_backup_phone}</a></dd>
+          </>
+        )}
         <dt className="text-muted">{t("Holat")}</dt>
         <dd>
           {STATUS_LABELS[a.status] ?? a.status}

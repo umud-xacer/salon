@@ -108,6 +108,8 @@ export type User = {
   full_name: string;
   birth_date: string | null;
   gender: 'male' | 'female' | null;
+  backup_phone?: string | null;           // zaxira aloqa raqami (eski server yubormasa — undefined)
+  phone_confirmed_at?: string | null;     // oxirgi marta "raqamim hamon shu" deb tasdiqlagan
 };
 export type LoginOut = Tokens & { user: User; is_new: boolean };
 export type Me = { user: User; workspace: 'client' | 'business' | 'superadmin' };

@@ -14,6 +14,7 @@ import { useAuth } from '../src/auth';
 import { useAuthGate } from '../src/authGate';
 import { pick, t } from '../src/i18n';
 import { scheduleBookingReminder } from '../src/localReminders';
+import { needsPhoneConfirm, PhoneConfirm } from '../src/PhoneConfirm';
 import {
   Avatar, Button, dayOf, Empty, ErrorText, Icon, IconButton, makeStyles, money, nextDays, Pressy, Steps, timeOf, useBottomSpace,
   useTheme, useType,
@@ -51,7 +52,8 @@ export default function Book() {
   const bottom = useBottomSpace(12);
   const { height } = useWindowDimensions();
   const { c } = useTheme();
-  const { me } = useAuth();
+  const { me, refresh } = useAuth();
+  const [askPhone, setAskPhone] = useState(false);
   const { requireAuth } = useAuthGate();
   const s = useStyles();
   const ty = useType();
@@ -170,10 +172,12 @@ export default function Book() {
     promo_first_visit: t("Bu promokod faqat birinchi tashrif uchun"),
   }[quote.code_error] : null;
 
-  const submit = async () => {
+  const submit = async (phoneOk = false) => {
     if (!slot || !service) return;
     // Lazy auth: tanlov saqlanadi, kirgandan keyin shu oynaga qaytib "Tasdiqlash" bosiladi
     if (!requireAuth(t("Bron qilish uchun profilingizga kiring yoki ro'yxatdan o'ting"))) return;
+    // Yangi bron oldidan (7 kunda bir marta): salon bog'lanadigan raqam hamon to'g'rimi
+    if (!reschedule && !phoneOk && needsPhoneConfirm(me?.user)) return setAskPhone(true);
     setBusy(true);
     setError(null);
     try {
@@ -443,6 +447,10 @@ export default function Book() {
           </View>
         </Animated.View>
       </KeyboardAvoidingView>
+      {me && askPhone && (
+        <PhoneConfirm user={me.user} visible onClose={() => setAskPhone(false)}
+          onDone={() => { setAskPhone(false); void refresh().catch(() => {}); void submit(true); }} />
+      )}
     </View>
   );
 }

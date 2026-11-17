@@ -110,3 +110,4 @@ class AppointmentOut(BaseModel):
     client_phone: str | None = None
     client_alert: str | None = None                     # jamoa uchun ogohlantirish (mijozlar bazasi yoki shu bron ustasi)
     client_allergies: str | None = None
+    client_backup_phone: str | None = None              # mijozning zaxira raqami (faqat 'clients.view')

@@ -26,6 +26,7 @@ _SELECT = """
            a.status::text AS status, a.starts_at, a.ends_at, a.total_price, a.discount, a.discount_source, a.client_note, a.cancel_reason,
            a.checked_in_at AS arrived_at, a.processing_offset_min, a.processing_min, a.buffer_min,
            cf.f ->> 'alert' AS client_alert, cf.f ->> 'allergies' AS client_allergies,
+           app.client_backup_phone(a.client_id) AS client_backup_phone,
            coalesce(c.full_name, app.own_client_name(a.id)) AS client_name, c.phone AS client_phone,  -- usta: faqat ism
            CASE WHEN r.confirmed_at IS NOT NULL THEN 'confirmed'
                 WHEN r.alerted_at IS NOT NULL THEN 'no_response'

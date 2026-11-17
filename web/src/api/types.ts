@@ -72,6 +72,7 @@ export interface Appointment {
   buffer_min?: number;               // tugagach usta band (tozalash)
   client_alert?: string | null;      // jamoa uchun ogohlantirish (mijoz kartochkasidan)
   client_allergies?: string | null;
+  client_backup_phone?: string | null; // mijoz ilovada kiritgan zaxira raqam
 }
 
 export interface CancelReason {
@@ -238,6 +239,7 @@ export type ClientSource = "instagram" | "telegram" | "recommendation" | "walk_b
 export interface ClientRecord extends Client {
   notes: string | null;
   has_account: boolean;
+  backup_phone?: string | null;      // ilovadagi mijozning zaxira raqami
   visits: number;
   total_spent: number;
   last_visit: string | null;

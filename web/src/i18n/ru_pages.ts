@@ -1102,4 +1102,5 @@ export const RU_PAGES: Record<string, string> = {
   "Bufer {n} daq": "Буфер {n} мин", "kutish": "выдержка",
   "Jamoa uchun: bronda {a}ga ham ko'rinadi, {b}ning o'ziga ko'rinmaydi":
     "Для команды: видно в записи (в т.ч. сотруднику), клиенту не показывается",
+  "Zaxira raqam": "Запасной номер",
 };

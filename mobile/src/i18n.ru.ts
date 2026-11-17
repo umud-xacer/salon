@@ -665,4 +665,20 @@ export const RU: Record<string, string> = {
   "Raqamingizni Telegram orqali tasdiqlang — Google hisobingiz unga bog'lanadi.":
     "Подтвердите номер через Telegram — к нему привяжется ваш Google-аккаунт.",
   "Telegram yoki Google orqali bir bosishda kiring.": "Войдите в один клик через Telegram или Google.",
+  "Asosiy raqam": "Основной номер",
+  "Zaxira telefon raqam": "Запасной номер телефона",
+  "Zaxira raqam": "Запасной номер",
+  "Zaxira raqamni to'liq kiriting (9 ta raqam)": "Введите запасной номер полностью (9 цифр)",
+  "Raqamni to'liq kiriting (9 ta raqam)": "Введите номер полностью (9 цифр)",
+  "Asosiy raqamingiz javob bermasa, salon shu raqamga qo'ng'iroq qiladi. Kirish uchun ishlatilmaydi.":
+    "Если основной номер недоступен, салон позвонит на этот. Для входа не используется.",
+  "Telefon raqamingizni tasdiqlang": "Подтвердите номер телефона",
+  "Salon siz bilan shu raqam orqali bog'lanadi:": "Салон свяжется с вами по этому номеру:",
+  "Hozir qaysi raqamdan foydalanyapsiz? Uni zaxira raqam qilib saqlaymiz — salon shunga qo'ng'iroq qiladi.":
+    "Каким номером вы пользуетесь сейчас? Сохраним его как запасной — салон позвонит на него.",
+  "Joriy telefon raqam": "Текущий номер телефона",
+  "Saqlash va davom etish": "Сохранить и продолжить",
+  "Ha, raqam to'g'ri": "Да, номер верный",
+  "Ortga": "Назад",
+  "Boshqa raqamdan foydalanyapman": "Я пользуюсь другим номером",
 };

@@ -10,7 +10,7 @@ import { categoryIcon } from '../src/categories';
 import { pick, t } from '../src/i18n';
 import { setInterests } from '../src/interests';
 import {
-  Avatar, Button, Chip, ErrorText, Field, Icon, makeStyles, maskBirthDate, parseBirthDate, Pressy, Steps, useTheme, useType,
+  Avatar, Button, Chip, ErrorText, Field, formatPhone, Icon, makeStyles, maskBirthDate, parseBirthDate, Pressy, Steps, useTheme, useType,
 } from '../src/ui';
 
 export default function Onboarding() {
@@ -22,6 +22,8 @@ export default function Onboarding() {
   const [name, setName] = useState(me?.user.full_name ?? '');
   const [birth, setBirth] = useState('');
   const [gender, setGender] = useState<'male' | 'female' | null>(null);
+  // Zaxira raqam: asosiy raqam o'chib qolsa salon shunga qo'ng'iroq qiladi (9 raqam, +998 siz)
+  const [backup, setBackup] = useState('');
   const [categories, setCategories] = useState<Category[]>([]);
   const [picked, setPicked] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
@@ -37,10 +39,13 @@ export default function Onboarding() {
     const birthDate = birth ? parseBirthDate(birth) : null;
     if (name.trim().length < 2) return setError(t("Ismingizni kiriting"));
     if (birth && !birthDate) return setError(t("Tug'ilgan sanani 03.02.1995 ko'rinishida kiriting"));
+    if (backup && backup.length !== 9) return setError(t("Zaxira raqamni to'liq kiriting (9 ta raqam)"));
     setBusy(true);
     setError(null);
     try {
       await api<User>('/auth/me', { method: 'PATCH', body: { full_name: name.trim(), birth_date: birthDate, gender } });
+      // Asosiy raqam hozirgina tasdiqlandi — keyingi tekshiruv 7 kundan keyin (bron oldidan)
+      await api<User>('/auth/me/confirm-phone', { method: 'POST', body: { backup_phone: backup ? `+998${backup}` : null } });
       await setInterests(picked);
       await refresh();
       setSetup(!bioAsked() && (await bioKind()) ? 'biometric' : null);
@@ -68,6 +73,16 @@ export default function Onboarding() {
         </View>
         <Field label={t("Tug'ilgan sana (ixtiyoriy)")} placeholder="03.02.1995" keyboardType="number-pad" maxLength={10}
           value={birth} onChangeText={(x) => setBirth(maskBirthDate(x))} />
+        {me?.user.phone && (
+          <Text style={[ty.small, { marginBottom: 8 }]}>
+            {t("Asosiy raqam")}: <Text style={{ color: c.text, fontWeight: '700' }}>{me.user.phone}</Text>
+          </Text>
+        )}
+        <Field label={t("Zaxira telefon raqam")} placeholder="90 123 45 67" keyboardType="phone-pad" maxLength={12}
+          value={formatPhone(backup)} onChangeText={(x) => setBackup(x.replace(/\D/g, '').replace(/^998/, '').slice(0, 9))} />
+        <Text style={[ty.small, { marginTop: -6, marginBottom: 12 }]}>
+          {t("Asosiy raqamingiz javob bermasa, salon shu raqamga qo'ng'iroq qiladi. Kirish uchun ishlatilmaydi.")}
+        </Text>
         <View style={{ flexDirection: 'row', marginBottom: 6 }}>
           <Chip label={t("Erkak")} icon="man-outline" active={gender === 'male'} onPress={() => setGender(gender === 'male' ? null : 'male')} />
           <Chip label={t("Ayol")} icon="woman-outline" active={gender === 'female'} onPress={() => setGender(gender === 'female' ? null : 'female')} />

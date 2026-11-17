@@ -88,6 +88,10 @@ export function ClientDialog({ businessId, client, onClose }: {
         {client?.has_account && (
           <p className="text-xs text-muted">{t("{a} ilovadan foydalanadi, telefonini faqat o'zi o'zgartiradi.", { a: v.clientOne })}</p>
         )}
+        {client?.backup_phone && (
+          <p className="text-sm">{t("Zaxira raqam")}:{" "}
+            <a className="text-primary" href={`tel:${client.backup_phone}`}>{client.backup_phone}</a></p>
+        )}
         <div className="grid gap-3 sm:grid-cols-3">
           <label className="block text-sm">{t("Tug'ilgan sana")}
             <input className={inputClass} type="date" min="1900-01-01" max={todayIso()} value={birthDate}

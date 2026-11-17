@@ -23,6 +23,7 @@ class ClientOut(BaseModel):
     birth_date: dt.date | None = None
     gender: Gender | None = None
     source: Source | None = None
+    backup_phone: str | None = None                     # ilovadagi mijoz o'zi kiritgan zaxira raqam (053)
     # Salonning ichki ma'lumoti (mijoz o'zi ko'rmaydi)
     tags: list[str] = []
     alert: str | None = None                            # jamoa uchun ogohlantirish (kalendarda ko'rinadi)
