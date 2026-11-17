@@ -24,8 +24,37 @@ class ChronixAlarmModule : Module() {
   private val manager: NotificationManager
     get() = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
+  // Qulflangan ekran ustida ko'rinish FAQAT budilnik ekrani uchun (chronix://alarm). Ilgari bu asosiy oynaga
+  // doimiy berilgan edi — qulflangan telefonda bildirishnoma bosilsa, ilova (bronlar, profil) qulfni
+  // ochmasdan ko'rinib qolardi. Endi ilova har safar oldinga chiqqanda havolaga qarab yoqiladi/o'chiriladi.
+  // Oyna yaratilishida ChronixAlarmPackage qo'llaydi; bu yerda — yangi havola va qayta oldinga chiqish
+  private fun applyLockScreenMode(intent: Intent?) {
+    val activity = appContext.currentActivity ?: return
+    val alarm = AlarmLockScreenListener.isAlarm(intent)
+    activity.runOnUiThread { AlarmLockScreenListener.apply(activity, alarm) }
+  }
+
   override fun definition() = ModuleDefinition {
     Name("ChronixAlarm")
+
+    OnActivityEntersForeground {
+      applyLockScreenMode(appContext.currentActivity?.intent)
+    }
+
+    OnNewIntent { intent ->
+      applyLockScreenMode(intent)
+    }
+
+    // Budilnik ekrani yopilganda: ilova endi qulf ustida ko'rinmaydi
+    AsyncFunction("releaseLockScreen") {
+      appContext.currentActivity?.let { activity ->
+        activity.runOnUiThread {
+          AlarmLockScreenListener.apply(activity, false)
+          // Havola tozalanadi: ilova keyin qayta oldinga chiqqanda yana qulf ustida ko'rinmasin
+          activity.intent = Intent(activity.intent).setData(null)
+        }
+      }
+    }
 
     AsyncFunction("show") { title: String, body: String, url: String ->
       if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {

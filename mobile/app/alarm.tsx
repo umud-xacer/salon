@@ -9,6 +9,7 @@ import { api, ApiError, Appointment } from '../src/api';
 import { alarmKey, openedAlarms } from '../src/notifications';
 import { Button, dateTimeOf, ErrorText, useBottomSpace } from '../src/ui';
 import { cancelBookingReminder } from '../src/localReminders';
+import { ChronixAlarmModule } from '../modules/chronix-alarm';
 
 import { pickList, t } from "../src/i18n";
 const PATTERN = [0, 800, 400];
@@ -35,7 +36,11 @@ export default function Alarm() {
     player.loop = true;
     player.play();
     Vibration.vibrate(PATTERN, true);
-    return () => Vibration.cancel();
+    return () => {
+      Vibration.cancel();
+      // Budilnik yopildi: ilova endi qulflangan ekran ustida ko'rinmaydi (bronlar/profil himoyada)
+      ChronixAlarmModule?.releaseLockScreen?.().catch(() => {});
+    };
   }, [player]);
 
   useEffect(() => {
