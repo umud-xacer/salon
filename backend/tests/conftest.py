@@ -19,6 +19,7 @@ _admin = make_url(ADMIN_URL)
 _host = f"{_admin.host}:{_admin.port or 5432}"
 os.environ.update({
     "ENV": "test",
+    "PUBLIC_CACHE_TTL": "0",                      # katalog keshi testlarda o'chiq (test_cache.py o'zi yoqadi)
     "DATABASE_URL": f"postgresql+psycopg://app_api:test_api_Pw_123@{_host}/{DB_NAME}",
     "AUTH_DATABASE_URL": f"postgresql+psycopg://app_auth:test_auth_Pw_123@{_host}/{DB_NAME}",
     "WORKER_DATABASE_URL": f"postgresql+psycopg://app_worker:test_worker_Pw_123@{_host}/{DB_NAME}",

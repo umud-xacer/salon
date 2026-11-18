@@ -23,6 +23,9 @@ class Settings(BaseSettings):
     access_token_minutes: int = Field(default=15, ge=1, le=60)
     refresh_token_days: int = Field(default=30, ge=1, le=90)
 
+    # Ochiq katalog keshi (app/core/cache.py), soniya. 0 — o'chiq
+    public_cache_ttl: int = Field(default=30, ge=0, le=600)
+
     otp_ttl_seconds: int = 300
     otp_max_attempts: int = 5
 

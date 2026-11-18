@@ -3,6 +3,7 @@
 Hamma so'rov foydalanuvchisiz RLS sessiyasida — baza faqat faol va ochiq bizneslarni,
 faol xizmatlarni va xodimlarning ochiq profilini (public_staff) beradi.
 """
+import math
 from datetime import date
 from typing import Literal
 
@@ -11,6 +12,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_public_db
+from app.core.cache import grid, public_cache, ttl
 from app.core.config import get_settings
 from app.schemas.catalog import (BranchOut, BusinessCard, BusinessDetail, CategoryOut, HoursOut, NearbyOut, ProductCategory,
                                  PublicProduct, PublicProducts,
@@ -107,9 +109,11 @@ def public_plans(response: Response, db: Session = Depends(get_public_db)):
 
 @router.get("/categories", response_model=list[CategoryOut])
 def categories(db: Session = Depends(get_public_db)):
-    rows = db.execute(text("SELECT id, slug, name_uz, name_ru, icon, kind FROM business_categories WHERE is_active "
-                           "ORDER BY sort_order, id"))
-    return [CategoryOut(**r) for r in rows.mappings()]
+    def load():
+        rows = db.execute(text("SELECT id, slug, name_uz, name_ru, icon, kind FROM business_categories WHERE is_active "
+                               "ORDER BY sort_order, id"))
+        return [CategoryOut(**r) for r in rows.mappings()]
+    return public_cache.get_or_set(("categories",), ttl(10), load)
 
 
 @router.get("/businesses/nearby", response_model=NearbyOut)
@@ -126,7 +130,16 @@ def nearby(
     offset: int = Query(0, ge=0, le=1000),
     db: Session = Depends(get_public_db),
 ):
-    """Joriy joylashuvga yaqin bizneslar. Standart tartib masofa bo'yicha (PostGIS, GIST indeks)."""
+    """Joriy joylashuvga yaqin bizneslar. Standart tartib masofa bo'yicha (PostGIS, GIST indeks).
+    Natija 30 s keshlanadi: nuqta ~110 m to'rga yaxlitlanadi (masofa xatosi ≤ ~80 m)."""
+    lat, lng = grid(lat), grid(lng)
+    key = ("nearby", lat, lng, radius_m, category, q, open_now, sort, max_price, limit, offset)
+    return public_cache.get_or_set(key, ttl(), lambda: _nearby(db, lat, lng, radius_m, category, q, open_now, sort,
+                                                                max_price, limit, offset))
+
+
+def _nearby(db: Session, lat: float, lng: float, radius_m: int, category: str | None, q: str | None, open_now: bool,
+            sort: str, max_price: int | None, limit: int, offset: int) -> NearbyOut:
     params = {"lat": lat, "lng": lng, "r": radius_m, "limit": limit, "offset": offset, "max_price": max_price}
     price = """AND EXISTS (SELECT 1 FROM services s WHERE s.business_id = b.id AND s.is_active
                             AND s.price <= :max_price)""" if max_price else ""
@@ -162,6 +175,17 @@ def in_bounds(
         raise HTTPException(422, detail={"code": "invalid_bounds", "message": "Xarita chegaralari noto'g'ri"})
     if ne_lat - sw_lat > MAX_BBOX_DEG or ne_lng - sw_lng > MAX_BBOX_DEG:
         raise HTTPException(422, detail={"code": "bounds_too_large", "message": "Xaritani kattalashtiring"})
+    # Oyna 0.005° (~500 m) to'rga TASHQARIGA kengaytiriladi: natija ko'rinib turgan hududni to'liq qamraydi va
+    # xaritani biroz surgan mijozlar bitta keshdan foydalanadi
+    step = 0.005
+    sw_lat, sw_lng = math.floor(sw_lat / step) * step, math.floor(sw_lng / step) * step
+    ne_lat, ne_lng = math.ceil(ne_lat / step) * step, math.ceil(ne_lng / step) * step
+    key = ("in-bounds", round(sw_lat, 4), round(sw_lng, 4), round(ne_lat, 4), round(ne_lng, 4), category, limit)
+    return public_cache.get_or_set(key, ttl(), lambda: _in_bounds(db, sw_lat, sw_lng, ne_lat, ne_lng, category, limit))
+
+
+def _in_bounds(db: Session, sw_lat: float, sw_lng: float, ne_lat: float, ne_lng: float, category: str | None,
+               limit: int) -> list[BusinessCard]:
     params = {"w": sw_lng, "s": sw_lat, "e": ne_lng, "n": ne_lat, "limit": limit}
     rows = db.execute(text(f"""
         SELECT {_CARD_COLUMNS}
@@ -209,7 +233,11 @@ def public_products(slug: str, q: str | None = Query(default=None, max_length=60
 
 @router.get("/businesses/{slug}", response_model=BusinessDetail)
 def business_detail(slug: str, db: Session = Depends(get_public_db)):
-    """Biznes sahifasi: ma'lumot, ish soatlari, rasmlar, xizmatlar (kategoriya bo'yicha), ustalar."""
+    """Biznes sahifasi: ma'lumot, ish soatlari, rasmlar, xizmatlar (kategoriya bo'yicha), ustalar. 30 s kesh."""
+    return public_cache.get_or_set(("business", slug), ttl(), lambda: _business_detail(db, slug))
+
+
+def _business_detail(db: Session, slug: str) -> BusinessDetail:
     b = db.execute(text(f"""
         SELECT b.id, b.slug, b.name, b.description, c.slug AS category, c.name_uz AS category_name, c.name_ru AS category_name_ru,
                c.kind, b.phone, b.city, b.address, b.logo_url, b.cover_url,

@@ -6,6 +6,7 @@ Chegirmani bron paytida faqat baza hisoblaydi (app.book_appointment) — bu yerd
 """
 import datetime as dt
 
+from app.core.cache import grid, public_cache, ttl
 from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -178,33 +179,71 @@ def _nearby_ids(db: Session, lat: float, lng: float, radius_m: int) -> dict[int,
 def hot_slots(lat: float = Query(ge=-90, le=90), lng: float = Query(ge=-180, le=180),
               radius_m: int = Query(15000, ge=500, le=50000), limit: int = Query(10, ge=1, le=20),
               db: Session = Depends(get_public_db)):
-    """Bugun hali bo'sh qolgan va chegirma qoidasiga tushadigan vaqtlar (har xizmat uchun eng yaqin vaqt)."""
+    """Bugun hali bo'sh qolgan va chegirma qoidasiga tushadigan vaqtlar (har xizmat uchun eng yaqin vaqt).
+    Tezlik (yuklama sinovi, 2026-11-18): eng og'ir qism — salonning bo'sh vaqtlarini hisoblash — mijoz joylashuviga
+    bog'liq emas, shuning uchun SALON bo'yicha 60 s saqlanadi (_hot_for_business). So'rovga faqat yaqin salonlar
+    ro'yxati va masofa qoladi; butun javob ham ~110 m to'r bo'yicha 30 s keshlanadi."""
+    lat, lng = grid(lat), grid(lng)
+    return public_cache.get_or_set(("hot-slots", lat, lng, radius_m, limit), ttl(),
+                                   lambda: _hot_slots(db, lat, lng, radius_m, limit))
+
+
+def _hot_slots(db: Session, lat: float, lng: float, radius_m: int, limit: int) -> list[HotSlotOut]:
     near = _nearby_ids(db, lat, lng, radius_m)
     if not near:
         return []
-    rules = db.execute(text("SELECT * FROM app.public_hot_rules(:ids) ORDER BY percent DESC"),
-                       {"ids": list(near)}).mappings().all()
+    # Qaysi salonda bugun amaldagi qoida bor — bitta so'rov; qolgani salon keshidan
+    with_rules = db.scalars(text("SELECT DISTINCT business_id FROM app.public_hot_rules(:ids)"),
+                            {"ids": list(near)}).all()
     soon = dt.datetime.now(dt.timezone.utc) + dt.timedelta(minutes=10)
     out: list[HotSlotOut] = []
-    used: set[tuple[int, int]] = set()
-    for rule in rules:
-        services = db.execute(text("""
-            SELECT s.id, s.name, s.name_ru, s.price FROM services s
-             WHERE s.business_id = :b AND s.is_active AND (CAST(:ids AS bigint[]) IS NULL OR s.id = ANY (:ids))
-             ORDER BY s.price, s.id LIMIT 3
-        """), {"b": rule["business_id"], "ids": rule["service_ids"]}).mappings().all()
-        for s in services:
-            if (rule["business_id"], s["id"]) in used:
+    for bid in with_rules:
+        b = near[bid]
+        for h in public_cache.get_or_set(("hot-business", bid), ttl(2), lambda bid=bid: _hot_for_business(db, bid)):
+            if h["starts_at"] < soon:                       # keshdagi vaqt o'tib ketgan bo'lishi mumkin
                 continue
-            members = db.execute(text("""
-                SELECT ps.member_id, ps.full_name, coalesce(ms.custom_price, :price) AS price
-                  FROM public_staff ps JOIN member_services ms ON ms.member_id = ps.member_id AND ms.service_id = :s
-                 WHERE ps.business_id = :b
-            """), {"b": rule["business_id"], "s": s["id"], "price": s["price"]}).mappings().all()
+            out.append(HotSlotOut(
+                business_id=b["id"], business_slug=b["slug"], business_name=b["name"], category_name=b["category_name"],
+                category_name_ru=b["category_name_ru"], distance_m=b["distance_m"], photo=b["photo"], **h))
+    out.sort(key=lambda x: (x.starts_at, -x.percent))
+    return out[:limit]
+
+
+def _hot_for_business(db: Session, business_id: int) -> list[dict]:
+    """Bitta salonning bugungi Hot Slots vaqtlari (joylashuvdan mustaqil). Xizmatlar va ustalar bitta so'rovda."""
+    rules = db.execute(text("SELECT * FROM app.public_hot_rules(:ids) ORDER BY percent DESC"),
+                       {"ids": [business_id]}).mappings().all()
+    if not rules:
+        return []
+    soon = dt.datetime.now(dt.timezone.utc) + dt.timedelta(minutes=10)
+    staff = db.execute(text("""
+        SELECT s.id AS service_id, s.name, s.name_ru, s.price, ps.member_id, ps.full_name,
+               coalesce(ms.custom_price, s.price) AS member_price
+          FROM services s
+          JOIN member_services ms ON ms.service_id = s.id
+          JOIN public_staff ps ON ps.member_id = ms.member_id AND ps.business_id = s.business_id
+         WHERE s.business_id = :b AND s.is_active
+         ORDER BY s.price, s.id, ps.member_id
+    """), {"b": business_id}).mappings().all()
+    by_service: dict[int, list] = {}
+    for r in staff:
+        by_service.setdefault(r["service_id"], []).append(r)
+    first_slot: dict[tuple[int, int, object], list] = {}     # (usta, xizmat, kun) -> bo'sh vaqtlar (bir marta)
+    out: list[dict] = []
+    used: set[int] = set()
+    for rule in rules:
+        services = [sid for sid in by_service if rule["service_ids"] is None or sid in rule["service_ids"]][:3]
+        for sid in services:
+            if sid in used:
+                continue
             best = None
-            for m in members:
-                for slot in db.execute(text("SELECT slot_start, slot_time FROM app.available_slots(:m, :s, :d, 15)"),
-                                       {"m": m["member_id"], "s": s["id"], "d": rule["today"]}).mappings():
+            for m in by_service[sid]:
+                key = (m["member_id"], sid, rule["today"])
+                if key not in first_slot:
+                    first_slot[key] = db.execute(text(
+                        "SELECT slot_start, slot_time FROM app.available_slots(:m, :s, :d, 15)"),
+                        {"m": m["member_id"], "s": sid, "d": rule["today"]}).mappings().all()
+                for slot in first_slot[key]:
                     t = dt.time.fromisoformat(slot["slot_time"])
                     if slot["slot_start"] < soon or not (rule["time_from"] <= t < rule["time_to"]):
                         continue
@@ -214,24 +253,25 @@ def hot_slots(lat: float = Query(ge=-90, le=90), lng: float = Query(ge=-180, le=
             if best is None:
                 continue
             slot, m = best
-            b = near[rule["business_id"]]
-            price = int(m["price"])
-            out.append(HotSlotOut(
-                business_id=b["id"], business_slug=b["slug"], business_name=b["name"], category_name=b["category_name"],
-                category_name_ru=b["category_name_ru"], distance_m=b["distance_m"], photo=b["photo"],
-                service_id=s["id"], service_name=s["name"], service_name_ru=s["name_ru"], member_id=m["member_id"],
-                member_name=m["full_name"], starts_at=slot["slot_start"], time=slot["slot_time"],
-                percent=rule["percent"], price=price, final=price - price * rule["percent"] // 100,
-                rule_title=rule["title"], ends_window=rule["time_to"]))
-            used.add((rule["business_id"], s["id"]))
-    out.sort(key=lambda x: (x.starts_at, -x.percent))
-    return out[:limit]
+            price = int(m["member_price"])
+            out.append({"service_id": sid, "service_name": m["name"], "service_name_ru": m["name_ru"],
+                        "member_id": m["member_id"], "member_name": m["full_name"], "starts_at": slot["slot_start"],
+                        "time": slot["slot_time"], "percent": rule["percent"], "price": price,
+                        "final": price - price * rule["percent"] // 100, "rule_title": rule["title"],
+                        "ends_window": rule["time_to"]})
+            used.add(sid)
+    return out
 
 
 @router.get("/catalog/offers", response_model=list[OfferOut])
 def offers(lat: float = Query(ge=-90, le=90), lng: float = Query(ge=-180, le=180),
            radius_m: int = Query(15000, ge=500, le=50000), db: Session = Depends(get_public_db)):
-    """Ilovada ko'rinadigan promokodlar (muassasa "sovg'a" deb belgilagan)."""
+    """Ilovada ko'rinadigan promokodlar (muassasa "sovg'a" deb belgilagan). 30 s kesh (~110 m to'r)."""
+    lat, lng = grid(lat), grid(lng)
+    return public_cache.get_or_set(("offers", lat, lng, radius_m), ttl(), lambda: _offers(db, lat, lng, radius_m))
+
+
+def _offers(db: Session, lat: float, lng: float, radius_m: int) -> list[OfferOut]:
     near = _nearby_ids(db, lat, lng, radius_m)
     if not near:
         return []
