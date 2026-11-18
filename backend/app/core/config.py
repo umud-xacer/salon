@@ -26,6 +26,14 @@ class Settings(BaseSettings):
     # Ochiq katalog keshi (app/core/cache.py), soniya. 0 — o'chiq
     public_cache_ttl: int = Field(default=30, ge=0, le=600)
 
+    # Super Admin: parol + Telegram kodi (sql/065). Kod muddati, noto'g'ri urinishlar, blok, qayta yuborish oralig'i
+    superadmin_2fa: bool = True
+    twofa_ttl_seconds: int = 180
+    twofa_max_attempts: int = 3
+    twofa_lock_minutes: int = 15
+    twofa_resend_seconds: int = 30
+    twofa_max_sends: int = 5
+
     otp_ttl_seconds: int = 300
     otp_max_attempts: int = 5
 

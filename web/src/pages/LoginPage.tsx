@@ -3,8 +3,8 @@
 // (server: panel=true, sql/063). Google hisobi hali bog'lanmagan bo'lsa — bir marta telefon bilan kirib bog'lanadi.
 import { useEffect, useRef, useState, type FormEvent } from "react";
 
-import { googleLogin, loginMethods, loginWithPassword, requestOtp, telegramPoll, telegramStart, verifyOtp,
-         type LoginMethods } from "../api/client";
+import { googleLogin, loginMethods, loginWithPassword, requestOtp, telegramPoll, telegramStart, twofaResend,
+         twofaVerify, verifyOtp, type LoginMethods, type TwoFactor } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
 import { normalizePhone } from "../components/format";
 import { ErrorNote } from "../components/ui";
@@ -83,6 +83,10 @@ export function LoginPage() {
   const [methods, setMethods] = useState<LoginMethods | null>(null);
   const [link, setLink] = useState<string | null>(null);          // Google bog'lash tokeni (15 daqiqa)
   const [tg, setTg] = useState<{ nonce: string; url: string } | null>(null);
+  // Super Admin 2FA (sql/065): parol to'g'ri — kod Telegramga ketdi, token kod tasdiqlangach
+  const [twofa, setTwofa] = useState<{ challenge: string; expiresAt: number; resendAt: number } | null>(null);
+  const [twofaCode, setTwofaCode] = useState("");
+  const [now, setNow] = useState(Date.now());
   const googleBox = useRef<HTMLDivElement>(null);
   useInterFont();
 
@@ -90,8 +94,50 @@ export function LoginPage() {
     loginMethods().then(setMethods).catch(() => setMethods({}));
   }, []);
 
+  useEffect(() => {
+    if (!twofa) return;
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [twofa]);
+
+  const startTwofa = (r: TwoFactor) => {
+    const t0 = Date.now();
+    setNow(t0);
+    setTwofaCode("");
+    setTwofa({ challenge: r.challenge, expiresAt: t0 + r.expires_in * 1000, resendAt: t0 + r.resend_in * 1000 });
+  };
+
+  async function confirmTwofa(e: FormEvent) {
+    e.preventDefault();
+    if (!twofa) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await signIn(await twofaVerify(twofa.challenge, twofaCode.trim()));
+    } catch (err) {
+      setError(err);
+      setTwofaCode("");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function resendTwofa() {
+    if (!twofa) return;
+    setBusy(true);
+    setError(null);
+    try {
+      startTwofa(await twofaResend(twofa.challenge));
+    } catch (err) {
+      setError(err);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   // Google tugmasi (Google Identity Services). Bog'lash yoki Telegram kutish paytida ko'rsatilmaydi
-  const googleId = methods?.login_methods?.google ? methods.google_web_client_id : null;
+  // Super Admin Google bilan kirmaydi (2FA): ega.chronix.uz da tugma yo'q
+  const googleId = methods?.login_methods?.google && !isAdminHost ? methods.google_web_client_id : null;
   useEffect(() => {
     if (!googleId || link || tg) return;
     let alive = true;
@@ -163,7 +209,9 @@ export function LoginPage() {
     try {
       const p = normalizePhone(phone);
       if (formMode === "password") {
-        await signIn(await loginWithPassword(p, password, link));
+        const r = await loginWithPassword(p, password, link);
+        if ("need_2fa" in r) startTwofa(r);
+        else await signIn(r);
       } else if (!codeSent) {
         const r = await requestOtp(p);
         setCodeSent(true);
@@ -210,7 +258,35 @@ export function LoginPage() {
           </p>
         </div>
 
-        {tg ? (
+        {twofa ? (
+          <form onSubmit={confirmTwofa} className="space-y-4">
+            <div className="text-center">
+              <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-full bg-gradient-to-b from-[#3AB3EA] to-[#1C93D2] text-white shadow-md"><TelegramIcon /></div>
+              <p className="text-[15px] font-semibold text-slate-900">{t("Ikki bosqichli tasdiqlash")}</p>
+              <p className="mt-1 text-sm text-slate-500">{t("Telegram botingizga tasdiqlash kodi yuborildi. Kodni kiriting:")}</p>
+            </div>
+            <input className={`${input} text-center text-2xl font-semibold tracking-[0.5em]`} inputMode="numeric"
+              autoComplete="one-time-code" autoFocus maxLength={6} pattern="\d{6}" required aria-label={t("Tasdiqlash kodi")}
+              value={twofaCode} onChange={(e) => setTwofaCode(e.target.value.replace(/\D/g, "").slice(0, 6))} />
+            <p className="text-center text-xs text-slate-500">
+              {twofa.expiresAt > now
+                ? t("Kod amal qiladi: {a}", { a: `${Math.floor((twofa.expiresAt - now) / 60000)}:${String(Math.floor(((twofa.expiresAt - now) % 60000) / 1000)).padStart(2, "0")}` })
+                : t("Kod muddati o'tdi — yangisini so'rang")}
+            </p>
+            {error != null && <ErrorNote error={error} />}
+            <button type="submit" disabled={busy || twofaCode.length !== 6 || twofa.expiresAt <= now}
+              className="relative flex h-12 w-full items-center justify-center rounded-xl bg-gradient-to-b from-[#3B7BF0] via-[#1D61E7] to-[#1849B8] text-[15px] font-semibold text-white shadow-[0_10px_24px_-8px_rgba(29,97,231,0.65)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60">
+              {t("Tasdiqlash va kirish")}
+            </button>
+            <div className="flex items-center justify-between text-sm">
+              <button type="button" onClick={() => { setTwofa(null); setError(null); }} className="text-slate-500 hover:text-slate-800">{t("Orqaga")}</button>
+              <button type="button" onClick={resendTwofa} disabled={busy || twofa.resendAt > now}
+                className="font-medium text-blue-600 hover:underline disabled:cursor-not-allowed disabled:text-slate-400 disabled:no-underline">
+                {twofa.resendAt > now ? t("Qayta yuborish ({a} s)", { a: Math.ceil((twofa.resendAt - now) / 1000) }) : t("Kodni qaytadan yuborish")}
+              </button>
+            </div>
+          </form>
+        ) : tg ? (
           <div className="space-y-3 text-center">
             <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-[#229ED9] text-white"><TelegramIcon /></div>
             <p className="text-sm font-medium text-navy">{t("Telegram'da tasdiqlang")}</p>
@@ -244,7 +320,7 @@ export function LoginPage() {
                   <button type="button" onClick={startTelegram} disabled={busy}
                     className="group relative flex h-12 w-full items-center justify-center gap-2.5 overflow-hidden rounded-xl bg-gradient-to-b from-[#3AB3EA] to-[#1C93D2] text-[15px] font-semibold text-white shadow-[0_8px_20px_-6px_rgba(34,158,217,0.6),inset_0_1px_0_rgba(255,255,255,0.3)] transition hover:-translate-y-px hover:shadow-[0_12px_24px_-6px_rgba(34,158,217,0.7),inset_0_1px_0_rgba(255,255,255,0.3)] active:translate-y-0 disabled:opacity-60">
                     <span aria-hidden className="absolute inset-y-0 -left-1/2 w-1/3 -skew-x-12 bg-white/25 blur-sm transition-all duration-700 group-hover:left-[130%]" />
-                    <TelegramIcon /> {t("Telegram orqali kirish")}
+                    <TelegramIcon /> {isAdminHost ? t("Telegram'ni bog'lash") : t("Telegram orqali kirish")}
                   </button>
                 )}
                 {googleId && (

@@ -151,8 +151,17 @@ async function publicPost<T>(path: string, body: unknown): Promise<T> {
 }
 
 // linkToken — Google hisobini shu kirishda bog'lash (panelda birinchi marta "Google orqali" bosilganda)
+// Super Admin: parol to'g'ri bo'lsa token emas — need_2fa (kod Telegramga yuborildi, sql/065)
+export type TwoFactor = { need_2fa: true; challenge: string; expires_in: number; resend_in: number };
+
 export const loginWithPassword = (phone: string, password: string, linkToken?: string | null) =>
-  publicPost<LoginResponse>("/auth/login", { phone, password, link_token: linkToken ?? undefined });
+  publicPost<LoginResponse | TwoFactor>("/auth/login", { phone, password, link_token: linkToken ?? undefined });
+
+export const twofaVerify = (challenge: string, code: string) =>
+  publicPost<LoginResponse>("/auth/2fa/verify", { challenge, code });
+
+export const twofaResend = (challenge: string) =>
+  publicPost<TwoFactor>("/auth/2fa/resend", { challenge });
 
 export const requestOtp = (phone: string) =>
   publicPost<{ expires_in: number; dev_code: string | null }>("/auth/otp/request", { phone });

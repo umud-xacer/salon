@@ -9,7 +9,7 @@ from app.models import User
 from app.schemas import (GoogleLoginIn, GoogleLoginOut, LoginOut, MembershipOut, MeOut, OtpRequest, OtpRequestOut,
                          OtpVerify, PasswordForgot, PasswordLogin, PasswordReset, PhoneConfirm, ProfileUpdate, RefreshIn,
                          SetPasswordIn, TelegramPollIn, TelegramPollOut, TelegramStartIn, TelegramStartOut,
-                         TokenOut, UserOut)
+                         TokenOut, TwoFactorOut, TwoFactorResendIn, TwoFactorVerifyIn, UserOut)
 from app.services import auth_service
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -80,13 +80,33 @@ def delete_me(db: Session = Depends(get_db)):
     db.commit()
 
 
-@router.post("/login", response_model=LoginOut)
+@router.post("/login", response_model=LoginOut | TwoFactorOut)
 def login(body: PasswordLogin, request: Request, db: Session = Depends(get_auth_db)):
-    """Telefon + parol (veb-admin panel uchun)."""
+    """Telefon + parol (veb-admin panel uchun). Super Admin — ikkinchi bosqich: kod Telegramga (need_2fa)."""
     ua, ip = client_meta(request)
-    user, tokens = auth_service.login_password(db, body.phone, body.password, ua, ip, link_token=body.link_token)
-    check_panel(request, user.is_superadmin)        # noto'g'ri panel — tokenlar berilmaydi
+    first, tokens = auth_service.login_password(db, body.phone, body.password, ua, ip, link_token=body.link_token,
+                                                panel_check=lambda sa: check_panel(request, sa))
+    if tokens is None:
+        s = get_settings()
+        return TwoFactorOut(challenge=first, expires_in=s.twofa_ttl_seconds, resend_in=s.twofa_resend_seconds)
+    check_panel(request, first.is_superadmin)       # noto'g'ri panel — tokenlar berilmaydi
+    return _login_out(first, tokens)
+
+
+@router.post("/2fa/verify", response_model=LoginOut)
+def twofa_verify(body: TwoFactorVerifyIn, request: Request, db: Session = Depends(get_auth_db)):
+    """Super Admin: Telegramga kelgan 6 xonali kod. 3 marta noto'g'ri — 15 daqiqa blok."""
+    ua, ip = client_meta(request)
+    user, tokens = auth_service.verify_2fa(db, body.challenge, body.code, ua, ip)
+    check_panel(request, user.is_superadmin)
     return _login_out(user, tokens)
+
+
+@router.post("/2fa/resend", response_model=TwoFactorOut)
+def twofa_resend(body: TwoFactorResendIn, db: Session = Depends(get_auth_db)):
+    auth_service.resend_2fa(db, body.challenge)
+    s = get_settings()
+    return TwoFactorOut(challenge=body.challenge, expires_in=s.twofa_ttl_seconds, resend_in=s.twofa_resend_seconds)
 
 
 @router.post("/refresh", response_model=TokenOut)

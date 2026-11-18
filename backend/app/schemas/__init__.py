@@ -149,6 +149,23 @@ class LoginOut(TokenOut):
     is_new: bool = False
 
 
+class TwoFactorOut(BaseModel):
+    """Super Admin: parol to'g'ri, kod Telegramga yuborildi — token /auth/2fa/verify dan keyin."""
+    need_2fa: bool = True
+    challenge: str
+    expires_in: int
+    resend_in: int
+
+
+class TwoFactorVerifyIn(BaseModel):
+    challenge: str = Field(min_length=16, max_length=64)
+    code: str = Field(pattern=r"^\d{6}$")
+
+
+class TwoFactorResendIn(BaseModel):
+    challenge: str = Field(min_length=16, max_length=64)
+
+
 class TelegramStartIn(BaseModel):
     link_token: str | None = Field(default=None, max_length=2000)
 

@@ -163,6 +163,15 @@ def _login_verified_phone(db: Session, phone: str, full_name: str | None, user_a
         db.add(user)
         db.flush()
     _ensure_can_login(user)
+    if user.is_superadmin and get_settings().superadmin_2fa:
+        # Super Admin faqat parol + Telegram kodi bilan kiradi. Telegram orqali kelgan bo'lsa — bog'lab qo'yiladi
+        # (keyingi kodlar shu chatga boradi), lekin token berilmaydi
+        linked = bool(telegram and telegram[0] is not None)
+        if linked:
+            _link_telegram(db, user, *telegram)
+        db.commit()
+        raise Forbidden("use_password_2fa", ("Telegram bog'landi. " if linked else "")
+                        + "Super Admin telefon, parol va Telegramga keladigan kod bilan kiradi")
     # Telefon egasi kirdi: boshqa odam bilgan vaqtinchalik parol endi yaroqsiz
     if user.must_change_password:
         user.password_hash = None
@@ -336,6 +345,9 @@ def google_login(db: Session, id_token: str, user_agent: str | None,
         return _make_link_token("google", c["sub"], c.get("email"))
     user = db.get(User, uid, with_for_update=True)
     _ensure_can_login(user)
+    if user.is_superadmin and get_settings().superadmin_2fa:
+        db.rollback()
+        raise Forbidden("use_password_2fa", "Super Admin telefon, parol va Telegramga keladigan kod bilan kiradi")
     if panel:
         try:
             _require_panel(db, user, "Google")
@@ -349,8 +361,9 @@ def google_login(db: Session, id_token: str, user_agent: str | None,
 
 
 # ─── Parol bilan kirish (veb-admin) ─────────────────────────────────────────
-def login_password(db: Session, phone: str, password: str,
-                   user_agent: str | None, ip: str | None, link_token: str | None = None) -> tuple[User, TokenPair]:
+def login_password(db: Session, phone: str, password: str, user_agent: str | None, ip: str | None,
+                   link_token: str | None = None, panel_check=None) -> tuple[User, TokenPair] | tuple[str, None]:
+    """Oddiy hisob — (user, tokenlar). Super Admin (2FA yoqiq) — (chaqiruv tokeni, None): kod Telegramga ketdi."""
     s = get_settings()
     if link_token:
         _decode_link_token(link_token)                       # yaroqsiz bo'lsa — parol tekshirilmasdan rad
@@ -376,9 +389,118 @@ def login_password(db: Session, phone: str, password: str,
         user.password_hash = security.hash_password(password)
     if link_token:
         _link_identity(db, user, link_token)
+    if user.is_superadmin and s.superadmin_2fa:
+        if panel_check is not None:
+            panel_check(True)                                # boshqa panelda — kod yuborilmaydi
+        challenge = _start_2fa(db, user, ip)
+        db.commit()
+        return challenge, None
     tokens = _issue_tokens(db, user, user_agent=user_agent, ip=ip)
     db.commit()
     return user, tokens
+
+
+# ─── Super Admin 2FA: Telegram kodi (sql/065_superadmin_2fa.sql) ─────────────────
+_TG_2FA = ("🛡 Chronix Super Admin — kirish kodi: {code}\n\nKod {m} daqiqa amal qiladi. Kodni hech kimga bermang.\n"
+           "Agar siz kirmayotgan bo'lsangiz — parolni darhol almashtiring.")
+
+
+def _challenge_code_hash(token: str, code: str) -> str:
+    return security.hash_token(f"2fa:{token}:{code}")
+
+
+def _admin_chat(db: Session, user: User) -> int:
+    chat = db.execute(text("SELECT chat_id FROM user_identities WHERE user_id = :u AND provider = 'telegram' "
+                           "AND chat_id IS NOT NULL"), {"u": user.id}).scalar()
+    if chat is None or not get_settings().telegram_login_enabled:
+        db.commit()                                          # muvaffaqiyatli parol tekshiruvi (hisoblagich) saqlansin
+        raise Forbidden("telegram_not_linked",
+                        "Super Admin uchun Telegram bog'lanmagan. Kirish oynasida «Telegram orqali kirish» ni bir marta "
+                        "bosing — bot raqamingizni tasdiqlab Telegramni bog'laydi. Keyin parol bilan qayta kiring")
+    return chat
+
+
+def _send_2fa(chat: int, code: str) -> None:
+    from app.services import telegram_bot
+    s = get_settings()
+    if not telegram_bot.send_message(chat, _TG_2FA.format(code=code, m=max(1, s.twofa_ttl_seconds // 60))):
+        raise SmsUnavailable("telegram_send_failed", "Telegramga kod yuborib bo'lmadi. Birozdan keyin qayta urinib ko'ring")
+
+
+def _start_2fa(db: Session, user: User, ip: str | None) -> str:
+    s = get_settings()
+    chat = _admin_chat(db, user)
+    token = secrets.token_urlsafe(24)
+    code = f"{secrets.randbelow(10 ** 6):06d}"
+    db.execute(text("""
+        INSERT INTO login_challenges (token_hash, user_id, code_hash, expires_at, ip)
+        VALUES (:t, :u, :c, now() + make_interval(secs => :ttl), CAST(:ip AS inet))
+    """), {"t": security.hash_token(token), "u": user.id, "c": _challenge_code_hash(token, code),
+          "ttl": s.twofa_ttl_seconds, "ip": ip})
+    _send_2fa(chat, code)
+    return token
+
+
+def verify_2fa(db: Session, token: str, code: str, user_agent: str | None, ip: str | None) -> tuple[User, TokenPair]:
+    s = get_settings()
+    row = db.execute(text("""
+        SELECT id, user_id, code_hash, attempts, status, expires_at > now() AS alive
+          FROM login_challenges WHERE token_hash = :t FOR UPDATE
+    """), {"t": security.hash_token(token)}).mappings().first()
+    if row is None or row["status"] != "pending":
+        db.rollback()
+        raise AuthError("2fa_expired", "Kirish so'rovi eskirgan. Telefon va parol bilan qaytadan kiring")
+    if not row["alive"]:
+        db.rollback()
+        raise AuthError("2fa_code_expired", "Kod muddati o'tdi. «Kodni qaytadan yuborish» ni bosing")
+    if not secrets.compare_digest(row["code_hash"], _challenge_code_hash(token, code)):
+        attempts = row["attempts"] + 1
+        if attempts >= s.twofa_max_attempts:
+            db.execute(text("UPDATE login_challenges SET attempts = :a, status = 'locked' WHERE id = :i"),
+                       {"a": attempts, "i": row["id"]})
+            db.execute(update(User).where(User.id == row["user_id"])
+                       .values(locked_until=_now() + timedelta(minutes=s.twofa_lock_minutes)))
+            db.commit()
+            raise RateLimited("2fa_locked", f"{s.twofa_max_attempts} marta noto'g'ri kod. Kirish "
+                              f"{s.twofa_lock_minutes} daqiqaga bloklandi")
+        db.execute(text("UPDATE login_challenges SET attempts = :a WHERE id = :i"), {"a": attempts, "i": row["id"]})
+        db.commit()
+        raise AuthError("2fa_invalid", f"Kod noto'g'ri. Yana {s.twofa_max_attempts - attempts} ta urinish qoldi")
+    db.execute(text("UPDATE login_challenges SET status = 'used' WHERE id = :i"), {"i": row["id"]})
+    user = db.get(User, row["user_id"], with_for_update=True)
+    _ensure_can_login(user)
+    user.last_login_at = _now()
+    tokens = _issue_tokens(db, user, user_agent=user_agent, ip=ip)
+    db.commit()
+    return user, tokens
+
+
+def resend_2fa(db: Session, token: str) -> None:
+    """Yangi kod (eski kod bekor). Noto'g'ri urinishlar hisobi saqlanadi — qayta yuborish bilan taxmin qilib bo'lmaydi."""
+    s = get_settings()
+    row = db.execute(text("""
+        SELECT id, user_id, status, sends, last_sent_at > now() - make_interval(secs => :gap) AS too_soon,
+               created_at < now() - interval '15 minutes' AS stale
+          FROM login_challenges WHERE token_hash = :t FOR UPDATE
+    """), {"t": security.hash_token(token), "gap": s.twofa_resend_seconds}).mappings().first()
+    if row is None or row["status"] != "pending" or row["stale"]:
+        db.rollback()
+        raise AuthError("2fa_expired", "Kirish so'rovi eskirgan. Telefon va parol bilan qaytadan kiring")
+    if row["too_soon"]:
+        db.rollback()
+        raise RateLimited("2fa_resend_wait", f"Yangi kodni {s.twofa_resend_seconds} soniyadan keyin so'rang")
+    if row["sends"] >= s.twofa_max_sends:
+        db.rollback()
+        raise RateLimited("2fa_too_many", "Juda ko'p kod so'raldi. Telefon va parol bilan qaytadan kiring")
+    user = db.get(User, row["user_id"])
+    chat = _admin_chat(db, user)
+    code = f"{secrets.randbelow(10 ** 6):06d}"
+    db.execute(text("""
+        UPDATE login_challenges SET code_hash = :c, sends = sends + 1, last_sent_at = now(),
+               expires_at = now() + make_interval(secs => :ttl) WHERE id = :i
+    """), {"c": _challenge_code_hash(token, code), "ttl": s.twofa_ttl_seconds, "i": row["id"]})
+    _send_2fa(chat, code)
+    db.commit()
 
 
 # ─── Refresh token aylanishi (rotation) ─────────────────────────────────────
