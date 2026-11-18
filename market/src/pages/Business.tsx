@@ -26,7 +26,7 @@ const FEATURES = [
 // "Biz bilan nimalarga ega bo'lasiz?" — biznes egalari uchun asosiy afzalliklar (2x2, telefonda 1 ustun)
 const BENEFITS = [
   [Headphones, tr("Doimiy texnik yordam"), tr("Siz uchun biriktirilgan maxsus menejer tizimni sozlashdan tortib, xodimlarni o'rgatishgacha bo'lgan barcha jarayonlarda doimiy ko'maklashadi.")],
-  [MessageCircle, tr("Bepul onlayn konsultatsiya va ishga tushirish"), tr("Biznesingizni avtomatlashtirish bo'yicha bepul konsultatsiya beramiz va 5 kunlik bepul sinov davrida muassasangizni to'liq ishga tushirib beramiz.")],
+  [MessageCircle, tr("Bepul onlayn konsultatsiya va ishga tushirish"), tr("Biznesingizni avtomatlashtirish bo'yicha bepul konsultatsiya beramiz va sinov davrida muassasangizni to'liq ishga tushirib beramiz.")],
   [ShieldCheck, tr("Yuqori darajadagi xavfsizlik"), tr("Mijozlaringiz bazasi, kassa hisobotlari va biznes ma'lumotlaringiz zamonaviy shifrlash hamda kunlik zaxira nusxalar bilan himoyalangan.")],
   [UserCog, tr("Qulay va zamonaviy interfeys"), tr("Hech qanday murakkab o'rganishlarsiz — siz ham, ustalaringiz ham bir necha daqiqa ichida dasturni tushunib, oson ishlatib keta olasiz.")],
 ] as const;

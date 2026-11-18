@@ -339,7 +339,7 @@ export const RU: Record<string, string> = {
   "Doimiy texnik yordam": "Техническая поддержка",
   "Siz uchun biriktirilgan maxsus menejer tizimni sozlashdan tortib, xodimlarni o'rgatishgacha bo'lgan barcha jarayonlarda doimiy ko'maklashadi.": "Персональный менеджер поможет настроить систему, обучить персонал и обеспечит постоянную поддержку на каждом этапе.",
   "Bepul onlayn konsultatsiya va ishga tushirish": "Бесплатная онлайн-консультация",
-  "Biznesingizni avtomatlashtirish bo'yicha bepul konsultatsiya beramiz va 5 kunlik bepul sinov davrida muassasangizni to'liq ishga tushirib beramiz.": "Проведём бесплатный разбор вашего бизнеса и поможем полностью запустить работу за 5 дней тестового периода.",
+  "Biznesingizni avtomatlashtirish bo'yicha bepul konsultatsiya beramiz va sinov davrida muassasangizni to'liq ishga tushirib beramiz.": "Проведём бесплатный разбор вашего бизнеса и поможем полностью запустить работу в течение тестового периода.",
   "Yuqori darajadagi xavfsizlik": "Надёжная безопасность",
   "Mijozlaringiz bazasi, kassa hisobotlari va biznes ma'lumotlaringiz zamonaviy shifrlash hamda kunlik zaxira nusxalar bilan himoyalangan.": "Ваша клиентская база, касса и финансовые отчёты защищены современным шифрованием и ежедневным резервным копированием.",
   "Qulay va zamonaviy interfeys": "Удобный интерфейс",
