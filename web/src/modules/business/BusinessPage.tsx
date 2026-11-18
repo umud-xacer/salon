@@ -15,6 +15,7 @@ import { BlockTypesCard } from "./BlockTypesCard";
 import { BookingLinksCard } from "./BookingLinksCard";
 import { AutoMessagesCard } from "./AutoMessagesCard";
 import { WorkModeCard } from "./WorkModeCard";
+import { BranchesCard } from "./BranchesCard";
 import { CancelReasonsCard } from "./CancelReasonsCard";
 
 import { t } from "../../i18n";
@@ -78,6 +79,9 @@ export function BusinessPage({ membership }: { membership: Membership }) {
         )}
         {membership.modules.includes("booking") && !profile.data.parent_name && (
           <WorkModeCard businessId={b} solo={!!profile.data.is_solo_mode} />
+        )}
+        {membership.role === "owner" && !profile.data.parent_name && (
+          <BranchesCard businessId={b} billingUrl={`/${membership.business_slug}/obuna`} />
         )}
         {membership.permissions.includes("business.manage") && <AutoMessagesCard businessId={b} />}
       </div>

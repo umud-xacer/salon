@@ -783,6 +783,7 @@ class ModulePriceIn(BaseModel):
 
 class BillingSettingsIO(BaseModel):
     activation_grace_days: int = Field(ge=0, le=30)
+    branch_grace_days: int | None = Field(default=None, ge=0, le=30)   # yangi filialning bepul imtiyozli kunlari
 
 
 @router.get("/billing/module-prices", response_model=list[ModulePriceOut])
@@ -807,13 +808,16 @@ def update_module_price(body: ModulePriceIn, module_code: str = Path(max_length=
 
 @router.get("/billing/settings", response_model=BillingSettingsIO)
 def billing_settings(db: Session = Depends(get_db)):
-    return BillingSettingsIO(activation_grace_days=db.scalar(text("SELECT activation_grace_days FROM billing_settings")))
+    r = db.execute(text("SELECT activation_grace_days, branch_grace_days FROM billing_settings")).mappings().one()
+    return BillingSettingsIO(**r)
 
 
 @router.put("/billing/settings", response_model=BillingSettingsIO)
 def update_billing_settings(body: BillingSettingsIO, db: Session = Depends(get_db)):
     """Faollashtirish muhlati: yangi kompaniya/filial to'lovsiz necha kun ishlaydi."""
-    db.execute(text("UPDATE billing_settings SET activation_grace_days = :d"), {"d": body.activation_grace_days})
+    db.execute(text("UPDATE billing_settings SET activation_grace_days = :d, "
+                    "branch_grace_days = coalesce(:b, branch_grace_days)"),
+               {"d": body.activation_grace_days, "b": body.branch_grace_days})
     audit.log(db, None, "update", "billing_settings", None, body.model_dump())
     db.commit()
-    return body
+    return billing_settings(db)

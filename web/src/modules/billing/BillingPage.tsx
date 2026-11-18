@@ -373,7 +373,8 @@ export function BillingPaywall({ membership }: { membership: Membership }) {
 export function ExpiryBanner({ membership, billingUrl }: { membership: Membership; billingUrl: string }) {
   if (membership.role !== "owner" || !membership.subscription_ends_at) return null;
   const ms = new Date(membership.subscription_ends_at).getTime() - Date.now();
-  if (ms <= 0 || ms > 3 * 86_400_000) return null;
+  // Filialning imtiyozli davri (5 kun) butunlay ko'rinsin; asosiy muassasada — oxirgi 3 kun
+  if (ms <= 0 || ms > (membership.parent_id ? 6 : 3) * 86_400_000) return null;
   const days = Math.floor(ms / 86_400_000);
   return (
     <div className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">

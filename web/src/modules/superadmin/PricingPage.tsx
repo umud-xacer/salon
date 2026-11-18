@@ -181,26 +181,38 @@ function ModulePriceRow({ m }: { m: ModulePrice }) {
 function GraceSetting() {
   const qc = useQueryClient();
   const q = useQuery({ queryKey: ["superadmin", "billing-settings"],
-    queryFn: () => api<{ activation_grace_days: number }>("/superadmin/billing/settings") });
+    queryFn: () => api<{ activation_grace_days: number; branch_grace_days: number }>("/superadmin/billing/settings") });
   const [days, setDays] = useState<string | null>(null);
+  const [branchDays, setBranchDays] = useState<string | null>(null);
   const save = useMutation({
-    mutationFn: (d: number) => api("/superadmin/billing/settings", json("PUT", { activation_grace_days: d })),
-    onSuccess: () => { setDays(null); void qc.invalidateQueries({ queryKey: ["superadmin", "billing-settings"] }); },
+    mutationFn: (b: { activation_grace_days: number; branch_grace_days: number }) => api("/superadmin/billing/settings", json("PUT", b)),
+    onSuccess: () => { setDays(null); setBranchDays(null); void qc.invalidateQueries({ queryKey: ["superadmin", "billing-settings"] }); },
   });
   if (!q.data) return q.error ? <ErrorNote error={q.error} /> : <Spinner />;
   const value = days ?? String(q.data.activation_grace_days);
+  const bValue = branchDays ?? String(q.data.branch_grace_days);
   const d = Number(value);
-  const ok = value.trim() !== "" && Number.isInteger(d) && d >= 0 && d <= 30;
+  const bd = Number(bValue);
+  const valid = (s: string, n: number) => s.trim() !== "" && Number.isInteger(n) && n >= 0 && n <= 30;
+  const ok = valid(value, d) && valid(bValue, bd);
+  const changed = d !== q.data.activation_grace_days || bd !== q.data.branch_grace_days;
   return (
     <div className="flex flex-wrap items-end gap-3 text-sm">
-      <label className="block w-40">{t("To'lov muhlati, kun")}
+      <label className="block w-44">{t("Yangi kompaniya: to'lov muhlati, kun")}
         <input className={inputClass} inputMode="numeric" value={value} onChange={(e) => setDays(e.target.value.replace(/\D/g, "").slice(0, 2))} />
       </label>
-      <Button variant="secondary" disabled={!ok || d === q.data.activation_grace_days || save.isPending} onClick={() => save.mutate(d)}>
+      <label className="block w-44">{t("Yangi filial: bepul kunlar")}
+        <input className={inputClass} inputMode="numeric" value={bValue} onChange={(e) => setBranchDays(e.target.value.replace(/\D/g, "").slice(0, 2))} />
+      </label>
+      <Button variant="secondary" disabled={!ok || !changed || save.isPending}
+        onClick={() => save.mutate({ activation_grace_days: d, branch_grace_days: bd })}>
         {t("Saqlash")}
       </Button>
       <p className="basis-full text-muted">
-        {t("Yangi kompaniya yoki filial qo'shilganda direktor 1-sanagacha bo'lgan kunlar uchun to'laydi. Shu muhlatda to'lanmasa, u yopiladi.")}
+        {t("Yangi kompaniya qo'shilganda direktor 1-sanagacha bo'lgan kunlar uchun to'laydi. Shu muhlatda to'lanmasa, u yopiladi.")}
+      </p>
+      <p className="basis-full text-muted">
+        {t("Yangi filial (direktor yoki siz qo'shgan) shuncha kun bepul ishlaydi, keyin tarmoq muddatigacha kunbay hisoblanadi. Imtiyoz tugaguncha to'lanmasa filial yopiladi.")}
       </p>
       {save.error && <div className="w-full"><ErrorNote error={save.error} /></div>}
     </div>

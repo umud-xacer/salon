@@ -4,6 +4,8 @@ Huquqlar: profil/soat/rasm — 'business.manage'; xizmatlar — 'services.manage
 Bazada ham xuddi shu qoida (RLS); status/reyting/egasi kabi maydonlarni triggerlar himoya qiladi.
 Har bir o'zgarish audit_logs ga yoziladi.
 """
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, File, HTTPException, Path, Query, UploadFile, status
 from pydantic import BaseModel
 from sqlalchemy import text
@@ -357,3 +359,62 @@ def set_work_mode(body: WorkModeIn, business_id: int = Depends(_business), db: S
     audit.log(db, business_id, "update", "business", business_id, ["work_mode"])
     db.commit()
     return _profile(db, business_id)
+
+
+# ─── Filiallar: direktor o'zi qo'shadi (sql/064_director_branches.sql) ─────────────────────────
+class BranchCreateIn(BaseModel):
+    branch_name: str
+    region: str | None = None
+    city: str | None = None
+    address: str | None = None
+    lat: float
+    lng: float
+
+
+class BranchQuoteOut(BaseModel):
+    monthly_fee: int
+    discount_pct: int
+    free_until: datetime | None
+    charge_to: datetime | None
+    amount: int
+    chain_unlimited: bool
+
+
+class BranchOut(BaseModel):
+    id: int
+    slug: str
+    branch_name: str | None
+    address: str | None
+    status: str
+    subscription_ends_at: datetime | None
+    operational: bool
+
+
+class BranchesOut(BaseModel):
+    quote: BranchQuoteOut | None
+    branches: list[BranchOut]
+
+
+@router.get("/branches", response_model=BranchesOut)
+def list_branches(business_id: int = Path(ge=1), db: Session = Depends(get_db)):
+    """Tarmoq filiallari va yangi filial narxi. Faqat tarmoq egasi (asosiy muassasa direktori) — buni baza tekshiradi."""
+    q = db.execute(text("SELECT * FROM app.branch_quote(:b)"), {"b": business_id}).mappings().first()
+    rows = db.execute(text("""
+        SELECT b.id, b.slug, b.branch_name, b.address, b.status::text AS status, b.subscription_ends_at,
+               app.business_operational(b.id) AS operational
+          FROM businesses b WHERE b.parent_id = :b ORDER BY b.id"""), {"b": business_id}).mappings().all()
+    return BranchesOut(quote=BranchQuoteOut(**q) if q else None, branches=[BranchOut(**r) for r in rows])
+
+
+@router.post("/branches", response_model=BranchOut, status_code=201)
+def create_branch(body: BranchCreateIn, business_id: int = Path(ge=1), db: Session = Depends(get_db)):
+    """Yangi filial: tur, tarif, ish vaqti va modullar asosiydan; imtiyozli davr va qolgan kunlar qarzi — baza hisoblaydi."""
+    new_id = db.scalar(text("SELECT app.create_branch(:h, :n, :r, :c, :a, :lat, :lng)"),
+                       {"h": business_id, "n": body.branch_name, "r": body.region, "c": body.city, "a": body.address,
+                        "lat": body.lat, "lng": body.lng})
+    row = db.execute(text("""
+        SELECT b.id, b.slug, b.branch_name, b.address, b.status::text AS status, b.subscription_ends_at,
+               app.business_operational(b.id) AS operational FROM businesses b WHERE b.id = :i"""),
+                     {"i": new_id}).mappings().one()
+    db.commit()
+    return BranchOut(**row)

@@ -89,6 +89,10 @@ _DB_ERRORS = {
     "P0443": (409, "promo_first_visit", "Bu promokod faqat birinchi tashrif uchun"),
     "P0430": (409, "branch_parent_invalid", "Filial faqat asosiy kompaniyaga biriktiriladi (filialning filiali bo'lmaydi)"),
     "P0431": (409, "branch_has_children", "Bu muassasaning o'z filiallari bor, uni boshqasiga filial qilib bo'lmaydi"),
+    "P0432": (409, "branch_parent_invalid", "Filial faqat asosiy muassasadan qo'shiladi (filialning filiali bo'lmaydi)"),
+    "P0433": (402, "chain_inactive", "Avval asosiy muassasa obunasini to'lang, keyin filial qo'shing"),
+    "P0434": (422, "invalid_branch_name", "Filial nomini kiriting (2–80 belgi)"),
+    "P0435": (422, "location_required", "Xaritada filial joyini belgilang"),
 }
 
 

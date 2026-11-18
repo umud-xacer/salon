@@ -150,11 +150,13 @@ def test_branch_activation_until_chain_end(client, superadmin, admin_db):
     chain_end = next_first(next_first(datetime.now(timezone.utc)) + timedelta(days=40))   # ~2 oy oldinda, 1-sana
     set_sub(client, superadmin, head, monthly_fee=100000, subscription_ends_at=chain_end.isoformat())
     b = branch(client, superadmin, head)
+    # 5 kun bepul imtiyoz (sql/064), keyin tarmoq muddatigacha kunbay
     with admin_db.connect() as c:
-        expect = c.execute(text("SELECT app.prorate(70000, now(), :e)"), {"e": chain_end}).scalar()
+        expect = c.execute(text("SELECT app.prorate(70000, now() + interval '5 days', :e)"), {"e": chain_end}).scalar()
     data = info(client, head["id"], head["owner"])
     assert [(x["business_id"], x["amount"], x["kind"]) for x in data["charges"]] == [(b, expect, "branch")]
-    assert ends_of(admin_db, b) <= datetime.now(timezone.utc) + timedelta(days=1)      # muhlat
+    left = ends_of(admin_db, b) - datetime.now(timezone.utc)
+    assert timedelta(days=4, hours=23) < left <= timedelta(days=5)                      # imtiyoz
     pay(client, b, head["owner"], kind="charges")                                      # filial sahifasidan
     assert ends_of(admin_db, b) == chain_end and ends_of(admin_db, head["id"]) == chain_end
 
