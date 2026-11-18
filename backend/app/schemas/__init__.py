@@ -104,6 +104,7 @@ class PasswordReset(_Phone):
 
 class PasswordLogin(_Phone):
     password: str = Field(min_length=1, max_length=128)
+    link_token: str | None = Field(default=None, max_length=2000)   # Google hisobini shu kirishda bog'lash
 
 
 class RefreshIn(BaseModel):
@@ -160,6 +161,7 @@ class TelegramStartOut(BaseModel):
 
 class TelegramPollIn(BaseModel):
     nonce: str = Field(min_length=16, max_length=64)
+    panel: bool = False          # biznes paneli: yangi mijoz yaratilmaydi, faqat direktor/xodim kiradi
 
 
 class TelegramPollOut(BaseModel):
@@ -169,6 +171,7 @@ class TelegramPollOut(BaseModel):
 
 class GoogleLoginIn(BaseModel):
     id_token: str = Field(min_length=20, max_length=4096)
+    panel: bool = False          # biznes paneli: hisob biznesga ulanmagan bo'lsa — not_linked
 
 
 class GoogleLoginOut(BaseModel):

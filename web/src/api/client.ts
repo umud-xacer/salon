@@ -150,14 +150,33 @@ async function publicPost<T>(path: string, body: unknown): Promise<T> {
   return res.json();
 }
 
-export const loginWithPassword = (phone: string, password: string) =>
-  publicPost<LoginResponse>("/auth/login", { phone, password });
+// linkToken — Google hisobini shu kirishda bog'lash (panelda birinchi marta "Google orqali" bosilganda)
+export const loginWithPassword = (phone: string, password: string, linkToken?: string | null) =>
+  publicPost<LoginResponse>("/auth/login", { phone, password, link_token: linkToken ?? undefined });
 
 export const requestOtp = (phone: string) =>
   publicPost<{ expires_in: number; dev_code: string | null }>("/auth/otp/request", { phone });
 
-export const verifyOtp = (phone: string, code: string) =>
-  publicPost<LoginResponse>("/auth/otp/verify", { phone, code });
+export const verifyOtp = (phone: string, code: string, linkToken?: string | null) =>
+  publicPost<LoginResponse>("/auth/otp/verify", { phone, code, link_token: linkToken ?? undefined });
+
+// ─── Telegram va Google orqali kirish (panel: yangi mijoz yaratilmaydi, faqat direktor/xodim) ──
+export type LoginMethods = { login_methods?: { sms?: boolean; telegram: boolean; google: boolean }; google_web_client_id?: string | null };
+
+export async function loginMethods(): Promise<LoginMethods> {
+  const res = await fetch(BASE + "/catalog/app-info");
+  if (!res.ok) throw await parseError(res);
+  return res.json();
+}
+
+export const telegramStart = () =>
+  publicPost<{ nonce: string; url: string; expires_in: number }>("/auth/telegram/start", {});
+
+export const telegramPoll = (nonce: string) =>
+  publicPost<{ status: "pending" | "ok"; login: LoginResponse | null }>("/auth/telegram/poll", { nonce, panel: true });
+
+export const googleLogin = (idToken: string) =>
+  publicPost<{ need_phone: boolean; link_token: string | null; login: LoginResponse | null }>("/auth/google", { id_token: idToken, panel: true });
 
 export async function logout() {
   const token = readRefresh();

@@ -6,7 +6,7 @@ from sqlalchemy import text
 from app.core.config import get_settings
 from app.db.session import api_session
 from app.services import auth_service, telegram_bot
-from tests.conftest import auth_header, create_business, new_phone, otp_login
+from tests.conftest import add_member, auth_header, create_business, new_phone, otp_login
 from tests.test_appointments import book
 from tests.test_schedule import day_from_today, new_master, new_service
 
@@ -283,3 +283,81 @@ def test_deleted_account_loses_telegram_link(client, bot):
     login = telegram_login(client, phone)
     assert client.delete(f"{API}/auth/me", headers=auth_header(login)).status_code == 204
     assert client.post(f"{API}/auth/otp/request", json={"phone": phone}).json()["channel"] == "sms"
+
+
+# ─── Biznes paneli (sql/063_panel_social_login.sql) ────────────────────────
+def _tg_poll_panel(client, phone: str):
+    s = start(client)
+    tg_id = next(_tg_ids)
+    client.post(f"{API}/telegram/webhook", headers=HDR, json=tg_update(tg_id, text_=f"/start {s['nonce']}"))
+    client.post(f"{API}/telegram/webhook", headers=HDR, json=tg_update(tg_id, contact={
+        "phone_number": phone.lstrip("+"), "user_id": tg_id, "first_name": "Ali"}))
+    return s, client.post(f"{API}/auth/telegram/poll", json={"nonce": s["nonce"], "panel": True})
+
+
+def test_panel_telegram_only_for_business_members(client, superadmin, bot):
+    biz = create_business(client, superadmin)
+    staff = add_member(client, biz, "staff")
+    r = _tg_poll_panel(client, staff["tokens"]["user"]["phone"])[1]
+    assert r.status_code == 200, r.text
+    assert r.json()["login"]["user"]["id"] == staff["tokens"]["user"]["id"]
+
+    # Noma'lum raqam — yangi mijoz yaratilmaydi, so'rov qayta ishlatilmaydi
+    phone = new_phone()
+    s, r = _tg_poll_panel(client, phone)
+    assert r.status_code == 403 and r.json()["detail"]["code"] == "not_linked"
+    assert "Telegram" in r.json()["detail"]["message"]
+    assert poll(client, s["nonce"]).status_code == 401
+    assert client.post(f"{API}/auth/otp/request", json={"phone": phone}).status_code == 200
+    with api_session(None) as db:
+        assert db.execute(text("SELECT count(*) FROM users WHERE phone = :p"), {"p": phone}).scalar() == 0
+
+    # Oddiy mijoz — rad (ilovada esa kiraveradi)
+    customer = otp_login(client, new_phone(), "Mijoz")
+    assert _tg_poll_panel(client, customer["user"]["phone"])[1].status_code == 403
+    assert telegram_login(client, customer["user"]["phone"])["user"]["id"] == customer["user"]["id"]
+
+
+def test_panel_google_links_with_password_then_one_tap(client, superadmin, monkeypatch, bot):
+    biz = create_business(client, superadmin)
+    owner_phone = biz["owner"]["user"]["phone"]
+    sub = f"gp-{new_phone()}"
+    monkeypatch.setattr(auth_service, "_google_claims",
+                        lambda token: {"sub": sub, "email": "boss@example.com", "email_verified": True})
+    first = client.post(f"{API}/auth/google", json={"id_token": "t" * 40, "panel": True}).json()
+    assert first["need_phone"] is True and first["link_token"]
+
+    # Bog'lash: parol bilan (parol bo'lmasa — SMS kod bilan) bir marta kiriladi
+    code = client.post(f"{API}/auth/otp/request", json={"phone": owner_phone}).json()["dev_code"]
+    r = client.post(f"{API}/auth/otp/verify", json={"phone": owner_phone, "code": code, "link_token": first["link_token"]})
+    assert r.status_code == 200, r.text
+    again = client.post(f"{API}/auth/google", json={"id_token": "t" * 40, "panel": True})
+    assert again.status_code == 200 and again.json()["login"]["user"]["id"] == biz["owner"]["user"]["id"]
+
+    # Parol bilan bog'lash va yaroqsiz link_token
+    m = add_member(client, biz, "staff")
+    pw = client.post(f"{API}/businesses/{biz['id']}/members/{m['member']['id']}/password",
+                     headers=auth_header(biz["owner"]), json={"new_password": "Xodim2026parol"})
+    assert pw.status_code == 204, pw.text
+    sub2 = f"gp2-{new_phone()}"
+    monkeypatch.setattr(auth_service, "_google_claims",
+                        lambda token: {"sub": sub2, "email": "staff@example.com", "email_verified": True})
+    link = client.post(f"{API}/auth/google", json={"id_token": "t" * 40, "panel": True}).json()["link_token"]
+    r = client.post(f"{API}/auth/login", json={"phone": m["tokens"]["user"]["phone"], "password": "Xodim2026parol",
+                                                "link_token": link})
+    assert r.status_code == 200, r.text
+    r = client.post(f"{API}/auth/google", json={"id_token": "t" * 40, "panel": True})
+    assert r.json()["login"]["user"]["id"] == m["tokens"]["user"]["id"]
+    assert client.post(f"{API}/auth/login", json={"phone": owner_phone, "password": "x", "link_token": "bad"}).status_code == 401
+
+    # Mijozga bog'langan Google hisobi — panelga kirmaydi, ilovaga kiradi
+    sub3 = f"gp3-{new_phone()}"
+    monkeypatch.setattr(auth_service, "_google_claims",
+                        lambda token: {"sub": sub3, "email": "c@example.com", "email_verified": True})
+    link = client.post(f"{API}/auth/google", json={"id_token": "t" * 40}).json()["link_token"]
+    phone = new_phone()
+    code = client.post(f"{API}/auth/otp/request", json={"phone": phone}).json()["dev_code"]
+    client.post(f"{API}/auth/otp/verify", json={"phone": phone, "code": code, "full_name": "Mijoz", "link_token": link})
+    r = client.post(f"{API}/auth/google", json={"id_token": "t" * 40, "panel": True})
+    assert r.status_code == 403 and r.json()["detail"]["code"] == "not_linked" and "Google" in r.json()["detail"]["message"]
+    assert client.post(f"{API}/auth/google", json={"id_token": "t" * 40}).json()["login"] is not None

@@ -23,8 +23,8 @@ MSG = {
                "Ссылка устарела. Нажмите «Войти через Telegram» в приложении Chronix ещё раз.",
     "hello": "Salom! Bu Chronix ilovasiga kirish boti. Ilovada «Telegram orqali kirish» ni bosing.\n\n"
              "Здравствуйте! Это бот для входа в приложение Chronix. Нажмите «Войти через Telegram» в приложении.",
-    "ok": "✅ Raqam tasdiqlandi. Chronix ilovasiga qayting — kirish avtomatik bo'ladi.\n\n"
-          "✅ Номер подтверждён. Вернитесь в приложение Chronix — вход выполнится автоматически.",
+    "ok": "✅ Raqam tasdiqlandi. Chronix ilovasi yoki saytiga qayting — kirish avtomatik bo'ladi.\n\n"
+          "✅ Номер подтверждён. Вернитесь в приложение или на сайт Chronix — вход выполнится автоматически.",
     "not_own": "Faqat o'zingizning raqamingizni tugma orqali yuboring.\n\n"
                "Отправьте, пожалуйста, свой номер с помощью кнопки.",
     "bad_phone": "Hozircha faqat O'zbekiston (+998) raqamlari qabul qilinadi.\n\n"

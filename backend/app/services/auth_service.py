@@ -233,8 +233,15 @@ def telegram_contact(db: Session, tg_user_id: int, contact_user_id: int | None, 
     return "ok" if row else "no_request"
 
 
+def _require_panel(db: Session, user: User | None, provider: str) -> None:
+    """Biznes paneli: faqat muassasada faol a'zo yoki Super Admin. Aks holda tushunarli rad."""
+    if user is None or not db.execute(text("SELECT app.panel_access(:u)"), {"u": user.id}).scalar():
+        raise Forbidden("not_linked", f"Bu {provider} akkaunt biror biznes profilga ulanmagan. "
+                        "Direktor yoki xodim sifatida qo'shilgan telefon raqamingiz bilan kiring")
+
+
 def telegram_poll(db: Session, nonce: str, user_agent: str | None,
-                  ip: str | None) -> tuple[User, TokenPair, bool] | None:
+                  ip: str | None, panel: bool = False) -> tuple[User, TokenPair, bool] | None:
     """None — hali kutilmoqda. Tayyor bo'lsa bir martalik: kirish tokenlari."""
     row = db.execute(text("""
         SELECT id, status, phone, full_name, link_token, tg_user_id, tg_chat_id, expires_at > now() AS alive
@@ -247,6 +254,13 @@ def telegram_poll(db: Session, nonce: str, user_agent: str | None,
         db.rollback()
         return None
     db.execute(text("UPDATE telegram_logins SET status = 'used' WHERE id = :i"), {"i": row["id"]})
+    if panel:
+        user = db.scalars(select(User).where(User.phone == row["phone"])).first()
+        try:
+            _require_panel(db, user, "Telegram")
+        except Forbidden:
+            db.commit()                                      # so'rov ishlatildi — qayta ishlatib bo'lmaydi
+            raise
     return _login_verified_phone(db, row["phone"], row["full_name"], user_agent, ip, link_token=row["link_token"],
                                  telegram=(row["tg_user_id"], row["tg_chat_id"]))
 
@@ -312,7 +326,7 @@ def _link_identity(db: Session, user: User, link_token: str) -> None:
 
 
 def google_login(db: Session, id_token: str, user_agent: str | None,
-                 ip: str | None) -> tuple[User, TokenPair] | str:
+                 ip: str | None, panel: bool = False) -> tuple[User, TokenPair] | str:
     """Bog'langan hisob bo'lsa — kirish. Aks holda link_token (raqam bir marta tasdiqlanadi va bog'lanadi)."""
     c = _google_claims(id_token)
     uid = db.execute(text("SELECT user_id FROM user_identities WHERE provider = 'google' AND subject = :s"),
@@ -322,6 +336,12 @@ def google_login(db: Session, id_token: str, user_agent: str | None,
         return _make_link_token("google", c["sub"], c.get("email"))
     user = db.get(User, uid, with_for_update=True)
     _ensure_can_login(user)
+    if panel:
+        try:
+            _require_panel(db, user, "Google")
+        except Forbidden:
+            db.rollback()
+            raise
     user.last_login_at = _now()
     tokens = _issue_tokens(db, user, user_agent=user_agent, ip=ip)
     db.commit()
@@ -330,8 +350,10 @@ def google_login(db: Session, id_token: str, user_agent: str | None,
 
 # ─── Parol bilan kirish (veb-admin) ─────────────────────────────────────────
 def login_password(db: Session, phone: str, password: str,
-                   user_agent: str | None, ip: str | None) -> tuple[User, TokenPair]:
+                   user_agent: str | None, ip: str | None, link_token: str | None = None) -> tuple[User, TokenPair]:
     s = get_settings()
+    if link_token:
+        _decode_link_token(link_token)                       # yaroqsiz bo'lsa — parol tekshirilmasdan rad
     invalid = AuthError("invalid_credentials", "Telefon yoki parol noto'g'ri")
     user = db.scalars(select(User).where(User.phone == phone).with_for_update()).first()
     if user is None or user.password_hash is None:
@@ -352,6 +374,8 @@ def login_password(db: Session, phone: str, password: str,
     user.last_login_at = _now()
     if security.password_needs_rehash(user.password_hash):
         user.password_hash = security.hash_password(password)
+    if link_token:
+        _link_identity(db, user, link_token)
     tokens = _issue_tokens(db, user, user_agent=user_agent, ip=ip)
     db.commit()
     return user, tokens

@@ -52,7 +52,7 @@ def telegram_start(body: TelegramStartIn, request: Request, db: Session = Depend
 @router.post("/telegram/poll", response_model=TelegramPollOut)
 def telegram_poll(body: TelegramPollIn, request: Request, db: Session = Depends(get_auth_db)):
     ua, ip = client_meta(request)
-    res = auth_service.telegram_poll(db, body.nonce, ua, ip)
+    res = auth_service.telegram_poll(db, body.nonce, ua, ip, panel=body.panel)
     if res is None:
         return TelegramPollOut(status="pending")
     user, tokens, is_new = res
@@ -64,7 +64,7 @@ def telegram_poll(body: TelegramPollIn, request: Request, db: Session = Depends(
 def google_login(body: GoogleLoginIn, request: Request, db: Session = Depends(get_auth_db)):
     """Google ID token. Hisob bog'lanmagan bo'lsa — need_phone + link_token (raqam bir marta tasdiqlanadi)."""
     ua, ip = client_meta(request)
-    res = auth_service.google_login(db, body.id_token, ua, ip)
+    res = auth_service.google_login(db, body.id_token, ua, ip, panel=body.panel)
     if isinstance(res, str):
         return GoogleLoginOut(need_phone=True, link_token=res)
     user, tokens = res
@@ -84,7 +84,7 @@ def delete_me(db: Session = Depends(get_db)):
 def login(body: PasswordLogin, request: Request, db: Session = Depends(get_auth_db)):
     """Telefon + parol (veb-admin panel uchun)."""
     ua, ip = client_meta(request)
-    user, tokens = auth_service.login_password(db, body.phone, body.password, ua, ip)
+    user, tokens = auth_service.login_password(db, body.phone, body.password, ua, ip, link_token=body.link_token)
     check_panel(request, user.is_superadmin)        # noto'g'ri panel — tokenlar berilmaydi
     return _login_out(user, tokens)
 
