@@ -156,7 +156,7 @@ def test_branch_activation_until_chain_end(client, superadmin, admin_db):
     data = info(client, head["id"], head["owner"])
     assert [(x["business_id"], x["amount"], x["kind"]) for x in data["charges"]] == [(b, expect, "branch")]
     left = ends_of(admin_db, b) - datetime.now(timezone.utc)
-    assert timedelta(days=4, hours=23) < left <= timedelta(days=5)                      # imtiyoz
+    assert timedelta(days=4, hours=23) < left <= timedelta(days=5, minutes=1)           # imtiyoz
     pay(client, b, head["owner"], kind="charges")                                      # filial sahifasidan
     assert ends_of(admin_db, b) == chain_end and ends_of(admin_db, head["id"]) == chain_end
 

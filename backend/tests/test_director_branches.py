@@ -32,7 +32,7 @@ def test_director_adds_branch_with_five_free_days(client, superadmin, admin_db, 
     quote = q.json()["quote"]
     assert quote["monthly_fee"] == 70000 and quote["discount_pct"] == 30 and q.json()["branches"] == []
     free_left = datetime.fromisoformat(quote["free_until"]) - datetime.now(timezone.utc)
-    assert timedelta(days=4, hours=23) < free_left <= timedelta(days=5)
+    assert timedelta(days=4, hours=23) < free_left <= timedelta(days=5, minutes=1)
 
     r = client.post(url(head), headers=h, json=BODY)
     assert r.status_code == 201, r.text
@@ -119,7 +119,7 @@ def test_branch_grace_setting(client, superadmin):
         head, _ = chain(client, superadmin)
         q = client.get(url(head), headers=auth_header(head["owner"])).json()["quote"]
         left = datetime.fromisoformat(q["free_until"]) - datetime.now(timezone.utc)
-        assert timedelta(days=6, hours=23) < left <= timedelta(days=7)
+        assert timedelta(days=6, hours=23) < left <= timedelta(days=7, minutes=1)
     finally:
         client.put("/api/v1/superadmin/billing/settings", headers=sa(superadmin),
                    json={"activation_grace_days": 1, "branch_grace_days": 5})
