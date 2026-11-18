@@ -136,7 +136,7 @@ export function LoginPage() {
     setError(null);
     try {
       const p = normalizePhone(phone);
-      if (mode === "password") {
+      if (formMode === "password") {
         await signIn(await loginWithPassword(p, password, link));
       } else if (!codeSent) {
         const r = await requestOtp(p);
@@ -153,6 +153,10 @@ export function LoginPage() {
   }
 
   const tgOn = !!methods?.login_methods?.telegram;
+  // SMS shlyuz o'chiq (server SMS_LOGIN_ENABLED=false) — "SMS kod" tabi yashiriladi, faqat parol.
+  // SMS yoqilsa tab o'zi qaytadi: kod o'chirilmagan.
+  const smsOn = methods?.login_methods?.sms === true;
+  const formMode = smsOn ? mode : "password";
   const quick = (tgOn || !!googleId) && !link;
 
   return (
@@ -214,7 +218,7 @@ export function LoginPage() {
             )}
             {error != null && quick && <div className="mb-3"><ErrorNote error={error} /></div>}
 
-            <div className="mb-4 mt-1 grid grid-cols-2 rounded-lg bg-page p-1 text-sm">
+            {smsOn && <div className="mb-4 mt-1 grid grid-cols-2 rounded-lg bg-page p-1 text-sm">
               {(["password", "sms"] as const).map((m) => (
                 <button
                   key={m}
@@ -225,7 +229,7 @@ export function LoginPage() {
                   {m === "password" ? t("Parol") : t("SMS kod")}
                 </button>
               ))}
-            </div>
+            </div>}
 
             <form onSubmit={submit} className="space-y-3">
               <label className="block text-sm">
@@ -241,7 +245,7 @@ export function LoginPage() {
                 />
               </label>
 
-              {mode === "password" && (
+              {formMode === "password" && (
                 <label className="block text-sm">
                   {t("Parol")}
                   <PasswordField
@@ -254,7 +258,7 @@ export function LoginPage() {
                 </label>
               )}
 
-              {mode === "sms" && codeSent && (
+              {formMode === "sms" && codeSent && (
                 <label className="block text-sm">
                   {t("SMS kod")}
                   <input
@@ -271,7 +275,7 @@ export function LoginPage() {
 
               {error != null && !quick && <ErrorNote error={error} />}
               <Button type="submit" disabled={busy} className="w-full">
-                {mode === "sms" && !codeSent ? t("Kod yuborish") : link ? t("Kirish va Google'ni ulash") : t("Kirish")}
+                {formMode === "sms" && !codeSent ? t("Kod yuborish") : link ? t("Kirish va Google'ni ulash") : t("Kirish")}
               </Button>
             </form>
           </>
