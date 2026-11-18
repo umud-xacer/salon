@@ -1,7 +1,8 @@
 // "Biznes uchun" — salon, klinika va SPA egalari uchun oddiy landing sahifa (chronix.uz bilan bir xil dizayn).
 import { useQuery } from "@tanstack/react-query";
 import {
-  ArrowRight, BarChart3, Bell, Building2, CalendarDays, Check, CreditCard, Gift, Package, Phone, Send, Smartphone, Users,
+  ArrowRight, BarChart3, Bell, Building2, CalendarDays, Check, CreditCard, Gift, Headphones, MessageCircle, Package, Phone,
+  Send, ShieldCheck, Smartphone, UserCog, Users,
 } from "lucide-react";
 
 import { api } from "../api";
@@ -20,6 +21,14 @@ const FEATURES = [
   [BarChart3, tr("Hisobotlar"), tr("Daromad, xizmatlar va xodimlar samaradorligi — Excel'ga bir bosishda.")],
   [Gift, tr("Aksiyalar"), tr("Bo'sh soatlarga chegirma, promokodlar va doimiy mijozlar uchun sodiqlik dasturi.")],
   [Building2, tr("Filiallar"), tr("Bir nechta filialni bitta hisobdan boshqarish va yagona obuna.")],
+] as const;
+
+// "Biz bilan nimalarga ega bo'lasiz?" — biznes egalari uchun asosiy afzalliklar (2x2, telefonda 1 ustun)
+const BENEFITS = [
+  [Headphones, tr("Doimiy texnik yordam"), tr("Siz uchun biriktirilgan maxsus menejer tizimni sozlashdan tortib, xodimlarni o'rgatishgacha bo'lgan barcha jarayonlarda doimiy ko'maklashadi.")],
+  [MessageCircle, tr("Bepul onlayn konsultatsiya va ishga tushirish"), tr("Biznesingizni avtomatlashtirish bo'yicha bepul konsultatsiya beramiz va 5 kunlik bepul sinov davrida muassasangizni to'liq ishga tushirib beramiz.")],
+  [ShieldCheck, tr("Yuqori darajadagi xavfsizlik"), tr("Mijozlaringiz bazasi, kassa hisobotlari va biznes ma'lumotlaringiz zamonaviy shifrlash hamda kunlik zaxira nusxalar bilan himoyalangan.")],
+  [UserCog, tr("Qulay va zamonaviy interfeys"), tr("Hech qanday murakkab o'rganishlarsiz — siz ham, ustalaringiz ham bir necha daqiqa ichida dasturni tushunib, oson ishlatib keta olasiz.")],
 ] as const;
 
 const PLAN_TEXT: Record<string, { note: string; features: string[]; featured?: boolean }> = {
@@ -49,6 +58,26 @@ export default function Business() {
             <a href="#boglanish" className="bg-brand-grad inline-flex h-12 items-center gap-2 rounded-full px-6 font-bold text-white shadow-lg">{tr("Ulanish uchun ariza")} <ArrowRight size={18} /></a>
             <a href={PANEL_URL} className="inline-flex h-12 items-center rounded-full bg-white/10 px-6 font-bold ring-1 ring-white/20 hover:bg-white/15">{tr("Panelga kirish")}</a>
           </div>
+        </div>
+      </section>
+
+      {/* Biz bilan nimalarga ega bo'lasiz? */}
+      <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
+        <div className="mb-8 grid items-end gap-4 lg:grid-cols-[1.1fr_1fr] lg:gap-12">
+          <h2 className="text-[30px] font-extrabold leading-[1.1] tracking-tight text-navy sm:text-[40px]">{tr("Biz bilan nimalarga ega bo'lasiz?")}</h2>
+          <p className="text-lg text-muted lg:pb-1">{tr("Chronix — bu Sizning xizmat ko'rsatish biznesingizni tizimlashtirish va daromadni oshirish uchun eng yaxshi tanlov!")}</p>
+        </div>
+        <div className="grid overflow-hidden rounded-3xl border border-line bg-white sm:grid-cols-2">
+          {BENEFITS.map(([Icon, title, text], i) => (
+            <div key={title}
+              className={`flex gap-5 p-6 transition hover:bg-soft/60 sm:p-8 ${i > 0 ? "border-t border-line" : ""} ${i === 1 ? "sm:border-t-0" : ""} ${i % 2 === 1 ? "sm:border-l sm:border-line" : ""}`}>
+              <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-brand-soft text-brand"><Icon size={26} strokeWidth={1.8} /></span>
+              <div>
+                <h3 className="text-lg font-extrabold text-navy">{title}</h3>
+                <p className="mt-2 leading-relaxed text-muted">{text}</p>
+              </div>
+            </div>
+          ))}
         </div>
       </section>
 
