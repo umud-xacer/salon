@@ -19,6 +19,7 @@ _admin = make_url(ADMIN_URL)
 _host = f"{_admin.host}:{_admin.port or 5432}"
 os.environ.update({
     "ENV": "test",
+    "IP_GUARD_ENABLED": "false",                  # test_ip_guard.py o'zi yoqadi (testlar bitta "IP"dan ko'p so'rov)
     "SUPERADMIN_2FA": "false",                    # test_superadmin_2fa.py o'zi yoqadi
     "PUBLIC_CACHE_TTL": "0",                      # katalog keshi testlarda o'chiq (test_cache.py o'zi yoqadi)
     "DATABASE_URL": f"postgresql+psycopg://app_api:test_api_Pw_123@{_host}/{DB_NAME}",

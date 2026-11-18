@@ -821,3 +821,34 @@ def update_billing_settings(body: BillingSettingsIO, db: Session = Depends(get_d
     audit.log(db, None, "update", "billing_settings", None, body.model_dump())
     db.commit()
     return billing_settings(db)
+
+
+# ─── Xavfsizlik: vaqtincha bloklangan IP/qurilmalar (app/core/ip_guard.py) ─────────────────────────
+class BlockedOut(BaseModel):
+    ip: str
+    user_id: int | None
+    reason: str
+    since: datetime
+    seconds_left: int
+    user_agent: str
+
+
+@router.get("/security/blocked", response_model=list[BlockedOut])
+def blocked_ips(db: Session = Depends(get_db)):
+    """Hozir bloklanganlar (shu API jarayoni xotirasida). Tarix — audit jurnalida, entity_type = security."""
+    import time as _time
+    from app.core.ip_guard import guard
+    now = _time.monotonic()
+    return [BlockedOut(ip=b.ip, user_id=b.user_id, reason=b.reason, since=datetime.fromtimestamp(b.since, timezone.utc),
+                       seconds_left=int(b.until - now), user_agent=b.user_agent)
+            for b in sorted(guard.active(), key=lambda x: -x.since)]
+
+
+@router.delete("/security/blocked", status_code=204)
+def unblock_ip(ip: str = Query(min_length=3, max_length=64), db: Session = Depends(get_db)):
+    from app.core.ip_guard import guard
+    n = guard.unblock(ip)
+    if n:
+        db.execute(text("SELECT app.log_security_event('ip_unblock', :ip, app.uid(), CAST(:d AS jsonb))"),
+                   {"ip": ip, "d": json.dumps({"ip": ip, "by": "superadmin", "keys": n})})
+        db.commit()

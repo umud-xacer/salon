@@ -26,6 +26,15 @@ class Settings(BaseSettings):
     # Ochiq katalog keshi (app/core/cache.py), soniya. 0 — o'chiq
     public_cache_ttl: int = Field(default=30, ge=0, le=600)
 
+    # API himoyasi (app/core/ip_guard.py): oshib ketsa kalit ip_block_minutes ga bloklanadi
+    ip_guard_enabled: bool = True
+    ip_block_minutes: int = Field(default=10, ge=1, le=1440)
+    ip_anon_rpm: int = Field(default=1200, ge=10)          # kirmagan: bir IP, daqiqasiga (operator NAT hisobga olingan)
+    ip_user_rpm: int = Field(default=600, ge=10)           # kirgan foydalanuvchi + IP, daqiqasiga
+    ip_errors_per_min: int = Field(default=300, ge=5)      # 4xx javoblar, daqiqasiga
+    ip_auth_failures: int = Field(default=20, ge=3)        # kirish/kod xatolari, 10 daqiqada
+    ip_allowlist: list[str] = []                           # hech qachon bloklanmaydi (masalan, ofis IP)
+
     # Super Admin: parol + Telegram kodi (sql/065). Kod muddati, noto'g'ri urinishlar, blok, qayta yuborish oralig'i
     superadmin_2fa: bool = True
     twofa_ttl_seconds: int = 180

@@ -8,6 +8,7 @@ from sqlalchemy.exc import DBAPIError
 from app.api.v1 import (analytics, appointments, auth, auto_messages, billing, broadcasts, cash_shifts, forms, resources, timesheet, blocks, waitlist, business_admin, catalog, clients, finance, geo, inventory, me, members,
                         payroll, promotions, reception, reminders, reports, reviews, schedule, superadmin, telegram, visits)
 from app.core.config import get_settings
+from app.core.ip_guard import IpGuardMiddleware
 from app.db.session import MAX_INFLIGHT
 from app.services.auth_service import AuthError
 
@@ -41,6 +42,7 @@ class InflightLimit:
 
 
 app.add_middleware(InflightLimit, limit=MAX_INFLIGHT)
+app.add_middleware(IpGuardMiddleware)               # oxirgi qo'shilgan — eng tashqarida: blok navbat egallamaydi
 
 if settings.cors_origins:
     app.add_middleware(

@@ -1,8 +1,9 @@
 // Super Admin: audit jurnali — kim, qachon, nimani o'zgartirdi. Yozuvlar o'zgarmaydi va o'chmaydi.
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ShieldAlert } from "lucide-react";
 import { useState } from "react";
 
-import { api } from "../../api/client";
+import { api, json } from "../../api/client";
 import type { AuditEntry, BusinessAdmin } from "../../api/types";
 import { formatDate, formatTime } from "../../components/format";
 import { Button, Card, Empty, ErrorNote, inputClass, PageTitle, Spinner } from "../../components/ui";
@@ -16,7 +17,7 @@ const ENTITY_LABELS: Record<string, string> = {
   member: t("Xodim"), payment: t("To'lov"), expense: t("Xarajat"), payroll: t("Oylik"), product: t("Mahsulot"),
   stock: t("Ombor"), service: t("Xizmat"), client: t("Mijoz"), password: t("Parol"), schedule: t("Ish jadvali"),
   business_hours: t("Ish vaqti"), compensation: t("Maosh sozlamasi"), expense_category: t("Xarajat toifasi"),
-  member_services: t("Xodim xizmatlari"), staff_schedule: t("Ish jadvali"),
+  member_services: t("Xodim xizmatlari"), staff_schedule: t("Ish jadvali"), security: t("Xavfsizlik (IP blok)"),
 };
 const ACTION_LABELS: Record<string, string> = {
   create: t("yaratdi"), update: t("o'zgartirdi"), delete: t("o'chirdi"), renew: t("uzaytirdi"), toggle: t("yoqdi/o'chirdi"),
@@ -24,6 +25,7 @@ const ACTION_LABELS: Record<string, string> = {
   password_set: t("parol berdi"), refund: t("qaytardi"), accept: t("qabul qildi"), pay: t("to'ladi"), approve: t("tasdiqladi"),
   adjust: t("tuzatdi"), generate: t("hisobladi"), usage: t("ishlatdi"), purchase: t("kirim qildi"), deactivate: t("nofaol qildi"),
   status: t("holatini o'zgartirdi"), reschedule: t("ko'chirdi"), view_phone: t("telefonni ko'rdi"),
+  ip_block: t("avtomatik blokladi"), ip_unblock: t("blokdan chiqardi"),
 };
 const entityLabel = (tx: string) => ENTITY_LABELS[tx] ?? tx;
 const actionLabel = (a: string) => ACTION_LABELS[a] ?? a;
@@ -46,6 +48,47 @@ function changesText(c: AuditEntry["changes"]): string {
   if (!c) return "";
   if (Array.isArray(c)) return valueText(c);
   return short(Object.entries(c).map(([k, v]) => `${k}: ${valueText(v)}`).join(", "), 300);
+}
+
+// Hozir vaqtincha bloklangan IP/qurilmalar (app/core/ip_guard.py): sabab, qancha qoldi, qo'lda ochish
+type Blocked = { ip: string; user_id: number | null; reason: string; since: string; seconds_left: number; user_agent: string };
+const REASONS: Record<string, string> = {
+  rate: t("Juda ko'p so'rov"), errors: t("Ko'p xato so'rov (skanerlash)"), auth: t("Parol/kodni taxmin qilish"),
+};
+
+function BlockedCard() {
+  const qc = useQueryClient();
+  const q = useQuery({ queryKey: ["superadmin", "blocked-ips"], queryFn: () => api<Blocked[]>("/superadmin/security/blocked"),
+    refetchInterval: 30_000 });
+  const unblock = useMutation({
+    mutationFn: (ip: string) => api(`/superadmin/security/blocked?ip=${encodeURIComponent(ip)}`, json("DELETE", {})),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["superadmin"] }),
+  });
+  if (!q.data) return null;
+  return (
+    <Card>
+      <div className="mb-2 flex items-center gap-2">
+        <ShieldAlert size={18} className={q.data.length ? "text-danger" : "text-muted"} aria-hidden />
+        <h2 className="font-semibold text-navy">{t("Hozir bloklangan IP'lar")}</h2>
+        <span className="text-xs text-muted">{t("10 daqiqadan keyin o'zi ochiladi. Tarix — pastda \"Xavfsizlik\" bo'yicha.")}</span>
+      </div>
+      {q.data.length === 0 ? <p className="text-sm text-muted">{t("Bloklangan IP yo'q")}</p> : (
+        <ul className="divide-y divide-line text-sm">
+          {q.data.map((b) => (
+            <li key={`${b.ip}-${b.user_id ?? ""}`} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
+              <span className="font-mono font-medium">{b.ip}</span>
+              {b.user_id && <span className="text-xs text-muted">{t("foydalanuvchi #{a}", { a: b.user_id })}</span>}
+              <span className="rounded-full bg-red-50 px-2 py-0.5 text-xs text-danger">{REASONS[b.reason] ?? b.reason}</span>
+              <span className="min-w-0 flex-1 truncate text-xs text-muted" title={b.user_agent}>{b.user_agent}</span>
+              <span className="text-xs tabular-nums text-muted">{t("{a} daq qoldi", { a: Math.max(1, Math.round(b.seconds_left / 60)) })}</span>
+              <Button variant="secondary" disabled={unblock.isPending} onClick={() => unblock.mutate(b.ip)}>{t("Blokdan chiqarish")}</Button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {unblock.error && <ErrorNote error={unblock.error} />}
+    </Card>
+  );
 }
 
 export function AuditPage() {
@@ -72,6 +115,7 @@ export function AuditPage() {
   return (
     <div className="space-y-4">
       <PageTitle title={t("Audit jurnali")} hint={t("Kim, qachon, nimani o'zgartirdi. Yozuvlarni o'zgartirib yoki o'chirib bo'lmaydi.")} />
+      <BlockedCard />
       <Card className="grid gap-3 sm:grid-cols-2">
         <label className="block text-sm">{t("Muassasa")}
           <select className={inputClass} value={business} onChange={(e) => setBusiness(e.target.value)}>

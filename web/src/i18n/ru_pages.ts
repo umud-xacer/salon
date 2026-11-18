@@ -1477,4 +1477,15 @@ export const RU_PAGES: Record<string, string> = {
   "Kod noto'g'ri. Yana 1 ta urinish qoldi": "Неверный код. Осталась 1 попытка",
   "Yangi kodni 30 soniyadan keyin so'rang": "Новый код можно запросить через 30 секунд",
   "Juda ko'p kod so'raldi. Telefon va parol bilan qaytadan kiring": "Слишком много запросов кода. Войдите снова по телефону и паролю",
+  // IP himoyasi
+  "Xavfsizlik (IP blok)": "Безопасность (блок IP)",
+  "avtomatik blokladi": "автоматически заблокировал",
+  "Juda ko'p so'rov": "Слишком много запросов",
+  "Ko'p xato so'rov (skanerlash)": "Много ошибочных запросов (сканирование)",
+  "Parol/kodni taxmin qilish": "Подбор пароля/кода",
+  "Hozir bloklangan IP'lar": "Сейчас заблокированные IP",
+  "10 daqiqadan keyin o'zi ochiladi. Tarix — pastda \"Xavfsizlik\" bo'yicha.": "Разблокируется сам через 10 минут. История — ниже, фильтр «Безопасность».",
+  "Bloklangan IP yo'q": "Заблокированных IP нет",
+  "foydalanuvchi #{a}": "пользователь #{a}",
+  "{a} daq qoldi": "осталось {a} мин",
 };
