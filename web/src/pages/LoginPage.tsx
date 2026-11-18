@@ -7,12 +7,37 @@ import { googleLogin, loginMethods, loginWithPassword, requestOtp, telegramPoll,
          type LoginMethods } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
 import { normalizePhone } from "../components/format";
-import { Button, ErrorNote } from "../components/ui";
+import { ErrorNote } from "../components/ui";
 import { isAdminHost } from "../panelHost";
 import { PasswordField } from "../components/PasswordField";
 import { getLang, LangSwitch, t } from "../i18n";
 
-const input = "w-full rounded-lg border border-line px-3 py-2 outline-none focus:border-primary";
+const input = "w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-[15px] text-slate-900 shadow-sm outline-none "
+  + "transition placeholder:text-slate-400 hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15";
+const FONT = { fontFamily: "Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" };
+
+// Inter shrifti faqat kirish oynasi uchun (panelning qolgan qismi tizim shriftida)
+function useInterFont() {
+  useEffect(() => {
+    if (document.getElementById("inter-font")) return;
+    const l = document.createElement("link");
+    l.id = "inter-font";
+    l.rel = "stylesheet";
+    l.href = "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap";
+    document.head.appendChild(l);
+  }, []);
+}
+
+function GoogleLogo() {
+  return (
+    <svg viewBox="0 0 48 48" className="size-5" aria-hidden>
+      <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 13 4 4 13 4 24s9 20 20 20 20-9 20-20c0-1.3-.1-2.4-.4-3.5z" />
+      <path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z" />
+      <path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z" />
+      <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z" />
+    </svg>
+  );
+}
 
 declare global {
   interface Window {
@@ -59,6 +84,7 @@ export function LoginPage() {
   const [link, setLink] = useState<string | null>(null);          // Google bog'lash tokeni (15 daqiqa)
   const [tg, setTg] = useState<{ nonce: string; url: string } | null>(null);
   const googleBox = useRef<HTMLDivElement>(null);
+  useInterFont();
 
   useEffect(() => {
     loginMethods().then(setMethods).catch(() => setMethods({}));
@@ -160,15 +186,25 @@ export function LoginPage() {
   const quick = (tgOn || !!googleId) && !link;
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-navy p-4">
-      <div className="w-full max-w-sm rounded-2xl bg-white p-6">
-        <div className="-mt-2 mb-2 flex justify-end"><LangSwitch /></div>
-        <div className="mb-5 flex flex-col items-center text-center">
-          <img src="/logo.jpg" alt={t("Chronix")} className="mb-3 size-24 rounded-2xl object-cover" />
-          <h1 className="text-lg font-semibold text-navy">
+    <div style={FONT} className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#050B24] p-4 antialiased">
+      {/* Fon: chuqur ko'k gradient, yumshoq nur dog'lari va nozik to'r */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,#1E3A8A_0%,#0B1437_45%,#050B24_100%)]" />
+      <div aria-hidden className="pointer-events-none absolute -left-32 top-1/4 size-96 rounded-full bg-blue-600/25 blur-3xl" />
+      <div aria-hidden className="pointer-events-none absolute -right-24 bottom-0 size-80 rounded-full bg-indigo-500/20 blur-3xl" />
+      <div aria-hidden className="pointer-events-none absolute inset-0 opacity-[0.06] [background-image:linear-gradient(#fff_1px,transparent_1px),linear-gradient(90deg,#fff_1px,transparent_1px)] [background-size:44px_44px] [mask-image:radial-gradient(ellipse_at_center,black_30%,transparent_75%)]" />
+
+      <div className="relative w-full max-w-[400px] rounded-2xl border border-white/60 bg-white p-7 shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_10px_10px_-5px_rgba(0,0,0,0.04),0_0_0_1px_rgba(15,23,42,0.04)] sm:p-8">
+        <div className="-mt-2 mb-1 flex justify-end"><LangSwitch /></div>
+        <div className="mb-6 flex flex-col items-center text-center">
+          <div className="relative mb-4">
+            <div aria-hidden className="absolute -inset-3 rounded-[28px] bg-blue-500/25 blur-xl" />
+            <div aria-hidden className="absolute -inset-1 rounded-[22px] bg-gradient-to-b from-blue-400/40 to-indigo-600/20" />
+            <img src="/logo.jpg" alt={t("Chronix")} className="relative size-20 rounded-[18px] object-cover shadow-lg shadow-blue-900/30 ring-1 ring-white/20" />
+          </div>
+          <h1 className="text-[22px] font-semibold leading-tight tracking-tight text-slate-900">
             {isAdminHost ? t("Chronix — Super Admin paneli") : t("Chronix paneliga kirish")}
           </h1>
-          <p className="mt-1 text-xs text-muted">
+          <p className="mt-1.5 text-[13px] leading-snug text-slate-500">
             {isAdminHost ? t("Faqat platforma boshqaruvchisi uchun")
               : t("Salon, klinika va spa markazlari rahbarlari va xodimlari uchun")}
           </p>
@@ -206,13 +242,22 @@ export function LoginPage() {
               <div className="space-y-2.5">
                 {tgOn && (
                   <button type="button" onClick={startTelegram} disabled={busy}
-                    className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#229ED9] text-sm font-medium text-white transition hover:bg-[#1E8DC2] disabled:opacity-60">
+                    className="group relative flex h-12 w-full items-center justify-center gap-2.5 overflow-hidden rounded-xl bg-gradient-to-b from-[#3AB3EA] to-[#1C93D2] text-[15px] font-semibold text-white shadow-[0_8px_20px_-6px_rgba(34,158,217,0.6),inset_0_1px_0_rgba(255,255,255,0.3)] transition hover:-translate-y-px hover:shadow-[0_12px_24px_-6px_rgba(34,158,217,0.7),inset_0_1px_0_rgba(255,255,255,0.3)] active:translate-y-0 disabled:opacity-60">
+                    <span aria-hidden className="absolute inset-y-0 -left-1/2 w-1/3 -skew-x-12 bg-white/25 blur-sm transition-all duration-700 group-hover:left-[130%]" />
                     <TelegramIcon /> {t("Telegram orqali kirish")}
                   </button>
                 )}
-                {googleId && <div ref={googleBox} className="flex min-h-11 w-full justify-center" />}
-                <div className="flex items-center gap-3 py-1 text-xs text-muted">
-                  <span className="h-px flex-1 bg-line" />{t("yoki telefon raqam bilan")}<span className="h-px flex-1 bg-line" />
+                {googleId && (
+                  <div className="group relative h-12 w-full">
+                    <div aria-hidden className="pointer-events-none flex h-full items-center justify-center gap-2.5 rounded-xl border border-slate-200 bg-white text-[15px] font-semibold text-slate-700 shadow-sm transition group-hover:-translate-y-px group-hover:border-slate-300 group-hover:bg-slate-50 group-hover:shadow-md">
+                      <GoogleLogo /> {t("Google orqali kirish")}
+                    </div>
+                    {/* Haqiqiy Google tugmasi (Google Identity Services) — deyarli shaffof qatlam, bosishni u qabul qiladi */}
+                    <div ref={googleBox} className="absolute inset-0 flex items-center justify-center overflow-hidden rounded-xl opacity-[0.011]" />
+                  </div>
+                )}
+                <div className="flex items-center gap-3 py-2 text-xs font-medium text-slate-400">
+                  <span className="h-px flex-1 bg-gradient-to-r from-transparent to-slate-200" />{t("yoki telefon raqam bilan")}<span className="h-px flex-1 bg-gradient-to-l from-transparent to-slate-200" />
                 </div>
               </div>
             )}
@@ -231,11 +276,11 @@ export function LoginPage() {
               ))}
             </div>}
 
-            <form onSubmit={submit} className="space-y-3">
-              <label className="block text-sm">
+            <form onSubmit={submit} className="space-y-4">
+              <label className="block text-[13px] font-medium text-slate-700">
                 {t("Telefon")}
                 <input
-                  className={`${input} mt-1`}
+                  className={`${input} mt-1.5`}
                   type="tel"
                   autoComplete="tel"
                   placeholder="+998 90 123 45 67"
@@ -246,7 +291,7 @@ export function LoginPage() {
               </label>
 
               {formMode === "password" && (
-                <label className="block text-sm">
+                <label className="block text-[13px] font-medium text-slate-700">
                   {t("Parol")}
                   <PasswordField
                     className={input}
@@ -274,9 +319,11 @@ export function LoginPage() {
               )}
 
               {error != null && !quick && <ErrorNote error={error} />}
-              <Button type="submit" disabled={busy} className="w-full">
+              <button type="submit" disabled={busy}
+                className="relative mt-1 flex h-12 w-full items-center justify-center rounded-xl bg-gradient-to-b from-[#3B7BF0] via-[#1D61E7] to-[#1849B8] text-[15px] font-semibold text-white shadow-[0_10px_24px_-8px_rgba(29,97,231,0.65),inset_0_1px_0_rgba(255,255,255,0.25)] transition hover:-translate-y-px hover:brightness-110 hover:shadow-[0_14px_28px_-8px_rgba(29,97,231,0.75),inset_0_1px_0_rgba(255,255,255,0.25)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-500/30 active:translate-y-0 active:shadow-[0_4px_12px_-4px_rgba(29,97,231,0.6)] disabled:cursor-not-allowed disabled:opacity-60">
+                {busy && <span aria-hidden className="mr-2 size-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />}
                 {formMode === "sms" && !codeSent ? t("Kod yuborish") : link ? t("Kirish va Google'ni ulash") : t("Kirish")}
-              </Button>
+              </button>
             </form>
           </>
         )}

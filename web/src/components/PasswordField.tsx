@@ -10,7 +10,7 @@ export function PasswordField({ className = "", ...props }: Omit<InputHTMLAttrib
       <input {...props} type={shown ? "text" : "password"} className={`${className} mt-0 pr-10`} />
       <button type="button" onClick={() => setShown(!shown)}
         aria-label={shown ? t("Parolni yashirish") : t("Parolni ko'rsatish")} title={shown ? t("Yashirish") : t("Ko'rsatish")}
-        className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-muted hover:text-ink">
+        className="absolute inset-y-1 right-1 flex w-9 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700">
         {shown ? <EyeOff size={18} aria-hidden /> : <Eye size={18} aria-hidden />}
       </button>
     </span>

@@ -1426,4 +1426,5 @@ export const RU_PAGES: Record<string, string> = {
   "Google hisobini tasdiqlab bo'lmadi": "Не удалось подтвердить аккаунт Google",
   "Google bilan bog'lash muddati o'tdi. Qaytadan urinib ko'ring": "Срок привязки Google истёк. Попробуйте ещё раз",
   "Telegram orqali kirish hozircha o'chiq": "Вход через Telegram временно отключён",
+  "Google orqali kirish": "Войти через Google",
 };
