@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import DBAPIError
 
-from app.api.v1 import (analytics, seo, appointments, auth, auto_messages, billing, broadcasts, cash_shifts, forms, resources, timesheet, blocks, waitlist, business_admin, catalog, clients, finance, geo, inventory, me, members,
+from app.api.v1 import (analytics, seo, site, appointments, auth, auto_messages, billing, broadcasts, cash_shifts, forms, resources, timesheet, blocks, waitlist, business_admin, catalog, clients, finance, geo, inventory, me, members,
                         payroll, promotions, reception, reminders, reports, reviews, schedule, superadmin, telegram, visits)
 from app.core.config import get_settings
 from app.core.ip_guard import IpGuardMiddleware
@@ -132,6 +132,8 @@ async def db_error_handler(request: Request, exc: DBAPIError):
 
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(seo.router, prefix="/api/v1")
+app.include_router(site.router, prefix="/api/v1")
+app.include_router(site.admin_router, prefix="/api/v1")
 app.include_router(superadmin.router, prefix="/api/v1")
 app.include_router(members.router, prefix="/api/v1")
 app.include_router(members.my_router, prefix="/api/v1")

@@ -1,5 +1,5 @@
 // Super Admin chap menyusi: "Salonlar" (hammasi), uning ostida har bir muassasa turi, keyin "Muassasa turlari".
-import { Activity, BadgeDollarSign, BarChart3, Building2, CalendarClock, Ear, Layers, Leaf, Pill, Scissors, ScrollText, Smile, Sparkles, Stethoscope, Store, Users, type LucideIcon } from "lucide-react";
+import { Activity, BadgeDollarSign, BarChart3, Building2, CalendarClock, Ear, Layers, Leaf, Pill, Scissors, ScrollText, Smile, Sparkles, Stethoscope, Store, Users, Globe, type LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { AppShell, type NavItem } from "../../layouts/AppShell";
@@ -26,6 +26,7 @@ export function SuperAdminShell({ children }: { children: ReactNode }) {
     { to: "/superadmin/narxlar", label: t("Narxlar"), icon: BadgeDollarSign },
     { to: "/superadmin/direktorlar", label: t("Direktorlar"), icon: Users },
     { to: "/superadmin/jurnal", label: t("Audit jurnali"), icon: ScrollText },
+    { to: "/superadmin/sayt", label: t("Sayt sozlamalari"), icon: Globe },
   ];
   return <AppShell title={t("Super Admin")} nav={nav}>{children}</AppShell>;
 }

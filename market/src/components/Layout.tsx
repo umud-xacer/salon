@@ -3,8 +3,9 @@ import { ReactNode, useEffect, useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 
 import { useAuth } from "../auth";
-import { BIZ_URL, PANEL_URL } from "../util";
+import { BIZ_URL } from "../util";
 import { AuthModal } from "./AuthModal";
+import { Footer } from "./Footer";
 import { lang, otherLangUrl, t } from "../i18n";
 
 export function Logo({ className = "" }: { className?: string }) {
@@ -103,47 +104,15 @@ function MenuLink({ to, icon, children }: { to: string; icon: ReactNode; childre
   return <Link to={to} className="flex h-12 items-center gap-3 rounded-xl px-2 font-semibold">{icon}{children}</Link>;
 }
 
-function Footer() {
-  return (
-    <footer className="mt-10 bg-navy text-white">
-      <div className="mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:grid-cols-2 sm:px-6 lg:grid-cols-4 lg:px-8">
-        <div className="space-y-3">
-          <Logo />
-          <p className="text-sm text-white/60">{t("Vaqtingiz – bizning ustuvorligimiz. Salon, barber, stomatologiya va SPA'ga onlayn bron.")}</p>
-        </div>
-        <div>
-          <h4 className="mb-3 font-bold">{t("Mijozlar uchun")}</h4>
-          <ul className="space-y-2 text-sm text-white/60">
-            <li><Link to="/qidiruv" className="hover:text-white">{t("Salon qidirish")}</Link></li>
-            <li><Link to="/bronlarim" className="hover:text-white">{t("Bronlarim")}</Link></li>
-            <li><a href="/hisobni-ochirish" className="hover:text-white">{t("Hisobni o'chirish")}</a></li>
-          </ul>
-        </div>
-        <div>
-          <h4 className="mb-3 font-bold">{t("Biznes uchun")}</h4>
-          <ul className="space-y-2 text-sm text-white/60">
-            <li><Link to={BIZ_URL} className="hover:text-white">{t("Chronix biznes uchun")}</Link></li>
-            <li><Link to={`${BIZ_URL}#narxlar`} className="hover:text-white">{t("Narxlar")}</Link></li>
-            <li><a href={PANEL_URL} className="hover:text-white">{t("Panelga kirish")}</a></li>
-          </ul>
-        </div>
-        <div>
-          <h4 className="mb-3 font-bold">{t("Kompaniya")}</h4>
-          <ul className="space-y-2 text-sm text-white/60">
-            <li><a href="/privacy" className="hover:text-white">{t("Maxfiylik siyosati")}</a></li>
-            <li><a href="https://t.me/JabborqulovUmidjon" className="hover:text-white">Telegram</a></li>
-            <li><a href="tel:+998200035599" className="hover:text-white">+998 20 003 55 99</a></li>
-          </ul>
-        </div>
-      </div>
-      <p className="border-t border-white/10 py-5 text-center text-xs text-white/50">© {new Date().getFullYear()} Chronix</p>
-    </footer>
-  );
-}
-
 export function Layout({ children }: { children: ReactNode }) {
-  const { pathname } = useLocation();
-  useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
+  const { pathname, hash } = useLocation();
+  useEffect(() => {
+    if (!hash) { window.scrollTo(0, 0); return; }
+    // Sahifa chizilgach bo'limga (masalan, /biznes#narxlar)
+    const id = decodeURIComponent(hash.slice(1));
+    const timer = setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
+    return () => clearTimeout(timer);
+  }, [pathname, hash]);
   return (
     <div className="flex min-h-screen flex-col">
       <Header />

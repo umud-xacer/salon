@@ -62,7 +62,7 @@ export default function Business() {
       </section>
 
       {/* Biz bilan nimalarga ega bo'lasiz? */}
-      <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
+      <section id="afzalliklar" className="mx-auto max-w-7xl scroll-mt-24 px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
         <div className="mb-8 grid items-end gap-4 lg:grid-cols-[1.1fr_1fr] lg:gap-12">
           <h2 className="text-[30px] font-extrabold leading-[1.1] tracking-tight text-navy sm:text-[40px]">{tr("Biz bilan nimalarga ega bo'lasiz?")}</h2>
           <p className="text-lg text-muted lg:pb-1">{tr("Chronix — bu Sizning xizmat ko'rsatish biznesingizni tizimlashtirish va daromadni oshirish uchun eng yaxshi tanlov!")}</p>
@@ -82,7 +82,7 @@ export default function Business() {
       </section>
 
       {/* Imkoniyatlar */}
-      <Section title={tr("Imkoniyatlar")} sub={tr("Kundalik ishning hammasi bitta joyda")}>
+      <Section id="imkoniyatlar" title={tr("Imkoniyatlar")} sub={tr("Kundalik ishning hammasi bitta joyda")}>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {FEATURES.map(([Icon, t, d]) => (
             <div key={t} className="rounded-3xl border border-line p-6 transition hover:border-brand/40 hover:shadow-md">

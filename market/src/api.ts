@@ -141,3 +141,17 @@ export type Appointment = {
   member_name: string | null; status: "pending" | "confirmed" | "in_progress" | "completed" | "cancelled" | "no_show";
   starts_at: string; ends_at: string; total_price: number; discount?: number; services: string[];
 };
+
+// ─── Sayt sozlamalari (footer) — Super Admin panelidan boshqariladi (backend app/api/v1/site.py) ───
+export type SiteSettings = {
+  telegram_url: string; instagram_url: string; youtube_url: string; play_url: string; appstore_url: string;
+  phone: string; email: string; address_uz: string; address_ru: string;
+  work_hours_uz: string; work_hours_ru: string; about_uz: string; about_ru: string;
+};
+// API javob bermaguncha (yoki ishlamasa) — eng zarur kontaktlar
+export const SITE_FALLBACK: SiteSettings = {
+  telegram_url: "https://t.me/JabborqulovUmidjon", instagram_url: "", youtube_url: "", play_url: "", appstore_url: "",
+  phone: "+998 20 003 55 99", email: "", address_uz: "", address_ru: "", work_hours_uz: "", work_hours_ru: "",
+  about_uz: "", about_ru: "",
+};
+export const getSiteSettings = () => api<SiteSettings>("/site/settings");
