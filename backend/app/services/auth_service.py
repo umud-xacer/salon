@@ -95,6 +95,10 @@ def _deliver(db: Session, send, phone: str, code: str, purpose: str = "otp") -> 
         return "telegram"
     try:
         send(phone, code)
+    except sms.SmsForeign:
+        # Xorijiy raqam: kod faqat Telegram orqali (bot raqamni kontakt bilan tasdiqlaydi)
+        raise SmsUnavailable("sms_foreign", "Xorijiy raqamlarga SMS yuborilmaydi. «Telegram orqali kirish» ni bosing — "
+                                            "kod va kirish Telegram orqali bo'ladi") from None
     except sms.SmsError as e:
         log.error("SMS yuborilmadi: %s", e)
         if get_settings().telegram_login_enabled:

@@ -27,8 +27,8 @@ MSG = {
           "✅ Номер подтверждён. Вернитесь в приложение или на сайт Chronix — вход выполнится автоматически.",
     "not_own": "Faqat o'zingizning raqamingizni tugma orqali yuboring.\n\n"
                "Отправьте, пожалуйста, свой номер с помощью кнопки.",
-    "bad_phone": "Hozircha faqat O'zbekiston (+998) raqamlari qabul qilinadi.\n\n"
-                 "Пока принимаются только номера Узбекистана (+998).",
+    "bad_phone": "Bu raqamni qabul qilib bo'lmadi. Telegram hisobingizdagi telefon raqamini tekshiring.\n\n"
+                 "Не удалось принять этот номер. Проверьте номер телефона в вашем аккаунте Telegram.",
     "no_request": "Kirish so'rovi topilmadi yoki eskirgan. Ilovada qaytadan «Telegram orqali kirish» ni bosing.\n\n"
                   "Запрос на вход не найден или устарел. Нажмите «Войти через Telegram» в приложении ещё раз.",
 }

@@ -34,10 +34,15 @@ export const mondayOf = (day: string) => addDays(day, 1 - weekdayOf(day));
 
 export const shortDate = (day: string) => `${day.slice(8, 10)}.${day.slice(5, 7)}`;
 
-// "90 123 45 67" ham, "+998901234567" ham qabul qilinadi
+// "90 123 45 67", "+998901234567" va xorijiy "+7 916 123 45 67" qabul qilinadi (sql/067).
+// "+" siz 10 xonali raqam noaniq — server "mamlakat kodi bilan yozing" deydi
 export function normalizePhone(value: string) {
-  const digits = value.replace(/\D/g, "");
-  return digits.length === 9 ? `+998${digits}` : `+${digits}`;
+  const text = value.trim();
+  let digits = text.replace(/\D/g, "");
+  const intl = text.startsWith("+") || digits.startsWith("00");
+  if (digits.startsWith("00")) digits = digits.slice(2);
+  if (intl) return `+${digits}`;
+  return digits.length === 9 ? `+998${digits}` : digits;
 }
 
 export const WEEKDAYS = localized(["", "Dushanba", "Seshanba", "Chorshanba", "Payshanba", "Juma", "Shanba", "Yakshanba"]);

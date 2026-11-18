@@ -25,7 +25,11 @@ def test_otp_registers_new_client(client):
 
 
 def test_invalid_phone_rejected(client):
-    assert client.post(f"{API}/otp/request", json={"phone": "+7 999 123 45 67"}).status_code == 422
+    for bad in ("12345", "+0123456789", "9161234567", "+99890123456"):          # noaniq yoki noto'g'ri
+        assert client.post(f"{API}/otp/request", json={"phone": bad}).status_code == 422, bad
+    # Xorijiy raqam qabul qilinadi, lekin SMS faqat O'zbekistonga — Telegram'ga yo'naltiriladi (sql/067)
+    r = client.post(f"{API}/otp/request", json={"phone": "+7 999 123 45 67"})
+    assert r.status_code == 503 and r.json()["detail"]["code"] == "sms_foreign"
 
 
 def test_otp_code_dies_after_max_attempts(client):

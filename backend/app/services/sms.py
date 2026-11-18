@@ -76,8 +76,15 @@ def _send_eskiz(phone: str, message: str) -> None:
         raise SmsError(f"Eskiz rad etdi: HTTP {r.status_code} {_reason(r)}".strip())
 
 
+class SmsForeign(SmsError):
+    """Xorijiy raqam: SMS shlyuzi faqat O'zbekiston raqamlariga yuboradi (sms_international yoqilmagan)."""
+
+
 def _send(phone: str, message: str) -> None:
-    if get_settings().sms_provider == "console":
+    s = get_settings()
+    if not phone.startswith("+998") and not s.sms_international:
+        raise SmsForeign(f"xorijiy raqam: {phone[:4]}…")
+    if s.sms_provider == "console":
         log.warning("SMS %s -> %s (dev rejim, SMS yuborilmadi)", phone, message)
         return
     _send_eskiz(phone, message)

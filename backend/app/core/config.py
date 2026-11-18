@@ -70,6 +70,7 @@ class Settings(BaseSettings):
     # (masalan, Eskiz hali test rejimida). Qayta yoqish: .env da SMS_LOGIN_ENABLED=true, ilova yangilanishi shart emas
     sms_login_enabled: bool = True
     sms_provider: Literal["console", "eskiz"] = "console"
+    sms_international: bool = False           # Eskiz xorijiy raqamlarga yuboradimi (yoqilmaguncha — faqat +998)
     eskiz_email: str | None = None
     eskiz_password: SecretStr | None = None
     eskiz_from: str = "4546"

@@ -17,19 +17,32 @@ _hasher = PasswordHasher()  # argon2id, kutubxonaning tavsiya etilgan parametrla
 # Foydalanuvchi topilmaganda ham bir xil vaqt sarflash uchun (login orqali raqam mavjudligini bilib bo'lmasin)
 _DUMMY_HASH = _hasher.hash(secrets.token_urlsafe(16))
 
-PHONE_RE = re.compile(r"^\+998\d{9}$")
+# O'zbekiston: +998 va 9 raqam. Boshqa davlatlar: E.164, jami 10–15 raqam (sql/067_intl_phones.sql bilan bir xil)
+PHONE_RE = re.compile(r"^\+(998\d{9}|(?!998)[1-9]\d{9,14})$")
 
 
 # ─── Telefon ────────────────────────────────────────────────────────────────
 def normalize_phone(raw: str) -> str:
-    """'90 123-45-67', '998901234567', '+998 90 123 45 67' → '+998901234567'."""
-    digits = re.sub(r"\D", "", raw or "")
-    if len(digits) == 9:
+    """'90 123-45-67', '998901234567', '+998 90 123 45 67' → '+998901234567'.
+    Xorijiy: '+7 916 123-45-67', '0079161234567', '79161234567' (Telegram kontakti) → '+79161234567'.
+    Mamlakat kodisiz 10 xonali raqam noaniq — rad etiladi."""
+    text_ = (raw or "").strip()
+    digits = re.sub(r"\D", "", text_)
+    international = text_.startswith("+") or digits.startswith("00")
+    if digits.startswith("00"):
+        digits = digits[2:]
+    if not international and len(digits) == 9:
         digits = "998" + digits
+    elif not international and len(digits) < 11 and not digits.startswith("998"):
+        raise ValueError("Xorijiy raqamni mamlakat kodi bilan yozing. Namuna: +79161234567")
     phone = "+" + digits
     if not PHONE_RE.match(phone):
-        raise ValueError("Telefon raqami noto'g'ri. Namuna: +998901234567")
+        raise ValueError("Telefon raqami noto'g'ri. Namuna: +998901234567 yoki +79161234567")
     return phone
+
+
+def is_uz_phone(phone: str) -> bool:
+    return phone.startswith("+998")
 
 
 # ─── Parol ──────────────────────────────────────────────────────────────────

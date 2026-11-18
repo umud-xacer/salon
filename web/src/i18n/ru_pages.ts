@@ -1488,4 +1488,8 @@ export const RU_PAGES: Record<string, string> = {
   "Bloklangan IP yo'q": "Заблокированных IP нет",
   "foydalanuvchi #{a}": "пользователь #{a}",
   "{a} daq qoldi": "осталось {a} мин",
+  // Xalqaro raqamlar
+  "Xorijiy raqamlarga SMS yuborilmaydi. «Telegram orqali kirish» ni bosing — kod va kirish Telegram orqali bo'ladi": "На зарубежные номера SMS не отправляются. Нажмите «Войти через Telegram» — код и вход будут через Telegram",
+  "Xorijiy raqamni mamlakat kodi bilan yozing. Namuna: +79161234567": "Укажите зарубежный номер с кодом страны. Пример: +79161234567",
+  "Telefon raqami noto'g'ri. Namuna: +998901234567 yoki +79161234567": "Неверный номер телефона. Пример: +998901234567 или +79161234567",
 };

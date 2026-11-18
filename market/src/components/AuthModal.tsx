@@ -38,6 +38,10 @@ export function AuthModal() {
   const [step, setStep] = useState<Step>("choose");
   const [info, setInfo] = useState<AppInfo>({});
   const [digits, setDigits] = useState("");
+  const [cc, setCc] = useState("998");                   // mamlakat kodi (sql/067): 998 — O'zbekiston, 7 — Rossiya ...
+  const uz = cc === "998";
+  const phoneOk = uz ? digits.length === 9 : cc.length >= 1 && digits.length >= 6 && (cc + digits).length >= 10 && (cc + digits).length <= 15;
+  const fullPhone = `+${cc}${digits}`;
   const [code, setCode] = useState("");
   const [channel, setChannel] = useState<"sms" | "telegram">("sms");
   const [name, setName] = useState("");
@@ -109,7 +113,7 @@ export function AuthModal() {
   const requestCode = async () => {
     setBusy(true); setError(null);
     try {
-      const r = await api<{ channel?: "sms" | "telegram" }>("/auth/otp/request", { method: "POST", body: { phone: `+998${digits}` } });
+      const r = await api<{ channel?: "sms" | "telegram" }>("/auth/otp/request", { method: "POST", body: { phone: fullPhone } });
       setChannel(r.channel === "telegram" ? "telegram" : "sms");
       setStep("code");
     } catch (e) { setError(e instanceof ApiError ? e.message : "Xatolik yuz berdi"); }
@@ -119,7 +123,7 @@ export function AuthModal() {
   const verify = async (v: string) => {
     setBusy(true); setError(null);
     try {
-      const l = await api<LoginOut>("/auth/otp/verify", { method: "POST", body: { phone: `+998${digits}`, code: v, link_token: link ?? undefined } });
+      const l = await api<LoginOut>("/auth/otp/verify", { method: "POST", body: { phone: fullPhone, code: v, link_token: link ?? undefined } });
       await done(l);
     } catch (e) { setError(e instanceof ApiError ? e.message : "Xatolik yuz berdi"); setCode(""); }
     finally { setBusy(false); }
@@ -182,20 +186,24 @@ export function AuthModal() {
       )}
 
       {step === "phone" && (
-        <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); if (digits.length === 9) void requestCode(); }}>
+        <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); if (phoneOk) void requestCode(); }}>
           <div>
             <h2 className="text-2xl font-extrabold">Telefon raqamingiz</h2>
             <p className="mt-2 text-muted">6 xonali tasdiqlash kodini yuboramiz</p>
           </div>
           <label className="flex h-14 items-center rounded-full border-2 border-line px-5 focus-within:border-brand">
-            <span className="font-bold">+998</span>
+            <span className="font-bold">+</span>
+            <input inputMode="numeric" value={cc} aria-label="Mamlakat kodi" maxLength={3}
+              onChange={(e) => { setCc(e.target.value.replace(/\D/g, "").slice(0, 3)); setDigits(""); }}
+              className="w-11 bg-transparent font-bold outline-none" />
             <span className="mx-3 h-6 w-px bg-line" />
-            <input autoFocus inputMode="numeric" value={fmt(digits)} placeholder="90 123 45 67" aria-label="Telefon raqam"
-              onChange={(e) => setDigits(e.target.value.replace(/\D/g, "").slice(0, 9))}
+            <input autoFocus inputMode="numeric" value={uz ? fmt(digits) : digits} placeholder={uz ? "90 123 45 67" : "916 123 45 67"}
+              aria-label="Telefon raqam"
+              onChange={(e) => setDigits(e.target.value.replace(/\D/g, "").slice(0, uz ? 9 : 13))}
               className="min-w-0 flex-1 bg-transparent text-lg font-semibold outline-none" />
           </label>
           <ErrorText text={error} />
-          <button className={`${btn.primary} w-full`} disabled={digits.length !== 9 || busy}>{busy ? <Spinner className="border-t-white" /> : "Kod olish"}</button>
+          <button className={`${btn.primary} w-full`} disabled={!phoneOk || busy}>{busy ? <Spinner className="border-t-white" /> : "Kod olish"}</button>
           {info.login_methods?.telegram && (
             <button type="button" onClick={startTelegram} className="w-full text-center text-sm font-semibold text-brand">SMS kelmayaptimi? Telegram orqali kiring</button>
           )}
@@ -207,7 +215,7 @@ export function AuthModal() {
           <div>
             <h2 className="text-2xl font-extrabold">Kodni kiriting</h2>
             <p className="mt-2 text-muted">
-              {channel === "telegram" ? "Kod Telegramingizga (@ChronixUzBot) yuborildi" : "Kod SMS orqali yuborildi"}: <b className="text-ink">+998 {fmt(digits)}</b>
+              {channel === "telegram" ? "Kod Telegramingizga (@ChronixUzBot) yuborildi" : "Kod SMS orqali yuborildi"}: <b className="text-ink">+{cc} {uz ? fmt(digits) : digits}</b>
             </p>
           </div>
           <input autoFocus inputMode="numeric" autoComplete="one-time-code" value={code} maxLength={6} aria-label="Tasdiqlash kodi"

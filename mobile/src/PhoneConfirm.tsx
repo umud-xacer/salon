@@ -7,7 +7,7 @@ import { KeyboardAvoidingView, Modal, Platform, Text, View } from 'react-native'
 
 import { api, ApiError, User } from './api';
 import { t } from './i18n';
-import { Button, ErrorText, Field, formatPhone, useTheme, useType } from './ui';
+import { Button, ErrorText, Field, formatPhone, prettyPhone, useTheme, useType } from './ui';
 
 const WEEK_MS = 7 * 24 * 3600 * 1000;
 
@@ -16,7 +16,7 @@ export const needsPhoneConfirm = (user: User | undefined) =>
   !!user && user.phone_confirmed_at !== undefined &&
   (!user.phone_confirmed_at || Date.now() - new Date(user.phone_confirmed_at).getTime() > WEEK_MS);
 
-const pretty = (phone: string) => `+998 ${formatPhone(phone.replace(/^\+998/, ''))}`;
+const pretty = (phone: string) => prettyPhone(phone);
 
 export function PhoneConfirm({ user, visible, onDone, onClose }: {
   user: User; visible: boolean; onDone: () => void; onClose: () => void;

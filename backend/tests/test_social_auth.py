@@ -111,10 +111,10 @@ def test_telegram_rejects_foreign_contact_wrong_secret_and_foreign_numbers(clien
     client.post(f"{API}/telegram/webhook", headers=HDR, json=tg_update(tg_id, contact={
         "phone_number": "998901234567", "user_id": tg_id + 1, "first_name": "Begona"}))
     assert "o'zingizning" in bot[-1][1]
-    # Chet el raqami — rad
+    # Noto'g'ri raqam — rad (xorijiy raqamlar endi qabul qilinadi: test_intl_phones.py)
     client.post(f"{API}/telegram/webhook", headers=HDR, json=tg_update(tg_id, contact={
-        "phone_number": "79001234567", "user_id": tg_id, "first_name": "Ali"}))
-    assert "+998" in bot[-1][1]
+        "phone_number": "12345", "user_id": tg_id, "first_name": "Ali"}))
+    assert "qabul qilib bo'lmadi" in bot[-1][1]
     assert poll(client, s["nonce"]).json()["status"] == "pending"
 
     # Nonce'ni boshqa Telegram foydalanuvchisi egallay olmaydi

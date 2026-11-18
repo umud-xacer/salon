@@ -98,5 +98,5 @@ def test_phone_lookup_shows_shared_director(client, superadmin):
     assert d["exists"] and d["phone"] == phone and d["full_name"] == "Salon Egasi"
     assert [m["role"] for m in d["memberships"] if m["business_id"] == a["id"]] == ["owner"]
     assert client.get(url, headers=auth_header(superadmin), params={"phone": new_phone()}).json()["exists"] is False
-    assert client.get(url, headers=auth_header(superadmin), params={"phone": "12345678901234"}).status_code == 422
+    assert client.get(url, headers=auth_header(superadmin), params={"phone": "1234567"}).status_code == 422
     assert client.get(url, headers=auth_header(a["owner"]), params={"phone": phone}).status_code == 403

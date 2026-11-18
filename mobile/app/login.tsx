@@ -9,7 +9,7 @@ import { useAuth } from '../src/auth';
 import { getPendingLink, loadLoginMethods, LoginMethods, setPendingLink, signInWithGoogle } from '../src/socialAuth';
 import { t } from '../src/i18n';
 import { LangSwitch } from '../src/LangSwitch';
-import { Button, ErrorText, formatPhone, Icon, IconButton, makeStyles, Pressy, useTheme, useTopInset, useType } from '../src/ui';
+import { Button, ErrorText, formatPhone, phoneReady, Icon, IconButton, makeStyles, Pressy, useTheme, useTopInset, useType } from '../src/ui';
 
 export const PRIVACY_URL = 'https://chronix.uz/privacy';
 
@@ -21,6 +21,8 @@ export default function Login() {
   const s = useStyles();
   const ty = useType();
   const [digits, setDigits] = useState('');
+  const [cc, setCc] = useState('998');                  // mamlakat kodi: 998 — O'zbekiston, 7 — Rossiya/Qozog'iston ...
+  const uz = cc === '998';
   const [focus, setFocus] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -29,7 +31,7 @@ export default function Login() {
   const [googleBusy, setGoogleBusy] = useState(false);
   const [linking, setLinking] = useState(!!getPendingLink());
   const { signIn } = useAuth();
-  const ready = digits.length === 9;
+  const ready = phoneReady(cc, digits);
 
   useEffect(() => {
     loadLoginMethods().then(({ methods: m, googleClientId }) => { setMethods(m); setGoogleId(googleClientId); });
@@ -55,7 +57,7 @@ export default function Login() {
     setBusy(true);
     setError(null);
     try {
-      const phone = `+998${digits}`;
+      const phone = `+${cc}${digits}`;
       const r = await api<{ dev_code: string | null; channel?: 'sms' | 'telegram' }>('/auth/otp/request', { method: 'POST', body: { phone } });
       router.push({ pathname: '/otp', params: { phone, dev: r.dev_code ?? '', channel: r.channel ?? 'sms' } });
     } catch (e) {
@@ -108,10 +110,14 @@ export default function Login() {
             <>
               <Text style={ty.h3}>{t("Telefon raqamingiz")}</Text>
               <View style={[s.phone, (focus || ready) && { borderColor: c.text }]}>
-                <Text style={s.prefix}>+998</Text>
+                <Text style={s.prefix}>+</Text>
+                <TextInput value={cc} onChangeText={(x) => { setCc(x.replace(/\D/g, '').slice(0, 3)); setDigits(''); }}
+                  keyboardType="number-pad" maxLength={3} accessibilityLabel={t("Mamlakat kodi")}
+                  style={[s.prefix, { minWidth: 34, paddingVertical: 0 }]} />
                 <View style={s.divider} />
-                <TextInput value={formatPhone(digits)} onChangeText={(x) => setDigits(x.replace(/\D/g, '').slice(0, 9))}
-                  keyboardType="phone-pad" placeholder="90 123 45 67" placeholderTextColor={c.muted}
+                <TextInput value={uz ? formatPhone(digits) : digits}
+                  onChangeText={(x) => setDigits(x.replace(/\D/g, '').slice(0, uz ? 9 : 13))}
+                  keyboardType="phone-pad" placeholder={uz ? '90 123 45 67' : '916 123 45 67'} placeholderTextColor={c.muted}
                   onFocus={() => setFocus(true)} onBlur={() => setFocus(false)} accessibilityLabel={t("Telefon raqam")}
                   onSubmitEditing={() => ready && request()} style={s.phoneInput} maxLength={12} />
               </View>

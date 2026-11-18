@@ -419,6 +419,14 @@ export function FadeIn({ children, delay = 0, style }: { children: ReactNode; de
 export const formatPhone = (digits: string) =>
   [digits.slice(0, 2), digits.slice(2, 5), digits.slice(5, 7), digits.slice(7, 9)].filter(Boolean).join(' ');
 
+/** To'liq raqam: "+998901234567" -> "+998 90 123 45 67"; xorijiy raqam o'zgarmaydi ("+79161234567") */
+export const prettyPhone = (phone: string) =>
+  phone.startsWith('+998') && phone.length === 13 ? `+998 ${formatPhone(phone.slice(4))}` : phone;
+
+/** Mamlakat kodi + raqam: O'zbekiston — aniq 9 raqam; boshqalar — jami 10–15 raqam (sql/067) */
+export const phoneReady = (code: string, digits: string) =>
+  code === '998' ? digits.length === 9 : code.length >= 1 && digits.length >= 6 && (code + digits).length >= 10 && (code + digits).length <= 15;
+
 export const money = (value: number) => t("{a} so'm", { a: value.toLocaleString('ru-RU').replace(/[, ]/g, ' ') });
 
 // Bizneslar hozircha faqat O'zbekistonda (UTC+5, yozgi vaqt yo'q)

@@ -8,7 +8,7 @@ import { api, ApiError, LoginOut } from '../src/api';
 import { useAuth } from '../src/auth';
 import { t } from '../src/i18n';
 import { getPendingLink, setPendingLink } from '../src/socialAuth';
-import { ErrorText, formatPhone, IconButton, makeStyles, useTheme, useTopInset, useType } from '../src/ui';
+import { ErrorText, prettyPhone, IconButton, makeStyles, useTheme, useTopInset, useType } from '../src/ui';
 
 const WAIT = 59;
 
@@ -84,7 +84,7 @@ export default function Otp() {
         <Text style={ty.display}>{t("Kodni kiriting")}</Text>
         <Text style={[ty.body, { color: c.muted, lineHeight: 22 }]}>
           {channel === 'telegram' ? t("6 xonali kod Telegramingizga (@ChronixUzBot) yuborildi:") : t("6 xonali kod yuborildi:")}{'\n'}
-          <Text style={{ color: c.text, fontWeight: '800' }}>+998 {formatPhone((phone ?? '').replace(/^\+998/, ''))}</Text>
+          <Text style={{ color: c.text, fontWeight: '800' }}>{prettyPhone(phone ?? '')}</Text>
           {'  ·  '}
           <Text style={{ color: c.accent, fontWeight: '700' }} onPress={() => router.back()}>{t("O'zgartirish")}</Text>
         </Text>
