@@ -70,6 +70,7 @@ class BusinessCard(BaseModel):
     branch_name: str | None = None
     chain_name: str | None = None
     branch_count: int = 1
+    promo_percent: int | None = None      # xarita: bugungi eng katta aksiya (Hot Slots yoki ochiq promokod), %
 
 
 class NearbyOut(BaseModel):

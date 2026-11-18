@@ -681,4 +681,6 @@ export const RU: Record<string, string> = {
   "Ha, raqam to'g'ri": "Да, номер верный",
   "Ortga": "Назад",
   "Boshqa raqamdan foydalanyapman": "Я пользуюсь другим номером",
+  // Xarita preview
+  "Aksiya −{a}%": "Акция −{a}%",
 };

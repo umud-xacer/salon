@@ -171,8 +171,18 @@ def in_bounds(
            {_filters(category, None, params)}
          ORDER BY b.rating_avg DESC, b.id
          LIMIT :limit
-    """), params).mappings()
-    return [BusinessCard(**r) for r in rows]
+    """), params).mappings().all()
+    # Xarita belgisidagi "Aksiya" urg'usi: bugun amaldagi Hot Slots qoidasi yoki ochiq promokodning eng kattasi
+    ids = [r["id"] for r in rows]
+    promo: dict[int, int] = {}
+    if ids:
+        for r in db.execute(text("""
+            SELECT business_id, max(percent)::int AS p FROM (
+                SELECT business_id, percent FROM app.public_hot_rules(:ids)
+                UNION ALL SELECT business_id, percent FROM app.public_promo_codes(:ids)) x
+             GROUP BY business_id"""), {"ids": ids}).mappings():
+            promo[r["business_id"]] = r["p"]
+    return [BusinessCard(**r, promo_percent=promo.get(r["id"])) for r in rows]
 
 
 @router.get("/slots", response_model=SlotsOut)

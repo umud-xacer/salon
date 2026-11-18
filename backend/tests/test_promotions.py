@@ -231,3 +231,22 @@ def test_hot_slots_and_offers_in_app(client, superadmin):
     offers = client.get("/api/v1/catalog/offers", params={"lat": 41.35, "lng": 69.35, "radius_m": 2000}).json()
     codes = [o["code"] for o in offers if o["business_id"] == biz["id"]]
     assert codes == ["SOVGA25"]
+
+
+def test_map_card_shows_biggest_public_promo(client, superadmin):
+    """Xarita belgisi: bugungi Hot Slots qoidasi yoki ochiq promokodning eng kattasi (promo_percent)."""
+    biz = create_business(client, superadmin, lat=40.11, lng=65.31)
+    new_service(client, biz, duration=60)
+    box = {"sw_lat": 40.1, "sw_lng": 65.3, "ne_lat": 40.12, "ne_lng": 65.32}
+
+    def card():
+        r = client.get("/api/v1/catalog/businesses/in-bounds", params=box)
+        assert r.status_code == 200, r.text
+        return next(x for x in r.json() if x["id"] == biz["id"])
+
+    assert card()["promo_percent"] is None
+    code(client, biz, percent=15)                                 # yopiq promokod — ko'rinmaydi
+    assert card()["promo_percent"] is None
+    code(client, biz, percent=25, is_public=True)
+    rule(client, biz, percent=30, time_from="00:00", time_to="23:59")
+    assert card()["promo_percent"] in (25, 30)                    # Hot qoida soat 23:59 dan keyin tugaydi

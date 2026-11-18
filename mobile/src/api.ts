@@ -136,6 +136,7 @@ export type BusinessCard = {
   branch_name?: string | null;
   chain_name?: string | null;
   branch_count?: number;
+  promo_percent?: number | null;        // xarita: bugungi eng katta aksiya, %
 };
 
 export type Branch = {

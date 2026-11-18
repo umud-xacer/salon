@@ -1,5 +1,7 @@
 // Qidiruv (Figma 08): tepada xarita (reyting yorliqlari), qidiruv paneli; pastda suriladigan oyna —
 // yo'nalishlar, "Yaqin atrofda N ta salon" va katta kartalar. Xarita surilsa ro'yxat o'sha hududga moslanadi.
+// Pin bosilsa (Fresha uslubi): ro'yxat pastga yashirinadi, xarita butun ekranga kengayadi va pastdan salon
+// kartochkasi chiqadi (rasm, ★ reyting (sharhlar), masofa · manzil, aksiya). "X" yoki xaritaning bo'sh joyi — yopiladi.
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, PanResponder, Pressable, ScrollView, ScrollViewInstance, Text, useWindowDimensions, View } from 'react-native';
@@ -8,6 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api, ApiError, BusinessCard, Category } from '../../src/api';
 import { pick, t } from '../../src/i18n';
 import { locate, useMyLocation } from '../../src/location';
+import { MapPreview } from '../../src/MapPreview';
 import { Bounds, OsmMap } from '../../src/OsmMap';
 import { SalonCardBig } from '../../src/SalonCard';
 import { EmptyState, Icon, makeStyles, Pressy, useTheme } from '../../src/ui';
@@ -28,16 +31,21 @@ export default function SearchTab() {
   const [yandexKey, setYandexKey] = useState<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const list = useRef<ScrollViewInstance>(null);
+  const [selId, setSelId] = useState<number | null>(null);
+  const lastSel = useRef<BusinessCard | null>(null);
 
   // Oyna ikki holatda: pastda (xarita ko'rinadi) va tepada (ro'yxat to'liq)
   const low = Math.round(height * 0.36);
   const high = insets.top + 128;
   const top = useRef(new Animated.Value(low)).current;
+  const mapH = useRef(new Animated.Value(low + 40)).current;
   const at = useRef(low);
   const snap = (to: number) => {
     at.current = to;
     Animated.spring(top, { toValue: to, useNativeDriver: false, damping: 22, stiffness: 200 }).start();
   };
+  const expandMap = (full: boolean) =>
+    Animated.timing(mapH, { toValue: full ? height : low + 40, duration: 220, useNativeDriver: false }).start();
   const drag = useRef(PanResponder.create({
     onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dy) > 6,
     onPanResponderMove: (_, g) => top.setValue(Math.min(low, Math.max(high, at.current + g.dy))),
@@ -72,16 +80,27 @@ export default function SearchTab() {
     return [...list].sort((a, z) => Number(z.is_open_now) - Number(a.is_open_now) || z.rating_avg - a.rating_avg);
   }, [items, category, categories]);
 
+  // Tanlangan salon: xarita yangilansa ham kartochka yo'qolmaydi (oxirgi ma'lumot saqlanadi)
+  const selected = selId === null ? null : (shown.find((b) => b.id === selId) ?? lastSel.current);
+  lastSel.current = selected;
   const select = (id: number) => {
-    const i = shown.findIndex((b) => b.id === id);
-    if (i < 0) return;
+    const b = shown.find((x) => x.id === id);
+    if (!b) return;
+    lastSel.current = b;
+    setSelId(id);
+    Animated.spring(top, { toValue: height, useNativeDriver: false, damping: 22, stiffness: 200 }).start();
+    expandMap(true);
+  };
+  const closePreview = () => {
+    if (selId === null) return;
+    setSelId(null);
     snap(low);
-    list.current?.scrollTo({ y: i * 330, animated: true });
+    expandMap(false);
   };
 
   return (
     <View style={{ flex: 1, backgroundColor: c.bg }}>
-      <View style={{ height: low + 40 }}>
+      <Animated.View style={{ height: mapH }}>
         <OsmMap
           key={yandexKey ? 'yandex' : 'osm'}
           yandexKey={yandexKey}
@@ -95,12 +114,14 @@ export default function SearchTab() {
           businesses={shown}
           onBounds={onBounds}
           onSelect={select}
+          selectedId={selId}
+          onTapMap={closePreview}
           onError={() => {
             if (yandexKey) setYandexKey(null);
             else setHint(t("Xaritani yuklab bo'lmadi. Internetni tekshiring"));
           }}
         />
-      </View>
+      </Animated.View>
 
       <View style={[s.searchWrap, { top: insets.top + 8 }]}>
         <Pressy onPress={() => router.push(category ? { pathname: '/search', params: { category } } : '/search')} style={s.search}
@@ -144,10 +165,15 @@ export default function SearchTab() {
               text={t("Xaritani suring yoki boshqa yo'nalishni tanlang")} />
           ) : shown.map((b) => (
             <SalonCardBig key={b.id} item={b} onOpen={() => router.push({ pathname: '/business/[slug]', params: { slug: b.slug } })}
-              badge={b.rating_count > 0 && b.rating_avg >= 4.8 ? t("Eng yaxshi") : null} />
+              badge={b.promo_percent ? t("Aksiya −{a}%", { a: b.promo_percent })
+                : b.rating_count > 0 && b.rating_avg >= 4.8 ? t("Eng yaxshi") : null}
+              badgeIcon={b.promo_percent ? 'pricetag' : undefined} />
           ))}
         </ScrollView>
       </Animated.View>
+
+      <MapPreview item={selected} me={me} bottom={16} onClose={closePreview}
+        onOpen={(b) => router.push({ pathname: '/business/[slug]', params: { slug: b.slug } })} />
     </View>
   );
 }

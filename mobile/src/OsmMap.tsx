@@ -24,6 +24,10 @@ type Props = {
   onBounds: (bounds: Bounds) => void;
   onSelect: (id: number) => void;
   onError: () => void;
+  /** Tanlangan muassasa (pin ajralib turadi) */
+  selectedId?: number | null;
+  /** Xaritaning bo'sh joyi bosildi — preview yopiladi */
+  onTapMap?: () => void;
   /** "Mening joyim" tugmasi: joylashuvni topib qaytaradi (ruxsat yo'q bo'lsa null) */
   onLocate?: () => Promise<Point | null>;
   /** Bo'lmasa — OpenStreetMap. Yandex yuklanmasa onError chaqiriladi, chaqiruvchi OSM ga o'tkazadi */
@@ -53,7 +57,7 @@ const yandexHtml = (lat: number, lng: number, key: string) => `<!doctype html>
   else ymaps.ready(() => {
     clearTimeout(fail);
     const map = new ymaps.Map('map', { center: [${lat}, ${lng}], zoom: 13, controls: ['zoomControl'] },
-                              { suppressMapOpenBlock: true });
+                              { suppressMapOpenBlock: true, autoFitToViewport: 'always' });
     map.controls.get('zoomControl').options.set({ size: 'small', position: { right: 10, bottom: 30 } });
     const markers = new ymaps.GeoObjectCollection();
     map.geoObjects.add(markers);
@@ -61,10 +65,13 @@ const yandexHtml = (lat: number, lng: number, key: string) => `<!doctype html>
     window.setMarkers = (list) => {
       markers.removeAll();
       list.forEach((b) => {
-        // Figma: qora yorliq "★ 4,9" (yangi muassasa — "Yangi"), yopig'i kulrang
-        const mark = new ymaps.Placemark([b.lat, b.lng], { hintContent: esc(b.name), iconContent: esc((b.rated ? '\u2605 ' : '') + b.label) },
-                                         { preset: b.open ? 'islands#blackStretchyIcon' : 'islands#grayStretchyIcon' });
-        mark.events.add('click', () => post({ type: 'select', id: b.id }));
+        // Qora yorliq "★ 4,9" (yangi — "Yangi"), yopig'i kulrang; aksiya — pushti va "−20%"; tanlangan — ko'k
+        const text = (b.rated ? '\u2605 ' : '') + b.label + (b.promo ? '  \u2212' + b.promo + '%' : '');
+        const preset = b.sel ? 'islands#blueStretchyIcon' : b.promo ? 'islands#pinkStretchyIcon'
+                     : b.open ? 'islands#blackStretchyIcon' : 'islands#grayStretchyIcon';
+        const mark = new ymaps.Placemark([b.lat, b.lng], { hintContent: esc(b.name), iconContent: esc(text) },
+                                         { preset, zIndex: b.sel ? 1000 : b.promo ? 500 : 0 });
+        mark.events.add('click', (e) => { e.stopPropagation(); post({ type: 'select', id: b.id }); });
         markers.add(mark);
       });
     };
@@ -82,6 +89,7 @@ const yandexHtml = (lat: number, lng: number, key: string) => `<!doctype html>
       post({ type: 'bounds', sw, ne });
     };
     map.events.add('boundschange', bounds);
+    map.events.add('click', () => post({ type: 'tap' }));
     bounds();
     post({ type: 'ready' });
   });
@@ -94,9 +102,17 @@ const html = (lat: number, lng: number) => `<!doctype html>
   integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
 <style>
   html,body,#map{width:100%;height:100%;margin:0;padding:0;background:#eef1f6}
-  .pin{display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border-radius:999px;background:#111114;color:#fff;
-       font:600 13px system-ui,sans-serif;white-space:nowrap;box-shadow:0 2px 8px rgba(17,17,20,.3);transform:translate(-50%,-100%)}
-  .pin .s{color:#F5A623}.pin.closed{background:#8a8a94}
+  .pin{position:relative;display:inline-flex;align-items:center;gap:4px;padding:6px 11px;border-radius:999px;background:#111114;color:#fff;
+       font:700 13px system-ui,sans-serif;white-space:nowrap;box-shadow:0 3px 10px rgba(17,17,20,.32);
+       transform:translate(-50%,calc(-100% - 6px));transition:transform .15s ease}
+  .pin:after{content:'';position:absolute;left:50%;bottom:-5px;margin-left:-5px;border:5px solid transparent;border-bottom:0;
+       border-top-color:inherit;border-top-color:#111114}
+  .pin .s{color:#F5A623}.pin.closed{background:#8a8a94}.pin.closed:after{border-top-color:#8a8a94}
+  .pin .p{margin-left:2px;padding:1px 6px;border-radius:999px;background:#FF3D71;color:#fff;font-size:11px}
+  .pin.promo{box-shadow:0 0 0 2px #FF3D71,0 3px 10px rgba(255,61,113,.35)}
+  .pin.sel{background:#fff;color:#111114;transform:translate(-50%,calc(-100% - 6px)) scale(1.15);
+           box-shadow:0 0 0 2px #111114,0 6px 16px rgba(17,17,20,.35)}
+  .pin.sel:after{border-top-color:#111114}
   .me{width:16px;height:16px;border-radius:50%;background:#6B4EFF;border:3px solid #fff;box-shadow:0 0 0 6px rgba(107,78,255,.25)}
   .leaflet-tooltip{font:600 12px system-ui,sans-serif}
   .locate a{display:flex!important;align-items:center;justify-content:center;color:#1565F5}
@@ -133,16 +149,20 @@ const html = (lat: number, lng: number) => `<!doctype html>
     markers.clearLayers();
     list.forEach((b) => {
       const pill = document.createElement('div');
-      pill.className = 'pin ' + (b.open ? 'open' : 'closed');
+      pill.className = 'pin ' + (b.open ? 'open' : 'closed') + (b.promo ? ' promo' : '') + (b.sel ? ' sel' : '');
       const star = document.createElement('span');
       star.className = 's';
       star.textContent = b.rated ? '★' : '';
       pill.appendChild(star);
       pill.appendChild(document.createTextNode(b.label));
+      if (b.promo) {
+        const promo = document.createElement('span');
+        promo.className = 'p';
+        promo.textContent = '−' + b.promo + '%';
+        pill.appendChild(promo);
+      }
       const icon = L.divIcon({ className: '', html: pill, iconSize: [0, 0], iconAnchor: [0, 0] });
-      const label = document.createElement('span');
-      label.textContent = b.name;
-      L.marker([b.lat, b.lng], { icon }).bindTooltip(label, { direction: 'top', offset: [0, -34] })
+      L.marker([b.lat, b.lng], { icon, zIndexOffset: b.sel ? 1000 : b.promo ? 500 : 0 })
         .on('click', () => post({ type: 'select', id: b.id })).addTo(markers);
     });
   };
@@ -158,15 +178,16 @@ const html = (lat: number, lng: number) => `<!doctype html>
     post({ type: 'bounds', sw: [b.getSouth(), b.getWest()], ne: [b.getNorth(), b.getEast()] });
   };
   map.on('moveend', bounds);
+  map.on('click', () => post({ type: 'tap' }));
   bounds();
   post({ type: 'ready' });
 </script></body></html>`;
 
-export function OsmMap({ center, me, businesses, onBounds, onSelect, onError, onLocate, yandexKey }: Props) {
+export function OsmMap({ center, me, businesses, onBounds, onSelect, onError, onLocate, yandexKey, selectedId, onTapMap }: Props) {
   const web = useRef<WebView | null>(null);
   const ready = useRef(false);
-  const latest = useRef({ businesses, me });
-  latest.current = { businesses, me };
+  const latest = useRef({ businesses, me, selectedId });
+  latest.current = { businesses, me, selectedId };
   // Xarita markazi faqat birinchi ochilganda: keyin foydalanuvchi o'zi suradi
   const source = useMemo(() => ({
     html: yandexKey ? yandexHtml(center.latitude, center.longitude, yandexKey) : html(center.latitude, center.longitude),
@@ -189,6 +210,7 @@ export function OsmMap({ center, me, businesses, onBounds, onSelect, onError, on
     const list = latest.current.businesses.map((b) => ({
       id: b.id, name: b.branch_name ? `${b.name} · ${b.branch_name}` : b.name,   // filial xaritada aniq ajralsin
       lat: b.lat, lng: b.lng, open: b.is_open_now, rated: b.rating_count > 0,
+      promo: b.promo_percent ?? null, sel: b.id === latest.current.selectedId,
       label: b.rating_count > 0 ? b.rating_avg.toFixed(1).replace('.', ',') : 'Yangi' }));
     run(`window.setMarkers && window.setMarkers(${JSON.stringify(list)})`);
     const p = latest.current.me;
@@ -198,7 +220,7 @@ export function OsmMap({ center, me, businesses, onBounds, onSelect, onError, on
   // Xarita tayyor bo'lmaguncha belgilar yuborilmaydi: aks holda ular yo'qolib qoladi
   useEffect(() => {
     if (ready.current) pushMarkers();
-  }, [businesses, me]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [businesses, me, selectedId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const onMessage = (e: WebViewMessageEvent) => {
     const m = JSON.parse(e.nativeEvent.data);
@@ -207,6 +229,7 @@ export function OsmMap({ center, me, businesses, onBounds, onSelect, onError, on
       pushMarkers();
     } else if (m.type === 'bounds') onBounds({ sw: m.sw, ne: m.ne });
     else if (m.type === 'select') onSelect(m.id);
+    else if (m.type === 'tap') onTapMap?.();
     else if (m.type === 'error') onError();
     else if (m.type === 'locate') {
       (onLocate ? onLocate() : Promise.resolve(latest.current.me ?? null))
