@@ -8,6 +8,7 @@ from sqlalchemy.exc import DBAPIError
 from app.api.v1 import (analytics, appointments, auth, auto_messages, billing, broadcasts, cash_shifts, forms, resources, timesheet, blocks, waitlist, business_admin, catalog, clients, finance, geo, inventory, me, members,
                         payroll, promotions, reception, reminders, reports, reviews, schedule, superadmin, telegram, visits)
 from app.core.config import get_settings
+from app.db.session import MAX_INFLIGHT
 from app.services.auth_service import AuthError
 
 log = logging.getLogger("app")
@@ -20,6 +21,26 @@ app = FastAPI(
     redoc_url=None,
     openapi_url=None if settings.env == "prod" else "/openapi.json",
 )
+
+
+
+class InflightLimit:
+    """Bir vaqtda ishlanadigan HTTP so'rovlar soni baza ulanishlaridan oshmasin (db/session.py dagi izoh).
+    Ortiqcha so'rovlar shu yerda navbat kutadi — qotib qolish va 500 o'rniga biroz sekinroq javob."""
+
+    def __init__(self, app, limit: int):
+        import asyncio
+        self.app = app
+        self.sem = asyncio.Semaphore(limit)
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            return await self.app(scope, receive, send)
+        async with self.sem:
+            return await self.app(scope, receive, send)
+
+
+app.add_middleware(InflightLimit, limit=MAX_INFLIGHT)
 
 if settings.cors_origins:
     app.add_middleware(
