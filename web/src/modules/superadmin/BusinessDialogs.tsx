@@ -61,6 +61,8 @@ export function CreateBusinessDialog({ modules, businesses, onClose }: {
   // To'lov rejimi: activation — bugundan 1-sanagacha kunbay, muhlat ichida to'lanadi (sql/043)
   const [billingMode, setBillingMode] = useState<"activation" | "trial" | "unlimited">("activation");
   const [picked, setPicked] = useState<string[]>(["booking"]);
+  // Ishlash formati (062): yakka — direktor o'zi yagona mutaxassis; xodim qo'shilsa jamoaga o'zi o'tadi
+  const [workMode, setWorkMode] = useState<"solo" | "team">("solo");
 
   const create = useMutation({
     mutationFn: () =>
@@ -81,6 +83,7 @@ export function CreateBusinessDialog({ modules, businesses, onClose }: {
               owner_password: ownerPassword.trim() || null,
             }),
         modules: picked,
+        work_mode: isBranch ? "team" : workMode,
         ...(isBranch ? {} : { billing_mode: billingMode,
           subscription_days: billingMode === "trial" && days ? Number(days) : null }),
       })),
@@ -209,6 +212,22 @@ export function CreateBusinessDialog({ modules, businesses, onClose }: {
         <PhoneOwnerHint lookup={ownerLookup.data} mode="assign" />
         <PasswordInput label={t("Direktorning boshlang'ich paroli")} value={ownerPassword} onChange={setOwnerPassword} />
         </>)}
+        {!isBranch && (
+          <fieldset className="text-sm">
+            <legend>{t("Ishlash formati")}</legend>
+            <div className="mt-1 grid gap-2 sm:grid-cols-2">
+              {([["solo", t("O'zim yakka ishlayman"), t("Direktor — yagona usta/shifokor. Mijoz mutaxassis tanlamaydi, bronlar unga yoziladi.")],
+                 ["team", t("Jamoam bilan ishlayman"), t("Bir nechta usta yoki shifokor. Mijoz mutaxassisni tanlab yoziladi.")]] as const).map(([v, title, hint]) => (
+                <label key={v} className={`cursor-pointer rounded-lg border p-3 ${workMode === v ? "border-primary bg-primary/5" : "border-line"}`}>
+                  <span className="flex items-center gap-2 font-medium">
+                    <input type="radio" name="work-mode" checked={workMode === v} onChange={() => setWorkMode(v)} />{title}
+                  </span>
+                  <span className="mt-1 block text-xs text-muted">{hint}</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+        )}
         {isBranch ? (
           <p className="text-sm text-muted">
             {t("To'lov: filial tarmoq obunasiga qo'shiladi — bugundan tarmoq muddatigacha kunbay summa direktorga chiqadi.")}

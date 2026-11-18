@@ -312,6 +312,7 @@ export interface BusinessProfile {
   category_name: string;
   default_opens_at: string;
   default_closes_at: string;
+  is_solo_mode?: boolean;            // yakka: direktor — yagona mutaxassis (062)
 }
 
 export interface ReportDay {

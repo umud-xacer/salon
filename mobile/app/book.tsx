@@ -101,8 +101,14 @@ export default function Book() {
   }, [params.slug, params.appointmentId, reschedule]);
 
   const clinic = b?.kind === 'clinic';
-  const steps: StepId[] = reschedule ? ['time', 'confirm'] : hot ? ['confirm'] : clinic
+  // Yakka rejim: yagona mutaxassis (direktor) — usta/shifokor tanlash qadami yo'q, bron unga yoziladi
+  const soloId = b?.solo && b.staff.length === 1 ? b.staff[0].member_id : null;
+  const steps: StepId[] = reschedule ? ['time', 'confirm'] : hot ? ['confirm'] : soloId !== null
+    ? ['service', 'time', 'confirm'] : clinic
     ? ['doctor', 'service', 'time', 'confirm'] : ['service', 'master', 'time', 'confirm'];
+  useEffect(() => {
+    if (soloId !== null && !reschedule && !hot) setMember(soloId);
+  }, [soloId, reschedule, hot]);
   const current = steps[Math.min(step, steps.length - 1)];
 
   // Venue'dan xizmat tanlab kelinsa — usta qadamidan boshlanadi

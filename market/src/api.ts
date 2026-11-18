@@ -107,6 +107,7 @@ export type Staff = {
 };
 export type Branch = { id: number; slug: string; name: string; branch_name: string | null; address: string | null; is_open_now: boolean };
 export type BusinessDetail = {
+  solo?: boolean;                 // yakka rejim: mutaxassis tanlanmaydi (062)
   id: number; slug: string; name: string; description: string | null; address: string | null; phone: string | null;
   photos: string[]; category?: string; category_name: string; kind?: "salon" | "pharmacy" | "clinic";
   rating_avg: number; rating_count: number; is_open_now: boolean; lat?: number; lng?: number;

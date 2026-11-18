@@ -124,6 +124,8 @@ def create_business(body: BusinessCreate, db: Session = Depends(get_db)):
     for code in set(body.modules):
         db.add(BusinessModule(business_id=biz.id, module_code=code, enabled=True))
     db.flush()
+    db.execute(text("SELECT app.set_work_mode(:b, :s)"),
+               {"b": biz.id, "s": body.work_mode == "solo" and parent is None})
     if parent is not None:
         audit.log(db, biz.id, "create", "branch", biz.id, {"parent_id": parent.id, "branch_name": body.branch_name})
     # Faollashtirish: 1-sanagacha (filialda — tarmoq muddatigacha) kunbay qarz va muhlat. Filial bepul sinov /

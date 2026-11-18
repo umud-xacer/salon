@@ -5,7 +5,7 @@ from pydantic import AwareDatetime, BaseModel, Field
 
 
 class BookingCreate(BaseModel):
-    member_id: int = Field(ge=1)
+    member_id: int | None = Field(default=None, ge=1)    # yakka rejimda shart emas — direktorga yoziladi (062)
     service_id: int = Field(ge=1)
     starts_at: AwareDatetime
     note: str | None = Field(default=None, max_length=500)
@@ -13,7 +13,7 @@ class BookingCreate(BaseModel):
 
 
 class QuoteIn(BaseModel):
-    member_id: int = Field(ge=1)
+    member_id: int | None = Field(default=None, ge=1)
     service_id: int = Field(ge=1)
     starts_at: AwareDatetime
     promo_code: str | None = Field(default=None, max_length=20)

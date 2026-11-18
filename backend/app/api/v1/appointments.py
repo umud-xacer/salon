@@ -64,10 +64,21 @@ def _get(db: Session, appointment_id: int) -> AppointmentOut:
     return AppointmentOut(**row)
 
 
+def _member_or_solo(db: Session, member_id: int | None, service_id: int) -> int:
+    """Usta ko'rsatilmagan bo'lsa: yakka rejimdagi muassasaning direktori (062); jamoa rejimida — shart."""
+    if member_id:
+        return member_id
+    solo = db.scalar(text("SELECT app.solo_member(:s)"), {"s": service_id})
+    if solo is None:
+        raise HTTPException(422, detail={"code": "member_required", "message": "Mutaxassisni tanlang"})
+    return solo
+
+
 @router.post("/appointments", response_model=AppointmentOut, status_code=201)
 def create_booking(body: BookingCreate, db: Session = Depends(get_db)):
+    member_id = _member_or_solo(db, body.member_id, body.service_id)
     appointment_id = db.scalar(text("SELECT app.book_appointment(:m, :s, :t, :n, :c)"),
-                               {"m": body.member_id, "s": body.service_id, "t": body.starts_at, "n": body.note,
+                               {"m": member_id, "s": body.service_id, "t": body.starts_at, "n": body.note,
                                 "c": body.promo_code})
     db.commit()
     return _get(db, appointment_id)
@@ -77,7 +88,8 @@ def create_booking(body: BookingCreate, db: Session = Depends(get_db)):
 def booking_quote(body: QuoteIn, db: Session = Depends(get_db)):
     """Tasdiqlash ekrani uchun: narx va qo'llanadigan chegirma (bo'sh soat, sodiqlik yoki promokod)."""
     r = db.execute(text("SELECT * FROM app.booking_quote(:m, :s, :t, :c)"),
-                   {"m": body.member_id, "s": body.service_id, "t": body.starts_at, "c": body.promo_code}).mappings().one()
+                   {"m": _member_or_solo(db, body.member_id, body.service_id), "s": body.service_id, "t": body.starts_at,
+                    "c": body.promo_code}).mappings().one()
     return QuoteOut(price=r["price"], percent=r["percent"], discount=r["discount"], final=r["price"] - r["discount"],
                     source=r["source"] if r["percent"] > 0 else None, code_error=r["code_error"])
 

@@ -5,6 +5,7 @@ Bazada ham xuddi shu qoida (RLS); status/reyting/egasi kabi maydonlarni triggerl
 Har bir o'zgarish audit_logs ga yoziladi.
 """
 from fastapi import APIRouter, Depends, File, HTTPException, Path, Query, UploadFile, status
+from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -29,7 +30,7 @@ def _profile(db: Session, business_id: int) -> ProfileOut:
                b.address, ST_Y(b.location::geometry) AS lat, ST_X(b.location::geometry) AS lng, b.is_listed,
                b.logo_url, b.cover_url, c.name_uz AS category_name, b.branch_name,
                (SELECT p.name FROM businesses p WHERE p.id = b.parent_id) AS parent_name,
-               c.opens_at AS default_opens_at, c.closes_at AS default_closes_at
+               c.opens_at AS default_opens_at, c.closes_at AS default_closes_at, b.is_solo_mode
           FROM businesses b JOIN business_categories c ON c.id = b.category_id
          WHERE b.id = :b
     """), {"b": business_id}).mappings().first()
@@ -340,3 +341,19 @@ def deactivate_service(service_id: int = Path(ge=1), business_id: int = Depends(
         raise _NOT_FOUND
     audit.log(db, business_id, "deactivate", "service", service_id)
     db.commit()
+
+
+
+# ─── Ishlash formati: yakka yoki jamoa (062_solo_mode.sql) ───────────────────────────────────────
+class WorkModeIn(BaseModel):
+    solo: bool
+
+
+@router.put("/work-mode", response_model=ProfileOut)
+def set_work_mode(body: WorkModeIn, business_id: int = Depends(_business), db: Session = Depends(get_db)):
+    """Yakka: direktor — yagona mutaxassis, barcha xizmatlar unga. Faol xodimlar bo'lsa — yakkaga o'tib bo'lmaydi.
+    Xodim qo'shilsa jamoaga o'zi o'tadi, oxirgi xodim olib tashlansa — yana yakka."""
+    db.execute(text("SELECT app.set_work_mode(:b, :s)"), {"b": business_id, "s": body.solo})
+    audit.log(db, business_id, "update", "business", business_id, ["work_mode"])
+    db.commit()
+    return _profile(db, business_id)

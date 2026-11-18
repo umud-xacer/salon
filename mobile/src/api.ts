@@ -160,6 +160,7 @@ export type Staff = {
   rating_avg: number; rating_count: number; service_ids: number[];
 };
 export type BusinessDetail = {
+  solo?: boolean;                       // yakka rejim: mutaxassis tanlanmaydi (062)
   id: number;
   slug: string;
   name: string;

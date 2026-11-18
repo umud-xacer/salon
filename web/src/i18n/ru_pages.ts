@@ -1400,4 +1400,14 @@ export const RU_PAGES: Record<string, string> = {
   "Sotuv hududi": "Зона продаж",
   "{a} foyd. · {b} ochilish · {c}%": "{a} польз. · {b} открытий · {c}%",
   "{a} muassasa": "заведений: {a}",
+  // Ishlash formati (yakka / jamoa)
+  "O'zim yakka ishlayman": "Работаю один",
+  "Siz yagona {a}siz: mijoz mutaxassis tanlamaydi, barcha bronlar va mijozlar sizga yoziladi.": "Вы единственный специалист ({a}): клиент не выбирает специалиста, все записи и клиенты — ваши.",
+  "Jamoam bilan ishlayman": "Работаю с командой",
+  "Mijoz {a}ni tanlab yoziladi. Xodim qo'shsangiz bu rejim o'zi yoqiladi.": "Клиент выбирает специалиста ({a}). При добавлении сотрудника режим включается сам.",
+  "Ishlash formati": "Формат работы",
+  "{a} bo'limi doim ochiq: yangi xodim qo'shsangiz, ilova va saytda mutaxassis tanlash o'zi yoqiladi.": "Раздел «{a}» всегда открыт: добавите сотрудника — выбор специалиста в приложении и на сайте включится сам.",
+  "hozir": "сейчас",
+  "Direktor — yagona usta/shifokor. Mijoz mutaxassis tanlamaydi, bronlar unga yoziladi.": "Директор — единственный мастер/врач. Клиент не выбирает специалиста, записи идут ему.",
+  "Bir nechta usta yoki shifokor. Mijoz mutaxassisni tanlab yoziladi.": "Несколько мастеров или врачей. Клиент выбирает специалиста.",
 };

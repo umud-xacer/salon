@@ -80,6 +80,7 @@ _DB_ERRORS = {
     "P0425": (409, "resource_not_suitable", "Tanlangan xona yoki kreslo bu xizmatga mos emas"),
     "P0426": (409, "already_checked_in", "Bugun allaqachon kelganingiz belgilangan"),
     "P0427": (409, "not_checked_in", "Avval \"Keldim\" tugmasini bosing"),
+    "P0428": (409, "has_staff", "Faol xodimlar bor. Yakka rejimga o'tish uchun avval ularni o'chiring yoki bron qilinmaydigan qiling"),
     "P0450": (409, "business_account", "Salon xodimi yoki direktori hisobini ilovadan o'chirib bo'lmaydi. "
                                        "Qo'llab-quvvatlash xizmatiga yozing"),
     "P0440": (409, "promo_not_found", "Promokod topilmadi yoki muddati tugagan"),

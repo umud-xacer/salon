@@ -204,7 +204,7 @@ def business_detail(slug: str, db: Session = Depends(get_public_db)):
         SELECT b.id, b.slug, b.name, b.description, c.slug AS category, c.name_uz AS category_name, c.name_ru AS category_name_ru,
                c.kind, b.phone, b.city, b.address, b.logo_url, b.cover_url,
                ST_Y(b.location::geometry) AS lat, ST_X(b.location::geometry) AS lng,
-               b.rating_avg::float AS rating_avg, b.rating_count, {_IS_OPEN} AS is_open_now,
+               b.rating_avg::float AS rating_avg, b.rating_count, {_IS_OPEN} AS is_open_now, b.is_solo_mode AS solo,
                {_CHAIN} AS chain_id, {_CHAIN_COLUMNS}
           FROM businesses b JOIN business_categories c ON c.id = b.category_id
          WHERE b.slug = :slug AND {_PUBLIC_WHERE}

@@ -151,6 +151,7 @@ class BusinessDetail(BaseModel):
     photos: list[str]
     service_groups: list[ServiceGroupOut]
     staff: list[StaffOut]
+    solo: bool = False                       # yakka rejim: "Usta tanlang" qadami ko'rsatilmaydi (062)
     branch_name: str | None = None
     chain_name: str | None = None
     branch_count: int = 1
@@ -233,6 +234,7 @@ class ProfileOut(BaseModel):
     parent_name: str | None = None   # filial bo'lsa — asosiy kompaniya nomi (faqat ko'rish uchun)
     default_opens_at: time           # muassasa turining standart ish vaqti
     default_closes_at: time
+    is_solo_mode: bool = False       # yakka (direktor — yagona mutaxassis) yoki jamoa (062)
 
 
 class HoursIn(BaseModel):

@@ -47,6 +47,13 @@ export default function Booking() {
   const services = useMemo(() => b?.service_groups.flatMap((g) => g.services) ?? [], [b]);
   const svc = services.find((s) => s.id === service);
   const masters = useMemo(() => (b && service ? b.staff.filter((m) => m.service_ids.includes(service)) : []), [b, service]);
+  // Yakka rejim: yagona mutaxassis (direktor) — "Mutaxassis" qadami ko'rsatilmaydi, bron unga yoziladi
+  const soloId = b?.solo && b.staff.length === 1 ? b.staff[0].member_id : null;
+  useEffect(() => {
+    if (soloId === null) return;
+    setMember(soloId);
+    setStep((s) => (s === "master" ? "time" : s));
+  }, [soloId]);
   const chosen = b?.staff.find((m) => m.member_id === (slot?.member ?? member));
 
   // Bo'sh vaqtlar ("Farqi yo'q" — har vaqtga o'sha kuni eng ko'p bo'sh vaqti bor usta)
@@ -143,7 +150,8 @@ export default function Booking() {
   }
 
   const groups = b.service_groups;
-  const pinnedStaff = pinned !== null ? b.staff.find((m) => m.member_id === pinned) : undefined;
+  const pinnedId = pinned ?? soloId;
+  const pinnedStaff = pinnedId !== null ? b.staff.find((m) => m.member_id === pinnedId) : undefined;
   const visible = (group === "all" ? services : groups.find((g) => (g.category_id ?? 0) === group)?.services ?? [])
     .filter((s) => !pinnedStaff || pinnedStaff.service_ids.includes(s.id));
 
@@ -157,10 +165,10 @@ export default function Booking() {
       <div className="mx-auto grid max-w-6xl gap-8 px-4 pb-32 sm:px-8 lg:grid-cols-[minmax(0,1fr)_380px] lg:pb-12">
         <div className="min-w-0">
           <nav className="mb-3 flex flex-wrap items-center gap-1 text-sm">
-            {STEPS.map(([s, l], i) => (
+            {STEPS.filter(([s]) => !(s === "master" && pinnedStaff)).map(([s, l], i, shown) => (
               <span key={s} className="flex items-center gap-1">
                 <span className={i === idx ? "font-bold text-ink" : i < idx ? "text-brand" : "text-muted"}>{l}</span>
-                {i < STEPS.length - 1 && <ChevronRight size={14} className="text-muted" />}
+                {i < shown.length - 1 && <ChevronRight size={14} className="text-muted" />}
               </span>
             ))}
           </nav>
@@ -181,7 +189,7 @@ export default function Booking() {
                 {visible.map((s) => {
                   const on = s.id === service;
                   return (
-                    <button key={s.id} onClick={() => { setService(s.id); setMember(pinnedStaff ? pinned : null); setSlot(null); }}
+                    <button key={s.id} onClick={() => { setService(s.id); setMember(pinnedStaff ? pinnedId : null); setSlot(null); }}
                       className={`flex w-full items-center gap-4 rounded-2xl border-2 p-5 text-left transition ${on ? "border-brand bg-brand-soft/40" : "border-line hover:border-brand/40"}`}>
                       <span className="min-w-0 flex-1">
                         <b className="block">{s.name}</b>

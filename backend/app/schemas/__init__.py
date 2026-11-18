@@ -243,6 +243,8 @@ class BusinessCreate(BaseModel):
     subscription_days: int | None = Field(default=None, ge=1, le=3660)    # None = muddatsiz
     # activation — 1-sanagacha kunbay qarz, muhlat tugaguncha to'lanadi (sql/043); None — subscription_days bo'yicha
     billing_mode: Literal["activation", "trial", "unlimited"] | None = None
+    # Ishlash formati (062): solo — direktor o'zi yagona mutaxassis; team — xodimlar bilan. Filial — doim team
+    work_mode: Literal["solo", "team"] = "team"
     plan_id: int | None = Field(default=None, ge=1)      # None = birinchi faol tarif (odatda Start)
 
     @field_validator("owner_phone")
