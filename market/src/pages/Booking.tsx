@@ -10,9 +10,10 @@ import { api, ApiError, Appointment, BusinessDetail, Quote, Slot } from "../api"
 import { useAuth } from "../auth";
 import { btn, ErrorText, Img, RatingLine, Spinner } from "../components/ui";
 import { dateLong, durationText, money, nextDays, timeOf } from "../util";
+import { pick, t } from "../i18n";
 
 type Step = "service" | "master" | "time" | "confirm";
-const STEPS: [Step, string][] = [["service", "Xizmat"], ["master", "Mutaxassis"], ["time", "Vaqt"], ["confirm", "Tasdiqlash"]];
+const STEPS: [Step, string][] = [["service", t("Xizmat")], ["master", t("Mutaxassis")], ["time", t("Vaqt")], ["confirm", t("Tasdiqlash")]];
 const ANY = -1;
 type PickSlot = { starts_at: string; time: string; member: number };
 
@@ -71,7 +72,7 @@ export default function Booking() {
         const best = new Map<string, PickSlot>();
         for (const p of lists.flat()) { const c = best.get(p.starts_at); if (!c || (free.get(p.member) ?? 0) > (free.get(c.member) ?? 0)) best.set(p.starts_at, p); }
         if (alive) setSlots([...best.values()].sort((a, z) => a.starts_at.localeCompare(z.starts_at)));
-      } catch (e) { if (alive) { setSlots([]); setError(e instanceof ApiError ? e.message : "Yuklab bo'lmadi"); } }
+      } catch (e) { if (alive) { setSlots([]); setError(e instanceof ApiError ? t(e.message) : t("Yuklab bo'lmadi")); } }
     })();
     return () => { alive = false; };
   }, [step, service, member, day, b, masters]);
@@ -84,20 +85,20 @@ export default function Booking() {
   }, [step, slot, service, me, applied]);
 
   if (q.isLoading) return <div className="flex min-h-screen items-center justify-center"><Spinner /></div>;
-  if (!b) return <div className="p-10 text-center">Muassasa topilmadi</div>;
+  if (!b) return <div className="p-10 text-center">{t("Muassasa topilmadi")}</div>;
 
   const idx = STEPS.findIndex(([s]) => s === step);
   const canNext = step === "service" ? !!service : step === "master" ? member !== null : step === "time" ? !!slot : !busy;
   const final = quote ? quote.final : svc?.price ?? 0;
   const codeError = quote?.code_error ? {
-    promo_not_found: "Promokod topilmadi yoki muddati tugagan", promo_used: "Bu promokoddan allaqachon foydalangansiz",
-    promo_limit: "Promokod limiti tugagan", promo_first_visit: "Bu promokod faqat birinchi tashrif uchun",
+    promo_not_found: t("Promokod topilmadi yoki muddati tugagan"), promo_used: t("Bu promokoddan allaqachon foydalangansiz"),
+    promo_limit: t("Promokod limiti tugagan"), promo_first_visit: t("Bu promokod faqat birinchi tashrif uchun"),
   }[quote.code_error] : null;
 
   // Bo'sh vaqt yo'q kun: kutish ro'yxatiga (vaqt bo'shasa salon taklif qiladi, ilovaga push)
   const joinWaitlist = async () => {
     if (!service || !b) return;
-    if (!requireAuth("Navbatga yozilish uchun profilingizga kiring yoki ro'yxatdan o'ting")) return;
+    if (!requireAuth(t("Navbatga yozilish uchun profilingizga kiring yoki ro'yxatdan o'ting"))) return;
     setBusy(true); setError(null);
     try {
       await api("/waitlist", { method: "POST", body: {
@@ -107,13 +108,13 @@ export default function Booking() {
       setWaited(day);
       track("waitlist_join");
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Bajarib bo'lmadi");
+      setError(e instanceof ApiError ? t(e.message) : t("Bajarib bo'lmadi"));
     } finally { setBusy(false); }
   };
 
   const submit = async () => {
     if (!slot || !service) return;
-    if (!requireAuth("Bronni tasdiqlash uchun profilingizga kiring yoki ro'yxatdan o'ting")) return;
+    if (!requireAuth(t("Bronni tasdiqlash uchun profilingizga kiring yoki ro'yxatdan o'ting"))) return;
     setBusy(true); setError(null);
     try {
       setDone(await api<Appointment>("/appointments", { method: "POST", body: {
@@ -123,7 +124,7 @@ export default function Booking() {
       track("booking_confirm", { discount: quote?.source ?? null });
     } catch (e) {
       if (e instanceof ApiError && e.code === "time_conflict") { setSlot(null); setStep("time"); }
-      setError(e instanceof ApiError ? e.message : "Bajarib bo'lmadi");
+      setError(e instanceof ApiError ? t(e.message) : t("Bajarib bo'lmadi"));
     } finally { setBusy(false); }
   };
   const next = () => {
@@ -139,11 +140,11 @@ export default function Booking() {
     return (
       <div className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center px-6 text-center">
         <span className="bg-brand-grad flex h-20 w-20 items-center justify-center rounded-full text-white shadow-lg"><Check size={40} /></span>
-        <h1 className="mt-6 text-3xl font-extrabold">Bron yuborildi!</h1>
-        <p className="mt-3 text-muted">{b.name}, {dateLong(done.starts_at)}, {timeOf(done.starts_at)} — {done.member_name}. Salon tasdiqlagach xabar beramiz.</p>
+        <h1 className="mt-6 text-3xl font-extrabold">{t("Bron yuborildi!")}</h1>
+        <p className="mt-3 text-muted">{b.name}, {dateLong(done.starts_at)}, {timeOf(done.starts_at)} — {done.member_name}. {t("Salon tasdiqlagach xabar beramiz.")}</p>
         <div className="mt-8 flex w-full flex-col gap-3">
-          <Link to="/bronlarim" className={btn.primary}>Bronlarim</Link>
-          <Link to="/" className={btn.outline}>Bosh sahifa</Link>
+          <Link to="/bronlarim" className={btn.primary}>{t("Bronlarim")}</Link>
+          <Link to="/" className={btn.outline}>{t("Bosh sahifa")}</Link>
         </div>
       </div>
     );
@@ -158,8 +159,8 @@ export default function Booking() {
   return (
     <div className="min-h-screen bg-white">
       <header className="sticky top-0 z-40 flex h-16 items-center justify-between bg-white/95 px-4 backdrop-blur sm:px-8">
-        <button onClick={back} className="flex h-11 w-11 items-center justify-center rounded-full border border-line hover:border-brand" aria-label="Orqaga"><ArrowLeft size={20} /></button>
-        <Link to={`/s/${b.slug}`} className="flex h-11 w-11 items-center justify-center rounded-full border border-line hover:border-brand" aria-label="Yopish"><X size={20} /></Link>
+        <button onClick={back} className="flex h-11 w-11 items-center justify-center rounded-full border border-line hover:border-brand" aria-label={t("Orqaga")}><ArrowLeft size={20} /></button>
+        <Link to={`/s/${b.slug}`} className="flex h-11 w-11 items-center justify-center rounded-full border border-line hover:border-brand" aria-label={t("Yopish")}><X size={20} /></Link>
       </header>
 
       <div className="mx-auto grid max-w-6xl gap-8 px-4 pb-32 sm:px-8 lg:grid-cols-[minmax(0,1fr)_380px] lg:pb-12">
@@ -173,14 +174,14 @@ export default function Booking() {
             ))}
           </nav>
           <h1 className="mb-6 text-[30px] font-extrabold leading-tight sm:text-[38px]">
-            {step === "service" ? "Xizmatni tanlang" : step === "master" ? "Mutaxassisni tanlang" : step === "time" ? "Sana va vaqtni tanlang" : "Tasdiqlang"}
+            {step === "service" ? t("Xizmatni tanlang") : step === "master" ? t("Mutaxassisni tanlang") : step === "time" ? t("Sana va vaqtni tanlang") : t("Tasdiqlang")}
           </h1>
 
           {step === "service" && (
             <>
               {groups.length > 1 && (
                 <div className="no-scrollbar mb-5 flex gap-2 overflow-x-auto">
-                  {[{ id: "all" as const, name: "Hammasi" }, ...groups.map((g) => ({ id: g.category_id ?? 0, name: g.category_name }))].map((g) => (
+                  {[{ id: "all" as const, name: t("Hammasi") }, ...groups.map((g) => ({ id: g.category_id ?? 0, name: pick(g.category_name, g.category_name_ru) }))].map((g) => (
                     <button key={String(g.id)} onClick={() => setGroup(g.id)} className={`${btn.chip} ${group === g.id ? "border-navy bg-navy text-white" : "border-line"}`}>{g.name}</button>
                   ))}
                 </div>
@@ -192,7 +193,7 @@ export default function Booking() {
                     <button key={s.id} onClick={() => { setService(s.id); setMember(pinnedStaff ? pinnedId : null); setSlot(null); }}
                       className={`flex w-full items-center gap-4 rounded-2xl border-2 p-5 text-left transition ${on ? "border-brand bg-brand-soft/40" : "border-line hover:border-brand/40"}`}>
                       <span className="min-w-0 flex-1">
-                        <b className="block">{s.name}</b>
+                        <b className="block">{pick(s.name, s.name_ru)}</b>
                         <span className="text-sm text-muted">{durationText(s.duration_min)}</span>
                         {s.description && <span className="mt-1 block text-sm text-muted line-clamp-2">{s.description}</span>}
                         <b className="mt-2 block">{money(s.price)}</b>
@@ -207,7 +208,7 @@ export default function Booking() {
 
           {step === "master" && (
             <div className="space-y-3">
-              {[{ member_id: ANY, full_name: "Farqi yo'q", title: "Eng yaqin bo'sh vaqtli mutaxassis", rating_avg: 0, rating_count: 0, photo_url: null }, ...masters].map((m) => {
+              {[{ member_id: ANY, full_name: t("Farqi yo'q"), title: t("Eng yaqin bo'sh vaqtli mutaxassis"), rating_avg: 0, rating_count: 0, photo_url: null }, ...masters].map((m) => {
                 const on = member === m.member_id;
                 return (
                   <button key={m.member_id} onClick={() => { setMember(m.member_id); setSlot(null); }}
@@ -219,7 +220,7 @@ export default function Booking() {
                       <b className="block">{m.full_name}</b>
                       <span className="text-sm text-muted">{m.title}{m.rating_count ? ` · ★ ${m.rating_avg.toFixed(1)}` : ""}</span>
                     </span>
-                    <span className={`rounded-full border px-4 py-2 text-sm font-bold ${on ? "border-brand bg-brand text-white" : "border-line"}`}>{on ? "Tanlandi" : "Tanlash"}</span>
+                    <span className={`rounded-full border px-4 py-2 text-sm font-bold ${on ? "border-brand bg-brand text-white" : "border-line"}`}>{on ? t("Tanlandi") : t("Tanlash")}</span>
                   </button>
                 );
               })}
@@ -241,19 +242,19 @@ export default function Booking() {
               {slots === null ? <div className="flex justify-center py-10"><Spinner /></div>
                 : slots.length === 0 ? (
                   <div className="rounded-2xl bg-soft p-6 text-center">
-                    <p className="text-muted">Bu kunda bo'sh vaqt yo'q. Boshqa kunni tanlang yoki navbatga yoziling.</p>
+                    <p className="text-muted">{t("Bu kunda bo'sh vaqt yo'q. Boshqa kunni tanlang yoki navbatga yoziling.")}</p>
                     {waited === day ? (
-                      <p className="mt-4 font-semibold text-brand">Navbatga yozildingiz. Vaqt bo'shasa — darhol xabar beramiz.</p>
+                      <p className="mt-4 font-semibold text-brand">{t("Navbatga yozildingiz. Vaqt bo'shasa — darhol xabar beramiz.")}</p>
                     ) : (
                       <button onClick={joinWaitlist} disabled={busy} className={`${btn.outline} mt-4`}>
-                        Kutish ro'yxatiga yozilish
+                        {t("Kutish ro'yxatiga yozilish")}
                       </button>
                     )}
                   </div>
                 )
                   : (
                     <div className="space-y-6">
-                      {[["Ertalab", 0, 12], ["Kunduzi", 12, 17], ["Kechqurun", 17, 24]].map(([label, from, to]) => {
+                      {[[t("Ertalab"), 0, 12], [t("Kunduzi"), 12, 17], [t("Kechqurun"), 17, 24]].map(([label, from, to]) => {
                         const list = slots.filter((p) => +p.time.slice(0, 2) >= (from as number) && +p.time.slice(0, 2) < (to as number));
                         if (!list.length) return null;
                         return (
@@ -277,28 +278,28 @@ export default function Booking() {
             <div className="space-y-5">
               <div className="rounded-2xl bg-soft p-5">
                 <p className="text-lg font-bold">{dateLong(slot.starts_at)}, {slot.time}</p>
-                <p className="text-muted">{svc?.name} · {svc ? durationText(svc.duration_min) : ""} · {chosen?.full_name}</p>
+                <p className="text-muted">{svc ? pick(svc.name, svc.name_ru) : ""} · {svc ? durationText(svc.duration_min) : ""} · {chosen?.full_name}</p>
               </div>
               {me ? (
                 <>
                   <div>
-                    <p className="mb-2 font-bold">Promokod</p>
+                    <p className="mb-2 font-bold">{t("Promokod")}</p>
                     <div className="flex gap-2">
-                      <input value={promo} onChange={(e) => setPromo(e.target.value.toUpperCase())} placeholder="Masalan: CHRONIX10"
+                      <input value={promo} onChange={(e) => setPromo(e.target.value.toUpperCase())} placeholder={t("Masalan: CHRONIX10")}
                         className="h-12 min-w-0 flex-1 rounded-full border-2 border-line px-5 font-semibold uppercase outline-none focus:border-brand" />
-                      <button onClick={() => setApplied(promo.trim() || null)} className={btn.dark} disabled={!promo.trim()}>Qo'llash</button>
+                      <button onClick={() => setApplied(promo.trim() || null)} className={btn.dark} disabled={!promo.trim()}>{t("Qo'llash")}</button>
                     </div>
                     {codeError && <p className="mt-2 text-sm text-hot">{codeError}</p>}
-                    {quote && quote.discount > 0 && <p className="mt-2 text-sm font-semibold text-ok">Chegirma −{quote.percent}% qo'llandi</p>}
+                    {quote && quote.discount > 0 && <p className="mt-2 text-sm font-semibold text-ok">{t("Chegirma −{a}% qo'llandi", { a: quote.percent })}</p>}
                   </div>
                   <div>
-                    <p className="mb-2 font-bold">Izoh (ixtiyoriy)</p>
-                    <textarea value={note} onChange={(e) => setNote(e.target.value)} maxLength={300} rows={3} placeholder="Salonga xabar…"
+                    <p className="mb-2 font-bold">{t("Izoh (ixtiyoriy)")}</p>
+                    <textarea value={note} onChange={(e) => setNote(e.target.value)} maxLength={300} rows={3} placeholder={t("Salonga xabar…")}
                       className="w-full rounded-2xl border-2 border-line p-4 outline-none focus:border-brand" />
                   </div>
                 </>
               ) : (
-                <p className="rounded-2xl bg-brand-soft p-4 text-sm">Bronni tasdiqlash uchun kirish so'raladi — telefon, Telegram yoki Google orqali. Tanlovingiz saqlanib qoladi.</p>
+                <p className="rounded-2xl bg-brand-soft p-4 text-sm">{t("Bronni tasdiqlash uchun kirish so'raladi — telefon, Telegram yoki Google orqali. Tanlovingiz saqlanib qoladi.")}</p>
               )}
               <ErrorText text={error} />
             </div>
@@ -317,20 +318,20 @@ export default function Booking() {
               {slot && <p className="font-semibold">{dateLong(slot.starts_at)}, {slot.time}</p>}
               {svc ? (
                 <div className="flex justify-between gap-3">
-                  <span><b className="block">{svc.name}</b><span className="text-muted">{durationText(svc.duration_min)}{chosen ? ` · ${chosen.full_name}` : member === ANY ? " · istalgan mutaxassis" : ""}</span></span>
+                  <span><b className="block">{pick(svc.name, svc.name_ru)}</b><span className="text-muted">{durationText(svc.duration_min)}{chosen ? ` · ${chosen.full_name}` : member === ANY ? ` · ${t("istalgan mutaxassis")}` : ""}</span></span>
                   <b className="shrink-0">{money(svc.price)}</b>
                 </div>
-              ) : <p className="text-muted">Xizmat tanlanmagan</p>}
-              {quote && quote.discount > 0 && <p className="flex justify-between text-ok"><span>Chegirma</span><b>−{money(quote.discount)}</b></p>}
+              ) : <p className="text-muted">{t("Xizmat tanlanmagan")}</p>}
+              {quote && quote.discount > 0 && <p className="flex justify-between text-ok"><span>{t("Chegirma")}</span><b>−{money(quote.discount)}</b></p>}
             </div>
             <div className="flex items-center justify-between gap-4">
-              <div><p className="text-sm text-muted">Jami</p><p className="text-xl font-extrabold">{svc ? money(final) : "—"}</p></div>
-              <button onClick={next} disabled={!canNext} className={`${btn.primary} lg:hidden`}>{step === "confirm" ? "Tasdiqlash" : "Davom etish"}</button>
+              <div><p className="text-sm text-muted">{t("Jami")}</p><p className="text-xl font-extrabold">{svc ? money(final) : "—"}</p></div>
+              <button onClick={next} disabled={!canNext} className={`${btn.primary} lg:hidden`}>{step === "confirm" ? t("Tasdiqlash") : t("Davom etish")}</button>
             </div>
             <button onClick={next} disabled={!canNext} className={`${btn.primary} mt-4 w-full max-lg:hidden`}>
-              {busy ? <Spinner className="border-t-white" /> : step === "confirm" ? "Bronni tasdiqlash" : "Davom etish"}
+              {busy ? <Spinner className="border-t-white" /> : step === "confirm" ? t("Bronni tasdiqlash") : t("Davom etish")}
             </button>
-            <p className="mt-3 text-center text-xs text-muted max-lg:hidden">To'lov salonda — naqd yoki karta orqali</p>
+            <p className="mt-3 text-center text-xs text-muted max-lg:hidden">{t("To'lov salonda — naqd yoki karta orqali")}</p>
           </div>
         </aside>
       </div>

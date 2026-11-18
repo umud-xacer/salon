@@ -23,6 +23,10 @@ class Settings(BaseSettings):
     access_token_minutes: int = Field(default=15, ge=1, le=60)
     refresh_token_days: int = Field(default=30, ge=1, le=90)
 
+    # chronix.uz qidiruv tizimlari uchun (app/api/v1/seo.py): sayt manzili va SPA index.html (API konteyneriga ulangan)
+    site_url: str = "https://chronix.uz"
+    market_index_path: str = "/srv/market/index.html"
+
     # Ochiq katalog keshi (app/core/cache.py), soniya. 0 — o'chiq
     public_cache_ttl: int = Field(default=30, ge=0, le=600)
 

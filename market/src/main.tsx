@@ -17,6 +17,7 @@ import Business from "./pages/Business";
 import Home from "./pages/Home";
 import Salon from "./pages/Salon";
 import Search from "./pages/Search";
+import { BASE, href, t } from "./i18n";
 
 const qc = new QueryClient({ defaultOptions: { queries: { staleTime: 60_000, retry: 1, refetchOnWindowFocus: false } } });
 
@@ -24,8 +25,8 @@ function NotFound() {
   return (
     <div className="mx-auto max-w-md px-4 py-28 text-center">
       <p className="text-6xl font-extrabold text-brand-grad">404</p>
-      <h1 className="mt-3 text-2xl font-extrabold">Sahifa topilmadi</h1>
-      <a href="/" className="mt-6 inline-flex h-12 items-center rounded-full bg-brand px-6 font-bold text-white">Bosh sahifa</a>
+      <h1 className="mt-3 text-2xl font-extrabold">{t("Sahifa topilmadi")}</h1>
+      <a href={href("/")} className="mt-6 inline-flex h-12 items-center rounded-full bg-brand px-6 font-bold text-white">{t("Bosh sahifa")}</a>
     </div>
   );
 }
@@ -42,7 +43,7 @@ createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={qc}>
       <AuthProvider>
-        <BrowserRouter>
+        <BrowserRouter basename={BASE || undefined}>
           <RouteTracker />
           <Routes>
             {/* Bron — alohida to'liq sahifa (header/footer'siz), lekin kirish oynasi kerak */}

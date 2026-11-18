@@ -12,8 +12,9 @@ import { SearchBar } from "../components/SearchBar";
 import { btn, Modal, Spinner } from "../components/ui";
 import { money, nextDays, useLocation2 } from "../util";
 import { useCategories } from "./Home";
+import { pick, t } from "../i18n";
 
-const SORTS = [["distance", "Eng yaqin"], ["rating", "Yuqori reyting"], ["price", "Arzonroq"]] as const;
+const SORTS = [["distance", t("Eng yaqin")], ["rating", t("Yuqori reyting")], ["price", t("Arzonroq")]] as const;
 const RADII = [2000, 5000, 10000, 25000, 50000];
 const PRICES = [0, 100000, 200000, 400000, 800000];
 
@@ -54,7 +55,7 @@ export default function Search() {
   const items = res.data?.items ?? [];
 
   const pins = useMemo<Pin[]>(() => items.map((b) => ({
-    id: b.id, lat: b.lat, lng: b.lng, slug: b.slug, label: b.rating_count ? `★ ${b.rating_avg.toFixed(1).replace(".", ",")}` : "Yangi",
+    id: b.id, lat: b.lat, lng: b.lng, slug: b.slug, label: b.rating_count ? `★ ${b.rating_avg.toFixed(1).replace(".", ",")}` : t("Yangi"),
   })), [items]);
   const onSelect = useCallback((p: Pin) => p.slug && nav(`/s/${p.slug}${day ? `?day=${day}` : ""}`), [nav, day]);
   // Analitika: yuborilgan qidiruv so'zi va natijalar soni
@@ -62,7 +63,8 @@ export default function Search() {
   useEffect(() => {
     if (q.trim().length >= 2 && found !== undefined) track("search", { q: q.trim(), results: found, category: category || null });
   }, [q, found, category]);
-  const catName = cats.data?.find((c) => c.slug === category)?.name_uz;
+  const catObj = cats.data?.find((c) => c.slug === category);
+  const catName = catObj ? pick(catObj.name_uz, catObj.name_ru) : undefined;
   const activeFilters = (sort !== "distance" ? 1 : 0) + (radius !== 50000 ? 1 : 0) + (maxPrice ? 1 : 0) + (openNow ? 1 : 0);
 
   return (
@@ -72,17 +74,17 @@ export default function Search() {
       <div className="sticky top-16 z-30 -mx-4 space-y-3 bg-white/95 px-4 py-3 backdrop-blur sm:top-[72px] sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
         <div className="no-scrollbar flex items-center gap-2 overflow-x-auto">
           <button onClick={() => setFilters(true)} className={`${btn.chip} ${activeFilters ? "border-brand bg-brand-soft text-brand" : "border-line hover:border-brand"}`}>
-            <SlidersHorizontal size={16} /> Filtrlar{activeFilters ? ` · ${activeFilters}` : ""}
+            <SlidersHorizontal size={16} /> {t("Filtrlar")}{activeFilters ? ` · ${activeFilters}` : ""}
           </button>
           <span className="h-6 w-px shrink-0 bg-line" />
-          <button onClick={() => set("category", null)} className={`${btn.chip} ${!category ? "border-navy bg-navy text-white" : "border-line hover:border-brand"}`}>Hammasi</button>
+          <button onClick={() => set("category", null)} className={`${btn.chip} ${!category ? "border-navy bg-navy text-white" : "border-line hover:border-brand"}`}>{t("Hammasi")}</button>
           {(cats.data ?? []).map((c) => (
             <button key={c.id} onClick={() => set("category", c.slug)}
-              className={`${btn.chip} ${category === c.slug ? "border-navy bg-navy text-white" : "border-line hover:border-brand"}`}>{c.name_uz}</button>
+              className={`${btn.chip} ${category === c.slug ? "border-navy bg-navy text-white" : "border-line hover:border-brand"}`}>{pick(c.name_uz, c.name_ru)}</button>
           ))}
         </div>
         <div className="no-scrollbar flex items-center gap-1 overflow-x-auto border-b border-line">
-          {[["", "Istalgan kun"], [days[0].iso, "Bugun"], [days[1].iso, "Ertaga"], ...days.slice(2).map((d) => [d.iso, `${d.wd} ${d.day}`])].map(([iso, label]) => (
+          {[["", t("Istalgan kun")], [days[0].iso, t("Bugun")], [days[1].iso, t("Ertaga")], ...days.slice(2).map((d) => [d.iso, `${d.wd} ${d.day}`])].map(([iso, label]) => (
             <button key={iso || "any"} onClick={() => set("day", iso || null)}
               className={`shrink-0 border-b-2 px-3 pb-2.5 pt-1 text-sm font-semibold transition ${day === iso ? "border-brand text-brand" : "border-transparent text-muted hover:text-ink"}`}>{label}</button>
           ))}
@@ -91,7 +93,7 @@ export default function Search() {
 
       <div className="mt-4 flex items-center justify-between gap-3">
         <h1 className="text-lg font-extrabold sm:text-xl">
-          {res.isLoading ? "Qidirilmoqda…" : `${res.data?.total ?? 0} ta muassasa`}
+          {res.isLoading ? t("Qidirilmoqda…") : t("{a} ta muassasa", { a: res.data?.total ?? 0 })}
           {catName && <span className="text-muted"> · {catName}</span>}
           {q && <span className="text-muted"> · «{q}»</span>}
         </h1>
@@ -99,7 +101,7 @@ export default function Search() {
           {q && <button onClick={() => set("q", null)} className={`${btn.chip} border-line`}><X size={14} /> {q}</button>}
           <span className="hidden lg:block">
             <button onClick={() => setMapOn((v) => !v)} className={`${btn.chip} border-line hover:border-brand`}>
-              <MapIcon size={16} /> {mapOn ? "Xaritani yashirish" : "Xaritani ko'rsatish"}
+              <MapIcon size={16} /> {mapOn ? t("Xaritani yashirish") : t("Xaritani ko'rsatish")}
             </button>
           </span>
         </div>
@@ -110,9 +112,9 @@ export default function Search() {
           {res.isLoading && <div className="flex justify-center py-20"><Spinner /></div>}
           {!res.isLoading && items.length === 0 && (
             <div className="rounded-3xl bg-soft p-10 text-center">
-              <p className="text-lg font-bold">Hech narsa topilmadi</p>
-              <p className="mt-1 text-muted">Filtrlarni o'zgartiring yoki boshqa yo'nalishni tanlang</p>
-              <button onClick={() => setSp(new URLSearchParams())} className={`${btn.outline} mt-5`}>Filtrlarni tozalash</button>
+              <p className="text-lg font-bold">{t("Hech narsa topilmadi")}</p>
+              <p className="mt-1 text-muted">{t("Filtrlarni o'zgartiring yoki boshqa yo'nalishni tanlang")}</p>
+              <button onClick={() => setSp(new URLSearchParams())} className={`${btn.outline} mt-5`}>{t("Filtrlarni tozalash")}</button>
             </div>
           )}
           <div className={`grid gap-x-5 gap-y-8 sm:grid-cols-2 ${mapOn ? "" : "lg:grid-cols-3 xl:grid-cols-4"}`}>
@@ -125,7 +127,7 @@ export default function Search() {
               <MapView pins={pins} center={[lat, lng]} active={hover} onSelect={onSelect} onMoveEnd={setArea} className="h-full w-full" />
               {area && (Math.abs(area.lat - lat) > 0.005 || Math.abs(area.lng - lng) > 0.005) && (
                 <button onClick={() => { const n = new URLSearchParams(sp); n.set("lat", area.lat.toFixed(5)); n.set("lng", area.lng.toFixed(5)); setSp(n, { replace: true }); }}
-                  className="absolute left-1/2 top-4 z-[400] -translate-x-1/2 rounded-full bg-navy px-5 py-2.5 text-sm font-bold text-white shadow-lg">Shu hududda qidirish</button>
+                  className="absolute left-1/2 top-4 z-[400] -translate-x-1/2 rounded-full bg-navy px-5 py-2.5 text-sm font-bold text-white shadow-lg">{t("Shu hududda qidirish")}</button>
               )}
             </div>
           </div>
@@ -134,19 +136,19 @@ export default function Search() {
 
       {/* Telefonda xarita tugmasi */}
       <button onClick={() => setMobileMap(true)} className="fixed bottom-5 left-1/2 z-40 inline-flex -translate-x-1/2 items-center gap-2 rounded-full bg-navy px-6 py-3.5 font-bold text-white shadow-xl lg:hidden">
-        <MapIcon size={18} /> Xarita
+        <MapIcon size={18} /> {t("Xarita")}
       </button>
       {mobileMap && (
         <div className="fixed inset-0 z-[900] bg-white lg:hidden">
           <MapView pins={pins} center={[lat, lng]} onSelect={onSelect} className="h-full w-full" />
-          <button onClick={() => setMobileMap(false)} className="absolute right-4 top-4 z-[500] flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-lg" aria-label="Yopish"><X size={20} /></button>
+          <button onClick={() => setMobileMap(false)} className="absolute right-4 top-4 z-[500] flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-lg" aria-label={t("Yopish")}><X size={20} /></button>
         </div>
       )}
 
-      <Modal open={filters} onClose={() => setFilters(false)} title="Filtrlar">
+      <Modal open={filters} onClose={() => setFilters(false)} title={t("Filtrlar")}>
         <div className="space-y-7">
           <div>
-            <h3 className="mb-3 font-bold">Saralash</h3>
+            <h3 className="mb-3 font-bold">{t("Saralash")}</h3>
             <div className="grid grid-cols-3 gap-2">
               {SORTS.map(([v, l]) => (
                 <button key={v} onClick={() => set("sort", v === "distance" ? null : v)}
@@ -155,22 +157,22 @@ export default function Search() {
             </div>
           </div>
           <div>
-            <h3 className="mb-3 flex justify-between font-bold">Masofa <span className="font-semibold text-muted">{radius >= 50000 ? "Butun shahar" : `${radius / 1000} km gacha`}</span></h3>
+            <h3 className="mb-3 flex justify-between font-bold">{t("Masofa")} <span className="font-semibold text-muted">{radius >= 50000 ? t("Butun shahar") : t("{a} km gacha", { a: radius / 1000 })}</span></h3>
             <input type="range" min={0} max={RADII.length - 1} value={RADII.indexOf(radius) < 0 ? RADII.length - 1 : RADII.indexOf(radius)}
               onChange={(e) => set("radius", RADII[+e.target.value] === 50000 ? null : String(RADII[+e.target.value]))} className="w-full accent-[#1f5bff]" />
           </div>
           <div>
-            <h3 className="mb-3 flex justify-between font-bold">Narx <span className="font-semibold text-muted">{maxPrice ? `${money(maxPrice)} gacha` : "Istalgan"}</span></h3>
+            <h3 className="mb-3 flex justify-between font-bold">{t("Narx")} <span className="font-semibold text-muted">{maxPrice ? t("{a} gacha", { a: money(maxPrice) }) : t("Istalgan")}</span></h3>
             <input type="range" min={0} max={PRICES.length - 1} value={Math.max(0, PRICES.indexOf(maxPrice))}
               onChange={(e) => set("max_price", PRICES[+e.target.value] ? String(PRICES[+e.target.value]) : null)} className="w-full accent-[#1f5bff]" />
           </div>
           <label className="flex items-center justify-between rounded-2xl bg-soft p-4 font-semibold">
-            Faqat hozir ochiqlar
+            {t("Faqat hozir ochiqlar")}
             <input type="checkbox" checked={openNow} onChange={(e) => set("open", e.target.checked ? "1" : null)} className="h-5 w-5 accent-[#1f5bff]" />
           </label>
           <div className="grid grid-cols-2 gap-3">
-            <button className={btn.outline} onClick={() => { const n = new URLSearchParams(); if (category) n.set("category", category); setSp(n); }}>Tozalash</button>
-            <button className={btn.primary} onClick={() => setFilters(false)}>{res.data?.total ?? 0} ta ko'rsatish</button>
+            <button className={btn.outline} onClick={() => { const n = new URLSearchParams(); if (category) n.set("category", category); setSp(n); }}>{t("Tozalash")}</button>
+            <button className={btn.primary} onClick={() => setFilters(false)}>{t("{a} ta ko'rsatish", { a: res.data?.total ?? 0 })}</button>
           </div>
         </div>
       </Modal>

@@ -1,22 +1,24 @@
 import { useSyncExternalStore } from "react";
+import { lang, t } from "./i18n";
 
-export const money = (v: number) => `${Math.round(v).toLocaleString("ru-RU").replace(/,/g, " ")} so'm`;
+export const money = (v: number) => t("{a} so'm", { a: Math.round(v).toLocaleString("ru-RU").replace(/,/g, " ") });
 
 export function distanceText(m: number | null | undefined) {
   if (m == null) return "";
-  if (m > 50000) return ">50 km";
-  return m < 1000 ? `${Math.round(m / 10) * 10} m` : `${(m / 1000).toFixed(1).replace(".", ",")} km`;
+  const km = lang === "ru" ? "км" : "km", mm = lang === "ru" ? "м" : "m";
+  if (m > 50000) return `>50 ${km}`;
+  return m < 1000 ? `${Math.round(m / 10) * 10} ${mm}` : `${(m / 1000).toFixed(1).replace(".", ",")} ${km}`;
 }
 
 export function durationText(min: number) {
   const h = Math.floor(min / 60);
   const m = min % 60;
-  return [h ? `${h} soat` : "", m ? `${m} daq` : ""].filter(Boolean).join(" ");
+  return [h ? t("{a} soat", { a: h }) : "", m ? t("{a} daq", { a: m }) : ""].filter(Boolean).join(" ");
 }
 
-const WEEKDAYS = ["Dushanba", "Seshanba", "Chorshanba", "Payshanba", "Juma", "Shanba", "Yakshanba"];
-const WD_SHORT = ["Du", "Se", "Ch", "Pa", "Ju", "Sh", "Ya"];
-const MONTHS = ["yanvar", "fevral", "mart", "aprel", "may", "iyun", "iyul", "avgust", "sentabr", "oktabr", "noyabr", "dekabr"];
+const WEEKDAYS = ["Dushanba", "Seshanba", "Chorshanba", "Payshanba", "Juma", "Shanba", "Yakshanba"].map((x) => t(x));
+const WD_SHORT = ["Du", "Se", "Ch", "Pa", "Ju", "Sh", "Ya"].map((x) => t(x));
+const MONTHS = ["yanvar", "fevral", "mart", "aprel", "may", "iyun", "iyul", "avgust", "sentabr", "oktabr", "noyabr", "dekabr"].map((x) => t(x));
 export const weekdayName = (iso1to7: number) => WEEKDAYS[iso1to7 - 1] ?? "";
 
 /** Toshkent vaqti bo'yicha "YYYY-MM-DD" */
@@ -34,7 +36,7 @@ export function nextDays(n: number) {
 }
 export function dateLong(iso: string) {
   const d = new Date(new Date(iso).getTime() + 5 * 3600 * 1000);
-  return `${d.getUTCDate()}-${MONTHS[d.getUTCMonth()]}, ${WD_SHORT[(d.getUTCDay() + 6) % 7]}`;
+  return `${d.getUTCDate()}${lang === "ru" ? " " : "-"}${MONTHS[d.getUTCMonth()]}, ${WD_SHORT[(d.getUTCDay() + 6) % 7]}`;
 }
 export function timeOf(iso: string) {
   return new Date(new Date(iso).getTime() + 5 * 3600 * 1000).toISOString().slice(11, 16);

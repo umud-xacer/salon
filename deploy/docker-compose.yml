@@ -37,6 +37,8 @@ services:
     volumes:
       - media:/media
       - ./geoip:/geoip:ro
+      # chronix.uz index.html — qidiruv tizimlari uchun sahifa tayyorlash (app/api/v1/seo.py), faqat o'qish
+      - ./market-dist:/srv/market:ro
     depends_on:
       migrate:
         condition: service_completed_successfully

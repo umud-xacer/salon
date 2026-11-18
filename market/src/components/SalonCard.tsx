@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import type { BusinessCard } from "../api";
 import { distanceText, money } from "../util";
 import { Img, RatingLine } from "./ui";
+import { pick, t } from "../i18n";
 
 /** Fresha kartasi: katta rasm, nom, reyting, manzil, yo'nalish */
 export function SalonCard({ b, wide, onHover }: { b: BusinessCard; wide?: boolean; onHover?: (id: number | null) => void }) {
@@ -13,7 +14,7 @@ export function SalonCard({ b, wide, onHover }: { b: BusinessCard; wide?: boolea
       <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-soft">
         <Img src={b.photos?.[0]} alt={b.name} className="transition duration-500 group-hover:scale-[1.04]" />
         {b.is_open_now && (
-          <span className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-white/95 px-2.5 py-1 text-xs font-bold text-ok"><i className="h-1.5 w-1.5 rounded-full bg-ok" />Hozir ochiq</span>
+          <span className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-white/95 px-2.5 py-1 text-xs font-bold text-ok"><i className="h-1.5 w-1.5 rounded-full bg-ok" />{t("Hozir ochiq")}</span>
         )}
       </div>
       <div className="mt-3 space-y-1">
@@ -24,7 +25,7 @@ export function SalonCard({ b, wide, onHover }: { b: BusinessCard; wide?: boolea
           <span className="truncate">{[distanceText(b.distance_m), b.address].filter(Boolean).join(" · ")}</span>
         </p>
         <p className="truncate text-sm text-muted">
-          {b.category_name}{b.min_price ? ` · ${money(b.min_price)} dan` : ""}
+          {pick(b.category_name, b.category_name_ru)}{b.min_price ? ` · ${t("{a} dan", { a: money(b.min_price) })}` : ""}
         </p>
       </div>
     </Link>

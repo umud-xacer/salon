@@ -94,7 +94,7 @@ export type Me = { user: User; workspace: "client" | "business" | "superadmin" }
 export type Category = { id: number; slug: string; name_uz: string; name_ru?: string | null };
 
 export type BusinessCard = {
-  id: number; slug: string; name: string; category?: string; category_name: string;
+  id: number; slug: string; name: string; category?: string; category_name: string; category_name_ru?: string | null;
   city: string | null; address: string | null; lat: number; lng: number; distance_m: number | null;
   rating_avg: number; rating_count: number; min_price: number | null; top_service: string | null;
   photos: string[]; is_open_now: boolean; branch_name?: string | null; chain_name?: string | null;
@@ -109,10 +109,10 @@ export type Branch = { id: number; slug: string; name: string; branch_name: stri
 export type BusinessDetail = {
   solo?: boolean;                 // yakka rejim: mutaxassis tanlanmaydi (062)
   id: number; slug: string; name: string; description: string | null; address: string | null; phone: string | null;
-  photos: string[]; category?: string; category_name: string; kind?: "salon" | "pharmacy" | "clinic";
+  photos: string[]; category?: string; category_name: string; category_name_ru?: string | null; kind?: "salon" | "pharmacy" | "clinic";
   rating_avg: number; rating_count: number; is_open_now: boolean; lat?: number; lng?: number;
   hours?: { weekday: number; opens_at: string; closes_at: string }[];
-  service_groups: { category_id: number | null; category_name: string; services: Service[] }[];
+  service_groups: { category_id: number | null; category_name: string; category_name_ru?: string | null; services: Service[] }[];
   staff: Staff[]; branch_name?: string | null; chain_name?: string | null; branches?: Branch[];
 };
 
@@ -126,7 +126,7 @@ export type ReviewsOut = { summary: { count: number; rating_avg: number | null; 
 
 export type HotSlot = {
   business_id: number; business_slug: string; business_name: string; category_name: string; distance_m: number | null;
-  photo: string | null; service_id: number; service_name: string; member_id: number; member_name: string;
+  photo: string | null; service_id: number; service_name: string; service_name_ru?: string | null; member_id: number; member_name: string;
   starts_at: string; time: string; percent: number; price: number; final: number; ends_window: string;
 };
 export type Offer = { business_id: number; business_slug: string; business_name: string; code: string; title: string; percent: number; first_visit_only: boolean };

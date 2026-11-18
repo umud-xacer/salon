@@ -72,6 +72,25 @@
 		reverse_proxy api:8000
 	}
 
+	# Qidiruv tizimlari uchun (app/api/v1/seo.py): sitemap — barcha salonlar ikki tilda; sahifalar — sarlavha,
+	# tavsif, hreflang, JSON-LD va asosiy matn bilan tayyor HTML. API ishlamasa — pastdagi handle_errors oddiy faylni beradi.
+	handle /sitemap.xml {
+		rewrite * /api/v1/seo/sitemap.xml
+		reverse_proxy api:8000
+	}
+	@seo path / /ru /ru/ /qidiruv /ru/qidiruv /biznes /ru/biznes /s/* /ru/s/*
+	handle @seo {
+		rewrite * /api/v1/seo/render?path={path}
+		reverse_proxy api:8000 {
+			@fail status 5xx
+			handle_response @fail {
+				root * /srv/market
+				rewrite * /index.html
+				file_server
+			}
+		}
+	}
+
 	handle {
 		root * /srv/market
 		@assets path /assets/*
@@ -80,6 +99,16 @@
 		header @pages Cache-Control "no-cache"
 		# /privacy, /hisobni-ochirish — statik sahifalar (market/public/<nom>/index.html); qolgani — SPA
 		try_files {path} {path}/index.html /index.html
+		file_server
+	}
+
+	# API'ga ulanib bo'lmasa (qayta ishga tushish paytida): sitemap — statik fayl, sahifalar — oddiy SPA
+	handle_errors 502 503 504 {
+		root * /srv/market
+		@sitemap path /sitemap.xml
+		rewrite @sitemap /sitemap.xml
+		@page not path /sitemap.xml /api/*
+		rewrite @page /index.html
 		file_server
 	}
 }

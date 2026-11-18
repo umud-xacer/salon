@@ -1,5 +1,6 @@
 import { ChevronLeft, ChevronRight, Star, X } from "lucide-react";
 import { ReactNode, useEffect, useRef } from "react";
+import { t } from "../i18n";
 
 export const btn = {
   primary: "inline-flex items-center justify-center gap-2 rounded-full bg-brand px-6 h-12 text-[15px] font-bold text-white shadow-[0_8px_20px_-8px_rgba(31,91,255,.7)] transition hover:bg-brand-dark active:scale-[.98] disabled:opacity-40 disabled:pointer-events-none disabled:shadow-none",
@@ -20,7 +21,7 @@ export function Stars({ value, size = 14 }: { value: number; size?: number }) {
 }
 
 export function RatingLine({ avg, count }: { avg: number; count: number }) {
-  if (!count) return <span className="rounded-full bg-brand-soft px-2 py-0.5 text-xs font-bold text-brand">Yangi</span>;
+  if (!count) return <span className="rounded-full bg-brand-soft px-2 py-0.5 text-xs font-bold text-brand">{t("Yangi")}</span>;
   return (
     <span className="inline-flex items-center gap-1.5 text-sm">
       <b>{avg.toFixed(1)}</b>
@@ -59,7 +60,7 @@ export function Carousel({ children }: { children: ReactNode }) {
         {children}
       </div>
       {[-1, 1].map((d) => (
-        <button key={d} onClick={() => go(d)} aria-label={d < 0 ? "Oldingi" : "Keyingi"}
+        <button key={d} onClick={() => go(d)} aria-label={d < 0 ? t("Oldingi") : t("Keyingi")}
           className={`absolute top-[38%] hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-line bg-white shadow-md transition hover:scale-105 lg:flex ${d < 0 ? "-left-5" : "-right-5"} opacity-0 group-hover:opacity-100`}>
           {d < 0 ? <ChevronLeft size={20} /> : <ChevronRight size={20} />}
         </button>
@@ -81,11 +82,11 @@ export function Modal({ open, onClose, children, title, wide }: { open: boolean;
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-[1000] flex items-end justify-center sm:items-center" role="dialog" aria-modal="true">
-      <button className="absolute inset-0 bg-black/45" aria-label="Yopish" onClick={onClose} />
+      <button className="absolute inset-0 bg-black/45" aria-label={t("Yopish")} onClick={onClose} />
       <div className={`sheet relative flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-3xl bg-white shadow-2xl sm:rounded-3xl ${wide ? "sm:max-w-3xl" : "sm:max-w-lg"}`}>
         <div className="flex items-center justify-between gap-3 px-5 pt-4 pb-2 sm:px-6 sm:pt-5">
           <div className="min-w-0 text-lg font-extrabold">{title}</div>
-          <button onClick={onClose} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full hover:bg-soft" aria-label="Yopish"><X size={20} /></button>
+          <button onClick={onClose} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full hover:bg-soft" aria-label={t("Yopish")}><X size={20} /></button>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5 sm:px-6 sm:pb-6">{children}</div>
       </div>
