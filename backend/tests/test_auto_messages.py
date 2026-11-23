@@ -1,4 +1,4 @@
-"""Avtomatik xabarlar: tug'ilgan kun, kechiktirilgan sharh so'rovi, qaytarish (054_auto_messages.sql)."""
+"""Avtomatik xabarlar: tug'ilgan kun, kechiktirilgan sharh so'rovi, qaytarish (054), sinab ko'rish va SMS (069)."""
 import os
 
 import pytest
@@ -39,10 +39,10 @@ def visit(biz, setup, start, status="completed"):
             {"b": biz["id"], "c": setup["client_id"], "m": setup["member_id"], "s": start, "st": status}).scalar()
 
 
-def scan(biz, now):
+def scan(biz, now, sms=False):
     with worker_session() as db:
-        rows = db.execute(text("SELECT * FROM app.auto_messages_scan(:b, CAST(:n AS timestamptz))"),
-                          {"b": biz["id"], "n": now}).all()
+        rows = db.execute(text("SELECT * FROM app.auto_messages_scan(:b, CAST(:n AS timestamptz), :s)"),
+                          {"b": biz["id"], "n": now, "s": sms}).all()
         db.commit()
     return rows
 
@@ -64,7 +64,8 @@ def test_settings_defaults_and_permissions(client, biz):
     assert r.status_code == 200
     assert r.json()["settings"] == {"birthday_enabled": False, "birthday_text": None, "review_enabled": True,
                                     "review_delay_hours": 0, "winback_enabled": False, "winback_days": 45,
-                                    "winback_text": None}
+                                    "winback_text": None, "sms_enabled": False}
+    assert r.json()["sms_available"] is False                        # test/dev: AUTO_SMS_ENABLED o'chiq
     saved = save(client, biz, birthday_enabled=True, birthday_text="  Sizga 20% chegirma!  ", winback_days=30)
     assert saved["birthday_text"] == "Sizga 20% chegirma!" and saved["winback_days"] == 30
     staff = add_member(client, biz, "staff")
@@ -141,3 +142,43 @@ def test_auto_messages_rls(client, biz, setup, superadmin):
     with api_session(biz["owner"]["user"]["id"]) as db:
         with pytest.raises(Exception):
             db.execute(text("SELECT * FROM app.auto_messages_scan()"))   # ilovaga yopiq — faqat worker
+
+
+def test_test_message_goes_only_to_director(client, biz, setup):
+    save(client, biz, winback_text="Qaytib keling, 15% chegirma!")
+    owner = auth_header(biz["owner"])
+    r = client.post(url(biz, "auto-messages/test"), headers=owner, json={"kind": "winback"})
+    assert r.status_code == 200, r.text
+    assert r.json() == {"title": "[Sinov] Sizni sog'indik!", "body": "Qaytib keling, 15% chegirma!", "telegram": False}
+    mine = [n for n in client.get("/api/v1/notifications", headers=owner).json() if n["type"] == "auto_message_test"]
+    assert len(mine) == 1 and mine[0]["data"]["kind"] == "winback"
+    assert inbox(client, setup, "promo_winback") == []               # mijozga hech narsa ketmadi
+    assert client.get(url(biz, "auto-messages/sent"), headers=owner).json() == []   # jurnalga yozilmaydi
+    r = client.post(url(biz, "auto-messages/test"), headers=owner, json={"kind": "birthday"})
+    assert "jamoasi sizni tabriklaydi" in r.json()["body"]           # matn bo'sh — standart tabrik
+    assert client.post(url(biz, "auto-messages/test"), headers=owner, json={"kind": "spam"}).status_code == 422
+    staff = add_member(client, biz, "staff")
+    assert client.post(url(biz, "auto-messages/test"), headers=auth_header(staff["tokens"]),
+                       json={"kind": "review"}).status_code == 403
+    for _ in range(8):
+        assert client.post(url(biz, "auto-messages/test"), headers=owner, json={"kind": "review"}).status_code == 200
+    assert client.post(url(biz, "auto-messages/test"), headers=owner, json={"kind": "review"}).status_code == 429
+
+
+def test_sms_only_for_clients_without_app_and_only_when_enabled(client, biz, setup):
+    phone = new_phone()
+    with ADMIN.begin() as db:
+        offline = db.execute(text("""
+            INSERT INTO business_clients (business_id, full_name, phone, birth_date)
+            VALUES (:b, 'Ilovasiz Mijoz', :p, '1990-11-17') RETURNING id"""), {"b": biz["id"], "p": phone}).scalar()
+        db.execute(text("UPDATE business_clients SET birth_date = '1995-11-17' WHERE id = :c"), {"c": setup["client_id"]})
+    save(client, biz, birthday_enabled=True)
+    assert scan(biz, NOON, sms=True) == []                           # muassasa SMS ni yoqmagan
+    assert len(inbox(client, setup, "promo_birthday")) == 1          # ilovali mijoz baribir oladi
+    save(client, biz, sms_enabled=True)
+    assert scan(biz, NOON, sms=False) == []                          # server AUTO_SMS_ENABLED o'chiq
+    rows = scan(biz, NOON, sms=True)
+    assert [(r.chat_id, r.phone) for r in rows] == [(None, phone)] and "tabriklaydi" in rows[0].body
+    assert scan(biz, NOON, sms=True) == []                           # yiliga bir marta
+    sent = {s["client_id"]: s for s in client.get(url(biz, "auto-messages/sent"), headers=auth_header(biz["owner"])).json()}
+    assert sent[offline]["sms"] is True and sent[setup["client_id"]]["sms"] is False

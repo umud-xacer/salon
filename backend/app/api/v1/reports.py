@@ -108,18 +108,44 @@ def build_report(db: Session, business_id: int, f: date, t: date) -> ReportOut:
          GROUP BY sc.id, sc.name, sc.name_ru ORDER BY revenue DESC, count DESC, sc.name NULLS LAST
     """), p).mappings()
 
+    # Xodimlar: bronlar soni — bronning mutaxassisi bo'yicha; tushum — xizmatni BAJARGAN ijrochi bo'yicha
+    # (oylikdagi app.generate_payroll bilan bir xil qoida): bron summasi (chegirmadan keyin) qatorlar narxiga
+    # mutanosib bo'linadi, "Muassasa hisobiga" qatorlar hech kimga yozilmaydi, qatorsiz eski bron — mutaxassisga.
     staff = db.execute(text(f"""
-        SELECT a.member_id, coalesce(u.full_name, 'Xodim') AS name,
-               count(*) FILTER (WHERE a.status <> 'cancelled') AS bookings,
-               count(*) FILTER (WHERE a.status = 'completed') AS completed,
-               count(*) FILTER (WHERE a.status = 'no_show') AS no_show,
-               coalesce(sum(a.total_price - a.discount) FILTER (WHERE a.status = 'completed'), 0)::bigint AS revenue
-          FROM appointments a
-          JOIN business_members m ON m.id = a.member_id
+        WITH ap AS (
+            SELECT a.id, a.member_id, a.status, (a.total_price - a.discount) AS net
+              FROM appointments a CROSS JOIN {_TZ}
+             WHERE a.business_id = :b AND {in_period}
+        ), ln AS (
+            SELECT ap.id, ap.net, coalesce(l.member_id, ap.member_id) AS member_id, l.house, l.price,
+                   sum(l.price) OVER (PARTITION BY ap.id) AS lines_total
+              FROM ap JOIN appointment_services l ON l.appointment_id = ap.id
+             WHERE ap.status = 'completed'
+        ), rev AS (
+            SELECT member_id, net::numeric * price / lines_total AS amount, 1 AS lines
+              FROM ln WHERE NOT house AND lines_total > 0
+            UNION ALL
+            SELECT ap.member_id, ap.net::numeric, 0 FROM ap
+             WHERE ap.status = 'completed'
+               AND NOT EXISTS (SELECT 1 FROM appointment_services l WHERE l.appointment_id = ap.id)
+        ), visits AS (
+            SELECT member_id,
+                   count(*) FILTER (WHERE status <> 'cancelled') AS bookings,
+                   count(*) FILTER (WHERE status = 'completed') AS completed,
+                   count(*) FILTER (WHERE status = 'no_show') AS no_show
+              FROM ap GROUP BY member_id
+        ), earned AS (
+            SELECT member_id, round(sum(amount))::bigint AS revenue, sum(lines)::int AS services
+              FROM rev GROUP BY member_id
+        )
+        SELECT m.id AS member_id, coalesce(u.full_name, 'Xodim') AS name,
+               coalesce(v.bookings, 0) AS bookings, coalesce(v.completed, 0) AS completed,
+               coalesce(v.no_show, 0) AS no_show, coalesce(e.revenue, 0) AS revenue,
+               coalesce(e.services, 0) AS services
+          FROM visits v FULL JOIN earned e ON e.member_id = v.member_id
+          JOIN business_members m ON m.id = coalesce(v.member_id, e.member_id)
           LEFT JOIN users u ON u.id = m.user_id
-         CROSS JOIN {_TZ}
-         WHERE a.business_id = :b AND {in_period}
-         GROUP BY a.member_id, u.full_name ORDER BY revenue DESC, completed DESC, name
+         ORDER BY revenue DESC, completed DESC, name
     """), p).mappings()
 
     # Sabab matni bron paytidagicha saqlanadi (ro'yxatdan o'chirilgan sabab ham hisobotda qoladi)

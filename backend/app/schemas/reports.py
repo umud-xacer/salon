@@ -55,7 +55,8 @@ class StaffRow(BaseModel):
     bookings: int
     completed: int
     no_show: int
-    revenue: int
+    revenue: int    # xizmatni bajargan ijrochi bo'yicha (qatorlar ulushi), chegirmadan keyin
+    services: int = 0  # bajargan xizmat qatorlari (bajarilgan bronlarda)
 
 
 class ClientStats(BaseModel):

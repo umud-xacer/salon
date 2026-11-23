@@ -75,6 +75,7 @@ export default function Book() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<Appointment | null>(null);
+  const [waited, setWaited] = useState<string | null>(null);        // shu kun uchun kutish ro'yxatiga yozildi
 
   const y = useRef(new Animated.Value(height)).current;
   useEffect(() => {
@@ -214,6 +215,26 @@ export default function Book() {
     if (current === 'confirm') return void submit();
     setStep(step + 1);
   };
+  // Bo'sh vaqt yo'q kun: kutish ro'yxatiga (vaqt bo'shasa salon taklif qiladi — push va Xabarlar). chronix.uz bilan bir xil
+  const joinWaitlist = async () => {
+    if (!service || !b) return;
+    if (!requireAuth(t("Navbatga yozilish uchun profilingizga kiring yoki ro'yxatdan o'ting"))) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await api('/waitlist', { method: 'POST', body: {
+        business_id: b.id, service_id: service, member_id: member !== null && member !== ANY ? member : null,
+        date_from: day, date_to: day,
+      } });
+      setWaited(day);
+      track('waitlist_join');
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : t("Bajarib bo'lmadi"));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const canNext = current === 'service' ? !!service : current === 'master' || current === 'doctor' ? member !== null
     : current === 'time' ? !!slot : !busy;
   const titles: Record<StepId, string> = {
@@ -350,7 +371,17 @@ export default function Book() {
           </ScrollView>
           <Text style={ty.small}>{dateText(day)}{member === ANY ? ` · ${t("usta avtomatik tanlanadi")}` : chosen ? ` · ${chosen.full_name}` : ''}</Text>
           {slots === null ? <ActivityIndicator style={{ marginTop: 16 }} color={c.accent} />
-            : slots.length === 0 ? <Empty text={t("Bu kunda bo'sh vaqt yo'q")} />
+            : slots.length === 0 ? (
+              <View style={{ gap: 12, alignItems: 'center' }}>
+                <Empty text={t("Bu kunda bo'sh vaqt yo'q. Boshqa kunni tanlang yoki navbatga yoziling.")} />
+                {waited === day
+                  ? <Text style={[ty.body, { color: c.accent, fontWeight: '700', textAlign: 'center' }]}>
+                      {t("Navbatga yozildingiz. Vaqt bo'shasa — darhol xabar beramiz.")}
+                    </Text>
+                  : <Button title={t("Kutish ro'yxatiga yozilish")} kind="outline" icon="time-outline" compact
+                            onPress={joinWaitlist} busy={busy} />}
+              </View>
+            )
               : groups.map((g) => (
                 <View key={g.label} style={{ gap: 8 }}>
                   <Text style={ty.caps}>{g.label}</Text>

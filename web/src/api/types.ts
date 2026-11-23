@@ -335,7 +335,7 @@ export interface Report {
   services: { name: string; name_ru?: string | null; count: number; revenue: number }[];
   categories?: { category_id: number | null; name: string | null; name_ru?: string | null; count: number;
                  revenue: number }[];
-  staff: { member_id: number; name: string; bookings: number; completed: number; no_show: number; revenue: number }[];
+  staff: { member_id: number; name: string; bookings: number; completed: number; no_show: number; revenue: number; services?: number }[];
   cancel_reasons?: { reason: string | null; count: number }[];
   clients: { total: number; new: number; returning: number };
   daily: ReportDay[];

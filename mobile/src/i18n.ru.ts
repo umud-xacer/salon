@@ -687,5 +687,12 @@ export const RU: Record<string, string> = {
   "Mamlakat kodi": "Код страны",
   "Xorijiy raqamlarga SMS yuborilmaydi. «Telegram orqali kirish» ni bosing — kod va kirish Telegram orqali bo'ladi": "На зарубежные номера SMS не отправляются. Нажмите «Войти через Telegram» — код и вход будут через Telegram",
   "Xorijiy raqamni mamlakat kodi bilan yozing. Namuna: +79161234567": "Укажите зарубежный номер с кодом страны. Пример: +79161234567",
-  "Telefon raqami noto'g'ri. Namuna: +998901234567 yoki +79161234567": "Неверный номер телефона. Пример: +998901234567 или +79161234567",
+  "Navbatga yozilish uchun profilingizga kiring yoki ro'yxatdan o'ting": "Войдите или зарегистрируйтесь, чтобы встать в лист ожидания",
+  "Bu kunda bo'sh vaqt yo'q. Boshqa kunni tanlang yoki navbatga yoziling.": "На этот день свободного времени нет. Выберите другой день или встаньте в лист ожидания.",
+  "Navbatga yozildingiz. Vaqt bo'shasa — darhol xabar beramiz.": "Вы в листе ожидания. Сообщим сразу, как время освободится.",
+  "Kutish ro'yxatiga yozilish": "Встать в лист ожидания",
+  "Xorijiy raqam bo'lsa, + bilan yozing: +79161234567":"Зарубежный номер пишите через +: +79161234567",
+  "Zaxira raqamni to'liq kiriting (9 ta raqam yoki + bilan xorijiy raqam)": "Введите запасной номер полностью (9 цифр или зарубежный номер через +)",
+  "Raqamni to'liq kiriting (9 ta raqam yoki + bilan xorijiy raqam)": "Введите номер полностью (9 цифр или зарубежный номер через +)",
+  "Telefon raqami noto'g'ri. Namuna: +998901234567 yoki +79161234567":"Неверный номер телефона. Пример: +998901234567 или +79161234567",
 };

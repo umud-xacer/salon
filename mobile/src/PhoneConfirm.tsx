@@ -7,7 +7,7 @@ import { KeyboardAvoidingView, Modal, Platform, Text, View } from 'react-native'
 
 import { api, ApiError, User } from './api';
 import { t } from './i18n';
-import { Button, ErrorText, Field, formatPhone, prettyPhone, useTheme, useType } from './ui';
+import { backupPhone, Button, ErrorText, Field, prettyPhone, useTheme, useType } from './ui';
 
 const WEEK_MS = 7 * 24 * 3600 * 1000;
 
@@ -24,16 +24,16 @@ export function PhoneConfirm({ user, visible, onDone, onClose }: {
   const { c } = useTheme();
   const ty = useType();
   const [edit, setEdit] = useState(false);
-  const [backup, setBackup] = useState((user.backup_phone ?? '').replace(/^\+998/, ''));
+  const [backup, setBackup] = useState(backupPhone.init(user.backup_phone));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const save = async (withBackup: boolean) => {
-    if (withBackup && backup.length !== 9) return setError(t("Raqamni to'liq kiriting (9 ta raqam)"));
+    if (withBackup && !backupPhone.valid(backup)) return setError(t("Raqamni to'liq kiriting (9 ta raqam yoki + bilan xorijiy raqam)"));
     setBusy(true);
     setError(null);
     try {
-      await api<User>('/auth/me/confirm-phone', { method: 'POST', body: { backup_phone: withBackup ? `+998${backup}` : null } });
+      await api<User>('/auth/me/confirm-phone', { method: 'POST', body: { backup_phone: withBackup ? backupPhone.full(backup) : null } });
       track('phone_confirm', { changed: withBackup });
       onDone();
     } catch (e) {
@@ -61,15 +61,15 @@ export function PhoneConfirm({ user, visible, onDone, onClose }: {
               <Text style={ty.small}>
                 {t("Hozir qaysi raqamdan foydalanyapsiz? Uni zaxira raqam qilib saqlaymiz — salon shunga qo'ng'iroq qiladi.")}
               </Text>
-              <Field label={t("Joriy telefon raqam")} placeholder="90 123 45 67" keyboardType="phone-pad" maxLength={12}
-                value={formatPhone(backup)} autoFocus
-                onChangeText={(x) => setBackup(x.replace(/\D/g, '').replace(/^998/, '').slice(0, 9))} />
+              <Field label={t("Joriy telefon raqam")} placeholder="90 123 45 67" keyboardType="phone-pad" maxLength={16}
+                value={backupPhone.show(backup)} autoFocus hint={t("Xorijiy raqam bo'lsa, + bilan yozing: +79161234567")}
+                onChangeText={(x) => setBackup(backupPhone.change(x))} />
             </>
           )}
           <ErrorText text={error} />
           {edit ? (
             <>
-              <Button title={t("Saqlash va davom etish")} onPress={() => save(true)} busy={busy} disabled={backup.length !== 9} />
+              <Button title={t("Saqlash va davom etish")} onPress={() => save(true)} busy={busy} disabled={!backupPhone.valid(backup)} />
               <Button title={t("Ortga")} kind="ghost" onPress={() => setEdit(false)} />
             </>
           ) : (

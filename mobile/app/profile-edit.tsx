@@ -4,7 +4,7 @@ import { Pressable, Text, View } from 'react-native';
 
 import { api, ApiError, User } from '../src/api';
 import { useAuth } from '../src/auth';
-import { Button, Chip, ErrorText, Field, formatPhone, maskBirthDate, parseBirthDate, ScreenScroll, showBirthDate, useTheme, useType } from '../src/ui';
+import { backupPhone, Button, Chip, ErrorText, Field, maskBirthDate, parseBirthDate, ScreenScroll, showBirthDate, useTheme, useType } from '../src/ui';
 
 import { t } from "../src/i18n";
 export default function ProfileEdit() {
@@ -16,7 +16,7 @@ export default function ProfileEdit() {
   const [name, setName] = useState(user?.full_name ?? '');
   const [birth, setBirth] = useState(user?.birth_date ? showBirthDate(user.birth_date) : '');
   const [gender, setGender] = useState(user?.gender ?? null);
-  const [backup, setBackup] = useState((user?.backup_phone ?? '').replace(/^\+998/, ''));
+  const [backup, setBackup] = useState(backupPhone.init(user?.backup_phone));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,7 +24,7 @@ export default function ProfileEdit() {
     const birthDate = birth ? parseBirthDate(birth) : null;
     if (name.trim().length < 2) return setError(t("Ism va familiyani kiriting"));
     if (birth && !birthDate) return setError(t("Tug'ilgan sanani 03.02.1995 ko'rinishida kiriting"));
-    if (backup && backup.length !== 9) return setError(t("Zaxira raqamni to'liq kiriting (9 ta raqam)"));
+    if (backup && !backupPhone.valid(backup)) return setError(t("Zaxira raqamni to'liq kiriting (9 ta raqam yoki + bilan xorijiy raqam)"));
     setBusy(true);
     setError(null);
     try {
@@ -32,7 +32,7 @@ export default function ProfileEdit() {
         method: 'PATCH',
         body: { full_name: name.trim(), birth_date: birthDate, gender,
           // eski server maydonni bilmasa — yubormaymiz
-          ...(user?.backup_phone !== undefined ? { backup_phone: backup ? `+998${backup}` : null } : {}) },
+          ...(user?.backup_phone !== undefined ? { backup_phone: backup ? backupPhone.full(backup) : null } : {}) },
       });
       await refresh();
       router.back();
@@ -48,9 +48,9 @@ export default function ProfileEdit() {
       <Field label={t("Ism va familiya")} value={name} onChangeText={setName} autoCapitalize="words" maxLength={120} />
       <Field label={t("Telefon raqam")} value={user?.phone} editable={false}
         hint={t("Telefon kirish uchun tasdiqlangan, uni bu yerda o'zgartirib bo'lmaydi")} />
-      <Field label={t("Zaxira telefon raqam")} placeholder="90 123 45 67" keyboardType="phone-pad" maxLength={12}
-        value={formatPhone(backup)} onChangeText={(x) => setBackup(x.replace(/\D/g, '').replace(/^998/, '').slice(0, 9))}
-        hint={t("Asosiy raqamingiz javob bermasa, salon shu raqamga qo'ng'iroq qiladi. Kirish uchun ishlatilmaydi.")} />
+      <Field label={t("Zaxira telefon raqam")} placeholder="90 123 45 67" keyboardType="phone-pad" maxLength={16}
+        value={backupPhone.show(backup)} onChangeText={(x) => setBackup(backupPhone.change(x))}
+        hint={t("Asosiy raqamingiz javob bermasa, salon shu raqamga qo'ng'iroq qiladi. Kirish uchun ishlatilmaydi.") + ' ' + t("Xorijiy raqam bo'lsa, + bilan yozing: +79161234567")} />
       <Field label={t("Tug'ilgan sana")} placeholder="03.02.1995" keyboardType="number-pad" maxLength={10} value={birth}
         onChangeText={(tx) => setBirth(maskBirthDate(tx))} />
       <Text style={[type.caps, { marginBottom: 8 }]}>{t("Jinsi")}</Text>

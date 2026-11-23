@@ -419,4 +419,11 @@ def test_report_revenue_by_category(client, biz, ctx):
     assert r.status_code == 200, r.text
     assert [(c["name"], c["count"], c["revenue"]) for c in r.json()["categories"]] == [
         ("Ko'rik", 1, 100_000), ("Laboratoriya", 1, 60_000), (None, 1, 40_000)]
+    # Xodimlar: tushum xizmatni bajargan ijrochiga (shifokor 100k, laborant 60k), rentgen — muassasa hisobiga;
+    # bron soni esa bronning mutaxassisida qoladi
+    staff = {s["member_id"]: s for s in r.json()["staff"]}
+    doc, lab = staff[ctx["doctor"]["member"]["id"]], staff[ctx["lab"]["member"]["id"]]
+    assert (doc["bookings"], doc["completed"], doc["revenue"], doc["services"]) == (1, 1, 100_000, 1)
+    assert (lab["bookings"], lab["completed"], lab["revenue"], lab["services"]) == (0, 0, 60_000, 1)
+    assert len(staff) == 2
     assert client.get(url(biz, f"reports/export.xlsx?date_from={d}&date_to={d}"), headers=owner(biz)).status_code == 200

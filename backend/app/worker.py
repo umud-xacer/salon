@@ -60,14 +60,24 @@ def scan_waitlist() -> int:
 
 
 def auto_messages() -> int:
-    """Tug'ilgan kun, sharh so'rash, qaytarish (sql/054). Bildirishnoma push bilan ketadi;
-    Telegram bog'langan mijozga bot orqali ham."""
+    """Tug'ilgan kun, sharh so'rash, qaytarish (sql/054, 069). Bildirishnoma push bilan ketadi;
+    Telegram bog'langan mijozga bot orqali ham; ilovasiz mijozga — SMS (AUTO_SMS_ENABLED va muassasa yoqqan bo'lsa)."""
+    s = get_settings()
     with worker_session() as db:
-        rows = db.execute(text("SELECT * FROM app.auto_messages_scan()")).mappings().all()
+        rows = db.execute(text("SELECT * FROM app.auto_messages_scan(NULL, now(), :sms)"),
+                          {"sms": s.auto_sms_enabled}).mappings().all()
         db.commit()
-    if rows and get_settings().telegram_login_enabled:
-        from app.services import telegram_bot
-        for r in rows:
+    for r in rows:
+        if r["phone"]:
+            from app.services import sms
+            try:
+                sms.send_text(r["phone"], r["body"])
+            except sms.SmsForeign:
+                log.info("Avto-xabar SMS: xorijiy raqam, yuborilmadi")
+            except Exception:
+                log.exception("Avto-xabar SMS yuborilmadi")
+        elif r["chat_id"] and s.telegram_login_enabled:
+            from app.services import telegram_bot
             try:
                 telegram_bot.send_message(r["chat_id"], r["title"] + "\n\n" + r["body"])
             except Exception:

@@ -17,7 +17,7 @@ const GROUPS: { id: Group; label: string }[] = [
 
 const groupOf = (type: string): Group => {
   if (type.startsWith('booking') || type.startsWith('appointment') || type.startsWith('attendance')
-      || type === 'review_request') return 'booking';
+      || type === 'review_request' || type === 'waitlist_offer') return 'booking';
   if (type.startsWith('promo')) return 'promo';
   return 'system';
 };
@@ -57,8 +57,16 @@ export default function Inbox() {
     if (n.type === 'review_request' && n.data?.appointment_id) {
       router.push({ pathname: '/review', params: { appointmentId: String(n.data.appointment_id) } });
     }
-    // Avtomatik xabarlar (tug'ilgan kun, qaytarish) va kutish ro'yxati taklifi — salon sahifasi
-    if (n.type.startsWith('promo_') && typeof n.data?.slug === 'string') {
+    // Kutish ro'yxati: bo'shagan vaqt — to'g'ridan shu vaqtga bron oynasi (band bo'lib qolsa, boshqa vaqt tanlanadi)
+    if (n.type === 'waitlist_offer' && typeof n.data?.slug === 'string' && n.data?.service_id) {
+      router.push({ pathname: '/book', params: {
+        slug: n.data.slug, serviceId: String(n.data.service_id),
+        ...(n.data.member_id && n.data.starts_at
+          ? { memberId: String(n.data.member_id), startsAt: String(n.data.starts_at) } : {}),
+      } });
+    }
+    // Avtomatik xabarlar (tug'ilgan kun, qaytarish) — salon sahifasi
+    else if (n.type.startsWith('promo_') && typeof n.data?.slug === 'string') {
       router.push({ pathname: '/business/[slug]', params: { slug: n.data.slug } });
     }
     if (n.read_at) return;

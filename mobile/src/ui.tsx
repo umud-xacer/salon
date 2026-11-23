@@ -427,6 +427,21 @@ export const prettyPhone = (phone: string) =>
 export const phoneReady = (code: string, digits: string) =>
   code === '998' ? digits.length === 9 : code.length >= 1 && digits.length >= 6 && (code + digits).length >= 10 && (code + digits).length <= 15;
 
+/** Zaxira raqam maydoni: 9 ta raqam — O'zbekiston (+998), "+" bilan boshlansa — xorijiy raqam (+79161234567) */
+export const backupPhone = {
+  init: (phone?: string | null) => (!phone ? '' : phone.startsWith('+998') ? phone.slice(4) : phone),
+  show: (v: string) => (v.startsWith('+') ? v : formatPhone(v)),
+  change: (x: string) => (x.trim().startsWith('+')
+    ? '+' + x.replace(/\D/g, '').slice(0, 15)
+    : x.replace(/\D/g, '').replace(/^998/, '').slice(0, 9)),
+  full: (v: string) => (v.startsWith('+') ? v : `+998${v}`),
+  valid: (v: string) => {
+    if (!v.startsWith('+')) return v.length === 9;
+    const d = v.slice(1);
+    return d.startsWith('998') ? d.length === 12 : /^[1-9]/.test(d) && d.length >= 10 && d.length <= 15;
+  },
+};
+
 export const money = (value: number) => t("{a} so'm", { a: value.toLocaleString('ru-RU').replace(/[, ]/g, ' ') });
 
 // Bizneslar hozircha faqat O'zbekistonda (UTC+5, yozgi vaqt yo'q)

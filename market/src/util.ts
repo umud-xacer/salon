@@ -86,6 +86,5 @@ export function getRecent(): string[] {
   try { return JSON.parse(localStorage.getItem("chronix.recent") ?? "[]"); } catch { return []; }
 }
 
-export const PLAY_URL = "";            // Play Market havolasi ilova chiqqach qo'yiladi
 export const BIZ_URL = "/biznes";
 export const PANEL_URL = "https://www.chronix.uz/";

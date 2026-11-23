@@ -1,6 +1,7 @@
 """Avtomatik xabarlar sozlamalari va yuborilganlar tarixi (054_auto_messages.sql).
 
-Yuborishni worker qiladi (app.auto_messages_scan har daqiqada); bu yerda — faqat sozlash va ko'rish.
+Yuborishni worker qiladi (app.auto_messages_scan har daqiqada); bu yerda — sozlash, ko'rish va
+"Sinab ko'rish" (069): xabar direktorning o'ziga ketadi, mijozlarga emas.
 """
 import datetime as dt
 from typing import Literal
@@ -11,6 +12,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, require_permission
+from app.core.config import get_settings
 from app.services import audit
 
 router = APIRouter(prefix="/businesses/{business_id}/auto-messages", tags=["auto-messages"])
@@ -19,7 +21,7 @@ _manage = require_permission("business.manage")
 _clients = require_permission("clients.view")
 
 _FIELDS = ("birthday_enabled", "birthday_text", "review_enabled", "review_delay_hours",
-           "winback_enabled", "winback_days", "winback_text")
+           "winback_enabled", "winback_days", "winback_text", "sms_enabled")
 
 
 class AutoMessageSettings(BaseModel):
@@ -30,6 +32,7 @@ class AutoMessageSettings(BaseModel):
     winback_enabled: bool = False
     winback_days: int = Field(default=45, ge=14, le=365)
     winback_text: str | None = Field(default=None, max_length=500)
+    sms_enabled: bool = False          # ilovasiz mijozlarga SMS (server AUTO_SMS_ENABLED bo'lganda ishlaydi)
 
 
 class AutoMessageSent(BaseModel):
@@ -38,12 +41,24 @@ class AutoMessageSent(BaseModel):
     client_id: int
     client_name: str
     telegram: bool
+    sms: bool = False
     sent_at: dt.datetime
 
 
 class AutoMessagesOut(BaseModel):
     settings: AutoMessageSettings
     sent_30d: dict[str, int]                            # oxirgi 30 kunda turi bo'yicha soni
+    sms_available: bool = False                         # serverda SMS yuborish yoqilganmi (AUTO_SMS_ENABLED)
+
+
+class TestIn(BaseModel):
+    kind: Literal["birthday", "review", "winback"]
+
+
+class TestOut(BaseModel):
+    title: str
+    body: str
+    telegram: bool                                      # Telegram'ga ham yuborildi
 
 
 def _settings(db: Session, business_id: int) -> AutoMessageSettings:
@@ -59,7 +74,8 @@ def get_auto_messages(business_id: int = Depends(_manage), db: Session = Depends
          WHERE business_id = :b AND sent_at > now() - INTERVAL '30 days' GROUP BY kind
     """), {"b": business_id}).all())
     return AutoMessagesOut(settings=_settings(db, business_id),
-                           sent_30d={k: counts.get(k, 0) for k in ("birthday", "review", "winback")})
+                           sent_30d={k: counts.get(k, 0) for k in ("birthday", "review", "winback")},
+                           sms_available=get_settings().auto_sms_enabled)
 
 
 @router.put("", response_model=AutoMessageSettings)
@@ -84,9 +100,26 @@ def sent_messages(kind: Literal["birthday", "review", "winback"] | None = None,
                   limit: int = Query(default=50, ge=1, le=200),
                   business_id: int = Depends(_clients), db: Session = Depends(get_db)):
     rows = db.execute(text("""
-        SELECT s.id, s.kind, s.client_id, c.full_name AS client_name, s.telegram, s.sent_at
+        SELECT s.id, s.kind, s.client_id, c.full_name AS client_name, s.telegram, s.sms, s.sent_at
           FROM auto_messages_sent s JOIN business_clients c ON c.id = s.client_id
          WHERE s.business_id = :b AND (CAST(:k AS text) IS NULL OR s.kind = :k)
          ORDER BY s.sent_at DESC, s.id DESC LIMIT :l
     """), {"b": business_id, "k": kind, "l": limit}).mappings()
     return [AutoMessageSent(**r) for r in rows]
+
+
+@router.post("/test", response_model=TestOut)
+def test_message(body: TestIn, business_id: int = Depends(_manage), db: Session = Depends(get_db)):
+    """Saqlangan matn bilan xabarni direktorning o'ziga yuboradi (ilovadagi Xabarlar + Telegram)."""
+    row = db.execute(text("SELECT * FROM app.auto_message_test(:b, :k)"),
+                     {"b": business_id, "k": body.kind}).mappings().one()
+    db.commit()
+    sent_tg = False
+    if row["chat_id"] and get_settings().telegram_login_enabled:
+        from app.services import telegram_bot
+        try:
+            telegram_bot.send_message(row["chat_id"], row["title"] + "\n\n" + row["body"])
+            sent_tg = True
+        except Exception:
+            pass
+    return TestOut(title=row["title"], body=row["body"], telegram=sent_tg)

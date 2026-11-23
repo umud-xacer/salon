@@ -75,6 +75,9 @@ class Settings(BaseSettings):
     sms_login_enabled: bool = True
     sms_provider: Literal["console", "eskiz"] = "console"
     sms_international: bool = False           # Eskiz xorijiy raqamlarga yuboradimi (yoqilmaguncha — faqat +998)
+    # Avtomatik xabarlar (tug'ilgan kun, qaytarish) ilovasiz mijozlarga SMS bilan. Yoqishdan oldin Eskiz'da
+    # shu matnlar moderatsiyadan o'tishi kerak (sql/069). false — SMS umuman yuborilmaydi, muassasa sozlamasi kutadi
+    auto_sms_enabled: bool = False
     eskiz_email: str | None = None
     eskiz_password: SecretStr | None = None
     eskiz_from: str = "4546"

@@ -4,12 +4,12 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, BadgeCheck, CalendarCheck2, Clock3, Flame, Smartphone } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 
-import { api, BusinessCard, Category, HotSlot } from "../api";
+import { api, BusinessCard, Category, getSiteSettings, HotSlot } from "../api";
 import { AppShowcase } from "../components/AppShowcase";
 import { SalonCard } from "../components/SalonCard";
 import { SearchBar } from "../components/SearchBar";
 import { Carousel, Img, Section } from "../components/ui";
-import { BIZ_URL, distanceText, money, PLAY_URL, useLocation2 } from "../util";
+import { BIZ_URL, distanceText, money, useLocation2 } from "../util";
 import { pick, t } from "../i18n";
 
 const nearbyUrl = (lat: number, lng: number, extra: Record<string, string>) =>
@@ -25,6 +25,9 @@ export default function Home() {
   const cats = useCategories();
   const rated = useQuery({ queryKey: ["near", "rating", loc.lat, loc.lng], queryFn: () => api<{ items: BusinessCard[]; total: number }>(nearbyUrl(loc.lat, loc.lng, { sort: "rating", limit: "12" })) });
   const near = useQuery({ queryKey: ["near", "distance", loc.lat, loc.lng], queryFn: () => api<{ items: BusinessCard[]; total: number }>(nearbyUrl(loc.lat, loc.lng, { sort: "distance", limit: "30" })) });
+  // Play havolasi Super Admin -> "Sayt sozlamalari" dan (footer bilan bir xil kesh kaliti)
+  const site = useQuery({ queryKey: ["site-settings"], queryFn: getSiteSettings, staleTime: 5 * 60_000, retry: 1 });
+  const playUrl = site.data?.play_url || "";
   const hot = useQuery({ queryKey: ["hot", loc.lat, loc.lng], queryFn: () => api<HotSlot[]>(`/catalog/hot-slots?${new URLSearchParams({ lat: String(loc.lat), lng: String(loc.lng), radius_m: "50000", limit: "20" })}`) });
 
   const featured = (rated.data?.items ?? []).filter((b) => b.rating_count > 0);
@@ -141,8 +144,8 @@ export default function Home() {
           <Smartphone size={34} className="text-cyan" />
           <h3 className="mt-4 text-3xl font-extrabold">{t("Chronix ilovasi")}</h3>
           <p className="mt-2 max-w-md text-white/75">{t("Bronlar, eslatmalar, chegirmalar va bonuslar — hammasi telefoningizda.")}</p>
-          {PLAY_URL
-            ? <a href={PLAY_URL} className="mt-6 inline-flex h-12 items-center rounded-full bg-white px-6 font-bold text-navy">{t("Google Play'dan yuklab oling")}</a>
+          {playUrl
+            ? <a href={playUrl} target="_blank" rel="noopener noreferrer" className="mt-6 inline-flex h-12 items-center rounded-full bg-white px-6 font-bold text-navy">{t("Google Play'dan yuklab oling")}</a>
             : <span className="mt-6 inline-flex h-12 items-center rounded-full bg-white/10 px-6 font-bold ring-1 ring-white/20">{t("Tez orada Google Play'da")}</span>}
         </div>
         <div className="relative overflow-hidden rounded-[32px] bg-brand-soft p-8 sm:p-10">

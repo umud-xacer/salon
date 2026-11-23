@@ -248,7 +248,10 @@ export type Notification = {
   type: string;
   title: string;
   body: string | null;
-  data: { appointment_id?: number; action?: string; slug?: string } | null;
+  data: {
+    appointment_id?: number; action?: string; slug?: string;
+    service_id?: number; member_id?: number; starts_at?: string;     // waitlist_offer (sql/052)
+  } | null;
   read_at: string | null;
   created_at: string;
 };

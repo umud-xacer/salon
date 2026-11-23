@@ -1,4 +1,4 @@
-"""SMS faqat ikki holatda: telefonni tasdiqlash (OTP) va parolni tiklash.
+"""SMS: telefonni tasdiqlash (OTP), parolni tiklash va avtomatik xabarlar (AUTO_SMS_ENABLED, sql/069).
 
 Eskiz.uz: kirish tokeni ~30 kun yashaydi, xotirada saqlanadi, 401 kelsa bir marta yangilanadi.
 Matnlar Eskiz'da moderatsiyadan o'tgan shablonlarga aynan mos bo'lishi kerak (SMS_*_TEMPLATE).
@@ -96,3 +96,8 @@ def send_otp(phone: str, code: str) -> None:
 
 def send_password_reset(phone: str, code: str) -> None:
     _send(phone, get_settings().sms_reset_template.format(code=code))
+
+
+def send_text(phone: str, message: str) -> None:
+    """Avtomatik xabar (tug'ilgan kun, qaytarish). Matn Eskiz'da moderatsiyadan o'tgan bo'lishi kerak."""
+    _send(phone, message[:600])
