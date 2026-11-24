@@ -60,31 +60,73 @@ type Props = {
   gender?: Gender;
 };
 
+// Xarita tugmalari (2026-11-24 dizayn): o'ngda, qidiruv paneli ostida — oq "kapsula" ichida + / − va alohida
+// binafsha gradientli "Mening joyim" (navigatsiya strelkasi). Qidirayotganda strelka aylanadi, atrofida to'lqin.
+// Xaritaning o'z tugmalari o'chirilgan — Yandex va OSM da ko'rinish bir xil. window.zoomBy(±1) — xarita JS'ida.
+const CTL_CSS = (top: number) => `
+  .ctl{position:absolute;right:12px;top:${top}px;z-index:3000;display:flex;flex-direction:column;align-items:center;gap:12px;
+       -webkit-tap-highlight-color:transparent;user-select:none}
+  .zoom{display:flex;flex-direction:column;width:46px;border-radius:23px;background:rgba(255,255,255,.96);overflow:hidden;
+        box-shadow:0 6px 18px rgba(17,17,20,.16),0 1px 3px rgba(17,17,20,.12)}
+  .zoom button{width:46px;height:46px;border:0;background:transparent;display:flex;align-items:center;justify-content:center;
+               color:#16161D;padding:0;transition:background .15s}
+  .zoom button:active{background:#EFEBFF}
+  .zoom i{display:block;height:1px;margin:0 11px;background:#E6E6EE}
+  .loc{position:relative;width:52px;height:52px;border:0;border-radius:50%;padding:0;color:#fff;
+       background:linear-gradient(145deg,#8B74FF 0%,#6B4EFF 55%,#4B2FE0 100%);
+       box-shadow:0 10px 22px -6px rgba(107,78,255,.75),inset 0 1px 0 rgba(255,255,255,.35);
+       display:flex;align-items:center;justify-content:center;transition:transform .12s}
+  .loc:active{transform:scale(.9)}
+  .loc svg{transition:transform .3s}
+  .loc:before{content:'';position:absolute;inset:0;border-radius:50%;border:2px solid #8B74FF;opacity:0}
+  .loc.busy svg{animation:locspin 1s linear infinite}
+  .loc.busy:before{animation:locwave 1.1s ease-out infinite}
+  @keyframes locspin{to{transform:rotate(360deg)}}
+  @keyframes locwave{0%{transform:scale(1);opacity:.8}100%{transform:scale(1.7);opacity:0}}
+`;
+const CTL_HTML = `<div class="ctl">
+  <div class="zoom">
+    <button id="zin" aria-label="Yaqinlashtirish"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+    <i></i>
+    <button id="zout" aria-label="Uzoqlashtirish"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14"/></svg></button>
+  </div>
+  <button id="loc" class="loc" aria-label="Mening joyim"><svg width="24" height="24" viewBox="0 0 24 24">
+    <path d="M20.6 3.4 3.9 10.3c-.8.3-.7 1.5.1 1.7l6.6 1.6 1.6 6.6c.2.8 1.4.9 1.7.1l6.9-16.7c.2-.5-.3-1-.8-.8z" fill="#fff"/>
+    <circle cx="11.2" cy="12.8" r="1.6" fill="#6B4EFF"/></svg></button>
+</div>`;
+const CTL_JS = `
+  const wireControls = () => {
+    document.getElementById('zin').addEventListener('click', () => window.zoomBy(1));
+    document.getElementById('zout').addEventListener('click', () => window.zoomBy(-1));
+    const loc = document.getElementById('loc');
+    loc.addEventListener('click', () => { loc.classList.add('busy'); post({ type: 'locate' }); });
+    window.locateDone = () => loc.classList.remove('busy');
+  };
+`;
+
 // Yandex JS API 2.1. Shartlar: bepul versiya faqat ochiq ilovada; olingan ma'lumot saqlanmaydi (faqat ko'rsatish).
 const yandexHtml = (lat: number, lng: number, key: string, top: number) => `<!doctype html>
 <html><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <style>
   html,body,#map{width:100%;height:100%;margin:0;padding:0;background:#eef1f6}
-  #locate{position:absolute;right:10px;top:${top + 72}px;z-index:2000;width:34px;height:34px;border:0;border-radius:8px;
-          background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;color:#1565F5}
-  #locate.busy{opacity:.5}
+${CTL_CSS(top)}
 </style>
 <script>const post = (m) => window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify(m));</script>
 <script src="https://api-maps.yandex.ru/2.1/?apikey=${encodeURIComponent(key)}&lang=ru_RU" onerror="post({type:'error'})"></script>
 </head><body><div id="map"></div>
-<button id="locate" aria-label="Mening joyim"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-  stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></button>
-<script>${ME_JS}
+${CTL_HTML}
+<script>${ME_JS}${CTL_JS}
   // Salon nomi matn sifatida: Yandex hint HTML qabul qiladi, shuning uchun belgilar ekranlanadi
   const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const fail = setTimeout(() => post({ type: 'error' }), 15000);
   if (!window.ymaps) post({ type: 'error' });
   else ymaps.ready(() => {
     clearTimeout(fail);
-    const map = new ymaps.Map('map', { center: [${lat}, ${lng}], zoom: 13, controls: ['zoomControl'] },
+    const map = new ymaps.Map('map', { center: [${lat}, ${lng}], zoom: 13, controls: [] },
                               { suppressMapOpenBlock: true, autoFitToViewport: 'always' });
-    map.controls.get('zoomControl').options.set({ size: 'small', position: { right: 10, top: ${top} } });
     const markers = new ymaps.GeoObjectCollection();
     map.geoObjects.add(markers);
     let me = null;
@@ -111,9 +153,8 @@ const yandexHtml = (lat: number, lng: number, key: string, top: number) => `<!do
     };
     window.flyTo = (p) => map.setCenter([p.lat, p.lng], 15, { duration: 300 });
     window.centerOn = (p) => map.setCenter([p.lat, p.lng], 14, { duration: 250 });
-    const btn = document.getElementById('locate');
-    btn.addEventListener('click', () => { btn.classList.add('busy'); post({ type: 'locate' }); });
-    window.locateDone = () => btn.classList.remove('busy');
+    window.zoomBy = (d) => map.setZoom(Math.max(2, Math.min(19, map.getZoom() + d)), { duration: 200 });
+    wireControls();
     const bounds = () => {
       const [sw, ne] = map.getBounds();
       post({ type: 'bounds', sw, ne });
@@ -145,31 +186,18 @@ const html = (lat: number, lng: number, top: number) => `<!doctype html>
   .pin.sel:after{border-top-color:#111114}
   .me{width:44px;height:44px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.25))}
   .leaflet-tooltip{font:600 12px system-ui,sans-serif}
-  .locate a{display:flex!important;align-items:center;justify-content:center;color:#1565F5}
-  .locate a.busy{opacity:.5}
-  .leaflet-top{top:${top}px}
+${CTL_CSS(top)}
 </style>
 <script>const post = (m) => window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify(m));</script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
   integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="" onerror="post({type:'error'})"></script>
 </head><body><div id="map"></div>
-<script>
+${CTL_HTML}
+<script>${CTL_JS}
   if (!window.L) post({ type: 'error' });
   const map = L.map('map', { zoomControl: false }).setView([${lat}, ${lng}], 13);
-  L.control.zoom({ position: 'topright' }).addTo(map);
-  // Joylashuv tugmasi: +/- ustida, xuddi shu ko'rinishda
-  const Locate = L.Control.extend({ options: { position: 'topright' }, onAdd() {
-    const box = L.DomUtil.create('div', 'leaflet-bar leaflet-control locate');
-    const a = L.DomUtil.create('a', '', box);
-    a.href = '#'; a.title = 'Mening joyim'; a.setAttribute('role', 'button'); a.setAttribute('aria-label', 'Mening joyim');
-    a.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" '
-      + 'stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>';
-    L.DomEvent.disableClickPropagation(box);
-    L.DomEvent.on(a, 'click', (e) => { L.DomEvent.preventDefault(e); a.classList.add('busy'); post({ type: 'locate' }); });
-    window.locateDone = () => a.classList.remove('busy');
-    return box;
-  } });
-  new Locate().addTo(map);
+  window.zoomBy = (d) => (d > 0 ? map.zoomIn() : map.zoomOut());
+  wireControls();
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19, attribution: '&copy; OpenStreetMap'
   }).on('tileerror', () => post({ type: 'tileerror' })).addTo(map);
