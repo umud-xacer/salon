@@ -16,6 +16,26 @@ const MapView = WebView as unknown as ComponentType<WebViewProps & { ref: RefObj
 export type Bounds = { sw: [number, number]; ne: [number, number] };
 
 type Point = { latitude: number; longitude: number };
+export type Gender = 'male' | 'female' | null | undefined;
+
+// Foydalanuvchi o'zi — jinsiga mos odamcha: o'g'il (ko'k), qiz (pushti, soch va ko'ylak), belgilanmagan (binafsha).
+// Atrofida yarim shaffof halqa — "siz shu yerdasiz". WebView ichidagi JS (meSvg) — ikkala xaritada bir xil.
+const ME_JS = `
+  const meSvg = (g) => {
+    const c = g === 'male' ? '#2F80ED' : g === 'female' ? '#E0458B' : '#6B4EFF';
+    const body = g === 'female'
+      ? '<path d="M14 15.5c0-4 2.7-6.5 6-6.5s6 2.5 6 6.5v4.5h-12z" fill="#5B3A29"/>'
+        + '<circle cx="20" cy="16" r="4.6" fill="#F6C9A8"/>'
+        + '<path d="M20 21.5l8.5 12h-17z" fill="' + c + '"/>'
+      : '<circle cx="20" cy="15" r="5" fill="#F6C9A8"/>'
+        + (g === 'male' ? '<path d="M15 14c0-3.6 2.3-5.6 5-5.6s5 2 5 5.6c-1.6-1.4-3.2-2-5-2s-3.4.6-5 2z" fill="#3B2A20"/>' : '')
+        + '<path d="M10.5 33.5c0-6 4.2-10 9.5-10s9.5 4 9.5 10z" fill="' + c + '"/>';
+    return '<svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="-2 -2 44 44">'
+      + '<circle cx="20" cy="20" r="21" fill="' + c + '" fill-opacity=".18"/>'
+      + '<circle cx="20" cy="20" r="16.5" fill="#fff" stroke="' + c + '" stroke-width="2.5"/>'
+      + '<clipPath id="mc"><circle cx="20" cy="20" r="15"/></clipPath><g clip-path="url(#mc)">' + body + '</g></svg>';
+  };
+`;
 
 type Props = {
   center: Point;
@@ -36,6 +56,8 @@ type Props = {
   controlsTop?: number;
   /** Shu nuqtaga markazlash (yangi obyekt berilganda bir marta; xarita tayyor bo'lmasa — tayyor bo'lgach) */
   focus?: Point | null;
+  /** Profildagi jins — o'z joylashuvidagi odamcha ikonkasi */
+  gender?: Gender;
 };
 
 // Yandex JS API 2.1. Shartlar: bepul versiya faqat ochiq ilovada; olingan ma'lumot saqlanmaydi (faqat ko'rsatish).
@@ -53,7 +75,7 @@ const yandexHtml = (lat: number, lng: number, key: string, top: number) => `<!do
 </head><body><div id="map"></div>
 <button id="locate" aria-label="Mening joyim"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
   stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></button>
-<script>
+<script>${ME_JS}
   // Salon nomi matn sifatida: Yandex hint HTML qabul qiladi, shuning uchun belgilar ekranlanadi
   const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const fail = setTimeout(() => post({ type: 'error' }), 15000);
@@ -81,7 +103,10 @@ const yandexHtml = (lat: number, lng: number, key: string, top: number) => `<!do
     };
     window.setMe = (p) => {
       if (me) map.geoObjects.remove(me);
-      me = new ymaps.Placemark([p.lat, p.lng], {}, { preset: 'islands#geolocationIcon', interactive: false });
+      me = new ymaps.Placemark([p.lat, p.lng], {}, {
+        iconLayout: 'default#image', interactive: false, zIndex: 2000,
+        iconImageHref: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(meSvg(p.g)),
+        iconImageSize: [44, 44], iconImageOffset: [-22, -22] });
       map.geoObjects.add(me);
     };
     window.flyTo = (p) => map.setCenter([p.lat, p.lng], 15, { duration: 300 });
@@ -118,7 +143,7 @@ const html = (lat: number, lng: number, top: number) => `<!doctype html>
   .pin.sel{background:#fff;color:#111114;transform:translate(-50%,calc(-100% - 6px)) scale(1.15);
            box-shadow:0 0 0 2px #111114,0 6px 16px rgba(17,17,20,.35)}
   .pin.sel:after{border-top-color:#111114}
-  .me{width:16px;height:16px;border-radius:50%;background:#6B4EFF;border:3px solid #fff;box-shadow:0 0 0 6px rgba(107,78,255,.25)}
+  .me{width:44px;height:44px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.25))}
   .leaflet-tooltip{font:600 12px system-ui,sans-serif}
   .locate a{display:flex!important;align-items:center;justify-content:center;color:#1565F5}
   .locate a.busy{opacity:.5}
@@ -149,7 +174,7 @@ const html = (lat: number, lng: number, top: number) => `<!doctype html>
     maxZoom: 19, attribution: '&copy; OpenStreetMap'
   }).on('tileerror', () => post({ type: 'tileerror' })).addTo(map);
   const markers = L.layerGroup().addTo(map);
-  let meMarker = null;
+  let meMarker = null;${ME_JS}
 
   window.setMarkers = (list) => {
     markers.clearLayers();
@@ -174,7 +199,8 @@ const html = (lat: number, lng: number, top: number) => `<!doctype html>
   };
   window.setMe = (p) => {
     if (meMarker) meMarker.remove();
-    meMarker = L.marker([p.lat, p.lng], { icon: L.divIcon({ className: '', html: '<div class="me"></div>', iconSize: [16, 16] }),
+    meMarker = L.marker([p.lat, p.lng], { icon: L.divIcon({ className: '', html: '<div class="me">' + meSvg(p.g) + '</div>',
+                                                              iconSize: [44, 44], iconAnchor: [22, 22] }), zIndexOffset: 2000,
                                           interactive: false }).addTo(map);
   };
   window.flyTo = (p) => map.setView([p.lat, p.lng], 15);
@@ -191,11 +217,12 @@ const html = (lat: number, lng: number, top: number) => `<!doctype html>
 </script></body></html>`;
 
 export function OsmMap({ center, me, businesses, onBounds, onSelect, onError, onLocate, yandexKey, selectedId, onTapMap,
-  controlsTop = 12, focus }: Props) {
+  controlsTop = 12, focus, gender }: Props) {
   const web = useRef<WebView | null>(null);
   const ready = useRef(false);
-  const latest = useRef({ businesses, me, selectedId });
-  latest.current = { businesses, me, selectedId };
+  const latest = useRef({ businesses, me, selectedId, gender });
+  latest.current = { businesses, me, selectedId, gender };
+  const meJson = (p: Point) => JSON.stringify({ lat: p.latitude, lng: p.longitude, g: latest.current.gender ?? null });
   // Xarita markazi faqat birinchi ochilganda: keyin foydalanuvchi o'zi suradi
   const source = useMemo(() => ({
     html: yandexKey ? yandexHtml(center.latitude, center.longitude, yandexKey, controlsTop)
@@ -216,6 +243,7 @@ export function OsmMap({ center, me, businesses, onBounds, onSelect, onError, on
     web.current?.injectJavaScript(`${code}; true;`);
   };
   const sent = useRef('');
+  const sentMe = useRef('');
   const pending = useRef<Point | null>(null);
   const centerOn = (p: Point) => run(`window.centerOn && window.centerOn(${JSON.stringify({ lat: p.latitude, lng: p.longitude })})`);
   const pushMarkers = () => {
@@ -231,13 +259,16 @@ export function OsmMap({ center, me, businesses, onBounds, onSelect, onError, on
       run(`window.setMarkers && window.setMarkers(${json})`);
     }
     const p = latest.current.me;
-    if (p) run(`window.setMe && window.setMe(${JSON.stringify({ lat: p.latitude, lng: p.longitude })})`);
+    if (p && meJson(p) !== sentMe.current) {               // odamcha faqat joy yoki jins o'zgarsa qayta chiziladi
+      sentMe.current = meJson(p);
+      run(`window.setMe && window.setMe(${sentMe.current})`);
+    }
   };
 
   // Xarita tayyor bo'lmaguncha belgilar yuborilmaydi: aks holda ular yo'qolib qoladi
   useEffect(() => {
     if (ready.current) pushMarkers();
-  }, [businesses, me, selectedId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [businesses, me, selectedId, gender]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!focus) return;
@@ -250,6 +281,7 @@ export function OsmMap({ center, me, businesses, onBounds, onSelect, onError, on
     if (m.type === 'ready') {
       ready.current = true;
       sent.current = '';
+      sentMe.current = '';
       pushMarkers();
       if (pending.current) {
         centerOn(pending.current);
@@ -263,7 +295,7 @@ export function OsmMap({ center, me, businesses, onBounds, onSelect, onError, on
       (onLocate ? onLocate() : Promise.resolve(latest.current.me ?? null))
         .then((p) => {
           if (!p) return;
-          run(`window.setMe && window.setMe(${JSON.stringify({ lat: p.latitude, lng: p.longitude })})`);
+          run(`window.setMe && window.setMe(${meJson(p)})`);
           run(flyToScript(p));
         })
         .catch(() => {})

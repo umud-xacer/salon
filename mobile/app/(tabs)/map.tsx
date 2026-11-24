@@ -13,6 +13,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, ApiError, BusinessCard } from '../../src/api';
+import { useAuth } from '../../src/auth';
 import { pick, t } from '../../src/i18n';
 import { locate, locateIfAllowed, Point, useMyLocation } from '../../src/location';
 import { getItem, setItemAsync } from '../../src/secure';
@@ -47,6 +48,7 @@ export default function SearchTab() {
   const { c } = useTheme();
   const s = useStyles();
   const { coords, me } = useMyLocation();
+  const gender = useAuth().me?.user.gender ?? null;      // o'z joyidagi odamcha: o'g'il / qiz / neytral
   const [items, setItems] = useState<BusinessCard[]>([]);
   const { categories } = useCategories();
   const [category, setCategory] = useState<string | null>(null);
@@ -198,6 +200,7 @@ export default function SearchTab() {
             yandexKey={yandexKey}
             center={me ?? coords}
             me={me}
+            gender={gender}
             focus={focus}
             controlsTop={insets.top + 84}
             onLocate={onLocate}
