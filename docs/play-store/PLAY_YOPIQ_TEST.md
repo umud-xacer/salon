@@ -92,3 +92,14 @@ yig'ing (production arizasida so'raladi). Qolgan 4 ta chala Gmail aniqlansa — 
 
 Play Console → Панель управления → **"Подать заявку на доступ к рабочей версии"** — sinov qanday o'tgani,
 topilgan xatolar, auditoriya haqida savollar (javoblarni Claude tayyorlaydi). Ko'rib chiqish ~7 kun.
+
+## 8. Keyingi reliz: 1.0.3 (versionCode 6) — 2026-11-24 tayyorlandi
+
+- Commit `f29cd9f`: `plugins/with-optional-screen-features.js` — `android.hardware.screen.portrait/landscape`
+  `required="false"` (Play "доступно не на всех устройствах" ogohlantirishi yo'qoladi; ilova baribir faqat vertikal).
+- AD_ID: `blockedPermissions` orqali manifestda `tools:node="remove"` (prebuild bilan tekshirildi).
+- EAS build `679c0d7e-b137-47e3-b49e-edc800cc85b2` (production, .aab).
+- MUHIM: runtimeVersion = appVersion → 1.0.3 alohida OTA kanali. 1.0.2 foydalanuvchilariga OTA `--runtime-version 1.0.2`
+  bo'yicha alohida chiqariladi; 1.0.3 o'rnatilgach unga ham OTA kerak bo'lsa — alohida.
+- Qachon yuklanadi: 1.0.2 Google tekshiruvidan o'tgach (ko'rib chiqish davomida yangi reliz yuborilsa, tekshiruv qaytadan
+  boshlanadi). Alpha → "Создать выпуск" → .aab → "Далее" → "Сохранить" → Обзор публикации → yuborish.
