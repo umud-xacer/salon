@@ -64,6 +64,11 @@ export function ClientOnlyPage() {
   return (
     <Notice title={t("Panel xodimlar uchun")}>
       <p>{t("Bu raqam hech qaysi muassasaga xodim sifatida ulanmagan. Mijozlar Chronix mobil ilovasidan foydalanadi.")}</p>
+      <p>
+        <a href="/royxatdan-otish" className="font-semibold text-primary hover:underline">
+          {t("O'z muassasangizni ro'yxatdan o'tkazish")}
+        </a>
+      </p>
     </Notice>
   );
 }

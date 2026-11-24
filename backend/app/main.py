@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import DBAPIError
 
-from app.api.v1 import (analytics, seo, site, appointments, auth, auto_messages, billing, broadcasts, cash_shifts, forms, resources, timesheet, blocks, waitlist, business_admin, catalog, clients, finance, geo, inventory, me, members,
+from app.api.v1 import (analytics, onboarding, seo, site, appointments, auth, auto_messages, billing, broadcasts, cash_shifts, forms, resources, timesheet, blocks, waitlist, business_admin, catalog, clients, finance, geo, inventory, me, members,
                         payroll, promotions, reception, reminders, reports, reviews, schedule, superadmin, telegram, visits)
 from app.core.config import get_settings
 from app.core.client_filter import ClientFilterMiddleware
@@ -118,6 +118,14 @@ _DB_ERRORS = {
     "P0433": (402, "chain_inactive", "Avval asosiy muassasa obunasini to'lang, keyin filial qo'shing"),
     "P0434": (422, "invalid_branch_name", "Filial nomini kiriting (2–80 belgi)"),
     "P0435": (422, "location_required", "Xaritada filial joyini belgilang"),
+    # O'zi ro'yxatdan o'tish va sinov (sql/070)
+    "P0460": (409, "already_member", "Bu raqam allaqachon muassasaga bog'langan. Kirish sahifasidan kiring"),
+    "P0461": (422, "invalid_name", "Muassasa nomini kiriting (2–120 belgi)"),
+    "P0462": (422, "invalid_category", "Yo'nalishni tanlang"),
+    "P0463": (422, "invalid_team_size", "Xodimlar sonini tanlang"),
+    "P0464": (422, "invalid_location", "Xaritadagi joy noto'g'ri"),
+    "P0465": (422, "invalid_days", "Sinov muddati 1–60 kun bo'lishi kerak"),
+    "P0466": (409, "signup_not_pending", "Bu ariza allaqachon ko'rib chiqilgan"),
 }
 
 
@@ -166,6 +174,9 @@ app.include_router(reviews.router, prefix="/api/v1")
 app.include_router(me.router, prefix="/api/v1")
 app.include_router(billing.router, prefix="/api/v1")
 app.include_router(promotions.router, prefix="/api/v1")
+app.include_router(onboarding.router, prefix="/api/v1")
+app.include_router(onboarding.member_router, prefix="/api/v1")
+app.include_router(onboarding.admin_router, prefix="/api/v1")
 app.include_router(telegram.router, prefix="/api/v1")
 
 # Prod'da rasmlarni Caddy beradi. Dev'da shu yerdan

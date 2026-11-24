@@ -88,3 +88,5 @@ export function getRecent(): string[] {
 
 export const BIZ_URL = "/biznes";
 export const PANEL_URL = "https://www.chronix.uz/";
+/** Direktorning o'zi ro'yxatdan o'tishi (panel, 5 kunlik bepul sinov) */
+export const SIGNUP_URL = "https://www.chronix.uz/royxatdan-otish";

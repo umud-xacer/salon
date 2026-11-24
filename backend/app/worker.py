@@ -159,18 +159,112 @@ def send_pushes() -> int:
             count += 1
 
 
+# ─── O'zi ro'yxatdan o'tgan muassasaning 5 kunlik sinovi (sql/070_business_signup.sql) ──────────
+# "Kun" = TRIAL_DAY_SECONDS (sinov uchun qisqartirish mumkin). Sinov boshidan:
+#   2 kun o'tgach (3-kun):  hali kirmagan bo'lsa — SMS eslatma (TRIAL_SMS_ENABLED)
+#   3 kun o'tgach (4-kun):  kirmagan / bo'limlar to'ldirilmagan / ilovada ko'rinmaydi — Telegram ogohlantirishi
+#   sinov tugagach (6-kun): hammasi bajarilgan — oylik obunaga; bo'lmasa muassasa o'chiriladi
+# TRIAL_DRY_RUN=true (standart): hech narsa yuborilmaydi va o'chirilmaydi — faqat jurnalga "dry_run" bilan yoziladi.
+_MISSING = {"logged_in": "panelga kirish", "services": "xizmatlar", "staff": "xizmat ko'rsatadigan mutaxassis",
+            "hours": "ish vaqti", "location": "xaritadagi manzil", "visible": "ilovada ko'rinish"}
+
+
+def _trial_mark(business_id: int, kind: str, dry: bool, details: dict) -> None:
+    import json
+    with worker_session() as db:
+        db.execute(text("SELECT app.trial_mark(:b, :k, :d, CAST(:x AS jsonb))"),
+                   {"b": business_id, "k": kind, "d": dry, "x": json.dumps(details, ensure_ascii=False)})
+        db.commit()
+
+
+def trial_watch() -> int:
+    from datetime import datetime, timedelta, timezone
+    import json
+
+    from app.services import media, sms, telegram_bot
+    s = get_settings()
+    dry, day = s.trial_dry_run, timedelta(seconds=s.trial_day_seconds)
+    now = datetime.now(timezone.utc)
+    with worker_session() as db:
+        rows = [dict(r) for r in db.execute(text("SELECT * FROM app.trial_list()")).mappings()]
+    done = 0
+    for r in rows:
+        b, ready = r["business_id"], r["readiness"] or {}
+        elapsed = now - r["trial_started_at"]
+        missing = [v for k, v in _MISSING.items() if not ready.get(k)]
+        try:
+            # 3-kun: SMS — faqat umuman kirmagan bo'lsa
+            if elapsed >= 2 * day and not ready.get("logged_in") and r["sms_day3_at"] is None:
+                text_ = (f"Chronix: «{r['name']}» uchun bepul sinov davom etmoqda. Panelga kiring va xizmatlarni "
+                         f"qo'shing: {s.business_panel_url}")
+                info = {"phone": r["owner_phone"], "sent": False}
+                if not dry and s.trial_sms_enabled:
+                    try:
+                        sms.send_text(r["owner_phone"], text_)
+                        info["sent"] = True
+                    except Exception as e:                       # SmsError, chet el raqami va h.k.
+                        info["error"] = str(e)[:200]
+                elif not s.trial_sms_enabled:
+                    info["skipped"] = "TRIAL_SMS_ENABLED=false"
+                _trial_mark(b, "sms_day3", dry, info)
+                done += 1
+            # 4-kun: Telegram — kirmagan, bo'limlar to'liq emas yoki ilovada ko'rinmaydi
+            if elapsed >= 3 * day and missing and r["tg_day4_at"] is None:
+                left = max(0, (r["trial_ends_at"] - now).days + 1)
+                text_ = (f"⚠️ «{r['name']}» — bepul sinov tugashiga {left} kun qoldi.\n\n"
+                         f"Muassasangiz Chronix ilovasida mijozlarga ko'rinishi uchun qo'shing: {', '.join(missing)}.\n"
+                         f"Sinov oxirigacha to'ldirilmasa, muassasa avtomatik o'chiriladi.\n{s.business_panel_url}")
+                info = {"chat": bool(r["owner_chat"]), "missing": missing, "sent": False}
+                if not dry and r["owner_chat"]:
+                    info["sent"] = telegram_bot.send_message(r["owner_chat"], text_)
+                _trial_mark(b, "tg_day4", dry, info)
+                done += 1
+            # Sinov tugadi
+            if now >= r["trial_ends_at"]:
+                ok = bool(ready.get("logged_in") and ready.get("all_filled") and ready.get("visible"))
+                if dry:
+                    if r["end_dry_at"] is None:
+                        _trial_mark(b, "converted" if ok else "deleted", True, {"readiness": ready, "missing": missing})
+                        done += 1
+                    continue
+                with worker_session() as db:
+                    if ok:
+                        db.execute(text("SELECT app.trial_convert(:b)"), {"b": b})
+                        deleted = False
+                    else:
+                        deleted = db.scalar(text("SELECT app.trial_delete(:b, CAST(:x AS jsonb))"),
+                                            {"b": b, "x": json.dumps({"readiness": ready, "missing": missing},
+                                                                     ensure_ascii=False)})
+                    db.commit()
+                if deleted:
+                    media.delete_business_folder(b)
+                    if r["owner_chat"]:
+                        telegram_bot.send_message(r["owner_chat"], f"«{r['name']}» bepul sinov muddati tugadi va "
+                                                  "talablar bajarilmagani uchun o'chirildi. Qayta ro'yxatdan o'tishingiz "
+                                                  f"mumkin: {s.business_panel_url}")
+                elif ok and r["owner_chat"]:
+                    telegram_bot.send_message(r["owner_chat"], f"🎉 «{r['name']}» sinovdan muvaffaqiyatli o'tdi! "
+                                              f"Endi oylik obuna amal qiladi — to'lovni panelning «Obuna» bo'limida "
+                                              f"qilishingiz mumkin.\n{s.business_panel_url}")
+                done += 1
+        except Exception:
+            log.exception("Sinov tekshiruvi xatosi: muassasa %s", b)
+    return done
+
+
 def run_once() -> dict:
     expired = expire_subscriptions()
     auto_cancelled = expire_pending()      # eslatmadan oldin: bekor bo'lgan bronga eslatma ketmasin
     reminders = create_reminders()
     waitlist = scan_waitlist()            # pushdan oldin: taklif xabari shu aylanishda ketsin
     auto = auto_messages()
+    trials = trial_watch()
     purge_events()
     resolve_locations()
     broadcast_telegram()
     pushes = send_pushes()                 # yetkazilmagan eslatma shu aylanishda ogohlantirishga aylansin
     alerts = raise_alerts()
-    return {"expired": expired, "auto_cancelled": auto_cancelled, "reminders": reminders, "waitlist": waitlist, "auto": auto, "alerts": alerts,
+    return {"expired": expired, "auto_cancelled": auto_cancelled, "reminders": reminders, "waitlist": waitlist, "auto": auto, "trials": trials, "alerts": alerts,
             "pushes": pushes + send_pushes()}
 
 

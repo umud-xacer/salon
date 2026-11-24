@@ -7,7 +7,7 @@ import {
 
 import { api } from "../api";
 import { btn, Section } from "../components/ui";
-import { PANEL_URL } from "../util";
+import { PANEL_URL, SIGNUP_URL } from "../util";
 import { useCategories } from "./Home";
 import { pick, t as tr } from "../i18n";
 
@@ -55,7 +55,7 @@ export default function Business() {
           </h1>
           <p className="mt-5 max-w-2xl text-lg text-white/75">{tr("Onlayn bron, kalendar, kassa, ombor va oylik hisob-kitob — Chronix panelida. Mijozlar sizni chronix.uz va ilovada topadi.")}</p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <a href="#boglanish" className="bg-brand-grad inline-flex h-12 items-center gap-2 rounded-full px-6 font-bold text-white shadow-lg">{tr("Ulanish uchun ariza")} <ArrowRight size={18} /></a>
+            <a href={SIGNUP_URL} className="bg-brand-grad inline-flex h-12 items-center gap-2 rounded-full px-6 font-bold text-white shadow-lg">{tr("Ro'yxatdan o'tish — 5 kun bepul")} <ArrowRight size={18} /></a>
             <a href={PANEL_URL} className="inline-flex h-12 items-center rounded-full bg-white/10 px-6 font-bold ring-1 ring-white/20 hover:bg-white/15">{tr("Panelga kirish")}</a>
           </div>
         </div>
@@ -155,7 +155,10 @@ export default function Business() {
         </div>
         <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-3xl bg-brand-soft p-6">
           <p className="font-bold text-navy">{tr("Allaqachon Chronix'dasizmi?")}</p>
-          <a href={PANEL_URL} className={btn.dark}>{tr("Panelga kirish")} <ArrowRight size={18} /></a>
+          <div className="flex flex-wrap gap-3">
+            <a href={SIGNUP_URL} className={btn.dark}>{tr("Ro'yxatdan o'tish — 5 kun bepul")} <ArrowRight size={18} /></a>
+            <a href={PANEL_URL} className="inline-flex h-12 items-center rounded-full bg-white px-6 font-bold text-navy ring-1 ring-line hover:bg-brand-soft">{tr("Panelga kirish")}</a>
+          </div>
         </div>
       </Section>
     </>

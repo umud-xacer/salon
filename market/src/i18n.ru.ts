@@ -316,6 +316,7 @@ export const RU: Record<string, string> = {
   "boshqaring": "",
   "Onlayn bron, kalendar, kassa, ombor va oylik hisob-kitob — Chronix panelida. Mijozlar sizni chronix.uz va ilovada topadi.": "Онлайн-запись, календарь, касса, склад и расчёт зарплаты — в панели Chronix. Клиенты находят вас на chronix.uz и в приложении.",
   "Ulanish uchun ariza": "Заявка на подключение",
+  "Ro'yxatdan o'tish — 5 kun bepul": "Регистрация — 5 дней бесплатно",
   "Imkoniyatlar": "Возможности",
   "Kundalik ishning hammasi bitta joyda": "Вся ежедневная работа в одном месте",
   "Kimlar uchun": "Для кого",

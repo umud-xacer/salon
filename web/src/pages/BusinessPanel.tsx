@@ -8,6 +8,7 @@ import { panelVocab, sectionsFor, sectionUrl } from "../modules/registry";
 import { BillingPaywall, ExpiryBanner } from "../modules/billing/BillingPage";
 import { VocabContext } from "../modules/vocab";
 import { SuspendedPage } from "./Notices";
+import { PendingSignupPage, TrialCard } from "../components/TrialCard";
 
 /** Eski manzil /b/6/kassa -> /barber-lab/kassa (saqlangan havolalar buzilmasin) */
 export function LegacyPanelRedirect() {
@@ -25,6 +26,8 @@ export function BusinessPanel() {
   const membership = memberships.find((m) => m.business_slug === businessSlug);
 
   if (!membership) return <Navigate to="/" replace />;
+  // O'zi ro'yxatdan o'tgan, Super Admin hali tasdiqlamagan muassasa
+  if (membership.business_status === "pending") return <PendingSignupPage membership={membership} />;
   if (!membership.operational) {
     // Obuna tugagan direktor faqat to'lov sahifasini ko'radi; bloklangan muassasa va xodimlar — xabarnoma
     if (membership.role === "owner" && membership.business_status !== "blocked") return <BillingPaywall membership={membership} />;
@@ -48,6 +51,7 @@ export function BusinessPanel() {
       nav={sections.map((s) => ({ to: `${base}/${url(s)}`, label: s.label, icon: s.icon }))}
     >
       <ExpiryBanner membership={membership} billingUrl={`${base}/obuna`} />
+      <TrialCard membership={membership} base={base} />
       <Routes>
         {sections.map((s) => (
           <Route key={s.path} path={url(s)} element={<s.page membership={membership} />} />

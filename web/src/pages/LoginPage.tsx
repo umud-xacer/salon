@@ -441,6 +441,12 @@ export function LoginPage() {
             </form>
           </>
         )}
+        {!isAdminHost && !twofa && (
+          <p className="mt-6 border-t border-slate-100 pt-5 text-center text-sm text-slate-500">
+            {t("Muassasangizni Chronix'ga qo'shmoqchimisiz?")}{" "}
+            <a href="/royxatdan-otish" className="font-semibold text-blue-600 hover:underline">{t("Ro'yxatdan o'ting")}</a>
+          </p>
+        )}
       </div>
     </div>
   );

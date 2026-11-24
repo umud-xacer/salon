@@ -1,6 +1,9 @@
 // Super Admin chap menyusi: "Salonlar" (hammasi), uning ostida har bir muassasa turi, keyin "Muassasa turlari".
-import { Activity, BadgeDollarSign, BarChart3, Building2, CalendarClock, Ear, Layers, Leaf, Pill, Scissors, ScrollText, Smile, Sparkles, Stethoscope, Store, Users, Globe, type LucideIcon } from "lucide-react";
+import { Activity, BadgeDollarSign, ClipboardCheck, BarChart3, Building2, CalendarClock, Ear, Layers, Leaf, Pill, Scissors, ScrollText, Smile, Sparkles, Stethoscope, Store, Users, Globe, type LucideIcon } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import type { ReactNode } from "react";
+
+import { adminSignupCount } from "../../api/onboarding";
 
 import { AppShell, type NavItem } from "../../layouts/AppShell";
 import { useBusinessTypes } from "./BusinessTypesPage";
@@ -13,7 +16,10 @@ const ICONS: Record<string, LucideIcon> = {
 
 export function SuperAdminShell({ children }: { children: ReactNode }) {
   const types = useBusinessTypes();
+  // Yangi arizalar soni — har daqiqada yangilanadi
+  const pending = useQuery({ queryKey: ["signup-count"], queryFn: adminSignupCount, refetchInterval: 60_000 });
   const nav: NavItem[] = [
+    { to: "/superadmin/arizalar", label: t("Arizalar"), icon: ClipboardCheck, badge: pending.data?.pending || undefined },
     { to: "/superadmin/statistika", label: t("Statistika"), icon: BarChart3 },
     { to: "/superadmin/analitika", label: t("Analitika"), icon: Activity },
     { to: "/superadmin", label: t("Muassasalar"), icon: Building2, end: true,

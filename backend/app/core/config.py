@@ -83,6 +83,12 @@ class Settings(BaseSettings):
     auto_sms_enabled: bool = False
     # Mobil ilovada (X-Chronix-Client: mobile) ko'rinmaydigan muassasa turlari, vergul bilan; bo'sh — hammasi ko'rinadi
     mobile_hidden_kinds: str = ""          # masalan "clinic"; egasi qarori (2026-11-24): klinikalar ilovada QOLADI
+    # O'zi ro'yxatdan o'tgan muassasa: Super Admin tasdiqlagach bepul sinov (sql/070). Worker eslatma va o'chirishni
+    # TRIAL_DRY_RUN=false bo'lmaguncha faqat jurnalga yozadi. TRIAL_DAY_SECONDS — sinov uchun "kun" uzunligi.
+    trial_days: int = 5
+    trial_dry_run: bool = True
+    trial_sms_enabled: bool = False           # Eskiz'da matn moderatsiyadan o'tgach
+    trial_day_seconds: int = 86400
     eskiz_email: str | None = None
     eskiz_password: SecretStr | None = None
     eskiz_from: str = "4546"

@@ -140,7 +140,7 @@ export function uploadFile<T>(path: string, file: File): Promise<T> {
   return api<T>(path, { method: "POST", body: form });
 }
 
-async function publicPost<T>(path: string, body: unknown): Promise<T> {
+export async function publicPost<T>(path: string, body: unknown): Promise<T> {
   const res = await fetch(BASE + path, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -198,4 +198,11 @@ export async function logout() {
       body: JSON.stringify({ refresh_token: token }),
     }).catch(() => {});
   }
+}
+
+/** Kirmagan foydalanuvchi uchun ochiq GET (ro'yxatdan o'tish: viloyatlar, yo'nalishlar) */
+export async function publicGet<T>(path: string): Promise<T> {
+  const res = await fetch(BASE + path);
+  if (!res.ok) throw await parseError(res);
+  return res.json();
 }

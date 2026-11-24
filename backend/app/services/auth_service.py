@@ -696,3 +696,92 @@ def _revoke_family(db: Session, family_id: uuid.UUID) -> None:
     db.execute(update(RefreshToken)
                .where(RefreshToken.family_id == family_id, RefreshToken.revoked_at.is_(None))
                .values(revoked_at=_now()))
+
+
+# ─── Direktorning o'zi ro'yxatdan o'tishi (sql/070_business_signup.sql) ──────────────────────
+# 1) Telegram bot raqamni tasdiqlaydi (kirishdagi kabi /telegram/start) — 2) signup_poll bir martalik so'rovni
+# ishlatib, 30 daqiqalik imzolangan signup_token beradi (sessiya ochilmaydi) — 3) signup_account hisobni
+# yaratadi yoki mavjudiga kiradi, parolni o'rnatadi/tekshiradi va tokenlar beradi; muassasa — app.self_signup.
+SIGNUP_TOKEN_MINUTES = 30
+
+
+@dataclass
+class SignupVerified:
+    token: str
+    phone: str
+    full_name: str
+    exists: bool              # bu raqam bilan hisob bor (mijoz yoki boshqa)
+    has_password: bool        # o'z paroli bor — ro'yxatdan o'tishda o'sha parol so'raladi
+
+
+def signup_poll(db: Session, nonce: str) -> SignupVerified | None:
+    """None — bot hali raqamni olmadi. Tayyor bo'lsa so'rov ishlatiladi (bir martalik)."""
+    row = db.execute(text("""
+        SELECT id, status, phone, full_name, tg_user_id, tg_chat_id, expires_at > now() AS alive
+          FROM telegram_logins WHERE nonce_hash = :h FOR UPDATE
+    """), {"h": security.hash_token(nonce)}).mappings().first()
+    if row is None or row["status"] == "used" or (row["status"] == "pending" and not row["alive"]):
+        db.rollback()
+        raise AuthError("login_expired", "Tasdiqlash so'rovi eskirgan. Qaytadan urinib ko'ring")
+    if row["status"] == "pending":
+        db.rollback()
+        return None
+    db.execute(text("UPDATE telegram_logins SET status = 'used' WHERE id = :i"), {"i": row["id"]})
+    user = db.scalars(select(User).where(User.phone == row["phone"])).first()
+    if user is not None and user.is_superadmin:
+        db.commit()
+        raise Forbidden("superadmin_signup", "Super Admin raqami bilan muassasa ro'yxatdan o'tkazib bo'lmaydi")
+    if user is not None:
+        _ensure_can_login(user)
+        if db.scalar(text("SELECT app.user_has_business(:u)"), {"u": user.id}):
+            db.commit()
+            raise Forbidden("already_member", "Bu raqam allaqachon muassasaga bog'langan. Kirish sahifasidan kiring")
+    db.commit()
+    s = get_settings()
+    now = _now()
+    token = jwt.encode({"typ": "signup", "phone": row["phone"], "name": row["full_name"] or "",
+                        "tgu": row["tg_user_id"], "tgc": row["tg_chat_id"], "iss": s.jwt_issuer, "iat": now,
+                        "exp": now + timedelta(minutes=SIGNUP_TOKEN_MINUTES)},
+                       s.jwt_secret.get_secret_value(), algorithm="HS256")
+    return SignupVerified(token, row["phone"], row["full_name"] or "", user is not None,
+                          bool(user and user.password_hash and not user.must_change_password))
+
+
+def _decode_signup_token(token: str) -> dict:
+    s = get_settings()
+    try:
+        c = jwt.decode(token, s.jwt_secret.get_secret_value(), algorithms=["HS256"], issuer=s.jwt_issuer)
+    except jwt.PyJWTError:
+        raise AuthError("signup_expired", "Ro'yxatdan o'tish muddati o'tdi. Telefonni qaytadan tasdiqlang") from None
+    if c.get("typ") != "signup" or not c.get("phone"):
+        raise AuthError("signup_expired", "Ro'yxatdan o'tish muddati o'tdi. Telefonni qaytadan tasdiqlang")
+    return c
+
+
+def signup_account(db: Session, token: str, full_name: str, password: str, user_agent: str | None,
+                   ip: str | None) -> tuple[User, TokenPair, bool]:
+    """Telefoni tasdiqlangan direktor: yangi hisob (parol bilan) yoki mavjud hisob (o'z paroli tekshiriladi)."""
+    c = _decode_signup_token(token)
+    security.validate_password_strength(password)
+    existing = db.scalars(select(User).where(User.phone == c["phone"])).first()
+    if existing is not None:
+        if existing.is_superadmin:
+            raise Forbidden("superadmin_signup", "Super Admin raqami bilan muassasa ro'yxatdan o'tkazib bo'lmaydi")
+        if db.scalar(text("SELECT app.user_has_business(:u)"), {"u": existing.id}):
+            raise Forbidden("already_member", "Bu raqam allaqachon muassasaga bog'langan. Kirish sahifasidan kiring")
+        own = existing.password_hash and not existing.must_change_password
+        if own and not security.verify_password(password, existing.password_hash):
+            raise AuthError("invalid_credentials", "Bu raqamning paroli bor — o'sha parolni kiriting")
+    tg = (c.get("tgu"), c.get("tgc")) if c.get("tgu") else None
+    user, tokens, is_new = _login_verified_phone(db, c["phone"], full_name, user_agent, ip, password=password,
+                                                 telegram=tg)
+    changed = False
+    if full_name.strip() and not (user.full_name or "").strip():
+        user.full_name, changed = full_name.strip()[:120], True
+    if not user.password_hash:                                 # mavjud mijozda parol yo'q edi
+        user.password_hash = security.hash_password(password)
+        user.password_changed_at = _now()
+        changed = True
+    if changed:
+        db.commit()
+    return user, tokens, is_new

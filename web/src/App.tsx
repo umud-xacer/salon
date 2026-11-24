@@ -1,10 +1,11 @@
 import { lazy, Suspense } from "react";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 
 import { useAuth } from "./auth/AuthProvider";
 import { Spinner } from "./components/ui";
 import { BusinessPanel, LegacyPanelRedirect } from "./pages/BusinessPanel";
 import { LoginPage } from "./pages/LoginPage";
+import { SignupPage } from "./pages/SignupPage";
 import { ClientOnlyPage, ForcePasswordPage } from "./pages/Notices";
 
 // Xarita kutubxonasi og'ir: faqat Super Admin yuklaydi
@@ -35,6 +36,9 @@ const SiteSettingsPage = lazy(() =>
 const SubscriptionsPage = lazy(() =>
   import("./modules/superadmin/SubscriptionsPage").then((m) => ({ default: m.SubscriptionsPage })),
 );
+const SignupsPage = lazy(() =>
+  import("./modules/superadmin/SignupsPage").then((m) => ({ default: m.SignupsPage })),
+);
 const SuperAdminShell = lazy(() =>
   import("./modules/superadmin/SuperAdminShell").then((m) => ({ default: m.SuperAdminShell })),
 );
@@ -46,10 +50,15 @@ function Home() {
   return first ? <Navigate to={`/${first.business_slug}`} replace /> : <ClientOnlyPage />;
 }
 
+export const SIGNUP_PATH = "/royxatdan-otish";
+
 export function App() {
   const { me, loading } = useAuth();
+  const { pathname } = useLocation();
 
   if (loading) return <Spinner />;
+  // Ro'yxatdan o'tish: kirmagan yoki hali muassasasi yo'q (mijoz) foydalanuvchi
+  if (pathname === SIGNUP_PATH && (!me || (me.workspace === "client"))) return <SignupPage />;
   if (!me) return <LoginPage />;
   if (me.user.must_change_password) return <ForcePasswordPage />;
 
@@ -66,6 +75,7 @@ export function App() {
                 <Routes>
                   <Route index element={<BusinessesPage />} />
                   <Route path="statistika" element={<StatsPage />} />
+                  <Route path="arizalar" element={<SignupsPage />} />
                   <Route path="analitika" element={<AnalyticsPage />} />
                   <Route path="direktorlar" element={<DirectorsPage />} />
                   <Route path="foydalanuvchilar" element={<Navigate to="/superadmin/direktorlar" replace />} />
