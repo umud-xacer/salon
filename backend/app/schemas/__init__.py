@@ -155,6 +155,9 @@ class TwoFactorOut(BaseModel):
     challenge: str
     expires_in: int
     resend_in: int
+    # Kod qaysi Telegramga borishi mumkin (yashirilgan raqamlar). Bir nechta bo'lsa sent=false — avval tanlanadi
+    targets: list[str] = []
+    sent: bool = True
 
 
 class TwoFactorVerifyIn(BaseModel):
@@ -164,6 +167,7 @@ class TwoFactorVerifyIn(BaseModel):
 
 class TwoFactorResendIn(BaseModel):
     challenge: str = Field(min_length=16, max_length=64)
+    target: int | None = Field(default=None, ge=0, le=9)      # TwoFactorOut.targets indeksi
 
 
 class TelegramStartIn(BaseModel):

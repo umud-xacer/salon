@@ -1459,6 +1459,9 @@ export const RU_PAGES: Record<string, string> = {
   // Super Admin 2FA
   "Ikki bosqichli tasdiqlash": "Двухэтапная проверка",
   "Telegram botingizga tasdiqlash kodi yuborildi. Kodni kiriting:": "Код подтверждения отправлен в ваш Telegram-бот. Введите код:",
+  "Tasdiqlash kodini qaysi raqamning Telegramiga yuboray?": "На Telegram какого номера отправить код подтверждения?",
+  "{a} raqamining Telegramiga kod yuborildi. Kodni kiriting:": "Код отправлен в Telegram номера {a}. Введите код:",
+  "Boshqa raqam": "Другой номер",
   "Tasdiqlash kodi": "Код подтверждения",
   "Kod amal qiladi: {a}": "Код действует: {a}",
   "Kod muddati o'tdi — yangisini so'rang": "Срок кода истёк — запросите новый",

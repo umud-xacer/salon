@@ -413,15 +413,55 @@ def _challenge_code_hash(token: str, code: str) -> str:
     return security.hash_token(f"2fa:{token}:{code}")
 
 
-def _admin_chat(db: Session, user: User) -> int:
-    chat = db.execute(text("SELECT chat_id FROM user_identities WHERE user_id = :u AND provider = 'telegram' "
-                           "AND chat_id IS NOT NULL"), {"u": user.id}).scalar()
-    if chat is None or not get_settings().telegram_login_enabled:
+def _mask_phone(phone: str) -> str:
+    """+998200035599 -> +998 ** *** 55 99 (kirish oynasida raqam to'liq ko'rinmaydi)"""
+    d = phone.lstrip("+")
+    return f"+{d[:3]} ** *** {d[-4:-2]} {d[-2:]}" if len(d) >= 7 else "***"
+
+
+def _user_telegram_chat(db: Session, user_id: int) -> int | None:
+    return db.execute(text("SELECT chat_id FROM user_identities WHERE user_id = :u AND provider = 'telegram' "
+                           "AND chat_id IS NOT NULL ORDER BY id LIMIT 1"), {"u": user_id}).scalar()
+
+
+@dataclass
+class TwoFactorTarget:
+    label: str
+    chat: int
+
+
+def _2fa_targets(db: Session, user: User) -> list[TwoFactorTarget]:
+    """Kod yuborilishi mumkin bo'lgan Telegram chatlari: Super Admin'ning o'zi (0-variant) va sozlamadagi qo'shimcha
+    raqamlar (SUPERADMIN_2FA_PHONES). Telegram bog'lanmagan raqam ro'yxatga kirmaydi."""
+    s = get_settings()
+    out: list[TwoFactorTarget] = []
+    if not s.telegram_login_enabled:
+        return out
+    own = _user_telegram_chat(db, user.id)
+    if own is not None:
+        out.append(TwoFactorTarget(_mask_phone(user.phone), own))
+    for raw in s.superadmin_2fa_phones:
+        try:
+            phone = security.normalize_phone(raw)
+        except ValueError:
+            continue
+        if phone == user.phone:
+            continue
+        uid = db.execute(text("SELECT id FROM users WHERE phone = :p AND status = 'active'"), {"p": phone}).scalar()
+        chat = _user_telegram_chat(db, uid) if uid is not None else None
+        if chat is not None and all(t.chat != chat for t in out):
+            out.append(TwoFactorTarget(_mask_phone(phone), chat))
+    return out
+
+
+def _admin_chats(db: Session, user: User) -> list[TwoFactorTarget]:
+    targets = _2fa_targets(db, user)
+    if not targets:
         db.commit()                                          # muvaffaqiyatli parol tekshiruvi (hisoblagich) saqlansin
         raise Forbidden("telegram_not_linked",
                         "Super Admin uchun Telegram bog'lanmagan. Kirish oynasida «Telegram orqali kirish» ni bir marta "
                         "bosing — bot raqamingizni tasdiqlab Telegramni bog'laydi. Keyin parol bilan qayta kiring")
-    return chat
+    return targets
 
 
 def _send_2fa(chat: int, code: str) -> None:
@@ -431,18 +471,34 @@ def _send_2fa(chat: int, code: str) -> None:
         raise SmsUnavailable("telegram_send_failed", "Telegramga kod yuborib bo'lmadi. Birozdan keyin qayta urinib ko'ring")
 
 
-def _start_2fa(db: Session, user: User, ip: str | None) -> str:
+@dataclass
+class TwoFactorStart:
+    token: str
+    targets: list[str]          # kirish oynasida tanlash uchun (yashirilgan raqamlar)
+    sent: bool                  # bitta variant — kod darhol ketdi; bir nechta — avval tanlanadi
+
+
+def _start_2fa(db: Session, user: User, ip: str | None) -> TwoFactorStart:
     s = get_settings()
-    chat = _admin_chat(db, user)
+    targets = _admin_chats(db, user)
     token = secrets.token_urlsafe(24)
+    single = len(targets) == 1
     code = f"{secrets.randbelow(10 ** 6):06d}"
-    db.execute(text("""
-        INSERT INTO login_challenges (token_hash, user_id, code_hash, expires_at, ip)
-        VALUES (:t, :u, :c, now() + make_interval(secs => :ttl), CAST(:ip AS inet))
-    """), {"t": security.hash_token(token), "u": user.id, "c": _challenge_code_hash(token, code),
-          "ttl": s.twofa_ttl_seconds, "ip": ip})
-    _send_2fa(chat, code)
-    return token
+    if single:
+        db.execute(text("""
+            INSERT INTO login_challenges (token_hash, user_id, code_hash, expires_at, ip)
+            VALUES (:t, :u, :c, now() + make_interval(secs => :ttl), CAST(:ip AS inet))
+        """), {"t": security.hash_token(token), "u": user.id, "c": _challenge_code_hash(token, code),
+              "ttl": s.twofa_ttl_seconds, "ip": ip})
+        _send_2fa(targets[0].chat, code)
+    else:
+        # Raqam tanlanmaguncha kod yo'q: muddati o'tgan tasodifiy xesh, yuborishlar 0 (birinchi tanlovda kutish yo'q)
+        db.execute(text("""
+            INSERT INTO login_challenges (token_hash, user_id, code_hash, expires_at, ip, sends, last_sent_at)
+            VALUES (:t, :u, :c, now(), CAST(:ip AS inet), 0, now() - interval '1 day')
+        """), {"t": security.hash_token(token), "u": user.id, "c": security.hash_token(secrets.token_urlsafe(24)),
+              "ip": ip})
+    return TwoFactorStart(token, [t.label for t in targets], single)
 
 
 def verify_2fa(db: Session, token: str, code: str, user_agent: str | None, ip: str | None) -> tuple[User, TokenPair]:
@@ -479,8 +535,9 @@ def verify_2fa(db: Session, token: str, code: str, user_agent: str | None, ip: s
     return user, tokens
 
 
-def resend_2fa(db: Session, token: str) -> None:
-    """Yangi kod (eski kod bekor). Noto'g'ri urinishlar hisobi saqlanadi — qayta yuborish bilan taxmin qilib bo'lmaydi."""
+def resend_2fa(db: Session, token: str, target: int | None = None) -> None:
+    """Yangi kod (eski kod bekor) — tanlangan raqam Telegramiga (target: _2fa_targets tartibidagi indeks, standart 0).
+    Noto'g'ri urinishlar hisobi saqlanadi — qayta yuborish bilan taxmin qilib bo'lmaydi."""
     s = get_settings()
     row = db.execute(text("""
         SELECT id, user_id, status, sends, last_sent_at > now() - make_interval(secs => :gap) AS too_soon,
@@ -497,7 +554,12 @@ def resend_2fa(db: Session, token: str) -> None:
         db.rollback()
         raise RateLimited("2fa_too_many", "Juda ko'p kod so'raldi. Telefon va parol bilan qaytadan kiring")
     user = db.get(User, row["user_id"])
-    chat = _admin_chat(db, user)
+    targets = _admin_chats(db, user)
+    idx = target or 0
+    if idx >= len(targets):
+        db.rollback()
+        raise AuthError("2fa_bad_target", "Bunday raqam yo'q. Ro'yxatdan tanlang")
+    chat = targets[idx].chat
     code = f"{secrets.randbelow(10 ** 6):06d}"
     db.execute(text("""
         UPDATE login_challenges SET code_hash = :c, sends = sends + 1, last_sent_at = now(),

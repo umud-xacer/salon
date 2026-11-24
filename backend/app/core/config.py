@@ -46,6 +46,9 @@ class Settings(BaseSettings):
     twofa_lock_minutes: int = 15
     twofa_resend_seconds: int = 30
     twofa_max_sends: int = 5
+    # Kodni qo'shimcha raqamlar Telegramiga ham yuborish imkoni (kirishda tanlanadi). Raqam egasi botga bir marta
+    # Telegram orqali kirgan (chat bog'langan) bo'lishi kerak. Masalan: ["+998901234567"]
+    superadmin_2fa_phones: list[str] = []
 
     otp_ttl_seconds: int = 300
     otp_max_attempts: int = 5

@@ -84,7 +84,9 @@ export function LoginPage() {
   const [link, setLink] = useState<string | null>(null);          // Google bog'lash tokeni (15 daqiqa)
   const [tg, setTg] = useState<{ nonce: string; url: string } | null>(null);
   // Super Admin 2FA (sql/065): parol to'g'ri — kod Telegramga ketdi, token kod tasdiqlangach
-  const [twofa, setTwofa] = useState<{ challenge: string; expiresAt: number; resendAt: number } | null>(null);
+  // targets: kod qaysi Telegramga borsin (bir nechta bo'lsa avval tanlanadi — target=null); target — tanlangani
+  const [twofa, setTwofa] = useState<{ challenge: string; expiresAt: number; resendAt: number; targets: string[];
+                                       target: number | null } | null>(null);
   const [twofaCode, setTwofaCode] = useState("");
   const [now, setNow] = useState(Date.now());
   const googleBox = useRef<HTMLDivElement>(null);
@@ -100,11 +102,15 @@ export function LoginPage() {
     return () => window.clearInterval(timer);
   }, [twofa]);
 
-  const startTwofa = (r: TwoFactor) => {
+  const startTwofa = (r: TwoFactor, target?: number) => {
     const t0 = Date.now();
     setNow(t0);
     setTwofaCode("");
-    setTwofa({ challenge: r.challenge, expiresAt: t0 + r.expires_in * 1000, resendAt: t0 + r.resend_in * 1000 });
+    setTwofa((prev) => {
+      const targets = r.targets?.length ? r.targets : (prev?.targets ?? []);
+      const chosen = target ?? (r.sent === false ? null : (prev?.target ?? 0));
+      return { challenge: r.challenge, expiresAt: t0 + r.expires_in * 1000, resendAt: t0 + r.resend_in * 1000, targets, target: chosen };
+    });
   };
 
   async function confirmTwofa(e: FormEvent) {
@@ -122,12 +128,13 @@ export function LoginPage() {
     }
   }
 
-  async function resendTwofa() {
+  async function resendTwofa(target?: number) {
     if (!twofa) return;
     setBusy(true);
     setError(null);
+    const to = target ?? twofa.target ?? 0;
     try {
-      startTwofa(await twofaResend(twofa.challenge));
+      startTwofa(await twofaResend(twofa.challenge, to), to);
     } catch (err) {
       setError(err);
     } finally {
@@ -258,12 +265,37 @@ export function LoginPage() {
           </p>
         </div>
 
-        {twofa ? (
+        {twofa && twofa.target === null ? (
+          <div className="space-y-4">
+            <div className="text-center">
+              <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-full bg-gradient-to-b from-[#3AB3EA] to-[#1C93D2] text-white shadow-md"><TelegramIcon /></div>
+              <p className="text-[15px] font-semibold text-slate-900">{t("Ikki bosqichli tasdiqlash")}</p>
+              <p className="mt-1 text-sm text-slate-500">{t("Tasdiqlash kodini qaysi raqamning Telegramiga yuboray?")}</p>
+            </div>
+            <div className="space-y-2">
+              {twofa.targets.map((label, i) => (
+                <button key={i} type="button" disabled={busy} onClick={() => resendTwofa(i)}
+                  className="flex h-12 w-full items-center justify-between rounded-xl border border-slate-200 px-4 text-[15px] font-medium text-slate-800 transition hover:border-blue-400 hover:bg-blue-50 disabled:opacity-60">
+                  <span className="tracking-wide">{label}</span>
+                  <span className="text-sm text-blue-600">{t("Yuborish")}</span>
+                </button>
+              ))}
+            </div>
+            {error != null && <ErrorNote error={error} />}
+            <div className="text-sm">
+              <button type="button" onClick={() => { setTwofa(null); setError(null); }} className="text-slate-500 hover:text-slate-800">{t("Orqaga")}</button>
+            </div>
+          </div>
+        ) : twofa ? (
           <form onSubmit={confirmTwofa} className="space-y-4">
             <div className="text-center">
               <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-full bg-gradient-to-b from-[#3AB3EA] to-[#1C93D2] text-white shadow-md"><TelegramIcon /></div>
               <p className="text-[15px] font-semibold text-slate-900">{t("Ikki bosqichli tasdiqlash")}</p>
-              <p className="mt-1 text-sm text-slate-500">{t("Telegram botingizga tasdiqlash kodi yuborildi. Kodni kiriting:")}</p>
+              <p className="mt-1 text-sm text-slate-500">
+                {twofa.targets.length > 1
+                  ? t("{a} raqamining Telegramiga kod yuborildi. Kodni kiriting:", { a: twofa.targets[twofa.target ?? 0] })
+                  : t("Telegram botingizga tasdiqlash kodi yuborildi. Kodni kiriting:")}
+              </p>
             </div>
             <input className={`${input} text-center text-2xl font-semibold tracking-[0.5em]`} inputMode="numeric"
               autoComplete="one-time-code" autoFocus maxLength={6} pattern="\d{6}" required aria-label={t("Tasdiqlash kodi")}
@@ -280,7 +312,11 @@ export function LoginPage() {
             </button>
             <div className="flex items-center justify-between text-sm">
               <button type="button" onClick={() => { setTwofa(null); setError(null); }} className="text-slate-500 hover:text-slate-800">{t("Orqaga")}</button>
-              <button type="button" onClick={resendTwofa} disabled={busy || twofa.resendAt > now}
+              {twofa.targets.length > 1 && (
+                <button type="button" onClick={() => { setTwofa({ ...twofa, target: null }); setError(null); }}
+                  className="text-slate-500 hover:text-slate-800">{t("Boshqa raqam")}</button>
+              )}
+              <button type="button" onClick={() => resendTwofa()} disabled={busy || twofa.resendAt > now}
                 className="font-medium text-blue-600 hover:underline disabled:cursor-not-allowed disabled:text-slate-400 disabled:no-underline">
                 {twofa.resendAt > now ? t("Qayta yuborish ({a} s)", { a: Math.ceil((twofa.resendAt - now) / 1000) }) : t("Kodni qaytadan yuborish")}
               </button>

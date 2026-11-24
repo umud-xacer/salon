@@ -88,7 +88,8 @@ def login(body: PasswordLogin, request: Request, db: Session = Depends(get_auth_
                                                 panel_check=lambda sa: check_panel(request, sa))
     if tokens is None:
         s = get_settings()
-        return TwoFactorOut(challenge=first, expires_in=s.twofa_ttl_seconds, resend_in=s.twofa_resend_seconds)
+        return TwoFactorOut(challenge=first.token, expires_in=s.twofa_ttl_seconds,
+                            resend_in=s.twofa_resend_seconds if first.sent else 0, targets=first.targets, sent=first.sent)
     check_panel(request, first.is_superadmin)       # noto'g'ri panel — tokenlar berilmaydi
     return _login_out(first, tokens)
 
@@ -104,7 +105,7 @@ def twofa_verify(body: TwoFactorVerifyIn, request: Request, db: Session = Depend
 
 @router.post("/2fa/resend", response_model=TwoFactorOut)
 def twofa_resend(body: TwoFactorResendIn, db: Session = Depends(get_auth_db)):
-    auth_service.resend_2fa(db, body.challenge)
+    auth_service.resend_2fa(db, body.challenge, body.target)
     s = get_settings()
     return TwoFactorOut(challenge=body.challenge, expires_in=s.twofa_ttl_seconds, resend_in=s.twofa_resend_seconds)
 

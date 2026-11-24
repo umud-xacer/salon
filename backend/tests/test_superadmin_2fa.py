@@ -135,3 +135,45 @@ def test_other_ways_closed_for_superadmin(client, twofa, bot, monkeypatch, owner
 def test_challenges_hidden_from_app_role(client, twofa):
     with api_session(twofa) as db, pytest.raises(DBAPIError):
         db.execute(text("SELECT count(*) FROM login_challenges")).scalar()
+
+
+def link_other(client, phone):
+    """Boshqa raqam egasi botga Telegram orqali bir marta kiradi — chat bog'lanadi."""
+    s = start(client)
+    tg = next(_tg_ids)
+    client.post(f"{API}/telegram/webhook", headers=HDR, json=tg_update(tg, text_=f"/start {s['nonce']}"))
+    client.post(f"{API}/telegram/webhook", headers=HDR, json=tg_update(tg, contact={
+        "phone_number": phone.lstrip("+"), "user_id": tg, "first_name": "Ikkinchi"}))
+    client.post(f"{API}/auth/telegram/poll", json={"nonce": s["nonce"]})
+    return tg
+
+
+def test_choose_which_telegram_gets_code(client, twofa, bot, monkeypatch):
+    """SUPERADMIN_2FA_PHONES: kirishda kod qaysi raqam Telegramiga borishi tanlanadi (login o'zi yubormaydi)."""
+    _, own_tg = link_telegram(client)
+    extra = "+998200104666"
+    other_tg = link_other(client, extra)
+    monkeypatch.setattr(get_settings(), "superadmin_2fa_phones", [extra, "+998901112233", "noto'g'ri"])
+
+    sent = len(bot)
+    r = login(client)
+    assert r.status_code == 200, r.text
+    ch = r.json()
+    # Telegram bog'lanmagan raqam va noto'g'ri yozuv ro'yxatga kirmaydi; raqamlar yashirilgan
+    assert ch["sent"] is False and ch["targets"] == ["+998 ** *** 00 01", "+998 ** *** 46 66"] and ch["resend_in"] == 0
+    assert len(bot) == sent                                  # tanlanmaguncha kod yo'q
+    # Tanlovsiz kod kiritib bo'lmaydi
+    r = client.post(f"{API}/auth/2fa/verify", json={"challenge": ch["challenge"], "code": "123456"})
+    assert r.status_code == 401
+
+    assert client.post(f"{API}/auth/2fa/resend", json={"challenge": ch["challenge"], "target": 5}).status_code == 401
+    r = client.post(f"{API}/auth/2fa/resend", json={"challenge": ch["challenge"], "target": 1})
+    assert r.status_code == 200, r.text
+    assert bot[-1][0] == other_tg and bot[-1][0] != own_tg and "Super Admin" in bot[-1][1]
+    r = client.post(f"{API}/auth/2fa/verify", json={"challenge": ch["challenge"], "code": code_from(bot)})
+    assert r.status_code == 200 and r.json()["user"]["is_superadmin"] is True
+
+    # Sozlama bo'sh — avvalgidek: kod darhol o'zining Telegramiga
+    monkeypatch.setattr(get_settings(), "superadmin_2fa_phones", [])
+    ch = login(client).json()
+    assert ch["sent"] is True and len(ch["targets"]) == 1 and bot[-1][0] == own_tg
