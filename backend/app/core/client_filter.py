@@ -2,7 +2,7 @@
 
 Play shaxsiy hisobdan tibbiy funksiyali ilovani qabul qilmadi (faqat tashkilot hisobi). Shuning uchun mobil ilova
 (1.0.3+) har so'rovda `X-Chronix-Client: mobile` sarlavhasini yuboradi va server shu so'rovlarda
-MOBILE_HIDDEN_KINDS (standart "clinic" — stomatologiya, LOR, klinika) turidagi muassasalarni katalogdan chiqarmaydi.
+MOBILE_HIDDEN_KINDS (masalan "clinic"; standart BO'SH — egasi klinikalarni qoldirishga qaror qildi) turidagi muassasalarni katalogdan chiqarmaydi.
 Veb-sayt, panel va eski ilova (1.0.2) sarlavha yubormaydi — ular uchun hech narsa o'zgarmaydi.
 
 Qaytarish: serverda MOBILE_HIDDEN_KINDS= (bo'sh) — yangi build kerak emas.

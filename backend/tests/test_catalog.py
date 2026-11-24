@@ -142,7 +142,9 @@ MOBILE = {"X-Chronix-Client": "mobile"}
 
 
 def test_mobile_client_hides_clinic_kind(client, city, superadmin, monkeypatch):
-    """Google Play (2026-11-24): mobil ilova (X-Chronix-Client: mobile) klinika turini ko'rmaydi; veb — ko'radi."""
+    """MOBILE_HIDDEN_KINDS=clinic bo'lsa mobil ilova (X-Chronix-Client: mobile) klinika turini ko'rmaydi; veb — ko'radi."""
+    from app.core.config import get_settings
+    monkeypatch.setattr(get_settings(), "mobile_hidden_kinds", "clinic")
     cats = client.get(f"{API}/categories").json()
     dental = next(c for c in cats if c["slug"] == "dental")
     assert dental["kind"] == "clinic"
@@ -176,6 +178,5 @@ def test_mobile_client_hides_clinic_kind(client, city, superadmin, monkeypatch):
 
     # Boshqa sarlavha qiymati yoki bo'sh sozlama — hech narsa yashirilmaydi
     assert client.get(f"{API}/businesses/{tooth['slug']}", headers={"X-Chronix-Client": "web"}).status_code == 200
-    from app.core.config import get_settings
     monkeypatch.setattr(get_settings(), "mobile_hidden_kinds", "")
     assert client.get(f"{API}/businesses/{tooth['slug']}", headers=MOBILE).status_code == 200

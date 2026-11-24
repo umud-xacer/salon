@@ -79,7 +79,7 @@ class Settings(BaseSettings):
     # shu matnlar moderatsiyadan o'tishi kerak (sql/069). false — SMS umuman yuborilmaydi, muassasa sozlamasi kutadi
     auto_sms_enabled: bool = False
     # Mobil ilovada (X-Chronix-Client: mobile) ko'rinmaydigan muassasa turlari, vergul bilan; bo'sh — hammasi ko'rinadi
-    mobile_hidden_kinds: str = "clinic"
+    mobile_hidden_kinds: str = ""          # masalan "clinic"; egasi qarori (2026-11-24): klinikalar ilovada QOLADI
     eskiz_email: str | None = None
     eskiz_password: SecretStr | None = None
     eskiz_from: str = "4546"
