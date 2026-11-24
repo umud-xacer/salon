@@ -1462,6 +1462,8 @@ export const RU_PAGES: Record<string, string> = {
   "Tasdiqlash kodini qaysi raqamning Telegramiga yuboray?": "На Telegram какого номера отправить код подтверждения?",
   "{a} raqamining Telegramiga kod yuborildi. Kodni kiriting:": "Код отправлен в Telegram номера {a}. Введите код:",
   "Boshqa raqam": "Другой номер",
+  "Panelning yangi versiyasi chiqdi": "Вышла новая версия панели",
+  "Yangilash": "Обновить",
   "{a} s": "{a} с",
   "Tasdiqlash kodi": "Код подтверждения",
   "Kod amal qiladi: {a}": "Код действует: {a}",
