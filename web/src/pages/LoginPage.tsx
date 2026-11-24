@@ -274,10 +274,12 @@ export function LoginPage() {
             </div>
             <div className="space-y-2">
               {twofa.targets.map((label, i) => (
-                <button key={i} type="button" disabled={busy} onClick={() => resendTwofa(i)}
+                <button key={i} type="button" disabled={busy || twofa.resendAt > now} onClick={() => resendTwofa(i)}
                   className="flex h-12 w-full items-center justify-between rounded-xl border border-slate-200 px-4 text-[15px] font-medium text-slate-800 transition hover:border-blue-400 hover:bg-blue-50 disabled:opacity-60">
                   <span className="tracking-wide">{label}</span>
-                  <span className="text-sm text-blue-600">{t("Yuborish")}</span>
+                  <span className="text-sm text-blue-600">
+                    {twofa.resendAt > now ? t("{a} s", { a: Math.ceil((twofa.resendAt - now) / 1000) }) : t("Yuborish")}
+                  </span>
                 </button>
               ))}
             </div>

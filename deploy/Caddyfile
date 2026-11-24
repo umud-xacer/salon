@@ -97,6 +97,12 @@
 		header @assets Cache-Control "public, max-age=31536000, immutable"
 		@pages not path /assets/*
 		header @pages Cache-Control "no-cache"
+		# Yo'q fayl (kengaytmali: .json, .txt, .xml ...) — 404, SPA sahifasi emas (masalan /ai-catalog.json)
+		@missingfile {
+			path_regexp \.[A-Za-z0-9]{1,8}$
+			not file
+		}
+		respond @missingfile 404
 		# /privacy, /hisobni-ochirish — statik sahifalar (market/public/<nom>/index.html); qolgani — SPA
 		try_files {path} {path}/index.html /index.html
 		file_server
