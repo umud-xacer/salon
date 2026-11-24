@@ -70,6 +70,8 @@ export async function api<T = void>(path: string, { method = 'GET', body }: Opti
     fetch(`${BASE}${path}`, {
       method,
       headers: {
+        // Server mobil ilovada vaqtincha yashirilgan turlarni (klinikalar) katalogdan chiqarmaydi — backend client_filter.py
+        'X-Chronix-Client': 'mobile',
         ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
         ...(access ? { Authorization: `Bearer ${access}` } : {}),
       },

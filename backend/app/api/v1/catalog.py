@@ -56,8 +56,11 @@ _SORTS = {
 _PUBLIC_WHERE = (
     "b.status = 'active' AND b.is_listed AND b.location IS NOT NULL"
     " AND app.has_public_offer(b.id)"            # faol xizmat yoki (dorixona) katalogdagi dori
-    " AND EXISTS (SELECT 1 FROM business_categories c0 WHERE c0.id = b.category_id AND c0.is_active)"
+    " AND EXISTS (SELECT 1 FROM business_categories c0 WHERE c0.id = b.category_id AND c0.is_active"
+    "             AND c0.kind <> ALL (coalesce(string_to_array(nullif(current_setting('app.hidden_kinds', true), ''), ','), '{}')))"
 )
+# Mobil ilova (X-Chronix-Client: mobile) uchun yashirilgan turlar — app/core/client_filter.py.
+# O'rnatilmagan yoki bo'sh bo'lsa — '{}' va "<> ALL '{}'" rost: hech narsa yashirilmaydi (NULL hammasini yashirardi).
 
 
 # x — tarmoqdagi boshqa muassasa (filial) uchun o'sha ochiqlik shartlari
@@ -111,6 +114,7 @@ def public_plans(response: Response, db: Session = Depends(get_public_db)):
 def categories(db: Session = Depends(get_public_db)):
     def load():
         rows = db.execute(text("SELECT id, slug, name_uz, name_ru, icon, kind FROM business_categories WHERE is_active "
+                               "AND kind <> ALL (coalesce(string_to_array(nullif(current_setting('app.hidden_kinds', true), ''), ','), '{}')) "
                                "ORDER BY sort_order, id"))
         return [CategoryOut(**r) for r in rows.mappings()]
     return public_cache.get_or_set(("categories",), ttl(10), load)

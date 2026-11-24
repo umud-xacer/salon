@@ -14,6 +14,7 @@ import time
 from collections import OrderedDict
 from typing import Callable, Hashable, TypeVar
 
+from app.core.client_filter import hidden_kinds
 from app.core.config import get_settings
 
 T = TypeVar("T")
@@ -39,6 +40,9 @@ class TTLCache:
     def get_or_set(self, key: Hashable, ttl: float, compute: Callable[[], T]) -> T:
         if ttl <= 0:
             return compute()
+        hidden = hidden_kinds.get()
+        if hidden:                                           # mobil ilova natijasi veb keshi bilan aralashmasin
+            key = ("hidden", hidden, key)
         with self._lock:
             ok, value = self._fresh(key)
             if ok:

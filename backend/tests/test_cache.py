@@ -78,3 +78,18 @@ def test_hot_slots_same_result_with_cache(client, superadmin, cache_on, monkeypa
     assert cached == plain
     assert client.get("/api/v1/catalog/hot-slots", params=p).json() == plain       # endi keshdan
     assert ("hot-business", biz["id"]) in public_cache._data
+
+
+def test_mobile_and_web_cache_keys_are_separate():
+    """X-Chronix-Client: mobile natijasi (klinikasiz) veb keshiga tushmasin va aksincha."""
+    from app.core.cache import TTLCache
+    from app.core.client_filter import hidden_kinds
+    c = TTLCache()
+    assert c.get_or_set(("k",), 60, lambda: "web") == "web"
+    token = hidden_kinds.set(("clinic",))
+    try:
+        assert c.get_or_set(("k",), 60, lambda: "mobile") == "mobile"
+        assert c.get_or_set(("k",), 60, lambda: "x") == "mobile"
+    finally:
+        hidden_kinds.reset(token)
+    assert c.get_or_set(("k",), 60, lambda: "x") == "web"

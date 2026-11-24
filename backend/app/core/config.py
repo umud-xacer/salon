@@ -78,6 +78,8 @@ class Settings(BaseSettings):
     # Avtomatik xabarlar (tug'ilgan kun, qaytarish) ilovasiz mijozlarga SMS bilan. Yoqishdan oldin Eskiz'da
     # shu matnlar moderatsiyadan o'tishi kerak (sql/069). false — SMS umuman yuborilmaydi, muassasa sozlamasi kutadi
     auto_sms_enabled: bool = False
+    # Mobil ilovada (X-Chronix-Client: mobile) ko'rinmaydigan muassasa turlari, vergul bilan; bo'sh — hammasi ko'rinadi
+    mobile_hidden_kinds: str = "clinic"
     eskiz_email: str | None = None
     eskiz_password: SecretStr | None = None
     eskiz_from: str = "4546"

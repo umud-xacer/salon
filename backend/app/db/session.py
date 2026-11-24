@@ -9,6 +9,7 @@ from functools import lru_cache
 from sqlalchemy import create_engine, event, text
 from sqlalchemy.orm import Session, sessionmaker
 
+from app.core.client_filter import hidden_kinds
 from app.core.config import get_settings
 
 # Yuklama sinovi (2026-11-18): so'rov endpointni tugatgach ham ulanishni ushlab turadi — sessiyani yopish (sync
@@ -55,6 +56,8 @@ def _set_rls_user(session: Session, transaction, connection):
         text("SELECT set_config('app.user_id', :uid, true)"),
         {"uid": str(uid) if uid else ""},
     )
+    # Mobil ilovada yashirilgan muassasa turlari (app/core/client_filter.py) — catalog._PUBLIC_WHERE o'qiydi
+    connection.execute(text("SELECT set_config('app.hidden_kinds', :k, true)"), {"k": ",".join(hidden_kinds.get())})
 
 
 def api_session(user_id: int | None) -> Session:

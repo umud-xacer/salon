@@ -136,3 +136,46 @@ def test_catalog_needs_no_login_and_ignores_token(client, city, superadmin):
     r = client.get(f"{API}/businesses/{city['hidden']['slug']}", headers=auth_header(superadmin))
     assert r.status_code == 404
     assert client.get(f"{API}/categories").status_code == 200
+
+
+MOBILE = {"X-Chronix-Client": "mobile"}
+
+
+def test_mobile_client_hides_clinic_kind(client, city, superadmin, monkeypatch):
+    """Google Play (2026-11-24): mobil ilova (X-Chronix-Client: mobile) klinika turini ko'rmaydi; veb — ko'radi."""
+    cats = client.get(f"{API}/categories").json()
+    dental = next(c for c in cats if c["slug"] == "dental")
+    assert dental["kind"] == "clinic"
+    tooth = create_business(client, superadmin, lat=LAT + 2 * KM, lng=LNG, name="Tish Klinikasi",
+                            category_id=dental["id"])
+    client.post(f"/api/v1/businesses/{tooth['id']}/services", headers=auth_header(tooth["owner"]),
+                json={"name": "Ko'rik", "duration_min": 30, "price": 100000})
+
+    params = {"lat": LAT, "lng": LNG, "radius_m": 10000}
+    web = {b["name"] for b in client.get(f"{API}/businesses/nearby", params=params).json()["items"]}
+    assert "Tish Klinikasi" in web
+    app_items = client.get(f"{API}/businesses/nearby", params=params, headers=MOBILE).json()
+    names = {b["name"] for b in app_items["items"]}
+    assert "Tish Klinikasi" not in names and "Yaqin Barber" in names
+    assert app_items["total"] == len(names)
+
+    # Kategoriyalar, xarita, sahifa, filiallar soni
+    assert all(c["kind"] != "clinic" for c in client.get(f"{API}/categories", headers=MOBILE).json())
+    assert any(c["kind"] == "clinic" for c in client.get(f"{API}/categories").json())
+    box = {"sw_lat": LAT, "sw_lng": LNG - 0.01, "ne_lat": LAT + 3 * KM, "ne_lng": LNG + 0.01}
+    assert "Tish Klinikasi" not in {b["name"] for b in client.get(f"{API}/businesses/in-bounds", params=box,
+                                                                   headers=MOBILE).json()}
+    assert "Tish Klinikasi" in {b["name"] for b in client.get(f"{API}/businesses/in-bounds", params=box).json()}
+    assert client.get(f"{API}/businesses/{tooth['slug']}", headers=MOBILE).status_code == 404
+    assert client.get(f"{API}/businesses/{tooth['slug']}").status_code == 200
+
+    # Sevimlilarga ham qo'shib bo'lmaydi (mobil)
+    user = city["barber"]["tokens"]
+    assert client.put(f"/api/v1/me/favorites/{tooth['id']}",
+                      headers={**auth_header(user), **MOBILE}).status_code == 404
+
+    # Boshqa sarlavha qiymati yoki bo'sh sozlama — hech narsa yashirilmaydi
+    assert client.get(f"{API}/businesses/{tooth['slug']}", headers={"X-Chronix-Client": "web"}).status_code == 200
+    from app.core.config import get_settings
+    monkeypatch.setattr(get_settings(), "mobile_hidden_kinds", "")
+    assert client.get(f"{API}/businesses/{tooth['slug']}", headers=MOBILE).status_code == 200
