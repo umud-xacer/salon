@@ -2,7 +2,7 @@
   "expo": {
     "name": "Chronix",
     "slug": "chronix",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -81,6 +81,7 @@
         }
       ],
       "./plugins/with-alarm-activity.js",
+      "./plugins/with-optional-screen-features.js",
       [
         "expo-splash-screen",
         {
