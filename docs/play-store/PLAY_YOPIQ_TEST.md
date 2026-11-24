@@ -12,10 +12,14 @@ Sinovchilar havolasi (reliz tasdiqlangach ishlaydi): https://play.google.com/app
 | Maxfiylik siyosati, reklama (yo'q), yosh reytingi (IARC) | ✅ |
 | Davlat ilovasi — yo'q, moliya — yo'q, sog'liq — "Медицинские услуги", Ad ID — yo'q, sotuvchi maqomi — ha | ✅ |
 | Ma'lumotlar xavfsizligi (12 tur) | ✅ |
-| **Учетные данные** (tekshiruvchi uchun login) | ⏳ egasi o'zi kiritadi |
-| **Целевая аудитория** | ⏳ "Учетные данные" dan keyin |
-| .aab yuklash + yopiq test relizi | ⏳ |
-| App signing SHA-1 → Google Cloud | ⏳ reliz yaratilgach |
+| **Учетные данные** (tekshiruvchi uchun login) | ✅ egasi kiritdi |
+| **Целевая аудитория** (16–17, 18+) | ✅ |
+| Kategoriya "Красота", aloqa: chronixuz@gmail.com, https://chronix.uz | ✅ 2026-11-24 |
+| .aab (1.0.2, versionCode 5) + Alpha relizi | ✅ 2026-11-24 Google tekshiruviga yuborildi (16 o'zgarish) |
+| App signing SHA-1 → Google Cloud | ✅ 2026-11-24 Android client "Chronix Play" (SHA-1 `F2:69:06:00:3B:E3:76:7E:69:1F:11:23:04:47:37:B7:42:C3:A7:DB`) |
+
+Eslatma: Play "android.hardware.screen.portrait" ogohlantirishini berdi (ilova faqat vertikal) — "Продолжить все равно"
+bilan o'tkazildi. Keyingi build'da kerak bo'lsa manifestda `required="false"` qilinadi; telefonlar uchun ta'sir yo'q.
 
 ## 1. "Учетные данные" (faqat egasi kiritadi — parol)
 
