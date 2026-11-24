@@ -6,12 +6,13 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { RefreshControl, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { api, ApiError, BusinessCard, Category } from '../../src/api';
+import { api, ApiError, BusinessCard } from '../../src/api';
 import { categoryIcon, categoryShort } from '../../src/categories';
 import { getLang, pick, t } from '../../src/i18n';
 import { getInterests } from '../../src/interests';
 import { getRecent } from '../../src/recent';
 import { useMyLocation } from '../../src/location';
+import { useCategories } from '../../src/useCategories';
 import { SalonCard, SalonCardBig } from '../../src/SalonCard';
 import { EmptyState, ErrorText, Icon, IconName, makeStyles, Pressy, useTabSpace, useTheme } from '../../src/ui';
 
@@ -50,7 +51,7 @@ export default function Home() {
   const { coords, place } = useMyLocation();
   const [near, setNear] = useState<BusinessCard[]>([]);
   const [top, setTop] = useState<BusinessCard[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const { categories: allCategories, reload: reloadCategories } = useCategories();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [recent, setRecent] = useState<BusinessCard[]>([]);
@@ -59,12 +60,11 @@ export default function Home() {
     setRecent(getRecent());
   }, []));
 
-  useEffect(() => {
-    api<Category[]>('/catalog/categories').then((list) => {
-      const liked = getInterests();
-      setCategories([...list].sort((a, b) => Number(liked.includes(b.slug)) - Number(liked.includes(a.slug))));
-    }).catch(() => {});
-  }, []);
+  // Yo'nalishlar hududga bog'liq emas: muassasa yo'q viloyatda ham hammasi ko'rinadi (qiziqishlar birinchi)
+  const categories = useMemo(() => {
+    const liked = getInterests();
+    return [...allCategories].sort((a, b) => Number(liked.includes(b.slug)) - Number(liked.includes(a.slug)));
+  }, [allCategories]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -100,7 +100,7 @@ export default function Home() {
   return (
     <ScrollView style={{ flex: 1, backgroundColor: c.bg }} showsVerticalScrollIndicator={false}
       contentContainerStyle={{ paddingTop: insets.top + 6, paddingBottom: tabSpace }}
-      refreshControl={<RefreshControl refreshing={loading} tintColor={c.accent} onRefresh={() => { void load(); }} />}>
+      refreshControl={<RefreshControl refreshing={loading} tintColor={c.accent} onRefresh={() => { void load(); void reloadCategories(); }} />}>
       <Pressy onPress={() => router.navigate('/map')} style={s.loc} accessibilityRole="button"
         accessibilityLabel={t("Joylashuv: {a}", { a: place })}>
         <Icon name="location" size={20} color={c.accent} />
@@ -161,7 +161,8 @@ export default function Home() {
           </View>
         </>
       ) : !loading && (
-        <EmptyState icon="storefront-outline" title={t("Yaqin atrofda muassasa yo'q")} text={t("Hududingizdagi muassasalar tez orada qo'shiladi")} />
+        <EmptyState icon="storefront-outline" title={t("Yaqin atrofda muassasa yo'q")} text={t("Hududingizdagi muassasalar tez orada qo'shiladi")}
+          action={t("Boshqa hududdagi muassasalar")} onAction={() => router.push('/search')} />
       )}
     </ScrollView>
   );

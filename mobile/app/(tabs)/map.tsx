@@ -7,9 +7,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, PanResponder, Pressable, ScrollView, ScrollViewInstance, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { api, ApiError, BusinessCard, Category } from '../../src/api';
+import { api, ApiError, BusinessCard } from '../../src/api';
 import { pick, t } from '../../src/i18n';
 import { locate, useMyLocation } from '../../src/location';
+import { useCategories } from '../../src/useCategories';
 import { MapPreview } from '../../src/MapPreview';
 import { Bounds, OsmMap } from '../../src/OsmMap';
 import { SalonCardBig } from '../../src/SalonCard';
@@ -25,7 +26,7 @@ export default function SearchTab() {
   const s = useStyles();
   const { coords, me } = useMyLocation();
   const [items, setItems] = useState<BusinessCard[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const { categories } = useCategories();
   const [category, setCategory] = useState<string | null>(null);
   const [hint, setHint] = useState<string | null>(null);
   const [yandexKey, setYandexKey] = useState<string | null>(null);
@@ -53,7 +54,6 @@ export default function SearchTab() {
   })).current;
 
   useEffect(() => {
-    api<Category[]>('/catalog/categories').then(setCategories).catch(() => {});
     api<{ yandex_maps_key: string | null }>('/catalog/app-info').then((r) => setYandexKey(r.yandex_maps_key)).catch(() => {});
   }, []);
 

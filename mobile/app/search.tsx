@@ -5,11 +5,13 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, ScrollView, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { api, ApiError, BusinessCard, Category } from '../src/api';
+import { api, ApiError, BusinessCard } from '../src/api';
 import { categoryIcon } from '../src/categories';
 import { useFavorites } from '../src/favorites';
 import { pick, t } from '../src/i18n';
-import { useMyLocation } from '../src/location';
+import { distanceM } from '../src/lastLocation';
+import { TASHKENT, useMyLocation } from '../src/location';
+import { useCategories } from '../src/useCategories';
 import { SalonCard } from '../src/SalonCard';
 import { Button, Chip, EmptyState, ErrorText, FadeIn, Icon, IconButton, makeStyles, money, useBottomSpace, useTheme, useType } from '../src/ui';
 
@@ -26,10 +28,14 @@ export default function Search() {
   const s = useStyles();
   const ty = useType();
   const favorites = useFavorites();
-  const { coords } = useMyLocation();
+  const { coords: myCoords } = useMyLocation();
+  // Muassasa hali yo'q hududda: "Toshkentdagi natijalar" — qidiruv markazi vaqtincha Toshkent
+  const [elsewhere, setElsewhere] = useState(false);
+  const coords = elsewhere ? TASHKENT : myCoords;
+  const farFromTashkent = distanceM(myCoords, TASHKENT.latitude, TASHKENT.longitude) > 50_000;
   const [q, setQ] = useState('');
   const [category, setCategory] = useState<string | null>(params.category ?? null);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const { categories } = useCategories();
   const [sort, setSort] = useState<Sort>('distance');
   const [openNow, setOpenNow] = useState(false);
   const [near, setNear] = useState(false);
@@ -37,10 +43,6 @@ export default function Search() {
   const [items, setItems] = useState<BusinessCard[] | null>(null);
   const [total, setTotal] = useState(0);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    api<Category[]>('/catalog/categories').then(setCategories).catch(() => {});
-  }, []);
 
   useEffect(() => {
     const timer = setTimeout(async () => {
@@ -76,7 +78,7 @@ export default function Search() {
   }, [category]);
 
   const reset = () => {
-    setQ(''); setCategory(null); setSort('distance'); setOpenNow(false); setNear(false); setMaxPrice(null);
+    setQ(''); setCategory(null); setSort('distance'); setOpenNow(false); setNear(false); setMaxPrice(null); setElsewhere(false);
   };
 
   const header = (
@@ -125,8 +127,33 @@ export default function Search() {
         <Text style={ty.caps}>{t("Natijalar · {a}", { a: items ? total : '…' })}</Text>
         <Text style={ty.small}>{sort === 'rating' ? t("Reyting bo'yicha") : sort === 'price' ? t("Arzonroq birinchi") : t("Yaqinroq birinchi")}</Text>
       </View>
+      {elsewhere && (
+        <View style={s.elsewhere}>
+          <Icon name="location-outline" size={18} color={c.accent} />
+          <Text style={[ty.small, { flex: 1 }]}>{t("Toshkentdagi natijalar ko'rsatilmoqda")}</Text>
+          <Chip label={t("Mening hududim")} icon="navigate-outline" active={false} onPress={() => setElsewhere(false)} />
+        </View>
+      )}
       <ErrorText text={error} />
     </View>
+  );
+
+  // Hududda hech narsa yo'q (faqat yo'nalish tanlangan, boshqa filtr yo'q) — bo'sh ekranda qolib ketmasin
+  const onlyRegionEmpty = !q.trim() && !openNow && !near && !maxPrice && !elsewhere;
+  const catName = categories.find((x) => x.slug === category);
+  const empty = onlyRegionEmpty ? (
+    <View>
+      <EmptyState icon="storefront-outline"
+        title={catName ? t("Bu hududda hali «{a}» yo'q", { a: pick(catName.name_uz, catName.name_ru) }) : t("Bu hududda hali muassasa yo'q")}
+        text={t("Muassasalar tez orada qo'shiladi. Boshqa hududni tanlang yoki boshqa shahardagi natijalarni ko'ring.")} />
+      <View style={{ gap: 10, marginTop: 4 }}>
+        {farFromTashkent && <Button title={t("Toshkentdagi natijalar")} icon="business-outline" onPress={() => setElsewhere(true)} />}
+        <Button title={t("Xaritada hududni tanlash")} icon="map-outline" kind="outline" onPress={() => router.navigate('/map')} />
+      </View>
+    </View>
+  ) : (
+    <EmptyState icon="search-outline" title={t("Hech narsa topilmadi")} text={t("Filtrlarni yumshatib ko'ring")}
+      action={t("Filtrlarni tozalash")} onAction={reset} />
   );
 
   return (
@@ -149,7 +176,7 @@ export default function Search() {
         contentContainerStyle={{ padding: 16, paddingBottom: bottom + 80 }}
         ListEmptyComponent={items === null
           ? <ActivityIndicator style={{ marginTop: 24 }} color={c.accent} />
-          : <EmptyState icon="search-outline" title={t("Hech narsa topilmadi")} text={t("Filtrlarni yumshatib ko'ring")} />}
+          : empty}
         renderItem={({ item, index }) => (
           <FadeIn delay={Math.min(index, 6) * 35}>
             <SalonCard item={item} favorite={favorites.has(item.id)} onToggleFavorite={() => favorites.toggle(item.id)}
@@ -174,6 +201,10 @@ const useStyles = makeStyles((c) => ({
     flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14,
   },
   inputText: { flex: 1, fontSize: 16, color: c.text, fontWeight: '500' },
+  elsewhere: {
+    flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 6, paddingLeft: 12, borderRadius: 16,
+    backgroundColor: c.accentSoft,
+  },
   priceCard: { padding: 16, borderRadius: 20, backgroundColor: c.surface, borderWidth: 1, borderColor: c.line },
   footer: {
     position: 'absolute', left: 0, right: 0, bottom: 0, flexDirection: 'row', gap: 10, paddingHorizontal: 16, paddingTop: 12,
