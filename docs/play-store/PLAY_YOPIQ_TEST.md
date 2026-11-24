@@ -103,3 +103,29 @@ topilgan xatolar, auditoriya haqida savollar (javoblarni Claude tayyorlaydi). Ko
   bo'yicha alohida chiqariladi; 1.0.3 o'rnatilgach unga ham OTA kerak bo'lsa — alohida.
 - Qachon yuklanadi: 1.0.2 Google tekshiruvidan o'tgach (ko'rib chiqish davomida yangi reliz yuborilsa, tekshiruv qaytadan
   boshlanadi). Alpha → "Создать выпуск" → .aab → "Далее" → "Сохранить" → Обзор публикации → yuborish.
+
+## 9. 2026-11-24: RAD ETILDI — "Требования Play Console" (faqat tashkilot hisobi)
+
+Google matni: ba'zi ilova turlarini faqat tashkilot (korporativ) hisobi chiqara oladi; e'lon qilingan funksiyalar bilan
+shaxsiy hisobdan chiqarib bo'lmaydi. Sabab: sog'liq deklaratsiyasida "Медицинские услуги и управление здравоохранением"
+(stomatologiya/LOR klinikalariga yozilish). Tanlangan yo'l: **mobil ilovada klinika turini vaqtincha yashirish**.
+
+Kod (`386987b`): mobil ilova har so'rovda `X-Chronix-Client: mobile` yuboradi; server `MOBILE_HIDDEN_KINDS`
+(standart `clinic`) turidagi muassasalarni kategoriya, yaqin/qidiruv, xarita, sahifa, Hot Slots, takliflar va
+sevimlilardan chiqarmaydi (`backend/app/core/client_filter.py`). Veb, panel va 1.0.2 o'zgarmaydi.
+Qaytarish (tashkilot hisobi bo'lgach): serverda `MOBILE_HIDDEN_KINDS=` (bo'sh) — yangi build shart emas.
+
+Qayta yuborish tartibi:
+1. **Server deploy** (`386987b`) — busiz 1.0.3 da ham klinikalar ko'rinadi (sarlavhani eski server bilmaydi).
+2. Play Console → Контент приложения → **Приложения для здоровья** → "Медицинские услуги и управление
+   здравоохранением" belgisini olib tashlash → **"В моем приложении нет функций, связанных со здоровьем"** →
+   Далее → Сохранить. (Egasi o'zi qiladi.)
+3. Alpha → Создать выпуск → yangi .aab (1.0.3, versionCode 7, EAS `44e11756`) → примечания →
+   Далее → Сохранить. Eski reliz 5 (1.0.2) almashtiriladi.
+4. Обзор публикации → "Отправить изменения на проверку".
+5. Eslatma: 1.0.3 versionCode 6 (EAS `679c0d7e`) — sarlavhasiz, ISHLATILMAYDI.
+
+Do'kon sahifasi (2026-11-24, Claude bajardi, saqlandi): qisqa/to'liq tavsifdan "стоматологии" olib tashlandi;
+skrinshotlar 01 (Stomatolog/LOR kategoriyalari), 02 (LOR chip), 07 (Smile Dental Clinic) olib tashlandi — 5 ta qoldi
+(03, 04, 05, 06, 08); banner `feature-graphic-v2.png` ("Salon, barber, go'zallik va SPA"). Keyinroq klinikasiz
+yangi bosh sahifa/qidiruv skrinshotlari olinsa — qo'shiladi.
