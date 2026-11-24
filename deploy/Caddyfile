@@ -91,18 +91,24 @@
 		}
 	}
 
+	# Yo'q fayl (kengaytmali: .json, .txt, .xml ...) — 404, SPA sahifasi emas (masalan /ai-catalog.json).
+	# Alohida handle: bitta blok ichida try_files respond'dan oldin ishlaydi va yo'lni /index.html ga almashtiradi
+	@missingfile {
+		path_regexp \.[A-Za-z0-9]{1,8}$
+		not file {
+			root /srv/market
+		}
+	}
+	handle @missingfile {
+		respond 404
+	}
+
 	handle {
 		root * /srv/market
 		@assets path /assets/*
 		header @assets Cache-Control "public, max-age=31536000, immutable"
 		@pages not path /assets/*
 		header @pages Cache-Control "no-cache"
-		# Yo'q fayl (kengaytmali: .json, .txt, .xml ...) — 404, SPA sahifasi emas (masalan /ai-catalog.json)
-		@missingfile {
-			path_regexp \.[A-Za-z0-9]{1,8}$
-			not file
-		}
-		respond @missingfile 404
 		# /privacy, /hisobni-ochirish — statik sahifalar (market/public/<nom>/index.html); qolgani — SPA
 		try_files {path} {path}/index.html /index.html
 		file_server
