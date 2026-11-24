@@ -1,15 +1,21 @@
-// Qidiruv (Figma 08): tepada xarita (reyting yorliqlari), qidiruv paneli; pastda suriladigan oyna —
-// yo'nalishlar, "Yaqin atrofda N ta salon" va katta kartalar. Xarita surilsa ro'yxat o'sha hududga moslanadi.
-// Pin bosilsa (Fresha uslubi): ro'yxat pastga yashirinadi, xarita butun ekranga kengayadi va pastdan salon
-// kartochkasi chiqadi (rasm, ★ reyting (sharhlar), masofa · manzil, aksiya). "X" yoki xaritaning bo'sh joyi — yopiladi.
-import { useRouter } from 'expo-router';
+// Qidiruv (Figma 08): butun ekran xarita (reyting yorliqlari), tepada qidiruv paneli; pastda suriladigan oyna —
+// uch holat: yig'ilgan (faqat yo'nalishlar va soni — xarita deyarli to'liq ko'rinadi), o'rta, to'liq ro'yxat.
+// Xarita surilsa ro'yxat o'sha hududga moslanadi. Pin bosilsa (Fresha uslubi): oyna pastga yashirinadi va pastdan
+// salon kartochkasi chiqadi. "X" yoki xaritaning bo'sh joyi — yopiladi.
+// Tezlik (2026-11-24): xarita bir marta yuklanadi (Yandex kaliti telefonda saqlanadi — avval OSM, keyin Yandex
+// bo'lib ikki marta yuklanmaydi), xarita balandligi animatsiya qilinmaydi (oyna native transform bilan suriladi).
+// Joylashuv: ruxsat bo'lsa ochilganda jimgina aniqlanadi va xarita shu joyga markazlanadi; ruxsat yo'q — Toshkent.
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, PanResponder, Pressable, ScrollView, ScrollViewInstance, Text, useWindowDimensions, View } from 'react-native';
+import {
+  Animated, LayoutChangeEvent, PanResponder, Pressable, ScrollView, ScrollViewInstance, StyleSheet, Text, useWindowDimensions, View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, ApiError, BusinessCard } from '../../src/api';
 import { pick, t } from '../../src/i18n';
-import { locate, useMyLocation } from '../../src/location';
+import { locate, locateIfAllowed, Point, useMyLocation } from '../../src/location';
+import { getItem, setItemAsync } from '../../src/secure';
 import { useCategories } from '../../src/useCategories';
 import { MapPreview } from '../../src/MapPreview';
 import { Bounds, OsmMap } from '../../src/OsmMap';
@@ -17,6 +23,22 @@ import { SalonCardBig } from '../../src/SalonCard';
 import { EmptyState, Icon, makeStyles, Pressy, useTheme } from '../../src/ui';
 
 const MAX_BOUNDS_DEG = 1;          // backend chegarasi: bundan keng oynada so'rov rad etiladi
+const YANDEX_KEY = 'chronix_yandex_key';
+const PEEK = 124;                  // yig'ilgan oyna: tutqich + yo'nalishlar + soni
+
+// Yandex kaliti: telefonda saqlangan bo'lsa xarita darhol shu bilan ochiladi; birinchi marta — serverdan
+// (1,5 s kutiladi, kelmasa OSM). Fonda yangilanadi.
+let savedKey: string | null | undefined;
+function readSavedKey(): string | null | undefined {
+  if (savedKey !== undefined) return savedKey;
+  try {
+    const v = getItem(YANDEX_KEY);
+    savedKey = v === null ? undefined : v || null;
+  } catch {
+    savedKey = undefined;
+  }
+  return savedKey;
+}
 
 export default function SearchTab() {
   const router = useRouter();
@@ -29,33 +51,89 @@ export default function SearchTab() {
   const { categories } = useCategories();
   const [category, setCategory] = useState<string | null>(null);
   const [hint, setHint] = useState<string | null>(null);
-  const [yandexKey, setYandexKey] = useState<string | null>(null);
+  const [yandexKey, setYandexKey] = useState<string | null | undefined>(readSavedKey);
+  const [focus, setFocus] = useState<Point | null>(null);
+  const centered = useRef(me !== null);       // xarita bir marta foydalanuvchi joyiga markazlanadi
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const list = useRef<ScrollViewInstance>(null);
   const [selId, setSelId] = useState<number | null>(null);
   const lastSel = useRef<BusinessCard | null>(null);
 
-  // Oyna ikki holatda: pastda (xarita ko'rinadi) va tepada (ro'yxat to'liq)
-  const low = Math.round(height * 0.36);
-  const high = insets.top + 128;
-  const top = useRef(new Animated.Value(low)).current;
-  const mapH = useRef(new Animated.Value(low + 40)).current;
-  const at = useRef(low);
-  const snap = (to: number) => {
+  // Oyna uch holatda (yuqoridan masofa): to'liq ro'yxat, o'rta, yig'ilgan. Ekran balandligi — onLayout'dan
+  const [H, setH] = useState(height);
+  const full = insets.top + 84;
+  const mid = Math.round(H * 0.52);
+  const peek = H - PEEK;
+  const snaps = useRef({ full, mid, peek });
+  snaps.current = { full, mid, peek };
+  const y = useRef(new Animated.Value(mid)).current;
+  const at = useRef(mid);
+  const snap = useCallback((to: number) => {
     at.current = to;
-    Animated.spring(top, { toValue: to, useNativeDriver: false, damping: 22, stiffness: 200 }).start();
+    Animated.spring(y, { toValue: to, useNativeDriver: true, damping: 22, stiffness: 200 }).start();
+  }, [y]);
+  const onLayout = (e: LayoutChangeEvent) => {
+    const h = Math.round(e.nativeEvent.layout.height);
+    if (Math.abs(h - H) < 2) return;
+    setH(h);
+    if (selId === null) {
+      const next = Math.round(h * 0.52);
+      at.current = next;
+      y.setValue(next);
+    }
   };
-  const expandMap = (full: boolean) =>
-    Animated.timing(mapH, { toValue: full ? height : low + 40, duration: 220, useNativeDriver: false }).start();
   const drag = useRef(PanResponder.create({
     onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dy) > 6,
-    onPanResponderMove: (_, g) => top.setValue(Math.min(low, Math.max(high, at.current + g.dy))),
-    onPanResponderRelease: (_, g) => snap(at.current + g.dy < (low + high) / 2 || g.vy < -0.5 ? high : low),
+    onPanResponderMove: (_, g) => {
+      const { full: f, peek: p } = snaps.current;
+      y.setValue(Math.min(p, Math.max(f, at.current + g.dy)));
+    },
+    onPanResponderRelease: (_, g) => {
+      const { full: f, mid: m, peek: p } = snaps.current;
+      const pos = at.current + g.dy;
+      const order = [f, m, p];
+      let to: number;
+      if (g.vy < -0.5) to = [...order].reverse().find((v) => v < pos - 1) ?? f;      // tez yuqoriga — keyingi holat
+      else if (g.vy > 0.5) to = order.find((v) => v > pos + 1) ?? p;                  // tez pastga
+      else to = order.reduce((a, b) => (Math.abs(b - pos) < Math.abs(a - pos) ? b : a));
+      snap(to);
+    },
   })).current;
+  const cycle = () => {
+    const { full: f, mid: m, peek: p } = snaps.current;
+    snap(at.current === p ? m : at.current === m ? f : m);
+  };
 
+  // Yandex kaliti: saqlangan bo'lsa — darhol; bo'lmasa 1,5 s kutib OSM bilan ochiladi
   useEffect(() => {
-    api<{ yandex_maps_key: string | null }>('/catalog/app-info').then((r) => setYandexKey(r.yandex_maps_key)).catch(() => {});
+    let done = false;
+    const fallback = setTimeout(() => {
+      if (!done) setYandexKey((k) => (k === undefined ? null : k));
+    }, 1500);
+    api<{ yandex_maps_key: string | null }>('/catalog/app-info').then((r) => {
+      const k = r.yandex_maps_key || null;
+      setItemAsync(YANDEX_KEY, k ?? '').catch(() => {});
+      savedKey = k;
+      setYandexKey((cur) => (cur === undefined ? k : cur));    // ochilgan xarita qayta yuklanmaydi
+    }).catch(() => {
+      setYandexKey((cur) => (cur === undefined ? null : cur));
+    }).finally(() => {
+      done = true;
+      clearTimeout(fallback);
+    });
+    return () => clearTimeout(fallback);
   }, []);
+
+  // Ochilganda (va har safar qaytilganda) joylashuv jimgina yangilanadi — ruxsat so'ralmaydi
+  useFocusEffect(useCallback(() => {
+    void locateIfAllowed();
+  }, []));
+  useEffect(() => {
+    if (me && !centered.current) {
+      centered.current = true;
+      setFocus(me);
+    }
+  }, [me]);
 
   const onBounds = useCallback(({ sw, ne }: Bounds) => {
     clearTimeout(timer.current);
@@ -71,7 +149,7 @@ export default function SearchTab() {
       } catch (e) {
         setHint(e instanceof ApiError ? e.message : t("Yuklab bo'lmadi"));
       }
-    }, 400);
+    }, 300);
   }, []);
 
   const shown = useMemo(() => {
@@ -83,45 +161,55 @@ export default function SearchTab() {
   // Tanlangan salon: xarita yangilansa ham kartochka yo'qolmaydi (oxirgi ma'lumot saqlanadi)
   const selected = selId === null ? null : (shown.find((b) => b.id === selId) ?? lastSel.current);
   lastSel.current = selected;
-  const select = (id: number) => {
-    const b = shown.find((x) => x.id === id);
+  const shownRef = useRef(shown);
+  shownRef.current = shown;
+  const select = useCallback((id: number) => {
+    const b = shownRef.current.find((x) => x.id === id);
     if (!b) return;
     lastSel.current = b;
     setSelId(id);
-    Animated.spring(top, { toValue: height, useNativeDriver: false, damping: 22, stiffness: 200 }).start();
-    expandMap(true);
-  };
-  const closePreview = () => {
-    if (selId === null) return;
+    Animated.spring(y, { toValue: snaps.current.peek + PEEK + 40, useNativeDriver: true, damping: 22, stiffness: 200 }).start();
+  }, [y]);
+  const selRef = useRef(selId);
+  selRef.current = selId;
+  const closePreview = useCallback(() => {
+    if (selRef.current === null) return;
     setSelId(null);
-    snap(low);
-    expandMap(false);
-  };
+    snap(snaps.current.mid);
+  }, [snap]);
+  const onLocate = useCallback(async () => {
+    const p = await locate().catch(() => null);
+    if (!p) setHint(t("Joylashuvga ruxsat berilmagan. Telefon sozlamalaridan yoqing"));
+    return p;
+  }, []);
+  const onMapError = useCallback(() => {
+    if (yandexKey) setYandexKey(null);
+    else setHint(t("Xaritani yuklab bo'lmadi. Internetni tekshiring"));
+  }, [yandexKey]);
+
+  const catLabel = category ? categories.find((x) => x.slug === category) : undefined;
 
   return (
-    <View style={{ flex: 1, backgroundColor: c.bg }}>
-      <Animated.View style={{ height: mapH }}>
-        <OsmMap
-          key={yandexKey ? 'yandex' : 'osm'}
-          yandexKey={yandexKey}
-          center={coords}
-          me={me}
-          onLocate={async () => {
-            const p = await locate().catch(() => null);
-            if (!p) setHint(t("Joylashuvga ruxsat berilmagan. Telefon sozlamalaridan yoqing"));
-            return p;
-          }}
-          businesses={shown}
-          onBounds={onBounds}
-          onSelect={select}
-          selectedId={selId}
-          onTapMap={closePreview}
-          onError={() => {
-            if (yandexKey) setYandexKey(null);
-            else setHint(t("Xaritani yuklab bo'lmadi. Internetni tekshiring"));
-          }}
-        />
-      </Animated.View>
+    <View style={{ flex: 1, backgroundColor: c.bg }} onLayout={onLayout}>
+      <View style={StyleSheet.absoluteFill}>
+        {yandexKey !== undefined && (
+          <OsmMap
+            key={yandexKey ? 'yandex' : 'osm'}
+            yandexKey={yandexKey}
+            center={me ?? coords}
+            me={me}
+            focus={focus}
+            controlsTop={insets.top + 84}
+            onLocate={onLocate}
+            businesses={shown}
+            onBounds={onBounds}
+            onSelect={select}
+            selectedId={selId}
+            onTapMap={closePreview}
+            onError={onMapError}
+          />
+        )}
+      </View>
 
       <View style={[s.searchWrap, { top: insets.top + 8 }]}>
         <Pressy onPress={() => router.push(category ? { pathname: '/search', params: { category } } : '/search')} style={s.search}
@@ -129,7 +217,7 @@ export default function SearchTab() {
           <Icon name="search-outline" size={22} color={c.text} />
           <View style={{ flex: 1 }}>
             <Text style={s.searchTitle} numberOfLines={1}>
-              {category ? pick(categories.find((x) => x.slug === category)?.name_uz ?? '', categories.find((x) => x.slug === category)?.name_ru) : t("Barcha xizmatlar")}
+              {catLabel ? pick(catLabel.name_uz, catLabel.name_ru) : t("Barcha xizmatlar")}
             </Text>
             <Text style={s.searchSub}>{t("Xarita hududi")}</Text>
           </View>
@@ -137,9 +225,9 @@ export default function SearchTab() {
         </Pressy>
       </View>
 
-      <Animated.View style={[s.sheet, { top }]}>
+      <Animated.View style={[s.sheet, { top: full, height: H - full, transform: [{ translateY: Animated.subtract(y, full) }] }]}>
         <View {...drag.panHandlers} style={s.handleZone}>
-          <Pressable onPress={() => snap(at.current === low ? high : low)} hitSlop={10} accessibilityRole="button"
+          <Pressable onPress={cycle} hitSlop={10} accessibilityRole="button"
             accessibilityLabel={t("Ro'yxatni ochish")}>
             <View style={s.handle} />
           </Pressable>
@@ -157,8 +245,12 @@ export default function SearchTab() {
               );
             })}
         </ScrollView>
-        <Text style={s.count}>{hint ?? t("Yaqin atrofda {a} ta muassasa", { a: shown.length })}</Text>
-        <ScrollView ref={list} contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 40, gap: 26 }}
+        <View {...drag.panHandlers}>
+          <Pressable onPress={cycle} accessibilityRole="button" accessibilityLabel={t("Ro'yxatni ochish")}>
+            <Text style={s.count}>{hint ?? t("Yaqin atrofda {a} ta muassasa", { a: shown.length })}</Text>
+          </Pressable>
+        </View>
+        <ScrollView ref={list} contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: mid - full + 40, gap: 26 }}
           showsVerticalScrollIndicator={false}>
           {shown.length === 0 && !hint ? (
             <EmptyState icon="search-outline" title={t("Hech narsa topilmadi")}
@@ -188,7 +280,7 @@ const useStyles = makeStyles((c) => ({
   searchSub: { fontSize: 13, color: c.muted },
   searchIcon: { width: 48, height: 48, borderRadius: 24, borderWidth: 1, borderColor: c.line, alignItems: 'center', justifyContent: 'center' },
   sheet: {
-    position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: c.bg, borderTopLeftRadius: 28, borderTopRightRadius: 28,
+    position: 'absolute', left: 0, right: 0, backgroundColor: c.bg, borderTopLeftRadius: 28, borderTopRightRadius: 28,
     shadowColor: c.shadow, shadowOpacity: 0.12, shadowRadius: 20, shadowOffset: { width: 0, height: -4 }, elevation: 10,
   },
   handleZone: { alignItems: 'center', paddingTop: 10, paddingBottom: 14 },

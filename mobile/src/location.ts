@@ -37,6 +37,23 @@ export async function locate(): Promise<Point | null> {
   return p;
 }
 
+/** Ruxsat ALLAQACHON berilgan bo'lsa joylashuvni jimgina yangilaydi (so'rov oynasi chiqmaydi). Aks holda null */
+export async function locateIfAllowed(): Promise<Point | null> {
+  try {
+    const { status } = await Location.getForegroundPermissionsAsync();
+    if (status !== 'granted') return null;
+    // Avval oxirgi ma'lum nuqta (bir zumda), keyin aniq joylashuv
+    const last = await Location.getLastKnownPositionAsync({ maxAge: 5 * 60_000 }).catch(() => null);
+    if (last && !state.me) {
+      const p = { latitude: last.coords.latitude, longitude: last.coords.longitude };
+      set({ coords: p, me: p });
+    }
+    return await locate();
+  } catch {
+    return null;
+  }
+}
+
 export function useMyLocation() {
   const [s, setS] = useState(state);
   useEffect(() => {

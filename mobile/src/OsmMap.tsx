@@ -32,15 +32,19 @@ type Props = {
   onLocate?: () => Promise<Point | null>;
   /** Bo'lmasa — OpenStreetMap. Yandex yuklanmasa onError chaqiriladi, chaqiruvchi OSM ga o'tkazadi */
   yandexKey?: string | null;
+  /** Xarita tugmalari (+/−, joylashuv) yuqoridan shuncha px pastda, o'ngda — pastki panel ularni to'smasin */
+  controlsTop?: number;
+  /** Shu nuqtaga markazlash (yangi obyekt berilganda bir marta; xarita tayyor bo'lmasa — tayyor bo'lgach) */
+  focus?: Point | null;
 };
 
 // Yandex JS API 2.1. Shartlar: bepul versiya faqat ochiq ilovada; olingan ma'lumot saqlanmaydi (faqat ko'rsatish).
-const yandexHtml = (lat: number, lng: number, key: string) => `<!doctype html>
+const yandexHtml = (lat: number, lng: number, key: string, top: number) => `<!doctype html>
 <html><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <style>
   html,body,#map{width:100%;height:100%;margin:0;padding:0;background:#eef1f6}
-  #locate{position:absolute;right:10px;bottom:118px;z-index:2000;width:34px;height:34px;border:0;border-radius:8px;
+  #locate{position:absolute;right:10px;top:${top + 72}px;z-index:2000;width:34px;height:34px;border:0;border-radius:8px;
           background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;color:#1565F5}
   #locate.busy{opacity:.5}
 </style>
@@ -58,7 +62,7 @@ const yandexHtml = (lat: number, lng: number, key: string) => `<!doctype html>
     clearTimeout(fail);
     const map = new ymaps.Map('map', { center: [${lat}, ${lng}], zoom: 13, controls: ['zoomControl'] },
                               { suppressMapOpenBlock: true, autoFitToViewport: 'always' });
-    map.controls.get('zoomControl').options.set({ size: 'small', position: { right: 10, bottom: 30 } });
+    map.controls.get('zoomControl').options.set({ size: 'small', position: { right: 10, top: ${top} } });
     const markers = new ymaps.GeoObjectCollection();
     map.geoObjects.add(markers);
     let me = null;
@@ -81,6 +85,7 @@ const yandexHtml = (lat: number, lng: number, key: string) => `<!doctype html>
       map.geoObjects.add(me);
     };
     window.flyTo = (p) => map.setCenter([p.lat, p.lng], 15, { duration: 300 });
+    window.centerOn = (p) => map.setCenter([p.lat, p.lng], 14, { duration: 250 });
     const btn = document.getElementById('locate');
     btn.addEventListener('click', () => { btn.classList.add('busy'); post({ type: 'locate' }); });
     window.locateDone = () => btn.classList.remove('busy');
@@ -95,7 +100,7 @@ const yandexHtml = (lat: number, lng: number, key: string) => `<!doctype html>
   });
 </script></body></html>`;
 
-const html = (lat: number, lng: number) => `<!doctype html>
+const html = (lat: number, lng: number, top: number) => `<!doctype html>
 <html><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -117,6 +122,7 @@ const html = (lat: number, lng: number) => `<!doctype html>
   .leaflet-tooltip{font:600 12px system-ui,sans-serif}
   .locate a{display:flex!important;align-items:center;justify-content:center;color:#1565F5}
   .locate a.busy{opacity:.5}
+  .leaflet-top{top:${top}px}
 </style>
 <script>const post = (m) => window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify(m));</script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
@@ -125,9 +131,9 @@ const html = (lat: number, lng: number) => `<!doctype html>
 <script>
   if (!window.L) post({ type: 'error' });
   const map = L.map('map', { zoomControl: false }).setView([${lat}, ${lng}], 13);
-  L.control.zoom({ position: 'bottomright' }).addTo(map);
+  L.control.zoom({ position: 'topright' }).addTo(map);
   // Joylashuv tugmasi: +/- ustida, xuddi shu ko'rinishda
-  const Locate = L.Control.extend({ options: { position: 'bottomright' }, onAdd() {
+  const Locate = L.Control.extend({ options: { position: 'topright' }, onAdd() {
     const box = L.DomUtil.create('div', 'leaflet-bar leaflet-control locate');
     const a = L.DomUtil.create('a', '', box);
     a.href = '#'; a.title = 'Mening joyim'; a.setAttribute('role', 'button'); a.setAttribute('aria-label', 'Mening joyim');
@@ -172,6 +178,7 @@ const html = (lat: number, lng: number) => `<!doctype html>
                                           interactive: false }).addTo(map);
   };
   window.flyTo = (p) => map.setView([p.lat, p.lng], 15);
+  window.centerOn = (p) => map.setView([p.lat, p.lng], 14, { animate: true });
 
   const bounds = () => {
     const b = map.getBounds();
@@ -183,14 +190,16 @@ const html = (lat: number, lng: number) => `<!doctype html>
   post({ type: 'ready' });
 </script></body></html>`;
 
-export function OsmMap({ center, me, businesses, onBounds, onSelect, onError, onLocate, yandexKey, selectedId, onTapMap }: Props) {
+export function OsmMap({ center, me, businesses, onBounds, onSelect, onError, onLocate, yandexKey, selectedId, onTapMap,
+  controlsTop = 12, focus }: Props) {
   const web = useRef<WebView | null>(null);
   const ready = useRef(false);
   const latest = useRef({ businesses, me, selectedId });
   latest.current = { businesses, me, selectedId };
   // Xarita markazi faqat birinchi ochilganda: keyin foydalanuvchi o'zi suradi
   const source = useMemo(() => ({
-    html: yandexKey ? yandexHtml(center.latitude, center.longitude, yandexKey) : html(center.latitude, center.longitude),
+    html: yandexKey ? yandexHtml(center.latitude, center.longitude, yandexKey, controlsTop)
+      : html(center.latitude, center.longitude, controlsTop),
     baseUrl: BASE_URL,                               // Yandex kaliti shu Referer bilan cheklanadi
   }), [yandexKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -206,13 +215,21 @@ export function OsmMap({ center, me, businesses, onBounds, onSelect, onError, on
     }
     web.current?.injectJavaScript(`${code}; true;`);
   };
+  const sent = useRef('');
+  const pending = useRef<Point | null>(null);
+  const centerOn = (p: Point) => run(`window.centerOn && window.centerOn(${JSON.stringify({ lat: p.latitude, lng: p.longitude })})`);
   const pushMarkers = () => {
     const list = latest.current.businesses.map((b) => ({
       id: b.id, name: b.branch_name ? `${b.name} · ${b.branch_name}` : b.name,   // filial xaritada aniq ajralsin
       lat: b.lat, lng: b.lng, open: b.is_open_now, rated: b.rating_count > 0,
       promo: b.promo_percent ?? null, sel: b.id === latest.current.selectedId,
       label: b.rating_count > 0 ? b.rating_avg.toFixed(1).replace('.', ',') : 'Yangi' }));
-    run(`window.setMarkers && window.setMarkers(${JSON.stringify(list)})`);
+    // Ro'yxat o'zgarmagan bo'lsa belgilar qayta chizilmaydi (xarita har surilganda shu chaqiriladi)
+    const json = JSON.stringify(list);
+    if (json !== sent.current) {
+      sent.current = json;
+      run(`window.setMarkers && window.setMarkers(${json})`);
+    }
     const p = latest.current.me;
     if (p) run(`window.setMe && window.setMe(${JSON.stringify({ lat: p.latitude, lng: p.longitude })})`);
   };
@@ -222,11 +239,22 @@ export function OsmMap({ center, me, businesses, onBounds, onSelect, onError, on
     if (ready.current) pushMarkers();
   }, [businesses, me, selectedId]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => {
+    if (!focus) return;
+    if (ready.current) centerOn(focus);
+    else pending.current = focus;
+  }, [focus]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const onMessage = (e: WebViewMessageEvent) => {
     const m = JSON.parse(e.nativeEvent.data);
     if (m.type === 'ready') {
       ready.current = true;
+      sent.current = '';
       pushMarkers();
+      if (pending.current) {
+        centerOn(pending.current);
+        pending.current = null;
+      }
     } else if (m.type === 'bounds') onBounds({ sw: m.sw, ne: m.ne });
     else if (m.type === 'select') onSelect(m.id);
     else if (m.type === 'tap') onTapMap?.();
