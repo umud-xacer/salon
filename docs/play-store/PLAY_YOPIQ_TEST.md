@@ -120,7 +120,7 @@ Qayta yuborish tartibi:
 2. Play Console → Контент приложения → **Приложения для здоровья** → "Медицинские услуги и управление
    здравоохранением" belgisini olib tashlash → **"В моем приложении нет функций, связанных со здоровьем"** →
    Далее → Сохранить. (Egasi o'zi qiladi.)
-3. Alpha → Создать выпуск → yangi .aab (1.0.3, versionCode 7, EAS `44e11756`) → примечания →
+3. Alpha → Создать выпуск → yangi .aab (1.0.3, versionCode 7, EAS `44e11756`, https://expo.dev/artifacts/eas/CMxSZ2Jx9anT0C5NF2sdzcnCZ6MSdPfcwVc6uaUn94I.aab) → примечания →
    Далее → Сохранить. Eski reliz 5 (1.0.2) almashtiriladi.
 4. Обзор публикации → "Отправить изменения на проверку".
 5. Eslatma: 1.0.3 versionCode 6 (EAS `679c0d7e`) — sarlavhasiz, ISHLATILMAYDI.
