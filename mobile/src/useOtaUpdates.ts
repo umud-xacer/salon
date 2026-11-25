@@ -7,6 +7,7 @@ import { useEffect, useRef } from 'react';
 import { Alert, AppState } from 'react-native';
 
 import { t } from "./i18n";
+import { afterSplash } from './startup';
 const CHECK_EVERY_MS = 30 * 60 * 1000;
 const BUSY_SCREENS = ['/alarm', '/book'];
 
@@ -40,7 +41,7 @@ export function useOtaUpdates() {
       }
     };
 
-    check();
+    afterSplash(() => { void check(); }, 6000);   // ochilishda emas: ilova to'liq yuklangach
     const subscription = AppState.addEventListener('change', (state) => {
       if (state === 'active') check();
     });

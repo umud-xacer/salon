@@ -25,6 +25,7 @@ import {
 } from '@expo-google-fonts/plus-jakarta-sans';
 import { prepareStartupSound } from '../src/startupSound';
 import { useOtaUpdates } from '../src/useOtaUpdates';
+import { afterSplash, markSplashDone } from '../src/startup';
 
 import { t } from "../src/i18n";
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -119,7 +120,10 @@ function Navigator() {
   useOtaUpdates();
 
   // Analitika: ilova ochildi va qaysi ekran ko'rildi (salon nomi emas — "[slug]" ko'rinishida)
-  useEffect(() => { track('app_open'); void locationPing(); }, []);
+  useEffect(() => {
+    track('app_open');
+    afterSplash(() => { void locationPing(); }, 4000);      // GPS va tarmoq — ochilish animatsiyasidan keyin
+  }, []);
   const path = screenPath(segments as string[]);
   useEffect(() => { track('screen', { path }); }, [path]);
 
@@ -204,9 +208,13 @@ function Navigator() {
       if (me.workspace !== 'client' || AppState.currentState !== 'active') return;
       api<Appointment[]>('/appointments/mine').then(syncBookingAlarms).catch(() => {});
     };
-    void ensureNotificationPermission();
-    void check();
-    sync();
+    // Ruxsat oynasi va tarmoq so'rovlari animatsiya tugagach (ochilish qotmasin)
+    afterSplash(() => {
+      if (stopped) return;
+      void ensureNotificationPermission();
+      void check();
+      sync();
+    }, 800);
     const timer = setInterval(check, POLL_MS);
     const sub = AppState.addEventListener('change', (s) => {
       if (s === 'active') {
@@ -275,12 +283,18 @@ export default function RootLayout() {
   const hideNative = useCallback(() => {
     SplashScreen.hideAsync().catch(() => {});
   }, []);
-  const finish = useCallback(() => setSplash(false), []);
+  const finish = useCallback(() => {
+    setSplash(false);
+    markSplashDone();
+  }, []);
 
   useEffect(() => {
     setupChannels();
     setupCategories();
-    if (!splash) hideNative();
+    if (!splash) {
+      hideNative();
+      markSplashDone();
+    }
   }, [splash, hideNative]);
 
   if (!fontsLoaded && !fontError) return null;

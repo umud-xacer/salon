@@ -18,6 +18,8 @@ const TICKS = [0, 90, 180, 270];
 const NATIVE_SPLASH_WIDTH = 190;                // app.json dagi imageWidth
 const CONTENT_SHARE = 0.84;                     // yozuv ekran kengligining qancha qismini egallaydi
 const MAX_CONTENT = 460;
+// Vaqt chizig'i, ms: strelkalar aylanadi -> belgi joyiga, yozuv chiqadi -> shior -> to'liq rasm -> qisqa to'xtash -> yo'qoladi
+const T = { spin: 900, move: 1380, word: 1320, tagline: 1640, full: 1960, hold: 2200, total: 2480 };
 
 function Hand({ length, angle, k }: { length: number; angle: Animated.AnimatedInterpolation<string>; k: number }) {
   // Blok ikki uzunlikda, soat markazida: burilganda strelka uchi emas, asosi joyida qoladi
@@ -37,36 +39,43 @@ function Hand({ length, angle, k }: { length: number; angle: Animated.AnimatedIn
 
 export function AnimatedSplash({ onReady, onDone }: { onReady: () => void; onDone: () => void }) {
   const { width } = useWindowDimensions();
-  const spin = useRef(new Animated.Value(0)).current;
-  const move = useRef(new Animated.Value(0)).current;
-  const word = useRef(new Animated.Value(0)).current;
-  const tagline = useRef(new Animated.Value(0)).current;
-  const full = useRef(new Animated.Value(0)).current;
-  const exit = useRef(new Animated.Value(1)).current;
+  // Butun animatsiya BITTA qiymatdan (0 → TOTAL ms) va to'liq native'da: bosqichlar orasida JS kutilmaydi,
+  // shuning uchun ilova ochilishda JS band bo'lsa ham animatsiya qotmaydi (avval Animated.sequence edi).
+  const time = useRef(new Animated.Value(0)).current;
+  // Easing.out(cubic) — native interpolatsiya easing funksiyasini qabul qilmaydi, nuqtalar bilan yaqinlashtiriladi
+  const seg = (a: number, b: number, from = 0, to = 1) => {
+    const d = b - a;
+    const ease = [0, 0.488, 0.784, 0.936, 0.992, 1];
+    return time.interpolate({
+      inputRange: ease.map((_, n) => a + (d * n) / 5),
+      outputRange: ease.map((e) => from + (to - from) * e),
+      extrapolate: 'clamp',
+    });
+  };
+  const spin = seg(0, T.spin);
+  const move = seg(T.spin, T.move);
+  const word = seg(T.spin, T.word);
+  const tagline = seg(T.move, T.tagline);
+  const full = seg(T.tagline, T.full);
+  const exit = seg(T.hold, T.total, 1, 0);
 
   useEffect(() => {
     let cancelled = false;
-    const step = (value: Animated.Value, duration: number, toValue = 1) =>
-      Animated.timing(value, { toValue, duration, useNativeDriver: true, easing: Easing.out(Easing.cubic) });
-
     (async () => {
       const reduced = await AccessibilityInfo.isReduceMotionEnabled().catch(() => false);
       if (cancelled) return;
       onReady();
       void playStartupSound();         // animatsiya bilan bir vaqtda: strelkalar -> akkord (0.9 s)
-      Animated.sequence([
-        step(spin, reduced ? 0 : 900),
-        Animated.parallel([step(move, reduced ? 0 : 480), step(word, 420)]),
-        step(tagline, 260),
-        step(full, 320),
-        Animated.delay(500),
-        step(exit, 280, 0),
-      ]).start(({ finished }) => finished && onDone());
+      if (reduced) time.setValue(T.hold);   // harakat kamaytirilgan: tayyor kadr, faqat yo'qolishi
+      Animated.timing(time, {
+        toValue: T.total, duration: reduced ? T.total - T.hold : T.total, easing: Easing.linear,
+        useNativeDriver: true, isInteraction: false,
+      }).start(({ finished }) => finished && onDone());
     })();
     return () => {
       cancelled = true;
     };
-  }, [spin, move, word, tagline, full, exit, onReady, onDone]);
+  }, [time, onReady, onDone]);
 
   const k = (Math.min(width * CONTENT_SHARE, MAX_CONTENT)) / WORD.width;
   const stage = IMAGE * k;
@@ -75,7 +84,7 @@ export function AnimatedSplash({ onReady, onDone }: { onReady: () => void; onDon
   // Boshlanish holati tizim splash'i bilan bir xil: belgi ekran markazida, 190 kenglikda
   const startX = (IMAGE / 2 - (MARK.x + MARK.size / 2)) * k;
   const startY = (IMAGE / 2 - (MARK.y + MARK.size / 2)) * k;
-  const rise = (value: Animated.Value) => [{
+  const rise = (value: Animated.AnimatedInterpolation<number>) => [{
     translateY: value.interpolate({ inputRange: [0, 1], outputRange: [14, 0] }),
   }];
   const pin = PIN * k;

@@ -4,6 +4,7 @@ import { track } from './analytics';
 import { api, clearTokens, getRefreshToken, loadTokens, LoginOut, Me, saveTokens, setSessionLostHandler } from './api';
 import { bioAsked, bioKind } from './biometric';
 import { registerForPush, unregisterPush } from './notifications';
+import { afterSplash } from './startup';
 
 import { t } from "./i18n";
 
@@ -34,7 +35,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Ism kiritilmagan mijoz (yangi yoki oqim yarim qolgan) — avval profil ekrani
     if (m.workspace === 'client' && !m.user.full_name?.trim()) setSetup('profile');
     setMe(m);
-    registerForPush().catch((e) => console.warn(t("Push ro'yxatdan o'tmadi"), e));
+    // Ruxsat oynasi va tarmoq — ochilish animatsiyasidan keyin
+    afterSplash(() => { registerForPush().catch((e) => console.warn(t("Push ro'yxatdan o'tmadi"), e)); }, 1500);
   }, []);
 
   useEffect(() => {
