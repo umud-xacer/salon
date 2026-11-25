@@ -102,7 +102,7 @@ export function ScheduleEditor({ businessId, memberId }: { businessId: number; m
                   <span>–</span>
                   <input aria-label={t("Tanaffus oxiri")} type="time" className={time} value={b.end}
                     onChange={(e) => patch(i, { breaks: r.breaks.map((x, n) => (n === k ? { ...x, end: e.target.value } : x)) })} />
-                  <button type="button" aria-label={t("Tanaffusni olib tashlash")} className="text-muted hover:text-danger"
+                  <button type="button" aria-label={t("Tanaffusni olib tashlash")} className="-m-1.5 rounded-lg p-2.5 text-muted hover:bg-red-50 hover:text-danger"
                     onClick={() => patch(i, { breaks: r.breaks.filter((_, n) => n !== k) })}>
                     <Trash2 size={15} />
                   </button>

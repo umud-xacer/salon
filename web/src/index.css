@@ -13,6 +13,15 @@
   --color-warning: #b45309;
 }
 
+/* Grid ustunidagi blok ichidagi keng narsa (diagramma, jadval) uchun cho'zilib, sahifani ekrandan chiqarib yubormasin:
+   standart min-width:auto o'rniga 0 — keng ichki qism o'zining overflow-x-auto qutisida suriladi.
+   base qatlamida: komponentdagi min-w-* klasslari ustun turadi. */
+@layer base {
+  .grid > * {
+    min-width: 0;
+  }
+}
+
 /* iOS kichik yozuvli maydonni bosganda sahifani kattalashtirib yuboradi */
 @media (max-width: 639px) {
   input,

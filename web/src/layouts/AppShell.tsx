@@ -61,7 +61,7 @@ export function AppShell({ nav, title, header, mobileTitle, children }: {
         <div className="flex items-center gap-3 p-4">
           <Logo />
           <span className="min-w-0 flex-1 truncate font-semibold">{title}</span>
-          <button className="md:hidden" onClick={() => setOpen(false)} aria-label={t("Menyuni yopish")}>
+          <button className="-m-2 rounded-lg p-2 hover:bg-white/10 md:hidden" onClick={() => setOpen(false)} aria-label={t("Menyuni yopish")}>
             <X size={22} />
           </button>
         </div>
@@ -107,7 +107,7 @@ export function AppShell({ nav, title, header, mobileTitle, children }: {
 
       <div className="min-w-0 flex-1">
         <div className="sticky top-0 z-20 flex items-center gap-3 border-b border-line bg-white px-4 py-3 md:hidden">
-          <button onClick={() => setOpen(true)} aria-label={t("Menyu")} aria-expanded={open}>
+          <button className="-m-2 rounded-lg p-2 hover:bg-page" onClick={() => setOpen(true)} aria-label={t("Menyu")} aria-expanded={open}>
             <Menu size={24} />
           </button>
           <Logo size={28} />

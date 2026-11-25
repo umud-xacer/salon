@@ -28,7 +28,7 @@ function Field({ k, label, form, set, placeholder, area, max }: {
     <label className="block text-sm">
       <span className="flex items-center gap-2">{label}
         {isUrl && v && !bad && (
-          <a href={v} target="_blank" rel="noopener noreferrer" className="text-brand" title={t("Ochib ko'rish")}><ExternalLink size={13} /></a>
+          <a href={v} target="_blank" rel="noopener noreferrer" className="-m-2 inline-flex rounded-lg p-2 text-brand hover:bg-page" title={t("Ochib ko'rish")} aria-label={t("Ochib ko'rish")}><ExternalLink size={14} /></a>
         )}
       </span>
       {area

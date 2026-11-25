@@ -270,8 +270,41 @@ export function SubscriptionsPage() {
         ]} />
       </Card>
 
-      {list.length === 0 ? <Empty>{t("Hech narsa topilmadi")}</Empty> : (
-        <Card className="overflow-x-auto p-0">
+      {list.length === 0 ? <Empty>{t("Hech narsa topilmadi")}</Empty> : (<>
+        {/* Telefon: jadval o'rniga kartochkalar (yon tomonga surish shart emas) */}
+        <ul className="space-y-2 md:hidden">
+          {list.map((b) => (
+            <li key={b.id}>
+              <button type="button" onClick={() => setOpenedId(b.id)}
+                className="w-full rounded-xl border border-line bg-white p-3 text-left text-sm active:bg-page">
+                <span className="flex items-start justify-between gap-2">
+                  <span className="min-w-0">
+                    <span className="block font-medium text-navy [overflow-wrap:anywhere]">{b.name}</span>
+                    <span className="block text-xs text-muted">{[b.type_name, b.city].filter(Boolean).join(" · ")}</span>
+                  </span>
+                  <span className="shrink-0"><StateBadge b={b} /></span>
+                </span>
+                <span className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+                  <span className="text-muted">{t("Direktor")}</span>
+                  <span className="text-right [overflow-wrap:anywhere]">{b.owner_name ?? "—"}</span>
+                  <span className="text-muted">{t("Tarif")}</span>
+                  <span className="text-right">{b.plan_name ?? t("Maxsus narx")} · {formatMoney(b.monthly_fee)}</span>
+                  <span className="text-muted">{t("Tugash sanasi")}</span>
+                  <span className="text-right tabular-nums">{b.subscription_ends_at ? formatDate(b.subscription_ends_at) : "—"}</span>
+                  <span className="text-muted">{t("Jami to'langan")}</span>
+                  <span className="text-right tabular-nums">{formatMoney(b.paid_total)}</span>
+                </span>
+              </button>
+              {b.owner_phone && (
+                <a href={`tel:${b.owner_phone}`}
+                  className="mt-1 inline-flex items-center gap-1 px-3 py-1 text-xs tabular-nums text-primary">
+                  <Phone size={12} aria-hidden /> {b.owner_phone}
+                </a>
+              )}
+            </li>
+          ))}
+        </ul>
+        <Card className="hidden overflow-x-auto p-0 md:block">
           <table className="w-full min-w-[860px] text-sm">
             <thead className="bg-page text-left text-xs text-muted">
               <tr>
@@ -323,7 +356,7 @@ export function SubscriptionsPage() {
             </tbody>
           </table>
         </Card>
-      )}
+      </>)}
 
       {opened && modules.data && (
         <BusinessDialog key={opened.id} business={opened} modules={modules.data} initialTab="subscription"
