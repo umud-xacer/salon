@@ -50,11 +50,11 @@ Ixtiyoriy: har skrinshot ustiga 1 qatorli sarlavha ("Yaqin salonni xaritada topi
 ### O'zbekcha (asosiy til: uz)
 **Nom (≤30):** Chronix — onlayn bron
 
-**Qisqa tavsif (≤80):** Salon, barber, stomatologiya va SPA'ga onlayn bron — tez va qulay
+**Qisqa tavsif (≤80):** Salon, barber va SPA'ga onlayn bron — tez va qulay
 
 **To'liq tavsif (≤4000):**
 ```
-Chronix — go'zallik saloni, barbershop, stomatologiya va SPA markazlariga navbatsiz, bir necha soniyada yozilish uchun ilova.
+Chronix — go'zallik saloni, barbershop va SPA markazlariga navbatsiz, bir necha soniyada yozilish uchun ilova.
 
 Qanday ishlaydi:
 • Yaqin atrofdagi muassasalarni xaritada yoki ro'yxatda toping
