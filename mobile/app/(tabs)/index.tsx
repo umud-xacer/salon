@@ -3,6 +3,7 @@
 // "Yaqin atrofdagi muassasalar" (3 ta qator + Hammasini ko'rish).
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSplashDone } from '../../src/startup';
 import { RefreshControl, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -55,6 +56,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [recent, setRecent] = useState<BusinessCard[]>([]);
+  const shown = useSplashDone();
 
   useFocusEffect(useCallback(() => {
     setRecent(getRecent());
@@ -130,7 +132,8 @@ export default function Home() {
 
       <View style={s.pad}><ErrorText text={error} /></View>
 
-      {recommended.length > 0 && (
+      {/* Rasmli ro'yxatlar ochilish animatsiyasidan keyin chiziladi (ma'lumot esa shu orada yuklanadi) */}
+      {shown && recommended.length > 0 && (
         <>
           <Title text={t("Tavsiya etilganlar")} />
           <Carousel items={recommended} onOpen={open}
@@ -138,7 +141,7 @@ export default function Home() {
         </>
       )}
 
-      {recent.length > 0 && (
+      {shown && recent.length > 0 && (
         <>
           <Title text={t("Yaqinda ko'rilganlar")} />
           <Carousel items={recent} onOpen={open}
@@ -146,14 +149,14 @@ export default function Home() {
         </>
       )}
 
-      {fresh.length > 0 && (
+      {shown && fresh.length > 0 && (
         <>
           <Title text={t("Chronix'da yangi")} />
           <Carousel items={fresh} onOpen={open} badge={() => [t("Yangi")]} />
         </>
       )}
 
-      {near.length > 0 ? (
+      {!shown ? null : near.length > 0 ? (
         <>
           <Title text={t("Yaqin atrofdagi muassasalar")} action={t("Hammasini ko'rish")} onAction={() => router.navigate('/map')} />
           <View style={s.pad}>

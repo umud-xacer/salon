@@ -1,6 +1,7 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, Easing, Image, StyleSheet, View, useWindowDimensions } from 'react-native';
 
+import { useAuth } from './auth';
 import { playStartupSound } from './startupSound';
 import { colors } from './ui';
 
@@ -59,7 +60,21 @@ export function AnimatedSplash({ onReady, onDone }: { onReady: () => void; onDon
   const full = seg(T.tagline, T.full);
   const exit = seg(T.hold, T.total, 1, 0);
 
+  // Animatsiya asosiy ekran chizilib bo'lgach boshlanadi (tizim splash'i shu vaqtgacha turadi): ekranni chizish
+  // UI oqimini band qiladi va animatsiya paytida bo'lsa — qotish ko'rinadi. Kirish tekshiruvi cho'zilsa — 1,5 s dan keyin baribir.
+  const { ready } = useAuth();
+  const [canStart, setCanStart] = useState(false);
   useEffect(() => {
+    const fallback = setTimeout(() => setCanStart(true), 1500);
+    if (ready) {
+      // ikki kadr: Navigator va bosh sahifa ekranga tushib bo'lsin
+      requestAnimationFrame(() => requestAnimationFrame(() => setCanStart(true)));
+    }
+    return () => clearTimeout(fallback);
+  }, [ready]);
+
+  useEffect(() => {
+    if (!canStart) return;
     let cancelled = false;
     (async () => {
       const reduced = await AccessibilityInfo.isReduceMotionEnabled().catch(() => false);
@@ -75,7 +90,7 @@ export function AnimatedSplash({ onReady, onDone }: { onReady: () => void; onDon
     return () => {
       cancelled = true;
     };
-  }, [time, onReady, onDone]);
+  }, [canStart, time, onReady, onDone]);
 
   const k = (Math.min(width * CONTENT_SHARE, MAX_CONTENT)) / WORD.width;
   const stage = IMAGE * k;
