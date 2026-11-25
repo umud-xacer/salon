@@ -175,3 +175,32 @@ def test_app_info_public(client):
     r = client.get("/api/v1/catalog/app-info")
     assert r.status_code == 200 and set(r.json()) == {"support_phone", "support_telegram", "yandex_maps_key", "yandex_maps_panel_key",
                                                  "login_methods", "google_web_client_id"}
+
+
+def test_map_thumb_created_used_in_catalog_and_deleted(client, biz):
+    """Xarita belgisi: 128x128 kvadrat nusxa yaratiladi, katalog uni map_image sifatida beradi, rasm bilan o'chadi."""
+    r = upload(client, biz, png((1600, 900)))
+    photo_row, path = r.json(), disk_path(r.json()["url"])
+    thumb = media.thumb_path(path)
+    with Image.open(thumb) as t:
+        assert t.format == "WEBP" and t.size == (128, 128)
+    client.post(f"/api/v1/businesses/{biz['id']}/services", headers=auth_header(biz["owner"]),
+                json={"name": "Soch olish", "duration_min": 30, "price": 50000})
+    box = {"sw_lat": 41.29, "sw_lng": 69.23, "ne_lat": 41.31, "ne_lng": 69.25}
+
+    def map_image():
+        cards = client.get("/api/v1/catalog/businesses/in-bounds", params=box).json()
+        return next(c for c in cards if c["id"] == biz["id"])["map_image"]
+    assert map_image() == photo_row["url"].replace(".webp", "_t.webp")
+    assert client.delete(f"/api/v1/businesses/{biz['id']}/photos/{photo_row['id']}",
+                         headers=auth_header(biz["owner"])).status_code == 204
+    assert not path.exists() and not thumb.exists()
+    assert map_image() is None
+
+
+def test_backfill_thumbs_for_old_photos(client, biz):
+    path = disk_path(upload(client, biz, png((400, 300))).json()["url"])
+    media.thumb_path(path).unlink()                       # eski rasm: kichik nusxasi yo'q
+    made, failed = media.backfill_thumbs()
+    assert made >= 1 and failed == 0 and media.thumb_path(path).is_file()
+    assert media.backfill_thumbs()[0] == 0                # qayta ishga tushirilsa hech narsa qilmaydi

@@ -25,6 +25,8 @@ MAX_PIXELS = 50_000_000           # siqilgan "bomba" rasmlar xotirani to'ldirmas
 MAX_PIXELS_LOSSLESS = 25_000_000  # PNG/WebP dekoderda kichraytirilmaydi: to'liq ochiladi (25 MP ~ 75 MB xotira)
 ALLOWED = {"JPEG", "PNG", "WEBP"}
 EXTENSION = ".webp"
+THUMB_SUFFIX = "_t"               # xarita belgisi uchun kvadrat kichik nusxa: <nom>_t.webp (mobil xarita, sql catalog)
+THUMB_SIZE = 128
 
 # Bir vaqtda bitta rasm: ikkita katta rasm parallel ochilsa, 1 GB serverda xotira yetmay qolishi mumkin
 _one_at_a_time = threading.Lock()
@@ -89,13 +91,32 @@ def process_image(data: bytes, *, max_width: int = MAX_WIDTH, max_height: int = 
             raise BadImage("Fayl rasm emas yoki buzilgan")
 
 
+def make_thumb(webp: bytes) -> bytes:
+    """Saqlangan (allaqachon tekshirilgan, kichraytirilgan) rasmdan markazdan kesilgan 128x128 WebP."""
+    with _one_at_a_time, Image.open(io.BytesIO(webp)) as image:
+        image.load()
+        has_alpha = image.mode in ("RGBA", "LA")
+        square = ImageOps.fit(image.convert("RGBA" if has_alpha else "RGB"), (THUMB_SIZE, THUMB_SIZE), Image.LANCZOS)
+        out = io.BytesIO()
+        square.save(out, "WEBP", quality=72, method=4)
+        return out.getvalue()
+
+
+def thumb_path(path: Path) -> Path:
+    return path.with_name(path.stem + THUMB_SUFFIX + path.suffix)
+
+
 def save_business_photo(business_id: int, data: bytes) -> str:
-    """Rasmni tekshirib saqlaydi va ochiq URL qaytaradi."""
+    """Rasmni tekshirib saqlaydi (va xarita uchun kichik nusxasini) va ochiq URL qaytaradi."""
     optimized = process_image(data)
     name = f"{uuid.uuid4().hex}{EXTENSION}"
     folder = _root() / "business" / str(business_id)
     folder.mkdir(parents=True, exist_ok=True)
     (folder / name).write_bytes(optimized)
+    try:
+        thumb_path(folder / name).write_bytes(make_thumb(optimized))
+    except Exception:          # kichik nusxa bo'lmasa xarita belgisi yo'nalish ikonkasiga tushadi
+        pass
     return f"{get_settings().media_base_url.rstrip('/')}/business/{business_id}/{name}"
 
 
@@ -116,3 +137,21 @@ def delete_by_url(url: str) -> None:
     path = (_root() / url[len(base):]).resolve()
     if _root() in path.parents and path.is_file():
         path.unlink()
+        thumb_path(path).unlink(missing_ok=True)
+
+
+def backfill_thumbs() -> tuple[int, int]:
+    """Kichik nusxasi yo'q eski rasmlar uchun yaratadi (bir martalik: `python -m app.cli make-thumbs`)."""
+    made = failed = 0
+    base = _root() / "business"
+    if not base.is_dir():
+        return 0, 0
+    for path in sorted(base.glob(f"*/*{EXTENSION}")):
+        if path.stem.endswith(THUMB_SUFFIX) or thumb_path(path).exists():
+            continue
+        try:
+            thumb_path(path).write_bytes(make_thumb(path.read_bytes()))
+            made += 1
+        except Exception:
+            failed += 1
+    return made, failed

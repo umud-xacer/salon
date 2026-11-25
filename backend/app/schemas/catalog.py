@@ -71,6 +71,7 @@ class BusinessCard(BaseModel):
     chain_name: str | None = None
     branch_count: int = 1
     promo_percent: int | None = None      # xarita: bugungi eng katta aksiya (Hot Slots yoki ochiq promokod), %
+    map_image: str | None = None          # xarita belgisi: logo yoki birinchi rasmning 128px nusxasi
 
 
 class NearbyOut(BaseModel):

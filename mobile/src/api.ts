@@ -139,6 +139,8 @@ export type BusinessCard = {
   chain_name?: string | null;
   branch_count?: number;
   promo_percent?: number | null;        // xarita: bugungi eng katta aksiya, %
+  logo_url?: string | null;
+  map_image?: string | null;            // xarita belgisi: logo yoki birinchi rasmning 128px nusxasi (eski serverda yo'q)
 };
 
 export type Branch = {

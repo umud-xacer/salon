@@ -1,11 +1,13 @@
 // Mijoz xaritasi WebView ichida: Yandex Maps JS API (kalit serverdan kelsa) yoki OpenStreetMap (Leaflet, kalitsiz).
 // Ikkalasida bir xil window API: setMarkers, setMe, flyTo, locateDone — RN tomoni bitta.
-// Salon nomlari xaritaga faqat matn sifatida qo'yiladi (textContent), HTML sifatida emas.
+// Salon nomlari va rasm manzillari belgiga ekranlab (esc) qo'yiladi.
 import { ComponentType, createElement, RefObject, useEffect, useMemo, useRef } from 'react';
 import { Platform } from 'react-native';
 import { WebView, WebViewMessageEvent, WebViewProps } from 'react-native-webview';
 
 import { BusinessCard } from './api';
+import { mapKind } from './categories';
+import { t } from './i18n';
 
 // OSM xarita rasmlari Referer'siz bloklanadi: sahifa shu manzildan ochilgandek ko'rinadi
 const BASE_URL = 'https://chronix.uz/';
@@ -106,43 +108,106 @@ const CTL_JS = `
   };
 `;
 
+// Muassasa belgisi (2026-11-25 TZ): dumaloq logo/rasm (128px nusxa), bo'lmasa yo'nalish ikonkasi; ostida reyting va aksiya.
+// Ikkala xaritada bir xil HTML (mkHtml). Matn va manzillar ekranlanadi (esc). Rasm yuklanmasa — ikonka (imgFail).
+const MARK_CSS = `
+  .mk{position:relative;width:46px;height:56px;font:700 11px system-ui,sans-serif;-webkit-tap-highlight-color:transparent}
+  .mk .av{position:absolute;left:0;top:0;width:46px;height:46px;box-sizing:border-box;border-radius:50%;border:3px solid #fff;
+          background:var(--b);color:var(--c);display:flex;align-items:center;justify-content:center;overflow:hidden;
+          box-shadow:0 4px 12px rgba(17,17,20,.28);transition:transform .15s ease}
+  .mk .av img{width:100%;height:100%;object-fit:cover;display:block}
+  .mk .tag{position:absolute;left:50%;top:37px;transform:translateX(-50%);display:flex;align-items:center;gap:3px;white-space:nowrap;
+           padding:2px 6px;border-radius:999px;background:#111114;color:#fff;border:1.5px solid #fff;box-shadow:0 2px 6px rgba(17,17,20,.3)}
+  .mk .tag .s{color:#F5A623}
+  .mk .tag .p{padding:0 4px;border-radius:999px;background:#FF3D71}
+  .mk.promo .av{border-color:#FF3D71}
+  .mk.closed .av{filter:grayscale(.85);opacity:.85}
+  .mk.closed .tag{background:#8a8a94}
+  .mk.sel .av{transform:scale(1.22);border-color:#6B4EFF;box-shadow:0 0 0 3px rgba(107,78,255,.3),0 8px 18px rgba(17,17,20,.35)}
+  .cl{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;
+      font:800 14px system-ui,sans-serif;background:linear-gradient(145deg,#8B74FF,#4B2FE0);border:3px solid #fff;
+      box-sizing:border-box;box-shadow:0 0 0 5px rgba(107,78,255,.22),0 6px 14px rgba(17,17,20,.3)}
+`;
+const MARK_JS = `
+  const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const ico = (d) => '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"'
+    + ' stroke-linecap="round" stroke-linejoin="round">' + d + '</svg>';
+  const ICONS = {
+    barber: ico('<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.12 15.88M14.47 14.48 20 20M8.12 8.12 12 12"/>'),
+    beauty: ico('<path d="M15 4V2M15 16v-2M8 9h2M20 9h2M17.8 11.8 19 13M17.8 6.2 19 5M3 21l9-9M12.2 6.2 11 5"/>'),
+    spa: ico('<path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6"/>'),
+    cosmetic: ico('<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/>'),
+    nail: ico('<path d="M18 11V6a2 2 0 0 0-4 0v5M14 10V4a2 2 0 0 0-4 0v6M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-6-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/>'),
+    fitness: ico('<path d="M6 7v10M18 7v10M3 10v4M21 10v4M6 12h12"/>'),
+    clinic: ico('<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M12 11v6M9 14h6"/>'),
+    ent: ico('<path d="M6 8.5a6.5 6.5 0 1 1 13 0c0 6-6 6-6 10a3.5 3.5 0 1 1-7 0"/><path d="M15 8.5a2.5 2.5 0 0 0-5 0v1a2 2 0 1 1 0 4"/>'),
+    pharmacy: ico('<path d="M10.5 20.5 3.5 13.5a5 5 0 0 1 7-7l7 7a5 5 0 0 1-7 7Z"/><path d="M8.5 8.5l7 7"/>'),
+    other: ico('<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>'),
+  };
+  window.imgFail = (el) => { const av = el.parentNode; if (av) av.innerHTML = ICONS[av.dataset.k] || ICONS.other; };
+  const mkHtml = (b) => {
+    const inner = b.img
+      ? '<img src="' + esc(b.img) + '" alt="" loading="lazy" decoding="async" onerror="imgFail(this)">'
+      : (ICONS[b.k] || ICONS.other);
+    const tag = '<div class="tag">' + (b.rated ? '<span class="s">\\u2605</span>' : '') + esc(b.label)
+      + (b.promo ? '<span class="p">\\u2212' + esc(b.promo) + '%</span>' : '') + '</div>';
+    return '<div class="mk' + (b.open ? '' : ' closed') + (b.promo ? ' promo' : '') + (b.sel ? ' sel' : '') + '">'
+      + '<div class="av" data-k="' + esc(b.k) + '" style="--b:' + esc(b.bg) + ';--c:' + esc(b.fg) + '">' + inner + '</div>'
+      + tag + '</div>';
+  };
+  // Faqat o'zgargan belgilar qayta chiziladi: xarita surilganda yoki boshqa salon tanlanganda hammasi o'chib-yonmaydi
+  const syncMarks = (list, current, make, addAll, removeAll) => {
+    const keep = new Set(), add = [], drop = [];
+    list.forEach((b) => {
+      const sig = JSON.stringify(b);
+      const old = current.get(b.id);
+      keep.add(b.id);
+      if (old && old.sig === sig) return;
+      if (old) drop.push(old.m);
+      const m = make(b);
+      current.set(b.id, { m, sig });
+      add.push(m);
+    });
+    current.forEach((v, id) => { if (!keep.has(id)) { drop.push(v.m); current.delete(id); } });
+    if (drop.length) removeAll(drop);
+    if (add.length) addAll(add);
+  };
+`;
+
 // Yandex JS API 2.1. Shartlar: bepul versiya faqat ochiq ilovada; olingan ma'lumot saqlanmaydi (faqat ko'rsatish).
 const yandexHtml = (lat: number, lng: number, key: string, top: number) => `<!doctype html>
 <html><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <style>
   html,body,#map{width:100%;height:100%;margin:0;padding:0;background:#eef1f6}
-${CTL_CSS(top)}
+  .ym{transform:translate(-23px,-23px)}
+${CTL_CSS(top)}${MARK_CSS}
 </style>
 <script>const post = (m) => window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify(m));</script>
 <script src="https://api-maps.yandex.ru/2.1/?apikey=${encodeURIComponent(key)}&lang=ru_RU" onerror="post({type:'error'})"></script>
 </head><body><div id="map"></div>
 ${CTL_HTML}
-<script>${ME_JS}${CTL_JS}
-  // Salon nomi matn sifatida: Yandex hint HTML qabul qiladi, shuning uchun belgilar ekranlanadi
-  const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+<script>${ME_JS}${CTL_JS}${MARK_JS}
   const fail = setTimeout(() => post({ type: 'error' }), 15000);
   if (!window.ymaps) post({ type: 'error' });
   else ymaps.ready(() => {
     clearTimeout(fail);
     const map = new ymaps.Map('map', { center: [${lat}, ${lng}], zoom: 13, controls: [] },
                               { suppressMapOpenBlock: true, autoFitToViewport: 'always' });
-    const markers = new ymaps.GeoObjectCollection();
+    // Yaqin belgilar guruhlanadi (raqamli doira); yaqinlashtirilganda ajraladi
+    const markers = new ymaps.Clusterer({ preset: 'islands#invertedVioletClusterIcons', gridSize: 80, maxZoom: 16,
+                                          hasBalloon: false, hasHint: false, groupByCoordinates: false });
     map.geoObjects.add(markers);
+    const MarkLayout = ymaps.templateLayoutFactory.createClass('<div class="ym">{{ properties.html|raw }}</div>');
+    const current = new Map();
     let me = null;
-    window.setMarkers = (list) => {
-      markers.removeAll();
-      list.forEach((b) => {
-        // Qora yorliq "★ 4,9" (yangi — "Yangi"), yopig'i kulrang; aksiya — pushti va "−20%"; tanlangan — ko'k
-        const text = (b.rated ? '\u2605 ' : '') + b.label + (b.promo ? '  \u2212' + b.promo + '%' : '');
-        const preset = b.sel ? 'islands#blueStretchyIcon' : b.promo ? 'islands#pinkStretchyIcon'
-                     : b.open ? 'islands#blackStretchyIcon' : 'islands#grayStretchyIcon';
-        const mark = new ymaps.Placemark([b.lat, b.lng], { hintContent: esc(b.name), iconContent: esc(text) },
-                                         { preset, zIndex: b.sel ? 1000 : b.promo ? 500 : 0 });
-        mark.events.add('click', (e) => { e.stopPropagation(); post({ type: 'select', id: b.id }); });
-        markers.add(mark);
-      });
-    };
+    window.setMarkers = (list) => syncMarks(list, current, (b) => {
+      const mark = new ymaps.Placemark([b.lat, b.lng], { html: mkHtml(b), hintContent: esc(b.name) },
+        { iconLayout: MarkLayout, iconShape: { type: 'Circle', coordinates: [0, 0], radius: 26 },
+          zIndex: b.sel ? 1000 : b.promo ? 500 : 0 });
+      mark.events.add('click', (e) => { e.stopPropagation(); post({ type: 'select', id: b.id }); });
+      return mark;
+    }, (arr) => markers.add(arr), (arr) => markers.remove(arr));
     window.setMe = (p) => {
       if (me) map.geoObjects.remove(me);
       me = new ymaps.Placemark([p.lat, p.lng], {}, {
@@ -173,27 +238,18 @@ const html = (lat: number, lng: number, top: number) => `<!doctype html>
   integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
 <style>
   html,body,#map{width:100%;height:100%;margin:0;padding:0;background:#eef1f6}
-  .pin{position:relative;display:inline-flex;align-items:center;gap:4px;padding:6px 11px;border-radius:999px;background:#111114;color:#fff;
-       font:700 13px system-ui,sans-serif;white-space:nowrap;box-shadow:0 3px 10px rgba(17,17,20,.32);
-       transform:translate(-50%,calc(-100% - 6px));transition:transform .15s ease}
-  .pin:after{content:'';position:absolute;left:50%;bottom:-5px;margin-left:-5px;border:5px solid transparent;border-bottom:0;
-       border-top-color:inherit;border-top-color:#111114}
-  .pin .s{color:#F5A623}.pin.closed{background:#8a8a94}.pin.closed:after{border-top-color:#8a8a94}
-  .pin .p{margin-left:2px;padding:1px 6px;border-radius:999px;background:#FF3D71;color:#fff;font-size:11px}
-  .pin.promo{box-shadow:0 0 0 2px #FF3D71,0 3px 10px rgba(255,61,113,.35)}
-  .pin.sel{background:#fff;color:#111114;transform:translate(-50%,calc(-100% - 6px)) scale(1.15);
-           box-shadow:0 0 0 2px #111114,0 6px 16px rgba(17,17,20,.35)}
-  .pin.sel:after{border-top-color:#111114}
   .me{width:44px;height:44px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.25))}
   .leaflet-tooltip{font:600 12px system-ui,sans-serif}
-${CTL_CSS(top)}
+  .leaflet-marker-icon.lmk{background:none;border:0}
+${CTL_CSS(top)}${MARK_CSS}
 </style>
 <script>const post = (m) => window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify(m));</script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
   integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="" onerror="post({type:'error'})"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 </head><body><div id="map"></div>
 ${CTL_HTML}
-<script>${CTL_JS}
+<script>${CTL_JS}${MARK_JS}
   if (!window.L) post({ type: 'error' });
   const map = L.map('map', { zoomControl: false }).setView([${lat}, ${lng}], 13);
   window.zoomBy = (d) => (d > 0 ? map.zoomIn() : map.zoomOut());
@@ -201,30 +257,22 @@ ${CTL_HTML}
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19, attribution: '&copy; OpenStreetMap'
   }).on('tileerror', () => post({ type: 'tileerror' })).addTo(map);
-  const markers = L.layerGroup().addTo(map);
+  // Yaqin belgilar guruhlanadi (plagin yuklanmasa — oddiy qatlam, belgilar baribir chiqadi)
+  const markers = (L.markerClusterGroup ? L.markerClusterGroup({
+    maxClusterRadius: 56, disableClusteringAtZoom: 17, showCoverageOnHover: false, spiderfyOnMaxZoom: true,
+    chunkedLoading: true, removeOutsideVisibleBounds: true,
+    iconCreateFunction: (c) => L.divIcon({ className: '', html: '<div class="cl">' + c.getChildCount() + '</div>',
+                                            iconSize: [44, 44], iconAnchor: [22, 22] }),
+  }) : L.layerGroup()).addTo(map);
+  const current = new Map();
   let meMarker = null;${ME_JS}
 
-  window.setMarkers = (list) => {
-    markers.clearLayers();
-    list.forEach((b) => {
-      const pill = document.createElement('div');
-      pill.className = 'pin ' + (b.open ? 'open' : 'closed') + (b.promo ? ' promo' : '') + (b.sel ? ' sel' : '');
-      const star = document.createElement('span');
-      star.className = 's';
-      star.textContent = b.rated ? '★' : '';
-      pill.appendChild(star);
-      pill.appendChild(document.createTextNode(b.label));
-      if (b.promo) {
-        const promo = document.createElement('span');
-        promo.className = 'p';
-        promo.textContent = '−' + b.promo + '%';
-        pill.appendChild(promo);
-      }
-      const icon = L.divIcon({ className: '', html: pill, iconSize: [0, 0], iconAnchor: [0, 0] });
-      L.marker([b.lat, b.lng], { icon, zIndexOffset: b.sel ? 1000 : b.promo ? 500 : 0 })
-        .on('click', () => post({ type: 'select', id: b.id })).addTo(markers);
-    });
-  };
+  window.setMarkers = (list) => syncMarks(list, current, (b) =>
+    L.marker([b.lat, b.lng], { icon: L.divIcon({ className: 'lmk', html: mkHtml(b), iconSize: [46, 56], iconAnchor: [23, 23] }),
+                               zIndexOffset: b.sel ? 1000 : b.promo ? 500 : 0, title: b.name })
+      .on('click', () => post({ type: 'select', id: b.id })),
+    (arr) => (markers.addLayers ? markers.addLayers(arr) : arr.forEach((m) => markers.addLayer(m))),
+    (arr) => (markers.removeLayers ? markers.removeLayers(arr) : arr.forEach((m) => markers.removeLayer(m))));
   window.setMe = (p) => {
     if (meMarker) meMarker.remove();
     meMarker = L.marker([p.lat, p.lng], { icon: L.divIcon({ className: '', html: '<div class="me">' + meSvg(p.g) + '</div>',
@@ -279,7 +327,8 @@ export function OsmMap({ center, me, businesses, onBounds, onSelect, onError, on
       id: b.id, name: b.branch_name ? `${b.name} · ${b.branch_name}` : b.name,   // filial xaritada aniq ajralsin
       lat: b.lat, lng: b.lng, open: b.is_open_now, rated: b.rating_count > 0,
       promo: b.promo_percent ?? null, sel: b.id === latest.current.selectedId,
-      label: b.rating_count > 0 ? b.rating_avg.toFixed(1).replace('.', ',') : 'Yangi' }));
+      label: b.rating_count > 0 ? b.rating_avg.toFixed(1).replace('.', ',') : t('Yangi'),
+      img: b.map_image ?? b.logo_url ?? null, ...mapKind(b.category, b.category_name) }));
     // Ro'yxat o'zgarmagan bo'lsa belgilar qayta chizilmaydi (xarita har surilganda shu chaqiriladi)
     const json = JSON.stringify(list);
     if (json !== sent.current) {

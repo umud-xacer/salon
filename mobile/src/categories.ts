@@ -47,3 +47,23 @@ export function categoryShort(c: Category, lang: 'uz' | 'ru'): string | null {
   const hit = SHORT.find(([re]) => re.test(c.slug) || re.test(c.name_uz));
   return hit ? (lang === 'ru' ? hit[2] : hit[1]) : null;
 }
+
+/** Xarita belgisi uchun yo'nalish turi (WebView ichidagi SVG ikonka kaliti) va ranglari — rasm/logo bo'lmasa */
+const MAP_KINDS: [RegExp, string][] = [
+  [/barber/i, 'barber'],
+  [/pharm|dorixona|apteka/i, 'pharmacy'],
+  [/^ent$|otorino|^lor/i, 'ent'],
+  [/clinic|klinika|stomat|dent/i, 'clinic'],
+  [/spa|massaj|massage/i, 'spa'],
+  [/kosmet|cosmet/i, 'cosmetic'],
+  [/nail|tirnoq|manik/i, 'nail'],
+  [/fitness|sport/i, 'fitness'],
+  [/salon|beauty|go'zal/i, 'beauty'],
+];
+
+export function mapKind(slug: string | undefined, name: string): { k: string; fg: string; bg: string } {
+  const c: Category = { id: 0, slug: slug ?? '', name_uz: name };
+  const k = MAP_KINDS.find(([re]) => re.test(c.slug) || re.test(c.name_uz))?.[1] ?? 'other';
+  const { fg, bg } = categoryTint(c, false);
+  return { k, fg, bg };
+}

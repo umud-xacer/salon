@@ -43,7 +43,11 @@ _CARD_COLUMNS = f"""
         AS top_service,
     coalesce((SELECT array_agg(x.url) FROM (SELECT p.url FROM business_photos p WHERE p.business_id = b.id
                                              ORDER BY p.sort_order, p.id LIMIT 5) x), '{{}}') AS photos,
-    {_IS_OPEN} AS is_open_now
+    {_IS_OPEN} AS is_open_now,
+    -- Xarita belgisi: logo, bo'lmasa birinchi rasmning 128px nusxasi (media.THUMB_SUFFIX); topilmasa ilova ikonka qo'yadi
+    coalesce(b.logo_url, (SELECT CASE WHEN p.url ~ '/business/[0-9]+/[0-9a-f]+[.]webp$'
+                                      THEN regexp_replace(p.url, '[.]webp$', '_t.webp') ELSE p.url END
+                          FROM business_photos p WHERE p.business_id = b.id ORDER BY p.sort_order, p.id LIMIT 1)) AS map_image
 """
 
 _SORTS = {

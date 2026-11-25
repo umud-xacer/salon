@@ -82,6 +82,7 @@ def main(argv: list[str] | None = None) -> None:
     sc = sub.add_parser("sms-check")
     sc.add_argument("--phone", help="berilsa, shu raqamga bitta haqiqiy SMS ketadi")
     sc.add_argument("--text", default="Bu Eskiz dan test", help="Eskiz'da tasdiqlangan matn")
+    sub.add_parser("make-thumbs", help="eski rasmlar uchun xarita kichik nusxalari (_t.webp)")
     args = p.parse_args(argv)
 
     if args.cmd == "setup-roles":
@@ -90,6 +91,10 @@ def main(argv: list[str] | None = None) -> None:
         create_superadmin(args.phone, args.name, args.password)
     elif args.cmd == "sms-check":
         sms_check(args.phone, args.text)
+    elif args.cmd == "make-thumbs":
+        from app.services.media import backfill_thumbs
+        made, failed = backfill_thumbs()
+        print(f"Yaratildi: {made}, xato: {failed}")
 
 
 if __name__ == "__main__":
