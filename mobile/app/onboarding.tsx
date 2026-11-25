@@ -63,7 +63,7 @@ export default function Onboarding() {
         keyboardShouldPersistTaps="handled">
         <View style={{ flexDirection: 'row', alignItems: 'center', height: 44 }}><Steps step={2} total={3} /></View>
         <Text style={[ty.display, { marginTop: 22 }]}>{t("Tanishaylik")}</Text>
-        <Text style={[ty.body, { color: c.muted, marginTop: 6, marginBottom: 20 }]}>{t("Ismingizni ustalar ko'radi")}</Text>
+        <Text style={[ty.body, { color: c.muted, marginTop: 6, marginBottom: 20 }]}>{t("Ismingizni ustalar va klinikalar ko'radi")}</Text>
 
         <View style={{ flexDirection: 'row', gap: 16, alignItems: 'center' }}>
           <Avatar name={name || '?'} size={76} />

@@ -82,7 +82,7 @@ class Settings(BaseSettings):
     # shu matnlar moderatsiyadan o'tishi kerak (sql/069). false — SMS umuman yuborilmaydi, muassasa sozlamasi kutadi
     auto_sms_enabled: bool = False
     # Mobil ilovada (X-Chronix-Client: mobile) ko'rinmaydigan muassasa turlari, vergul bilan; bo'sh — hammasi ko'rinadi
-    mobile_hidden_kinds: str = ""          # prod .env: "clinic,pharmacy" — Play shaxsiy hisob (2026-11-25 TZ); tashkilot hisobidan keyin bo'shatiladi
+    mobile_hidden_kinds: str = ""          # masalan "clinic"; egasi qarori (2026-11-25): hech narsa yashirilmaydi, Play uchun tashkilot hisobi olinadi
     # O'zi ro'yxatdan o'tgan muassasa: Super Admin tasdiqlagach bepul sinov (sql/070). Worker eslatma va o'chirishni
     # TRIAL_DRY_RUN=false bo'lmaguncha faqat jurnalga yozadi. TRIAL_DAY_SECONDS — sinov uchun "kun" uzunligi.
     trial_days: int = 5

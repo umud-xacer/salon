@@ -88,7 +88,7 @@ export default function Login() {
           </View>
           <Text style={ty.display}>{t("Chronix'ga xush kelibsiz")}</Text>
           <Text style={[ty.body, { color: c.muted }]}>
-            {t("Salon, sartaroshxona va SPA'ga bir necha soniyada yoziling.")}
+            {t("Salon, sartaroshxona, klinika va SPA'ga bir necha soniyada yoziling.")}
           </Text>
         </View>
 
